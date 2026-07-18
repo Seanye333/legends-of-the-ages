@@ -17,23 +17,26 @@ export const PRECON_DECKS: DeckList[] = [
     heroId: 'liu-bei',
     name: { zh: '桃園仁德', en: 'Oath of the Peach Garden' },
     cardIds: [
-      ...copies(2, 'mi-zhu', 'liu-qi'), // 2费
+      ...copies(2, 'liu-xie', 'liu-qi'), // 2费
       ...copies(2, 'sun-qian', 'yi-ji', 'cui-yan', 'strat-caochuan-jiejian'), // 3费
       ...copies(2, 'fei-yi', 'ma-liang'), // 4费
       ...copies(2, 'deng-zhi', 'liao-hua'), // 5费
       ...copies(1, 'ma-dai'),
       ...copies(2, 'zhang-fei'), // 6费
-      ...copies(1, 'liu-bei', 'zhuge-liang', 'wei-yan', 'chen-dao'),
-      ...copies(1, 'guan-yu', 'zhao-yun', 'strat-shimian-maifu'), // 7费
+      ...copies(1, 'liu-bei', 'zhuge-liang', 'wei-yan'),
+      ...copies(2, 'chen-dao'),
+      ...copies(1, 'guan-yu', 'zhao-yun'), // 7费
     ],
   },
   {
     heroId: 'cao-cao',
     name: { zh: '魏武揮鞭', en: 'The Tyrant’s Vanguard' },
     cardIds: [
-      ...copies(2, 'chen-jiao', 'hua-xin', 'wang-lang', 'strat-beishui-yizhan'), // 3费
+      ...copies(2, 'lady-bian'), // 2费
+      ...copies(2, 'chen-jiao', 'wang-lang', 'strat-beishui-yizhan'), // 3费
       ...copies(1, 'strat-pofu-chenzhou'),
-      ...copies(2, 'liu-ye', 'mao-jie', 'dong-zhao'), // 4费
+      ...copies(2, 'liu-ye', 'dong-zhao'), // 4费
+      ...copies(2, 'cao-hong'), // 5费
       ...copies(1, 'chen-gong', 'strat-andu-chencang'),
       ...copies(2, 'hua-xiong'), // 5费
       ...copies(2, 'xu-chu', 'zhang-liao', 'xiahou-dun'), // 6费
@@ -60,22 +63,24 @@ export const PRECON_DECKS: DeckList[] = [
     heroId: 'sima-yi',
     name: { zh: '鷹視狼顧', en: 'The Patient Schemer' },
     cardIds: [
-      ...copies(1, 'strat-shengdong-jixi'), // 2费
-      ...copies(2, 'hist-gao-jianli', 'hist-wei-jie', 'hist-yu-ji', 'hist-zhao-feiyan'), // 3费
+      ...copies(2, 'hist-gao-jianli', 'hist-yu-ji'), // 3费
+      ...copies(1, 'hist-wei-jie'),
       ...copies(2, 'diaochan', 'guo-jia', 'fa-zheng', 'hist-su-qin', 'strat-lianhuan-ji'), // 4费
+      ...copies(1, 'strat-fanjian-ji'),
       ...copies(2, 'jia-xu', 'cao-pi'), // 5费
-      ...copies(1, 'sima-yi', 'sima-shi', 'zhang-jiao', 'hist-jing-ke'),
-      ...copies(1, 'zhou-yu', 'lu-xun', 'strat-meiren-ji'), // 6费
+      ...copies(1, 'sima-yi', 'sima-shi', 'zhang-jiao', 'hist-jing-ke', 'pang-tong'),
+      ...copies(2, 'hist-yang-youji'), // 6费
+      ...copies(1, 'zhou-yu', 'lu-xun', 'strat-meiren-ji'),
     ],
   },
   {
     heroId: 'sun-quan',
     name: { zh: '坐斷東南', en: 'Lords of the Riverlands' },
     cardIds: [
-      ...copies(2, 'da-qiao', 'xiao-qiao', 'strat-kurou-ji'), // 2费
-      ...copies(2, 'yu-fan', 'strat-weiwei-jiuzhao'), // 3费
-      ...copies(2, 'hist-li-yu', 'kan-ze', 'bu-zhi', 'lu-fan'), // 4费
-      ...copies(2, 'pan-zhang'), // 5费
+      ...copies(2, 'da-qiao', 'sun-liang', 'strat-kurou-ji'), // 2费
+      ...copies(2, 'yu-fan', 'chen-jiao'), // 3费
+      ...copies(2, 'hist-li-yu', 'kan-ze', 'bu-zhi', 'luo-tong'), // 4费
+      ...copies(1, 'pan-zhang', 'zhou-tai'), // 5-6费
       ...copies(1, 'sun-quan', 'han-dang', 'hist-chen-sheng'),
       ...copies(2, 'taishi-ci', 'gan-ning', 'lu-meng'), // 6费
       ...copies(1, 'sun-ce'),
@@ -85,11 +90,13 @@ export const PRECON_DECKS: DeckList[] = [
     heroId: 'hist-laozi',
     name: { zh: '大隱於市', en: 'The Hidden Sages' },
     cardIds: [
-      ...copies(2, 'zhang-zhongjing', 'strat-kongcheng-ji', 'strat-jie-dongfeng'), // 2费
-      ...copies(2, 'zuo-ci', 'yu-ji', 'hua-tuo', 'sima-hui', 'cui-zhouping'), // 3费
-      ...copies(2, 'ji-kang', 'xu-shu', 'hist-tao-yuanming', 'hist-bian-que'), // 4费
+      ...copies(2, 'zhang-zhongjing', 'strat-shengdong-jixi'), // 2费
+      ...copies(2, 'zuo-ci', 'yu-ji', 'hua-tuo', 'sima-hui', 'cui-zhouping', 'strat-huo-ji'), // 3费
+      ...copies(2, 'ji-kang', 'xu-shu', 'hist-bian-que'), // 4费
       ...copies(2, 'hist-zhuangzi', 'hist-guiguzi'), // 5费
       ...copies(1, 'hist-laozi', 'hist-li-bai'),
+      ...copies(1, 'hist-long-qu'), // 6费
+      ...copies(1, 'lu-bu'), // 8费
     ],
   },
 ]

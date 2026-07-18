@@ -40,7 +40,7 @@ export const STRATAGEMS: CardDef[] = [
     dynasty: 'wu',
     rarity: 'rare',
     archetype: 'strategist',
-    cost: 2,
+    cost: 3,
     keywords: [],
     spell: { ops: [{ op: 'damage', amount: 3, target: 'friendlyHero' }, { op: 'draw', count: 2 }] },
     text: { zh: '對我方主公造成3點傷害,抽兩張牌。周瑜打黃蓋,一個願打一個願挨。', en: 'Deal 3 damage to your hero, then draw 2 cards.' },
