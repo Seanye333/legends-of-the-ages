@@ -327,3 +327,125 @@
   gap: 12px;
   color: var(--parchment-dim);
 }
+
+/* —— 战斗动效层 —— */
+
+/* 阵亡残影:原位放大消散 */
+.ghost {
+  position: fixed;
+  z-index: 40;
+  pointer-events: none;
+  border-radius: 50%;
+  overflow: hidden;
+  animation: ghostOut 0.55s ease-out both;
+  filter: grayscale(0.7);
+  box-shadow: 0 0 24px rgba(0, 0, 0, 0.6);
+}
+
+@keyframes ghostOut {
+  0% {
+    opacity: 0.95;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.28) translateY(-8px);
+  }
+}
+
+/* 锦囊施放:卡面聚焦 */
+.castLayer {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 46%, rgba(212, 168, 74, 0.16), transparent 55%);
+  animation: castLayerFade 0.72s ease-out both;
+}
+
+@keyframes castLayerFade {
+  0% {
+    opacity: 0;
+  }
+  18% {
+    opacity: 1;
+  }
+  78% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.castCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  animation: castZoom 0.72s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+
+@keyframes castZoom {
+  0% {
+    transform: scale(0.55) translateY(60px);
+    opacity: 0;
+  }
+  28% {
+    transform: scale(1.08) translateY(0);
+    opacity: 1;
+  }
+  76% {
+    transform: scale(1.02);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.12);
+    opacity: 0;
+  }
+}
+
+.castPortrait {
+  width: clamp(96px, 24vw, 150px);
+  aspect-ratio: 1;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid var(--gold-mid);
+  box-shadow:
+    0 0 0 4px rgba(24, 16, 5, 0.9),
+    0 0 44px rgba(232, 200, 120, 0.55);
+}
+
+.castName {
+  font-family: var(--font-display);
+  font-size: clamp(18px, 4.6vw, 24px);
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: var(--gold-bright);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9);
+}
+
+/* 致命一击白金闪光 */
+.lethalFlash {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(255, 246, 220, 0.96), rgba(247, 225, 168, 0.75) 45%, rgba(212, 168, 74, 0.25));
+  animation: lethalFade 0.42s ease-out both;
+}
+
+@keyframes lethalFade {
+  0% {
+    opacity: 0;
+  }
+  22% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}

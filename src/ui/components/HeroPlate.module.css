@@ -229,3 +229,20 @@
     transform: translate(-50%, -30px) scale(0.95);
   }
 }
+
+/* 我方回合开始:金光脉动 */
+.pulse {
+  animation: platePulse 1.1s ease-out both;
+}
+
+@keyframes platePulse {
+  0% {
+    filter: brightness(1);
+  }
+  25% {
+    filter: brightness(1.35) drop-shadow(0 0 18px rgba(232, 200, 120, 0.9));
+  }
+  100% {
+    filter: brightness(1);
+  }
+}

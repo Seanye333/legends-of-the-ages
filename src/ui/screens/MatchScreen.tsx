@@ -13,7 +13,11 @@ import { MulliganOverlay } from '../components/MulliganOverlay'
 import { ResultOverlay } from '../components/ResultOverlay'
 import { BattleLog } from '../components/BattleLog'
 import { formatEvent } from '../components/eventText'
-import { extractFloats, targetFloatKey, type FloatItem } from '../components/floats'
+import { targetFloatKey } from '../components/floats'
+import { Portrait } from '../components/Portrait'
+import { useEventAnimations } from '../useEventAnimations'
+import { initSound, playSfx } from '../sound'
+import { useSettings } from '../../app/settingsStore'
 import styles from './MatchScreen.module.css'
 
 type PlayCmd = Extract<Command, { type: 'PlayCard' }>
@@ -29,14 +33,18 @@ interface MatchScreenProps {
 export function MatchScreen({ onExit }: MatchScreenProps) {
   const t = useT()
   const { state, lastEvents, error, send, reset } = useMatch()
+  const { soundEnabled, setSoundEnabled } = useSettings()
   const [selection, setSelection] = useState<Selection>(null)
   const [log, setLog] = useState<string[]>([])
-  const [floats, setFloats] = useState<FloatItem[]>([])
   const [toast, setToast] = useState<string | null>(null)
+
+  // 事件时间轴:动效 + 音效 + 飘字都由它按节拍产出
+  const anim = useEventAnimations(state, lastEvents)
 
   const namesRef = useRef(new Map<number, string>())
   const processedRef = useRef<GameEvent[] | null>(null)
-  const batchRef = useRef(0)
+
+  useEffect(() => initSound(), [])
 
   // 唯一规则来源:legalCommands。UI 只做筛选,不重演规则。
   const legal = useMemo(
@@ -111,12 +119,6 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
     }
     const entries = lastEvents.map((ev) => formatEvent(ev, ctx))
     if (entries.length > 0) setLog((prev) => [...prev, ...entries].slice(-300))
-    const fl = extractFloats(lastEvents, ++batchRef.current)
-    setFloats(fl)
-    if (fl.length > 0) {
-      const timer = window.setTimeout(() => setFloats([]), 1600)
-      return () => window.clearTimeout(timer)
-    }
   }, [state, lastEvents])
 
   // 状态一变,清空选择(出牌/攻击/对手行动后都不残留)
@@ -200,8 +202,8 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
   }
 
   const handleRematch = () => {
+    playSfx('buttonTap')
     setLog([])
-    setFloats([])
     namesRef.current.clear()
     rematch()
   }
@@ -211,8 +213,10 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
     onExit()
   }
 
-  const floatsFor = (key: string) => floats.filter((f) => f.targetKey === key)
+  const floatsFor = (key: string) => anim.floats.filter((f) => f.targetKey === key)
+  const fxFor = (key: string) => anim.fx.get(key)
   const targeting = activeTargets.size > 0 || directPlay !== undefined
+  const castDef = anim.cast ? CARDS_BY_ID[anim.cast.defId] : null
 
   return (
     <div className={styles.screen} onClick={() => setSelection(null)}>
@@ -223,12 +227,24 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
           enemy
           targetable={activeTargets.has('hero-1')}
           floats={floatsFor('hero-1')}
+          fx={fxFor('hero-1')}
           onClick={(e) => {
             e.stopPropagation()
             onEntityClick({ kind: 'hero', player: 1 })
           }}
         />
         <div className={styles.topRight}>
+          <button
+            className={styles.plainBtn}
+            onClick={(e) => {
+              e.stopPropagation()
+              playSfx('buttonTap')
+              setSoundEnabled(!soundEnabled)
+            }}
+            title={t('音效开关', 'Sound on/off')}
+          >
+            {soundEnabled ? t('音', 'SFX') : t('静', 'Mute')}
+          </button>
           <button
             className={styles.plainBtn}
             onClick={(e) => {
@@ -250,6 +266,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
               inst={c}
               targetable={activeTargets.has(`gen-${c.iid}`)}
               floats={floatsFor(`gen-${c.iid}`)}
+              fx={fxFor(`gen-${c.iid}`)}
               onClick={(e) => {
                 e.stopPropagation()
                 onEntityClick({ kind: 'general', iid: c.iid })
@@ -267,6 +284,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
               selected={selection?.kind === 'attacker' && selection.iid === c.iid}
               targetable={activeTargets.has(`gen-${c.iid}`)}
               floats={floatsFor(`gen-${c.iid}`)}
+              fx={fxFor(`gen-${c.iid}`)}
               onClick={(e) => {
                 e.stopPropagation()
                 onEntityClick({ kind: 'general', iid: c.iid })
@@ -282,6 +300,8 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
           ps={me}
           targetable={activeTargets.has('hero-0')}
           floats={floatsFor('hero-0')}
+          fx={fxFor('hero-0')}
+          pulse={anim.myTurnPulse}
           onClick={(e) => {
             e.stopPropagation()
             onEntityClick({ kind: 'hero', player: 0 })
@@ -303,7 +323,10 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
         <button
           className={styles.endTurn}
           disabled={!canEndTurn}
-          onClick={() => sendAndClear({ type: 'EndTurn' })}
+          onClick={() => {
+            playSfx('buttonTap')
+            sendAndClear({ type: 'EndTurn' })
+          }}
         >
           {t('结束回合', 'End Turn')}
         </button>
@@ -337,15 +360,51 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
 
       {toast && <div className={styles.toast}>{toast}</div>}
 
+      {/* 阵亡残影:从原位放大消散 */}
+      {anim.ghosts.map((g) => {
+        const def = CARDS_BY_ID[g.defId]
+        return (
+          <div
+            key={g.id}
+            className={styles.ghost}
+            style={{ left: g.left, top: g.top, width: g.width, height: g.height }}
+          >
+            <Portrait
+              id={g.defId}
+              nameZh={def?.name.zh ?? g.defId}
+              doctrine={def?.doctrine ?? 'neutral'}
+            />
+          </div>
+        )
+      })}
+
+      {/* 锦囊施放:卡面聚焦闪现 */}
+      {anim.cast && castDef && (
+        <div key={anim.cast.id} className={styles.castLayer}>
+          <div className={styles.castCard}>
+            <div className={styles.castPortrait}>
+              <Portrait id={castDef.id} nameZh={castDef.name.zh} doctrine={castDef.doctrine} />
+            </div>
+            <div className={styles.castName}>{castDef.name.zh}</div>
+          </div>
+        </div>
+      )}
+
+      {/* 致命一击:全屏白金闪光 */}
+      {anim.lethalFlash && <div className={styles.lethalFlash} />}
+
       {state.phase === 'mulligan' && (
         <MulliganOverlay
           hand={me.hand}
           waiting={me.mulliganDone}
-          onConfirm={(keepIids) => send({ type: 'Mulligan', keepIids })}
+          onConfirm={(keepIids) => {
+            playSfx('buttonTap')
+            send({ type: 'Mulligan', keepIids })
+          }}
         />
       )}
 
-      {state.phase === 'ended' && (
+      {state.phase === 'ended' && !anim.holdResult && (
         <ResultOverlay winner={state.winner} onRematch={handleRematch} onExit={handleExit} />
       )}
     </div>

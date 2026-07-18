@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { CARDS, CARDS_BY_ID, SIGNATURE_IDS } from '../../content/cards'
 import { PRECON_DECKS } from '../../content/decks'
 import { HEROES } from '../../content/overrides/heroes'
@@ -8,6 +8,7 @@ import { usePickText, useT } from '../i18n'
 import { useSettings } from '../../app/settingsStore'
 import { DOCTRINE_COLORS } from '../doctrineColors'
 import { launchMatch } from '../matchSetup'
+import { initSound, playSfx } from '../sound'
 import styles from './TitleScreen.module.css'
 
 function MiniCard({ card }: { card: CardDef }) {
@@ -65,14 +66,17 @@ interface TitleScreenProps {
 export function TitleScreen({ onStart }: TitleScreenProps) {
   const t = useT()
   const pick = usePickText()
-  const { language, setLanguage } = useSettings()
+  const { language, setLanguage, soundEnabled, setSoundEnabled } = useSettings()
   const [deckIndex, setDeckIndex] = useState(0)
   const [startError, setStartError] = useState<string | null>(null)
   const dynastyCount = new Set(CARDS.map((c) => c.dynasty)).size
   const gallery = SIGNATURE_IDS.map((id) => CARDS_BY_ID[id]).filter(Boolean)
   const hasPrecons = PRECON_DECKS.length >= 2
 
+  useEffect(() => initSound(), [])
+
   const onPlay = () => {
+    playSfx('buttonTap')
     try {
       launchMatch(buildMatchArgs(deckIndex))
       setStartError(null)
@@ -113,7 +117,10 @@ export function TitleScreen({ onStart }: TitleScreenProps) {
             <button
               key={`${deck.heroId}-${i}`}
               className={i === deckIndex ? styles.deckActive : styles.deckBtn}
-              onClick={() => setDeckIndex(i)}
+              onClick={() => {
+                playSfx('buttonTap')
+                setDeckIndex(i)
+              }}
             >
               {pick(deck.name)}
             </button>
@@ -141,6 +148,16 @@ export function TitleScreen({ onStart }: TitleScreenProps) {
             {lang === 'zh' ? '中' : lang === 'en' ? 'EN' : '双'}
           </button>
         ))}
+        <button
+          className={soundEnabled ? styles.langActive : styles.lang}
+          onClick={() => {
+            setSoundEnabled(!soundEnabled)
+            playSfx('buttonTap')
+          }}
+          title={t('音效开关', 'Sound on/off')}
+        >
+          {soundEnabled ? '音' : '静'}
+        </button>
       </div>
 
       <div className={styles.galleryHead} aria-hidden="true">

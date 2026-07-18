@@ -3,30 +3,46 @@ import type { PlayerState } from '../../engine/types'
 import { HEROES_BY_ID } from '../../content/overrides/heroes'
 import { useSettings } from '../../app/settingsStore'
 import type { FloatItem } from './floats'
+import type { TokenFx } from '../useEventAnimations'
 import { Portrait } from './Portrait'
 import styles from './HeroPlate.module.css'
+
+const MOTION_CLASS = { lunge: 'fx-lunge', shake: 'fx-shake', shakeHard: 'fx-shake-hard' } as const
 
 interface HeroPlateProps {
   ps: PlayerState
   enemy?: boolean
   targetable?: boolean
   floats?: FloatItem[]
+  fx?: TokenFx // 受击震颤/闪光
+  pulse?: boolean // 我方回合开始的金光脉动
   onClick?: (e: MouseEvent) => void
 }
 
 // 主帅面板:头像 + 血量 + 法力水晶;敌方另显示手牌数(牌背)。
-export function HeroPlate({ ps, enemy, targetable, floats, onClick }: HeroPlateProps) {
+export function HeroPlate({ ps, enemy, targetable, floats, fx, pulse, onClick }: HeroPlateProps) {
   const lang = useSettings((s) => s.language)
   const hero = HEROES_BY_ID[ps.heroId]
   const nameZh = hero?.name.zh ?? ps.heroId
   const name = hero ? (lang === 'en' ? hero.name.en : hero.name.zh) : ps.heroId
 
   return (
-    <div className={`${styles.plate} ${enemy ? styles.enemy : ''}`}>
+    <div
+      className={`${styles.plate} ${enemy ? styles.enemy : ''} ${pulse ? styles.pulse : ''} ${
+        fx?.motion ? MOTION_CLASS[fx.motion.kind] : ''
+      }`}
+      data-fxkey={`hero-${enemy ? 1 : 0}`}
+    >
       <div
         className={`${styles.portraitWrap} ${targetable ? styles.targetable : ''}`}
         onClick={onClick}
       >
+        {fx?.flash && (
+          <span
+            key={fx.flash.id}
+            className={`fx-flash ${fx.flash.kind === 'clash' ? 'fx-flash-clash' : 'fx-flash-hit'}`}
+          />
+        )}
         <Portrait id={ps.heroId} nameZh={nameZh} doctrine={hero?.doctrine ?? 'neutral'} />
         <span className={styles.hp}>{ps.heroHp}</span>
         {ps.armor > 0 && <span className={styles.armor}>{ps.armor}</span>}
