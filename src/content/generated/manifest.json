@@ -1,0 +1,103 @@
+{
+  "signatureIds": [
+    "liu-bei",
+    "cao-cao",
+    "sun-quan",
+    "guan-yu",
+    "zhang-fei",
+    "zhao-yun",
+    "zhuge-liang",
+    "lu-bu",
+    "diaochan",
+    "zhou-yu",
+    "hist-sun-wu",
+    "hist-yue-fei"
+  ],
+  "portraits": {
+    "liu-bei": {
+      "files": [
+        "liu-bei.webp",
+        "liu-bei-full.webp"
+      ],
+      "bytes": 242062
+    },
+    "cao-cao": {
+      "files": [
+        "cao-cao.webp",
+        "cao-cao-full.webp"
+      ],
+      "bytes": 218536
+    },
+    "sun-quan": {
+      "files": [
+        "sun-quan.webp",
+        "sun-quan-full.webp"
+      ],
+      "bytes": 232966
+    },
+    "guan-yu": {
+      "files": [
+        "guan-yu.webp",
+        "guan-yu-full.webp"
+      ],
+      "bytes": 270628
+    },
+    "zhang-fei": {
+      "files": [
+        "zhang-fei.webp",
+        "zhang-fei-full.webp"
+      ],
+      "bytes": 304404
+    },
+    "zhao-yun": {
+      "files": [
+        "zhao-yun.webp",
+        "zhao-yun-full.webp"
+      ],
+      "bytes": 283266
+    },
+    "zhuge-liang": {
+      "files": [
+        "zhuge-liang.webp",
+        "zhuge-liang-full.webp"
+      ],
+      "bytes": 267844
+    },
+    "lu-bu": {
+      "files": [
+        "lu-bu.webp",
+        "lu-bu-full.webp"
+      ],
+      "bytes": 223274
+    },
+    "diaochan": {
+      "files": [
+        "diaochan.webp",
+        "diaochan-full.webp"
+      ],
+      "bytes": 195488
+    },
+    "zhou-yu": {
+      "files": [
+        "zhou-yu.webp",
+        "zhou-yu-full.webp"
+      ],
+      "bytes": 208272
+    },
+    "hist-sun-wu": {
+      "files": [
+        "hist-sun-wu.webp",
+        "hist-sun-wu-full.webp"
+      ],
+      "bytes": 168030
+    },
+    "hist-yue-fei": {
+      "files": [
+        "hist-yue-fei.webp",
+        "hist-yue-fei-full.webp"
+      ],
+      "bytes": 253952
+    }
+  },
+  "totalBytes": 2868722
+}

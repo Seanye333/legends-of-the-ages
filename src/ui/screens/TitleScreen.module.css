@@ -1,0 +1,151 @@
+.screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+}
+
+.title {
+  font-size: 64px;
+  margin: 0;
+  letter-spacing: 0.18em;
+  background: linear-gradient(180deg, #f5d78a, #b8863b);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 2px 24px rgba(212, 168, 74, 0.25);
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 16px;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: #9a8a6a;
+}
+
+.tagline {
+  margin: 8px 0 16px;
+  color: #c9bfa8;
+}
+
+.gallery {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  max-width: 720px;
+}
+
+.card {
+  position: relative;
+  width: 96px;
+  border: 2px solid #8a8a8a;
+  border-radius: 10px;
+  background: #1c1a17;
+  overflow: hidden;
+  padding-bottom: 4px;
+}
+
+.cost {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #2359a8;
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.portrait {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  display: block;
+}
+
+.cardName {
+  font-size: 12px;
+  text-align: center;
+  padding: 3px 2px 1px;
+  color: #e8dfc8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.statsRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 8px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.attack {
+  color: #e8b23a;
+}
+
+.health {
+  color: #d0453a;
+}
+
+.rarity {
+  font-size: 9px;
+}
+
+.common { color: #9a9a9a; }
+.rare { color: #4a90d9; }
+.epic { color: #a45ad0; }
+.legendary { color: #e8933a; }
+
+.playButton {
+  margin-top: 20px;
+  font-size: 18px;
+  padding: 12px 48px;
+  border-radius: 8px;
+  border: 1px solid #b8863b;
+  background: linear-gradient(180deg, #3a2f1d, #241d12);
+  color: #e8cf9a;
+  letter-spacing: 0.2em;
+  cursor: pointer;
+}
+
+.playButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.langSwitch {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.lang,
+.langActive {
+  border: 1px solid #5a4f3a;
+  background: transparent;
+  color: #9a8a6a;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.langActive {
+  background: #3a2f1d;
+  color: #e8cf9a;
+  border-color: #b8863b;
+}
