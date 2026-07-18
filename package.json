@@ -10,7 +10,8 @@
     "test": "vitest run",
     "lint": "eslint .",
     "import-content": "node --import tsx scripts/import-content.ts",
-    "sim-balance": "node --import tsx scripts/sim-balance.ts"
+    "sim-balance": "node --import tsx scripts/sim-balance.ts",
+    "tauri": "tauri"
   },
   "dependencies": {
     "react": "^19.0.0",
@@ -19,6 +20,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
+    "@tauri-apps/cli": "^2.11.4",
     "@types/node": "^26.1.1",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

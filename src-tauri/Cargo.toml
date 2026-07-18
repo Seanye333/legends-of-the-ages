@@ -1,0 +1,30 @@
+[package]
+name = "app"
+version = "0.1.0"
+description = "千古名将 Legends of the Ages — 全朝代名将卡牌对战"
+authors = ["Seanye333"]
+license = ""
+repository = ""
+edition = "2021"
+rust-version = "1.77.2"
+
+[lib]
+name = "app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.6.2", features = [] }
+
+[dependencies]
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+log = "0.4"
+tauri = { version = "2.11.2", features = [] }
+tauri-plugin-log = "2"
+
+# wry 0.55.1 本地补丁(自姊妹项目 ThreeKingdomMastersIOS 复制):
+# 屏蔽 platform_webview_version(),该调用在 iOS/macOS 26 上因
+# NSBundle::bundleWithIdentifier 过度释放导致启动崩溃。
+# tauri 升级想要新版 wry 时,先确认上游已修复再动。
+[patch.crates-io]
+wry = { path = "vendor/wry" }
