@@ -12,19 +12,14 @@ import { DYNASTY_DEFS } from '../../ThreeKingdomMastersIOS/src/game/data/dynasti
 import { CARD_INDEX } from '../../ThreeKingdomMastersIOS/src/game/data/cardIndex'
 import { deriveDoctrine } from '../../ThreeKingdomMastersIOS/src/game/data/officerAttributes'
 import type { CardDef, DynastyTag, Rarity } from '../src/engine/types'
+import { SIGNATURE_OVERRIDES } from '../src/content/overrides/signature'
+import { HEROES } from '../src/content/overrides/heroes'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(HERE, '..')
 const SIBLING = join(ROOT, '..', 'ThreeKingdomMastersIOS')
 const OUT_GEN = join(ROOT, 'src', 'content', 'generated')
 const OUT_PORTRAITS = join(ROOT, 'public', 'portraits')
-
-// 首发签名卡:这些武将的立绘随包,数值/阵营在 overrides/signature.ts 手工调校。
-// Phase 1 扩到 ~100 张。
-const SIGNATURE_ZH_NAMES = [
-  '劉備', '曹操', '孫權', '關羽', '張飛', '趙雲', '諸葛亮', '呂布', '貂蟬',
-  '周瑜', '孫武', '岳飛',
-]
 
 // ---------- 生成公式(默认值;signature.ts 的手工覆盖优先) ----------
 
@@ -45,19 +40,38 @@ function fame(s: Stats): number {
   return 0.6 * max + 0.4 * avg
 }
 
-function rarityOf(f: number): Rarity {
-  if (f >= 90) return 'legendary'
-  if (f >= 82) return 'epic'
-  if (f >= 74) return 'rare'
-  return 'common'
+// 稀有度按全池名望百分位切分,保证正金字塔:
+// 传奇 ~5%、史诗 ~10%、稀有 ~25%、普通 ~60%(固定阈值会因光荣数值整体偏高而倒挂)
+function makeRarityOf(allFames: number[]): (f: number) => Rarity {
+  const sorted = [...allFames].sort((a, b) => b - a)
+  const at = (pct: number) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * pct))]
+  const legendaryMin = at(0.05)
+  const epicMin = at(0.15)
+  const rareMin = at(0.4)
+  return (f) => {
+    if (f >= legendaryMin) return 'legendary'
+    if (f >= epicMin) return 'epic'
+    if (f >= rareMin) return 'rare'
+    return 'common'
+  }
 }
 
-function generateCard(officer: {
-  id: string
-  name: { zh: string; en: string }
-  stats: Stats
-  dynasty?: string
-}): CardDef {
+// 引擎 DynastyTag 的运行时校验集(跨仓库边界不做裸 cast)
+const VALID_DYNASTIES: ReadonlySet<string> = new Set([
+  'wei', 'shu', 'wu', 'qun', 'spring-autumn', 'warring-states', 'qin', 'chu-han',
+  'western-han', 'jin', 'southern-northern', 'sui', 'tang', 'five-dynasties',
+  'song', 'yuan', 'ming', 'qing',
+] satisfies DynastyTag[])
+
+function generateCard(
+  officer: {
+    id: string
+    name: { zh: string; en: string }
+    stats: Stats
+    dynasty?: string
+  },
+  rarityOf: (f: number) => Rarity,
+): CardDef {
   const s = officer.stats
   const archetype = s.intelligence > s.war + 10 ? 'strategist' : 'warrior'
   const attack =
@@ -70,6 +84,9 @@ function generateCard(officer: {
   const rarity = rarityOf(f)
   const doctrine = rarity === 'common' ? 'neutral' : deriveDoctrine(s, officer.id)
   // 三国武将默认「群」,魏/蜀/吴归属在 signature.ts 手工覆盖(Phase 1 从剧本势力预填)
+  if (officer.dynasty !== undefined && !VALID_DYNASTIES.has(officer.dynasty)) {
+    throw new Error(`unknown dynasty "${officer.dynasty}" on officer ${officer.id} — 引擎 DynastyTag 需要同步`)
+  }
   const dynasty = (officer.dynasty ?? 'qun') as DynastyTag
   return {
     id: officer.id,
@@ -107,9 +124,19 @@ const unique = all.filter((o) => {
   return true
 })
 
+const rarityOf = makeRarityOf(unique.map((o) => fame(o.stats)))
 const cards = unique
-  .map((o) => generateCard(o))
+  .map((o) => generateCard(o, rarityOf))
   .sort((a, b) => a.collectorNo - b.collectorNo || a.id.localeCompare(b.id))
+
+const rarityCount: Record<string, number> = {}
+const doctrineCount: Record<string, number> = {}
+for (const c of cards) {
+  rarityCount[c.rarity] = (rarityCount[c.rarity] ?? 0) + 1
+  doctrineCount[c.doctrine] = (doctrineCount[c.doctrine] ?? 0) + 1
+}
+console.log('rarity:', JSON.stringify(rarityCount))
+console.log('doctrine:', JSON.stringify(doctrineCount))
 
 mkdirSync(OUT_GEN, { recursive: true })
 // 以 JSON 字符串形式内嵌:2,211 个对象字面量会让 tsc 类型推导爆炸 (TS2590),
@@ -129,19 +156,19 @@ writeFileSync(
 )
 console.log(`cards.gen.ts: ${cards.length} cards`)
 
-// ---------- 签名卡立绘复制 ----------
+// ---------- 签名卡立绘复制(签名集 = overrides + 主公,立绘自动跟随) ----------
 
-const byZhName = new Map(all.map((o) => [o.name.zh, o]))
-const signatureIds: string[] = []
-for (const zh of SIGNATURE_ZH_NAMES) {
-  const officer = byZhName.get(zh)
-  if (!officer) {
-    console.warn(`⚠ signature name not found in roster: ${zh}`)
-    continue
+const allIds = new Set(unique.map((o) => o.id))
+const signatureIds = [
+  ...new Set([...Object.keys(SIGNATURE_OVERRIDES), ...HEROES.map((h) => h.id)]),
+].filter((id) => {
+  if (!allIds.has(id)) {
+    console.warn(`⚠ signature override id not in roster (stratagem or typo?): ${id}`)
+    return false
   }
-  signatureIds.push(officer.id)
-}
-console.log(`signature ids: ${signatureIds.join(', ')}`)
+  return true
+})
+console.log(`signature ids: ${signatureIds.length}`)
 
 mkdirSync(OUT_PORTRAITS, { recursive: true })
 let totalBytes = 0

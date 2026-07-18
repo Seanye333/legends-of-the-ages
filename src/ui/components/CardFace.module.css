@@ -1,0 +1,154 @@
+.face {
+  --card-w: clamp(58px, 13vh, 100px);
+  position: relative;
+  width: var(--card-w);
+  aspect-ratio: 5 / 7;
+  container-type: inline-size;
+  border: 2px solid #8a8a8a;
+  border-radius: 9px;
+  background: #1c1a17;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition:
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.large {
+  --card-w: clamp(84px, 22vh, 132px);
+}
+
+.playable {
+  box-shadow:
+    0 0 0 1px rgba(232, 207, 154, 0.55),
+    0 0 12px 3px rgba(212, 168, 74, 0.55);
+}
+
+.selected {
+  box-shadow:
+    0 0 0 2px #f5d78a,
+    0 0 18px 5px rgba(245, 215, 138, 0.75);
+}
+
+.cost {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: clamp(17px, 24%, 24px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #4a7fd0, #1c407e);
+  border: 1px solid #7aa6e8;
+  color: #fff;
+  font-weight: 700;
+  font-size: clamp(10px, 13cqw, 14px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.art {
+  width: 100%;
+  height: 56%;
+  flex: none;
+  background: #14110c;
+}
+
+.nameBox {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 3px;
+  overflow: hidden;
+}
+
+.name {
+  font-size: clamp(9px, 12cqw, 13px);
+  font-weight: 600;
+  color: #e8dfc8;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.sub {
+  font-size: clamp(7px, 9cqw, 10px);
+  color: #9a8a6a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.atk,
+.hp {
+  position: absolute;
+  bottom: 2px;
+  width: clamp(16px, 22%, 22px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: clamp(9px, 12cqw, 13px);
+  color: #fff;
+  z-index: 2;
+}
+
+.atk {
+  left: 2px;
+  background: radial-gradient(circle at 35% 30%, #e8b23a, #8a5f14);
+  border: 1px solid #f5d78a;
+}
+
+.hp {
+  right: 2px;
+  background: radial-gradient(circle at 35% 30%, #d0453a, #6e1c14);
+  border: 1px solid #e88a7a;
+}
+
+.spellMark {
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: clamp(8px, 10cqw, 11px);
+  color: #c8a85a;
+  letter-spacing: 0.2em;
+  z-index: 2;
+}
+
+.rarity {
+  position: absolute;
+  bottom: clamp(20px, 28%, 28px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 8px;
+  z-index: 2;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.9);
+}
+
+.common {
+  color: #9a9a9a;
+}
+.rare {
+  color: #4a90d9;
+}
+.epic {
+  color: #a45ad0;
+}
+.legendary {
+  color: #e8933a;
+}

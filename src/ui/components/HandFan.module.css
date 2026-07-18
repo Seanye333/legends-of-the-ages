@@ -1,0 +1,25 @@
+.fan {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  padding: 0 8px;
+  min-height: clamp(84px, 19vh, 150px);
+}
+
+.slot {
+  transform: rotate(var(--rot)) translateY(var(--sink));
+  transform-origin: 50% 120%;
+  transition:
+    transform 0.15s ease,
+    z-index 0s;
+  margin: 0 clamp(-14px, -1.2vw, -6px);
+}
+
+.slot:hover {
+  transform: rotate(0deg) translateY(-14px) scale(1.05);
+  z-index: 60 !important;
+}
+
+.slotSelected {
+  transform: rotate(0deg) translateY(-18px) scale(1.07);
+}

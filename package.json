@@ -5,11 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port 5174",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && tsc -p tsconfig.test.json && vite build",
     "preview": "vite preview",
     "test": "vitest run",
     "lint": "eslint .",
-    "import-content": "node --import tsx scripts/import-content.ts"
+    "import-content": "node --import tsx scripts/import-content.ts",
+    "sim-balance": "node --import tsx scripts/sim-balance.ts"
   },
   "dependencies": {
     "react": "^19.0.0",
@@ -18,6 +19,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
+    "@types/node": "^26.1.1",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^5.0.0",

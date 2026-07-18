@@ -1,0 +1,185 @@
+.token {
+  --tok: clamp(50px, 11.5vh, 88px);
+  position: relative;
+  width: var(--tok);
+  height: var(--tok);
+  flex: none;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s ease;
+}
+
+.circle {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid rgba(138, 138, 138, 0.65);
+  background: #14110c;
+  transition: box-shadow 0.15s ease;
+}
+
+/* 守护:厚重的盾环 */
+.guardRing {
+  border: 3px solid #b8b8c8;
+  box-shadow:
+    0 0 0 2px rgba(120, 130, 160, 0.55),
+    0 0 10px 2px rgba(150, 160, 190, 0.4);
+}
+
+.guardMark {
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: clamp(8px, 1.6vh, 11px);
+  color: #d8d8e8;
+  background: #3a3f52;
+  border: 1px solid #8a92b0;
+  border-radius: 4px;
+  padding: 0 3px;
+  line-height: 1.3;
+  z-index: 2;
+}
+
+.exhausted .circle {
+  filter: saturate(0.45) brightness(0.75);
+}
+
+.ready .circle {
+  box-shadow:
+    0 0 0 2px rgba(120, 220, 120, 0.8),
+    0 0 14px 4px rgba(90, 210, 90, 0.55);
+}
+
+.selected {
+  transform: translateY(-4px) scale(1.06);
+}
+
+.selected .circle {
+  box-shadow:
+    0 0 0 3px #a8f0a8,
+    0 0 18px 6px rgba(140, 240, 140, 0.75);
+}
+
+.targetable .circle {
+  box-shadow:
+    0 0 0 3px rgba(230, 70, 50, 0.9),
+    0 0 16px 5px rgba(230, 70, 50, 0.6);
+  animation: pulseTarget 0.9s ease-in-out infinite;
+}
+
+@keyframes pulseTarget {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 3px rgba(230, 70, 50, 0.9),
+      0 0 14px 4px rgba(230, 70, 50, 0.55);
+  }
+  50% {
+    box-shadow:
+      0 0 0 4px rgba(255, 100, 70, 1),
+      0 0 22px 8px rgba(230, 70, 50, 0.75);
+  }
+}
+
+.atk,
+.hp {
+  position: absolute;
+  bottom: -3px;
+  width: clamp(18px, 3.6vh, 26px);
+  height: clamp(18px, 3.6vh, 26px);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: clamp(10px, 2vh, 14px);
+  color: #fff;
+  z-index: 2;
+}
+
+.atk {
+  left: -3px;
+  background: radial-gradient(circle at 35% 30%, #e8b23a, #8a5f14);
+  border: 1px solid #f5d78a;
+}
+
+.hp {
+  right: -3px;
+  background: radial-gradient(circle at 35% 30%, #d0453a, #6e1c14);
+  border: 1px solid #e88a7a;
+}
+
+.hurt {
+  color: #ffd0c8;
+  background: radial-gradient(circle at 35% 30%, #e83a2a, #5a0e08);
+}
+
+.badges {
+  position: absolute;
+  top: 50%;
+  right: -6px;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 2;
+}
+
+.badge {
+  font-size: clamp(8px, 1.6vh, 11px);
+  line-height: 1.3;
+  padding: 0 2px;
+  border-radius: 4px;
+  background: rgba(30, 26, 18, 0.92);
+  border: 1px solid #b8863b;
+  color: #e8cf9a;
+}
+
+.float {
+  position: absolute;
+  left: 50%;
+  top: 8%;
+  transform: translateX(-50%);
+  font-size: clamp(14px, 3vh, 22px);
+  font-weight: 800;
+  pointer-events: none;
+  z-index: 5;
+  text-shadow:
+    0 1px 2px #000,
+    0 0 6px rgba(0, 0, 0, 0.8);
+  animation: floatUp 1.4s ease-out forwards;
+}
+
+.damage {
+  color: #ff6a55;
+}
+
+.heal {
+  color: #7ae87a;
+}
+
+.buff {
+  color: #f5d78a;
+  font-size: clamp(11px, 2.2vh, 16px);
+}
+
+@keyframes floatUp {
+  0% {
+    opacity: 0;
+    translate: 0 6px;
+  }
+  15% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    translate: 0 -26px;
+  }
+}

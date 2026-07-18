@@ -174,6 +174,52 @@ export type GameEvent =
   | { type: 'CardBurned'; player: PlayerIdx; defId: string }
   | { type: 'FatigueDamage'; player: PlayerIdx; amount: number }
   | { type: 'HeroDamaged'; player: PlayerIdx; amount: number; hpAfter: number }
+  | { type: 'HeroHealed'; player: PlayerIdx; amount: number; hpAfter: number }
+  | { type: 'CardPlayed'; player: PlayerIdx; iid: number; defId: string; cost: number }
+  | {
+      type: 'GeneralSummoned'
+      player: PlayerIdx
+      iid: number
+      defId: string
+      position: number
+      attack: number
+      health: number
+    }
+  | {
+      type: 'EffectTriggered'
+      player: PlayerIdx
+      sourceIid?: number
+      sourceDefId: string
+      kind: 'battlecry' | 'deathrattle' | 'spell'
+    }
+  | { type: 'GeneralDamaged'; player: PlayerIdx; iid: number; amount: number; healthAfter: number }
+  | { type: 'GeneralHealed'; player: PlayerIdx; iid: number; amount: number; healthAfter: number }
+  | {
+      type: 'GeneralBuffed'
+      player: PlayerIdx
+      iid: number
+      attack: number
+      health: number
+    }
+  | { type: 'KeywordGranted'; player: PlayerIdx; iid: number; keyword: Keyword }
+  | { type: 'GeneralDied'; player: PlayerIdx; iid: number; defId: string }
+  | {
+      type: 'AttackResolved'
+      attacker: PlayerIdx
+      attackerIid: number
+      target: TargetRef
+      damageToTarget: number
+      damageToAttacker: number
+    }
+  | {
+      type: 'DuelFought'
+      challenger: PlayerIdx
+      challengerIid: number
+      defenderIid: number
+      firstStrikeIid?: number
+      challengerDied: boolean
+      defenderDied: boolean
+    }
   | { type: 'GameEnded'; winner: Winner }
 
 // ---------- 对局配置与 API 结果 ----------

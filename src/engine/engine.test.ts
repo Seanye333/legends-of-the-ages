@@ -63,6 +63,15 @@ describe('createGame', () => {
     expect(s.players[0].heroHp).toBe(START_HP)
   })
 
+  it('deals opening hands by turn order, not seat (first: 1)', () => {
+    const cfg = makeCfg(42)
+    cfg.first = 1
+    const s = createGame(cfg, LIB)
+    expect(s.players[1].hand).toHaveLength(3) // 先手 3 张
+    expect(s.players[0].hand).toHaveLength(4) // 后手 4 张
+    expect(s.activePlayer).toBe(1)
+  })
+
   it('rejects invalid decks', () => {
     const bad = makeCfg(1)
     bad.deckIds[0] = bad.deckIds[0].slice(0, 10)
@@ -80,7 +89,7 @@ describe('mulligan', () => {
     expect(r.state.players[0].hand).toHaveLength(3)
     expect(r.state.players[0].deck).toHaveLength(DECK_SIZE - 3)
     expect(r.state.players[0].mulliganDone).toBe(true)
-    expect(r.events[0]).toMatchObject({ type: 'MulliganDone', replacedCount: 3 })
+    expect(r.events.at(-1)).toMatchObject({ type: 'MulliganDone', replacedCount: 3 })
   })
 
   it('when both players are done, turn 1 starts with 1 mana and a draw', () => {
@@ -90,6 +99,18 @@ describe('mulligan', () => {
     expect(s.activePlayer).toBe(0)
     expect(s.players[0].mana).toEqual({ current: 1, max: 1 })
     expect(s.players[0].hand).toHaveLength(4) // 3 + 回合开始抽 1
+  })
+
+  it('never deals back the tossed cards and emits CardDrawn for redraws', () => {
+    for (let seed = 1; seed <= 30; seed++) {
+      const s0 = createGame(makeCfg(seed), LIB)
+      const tossed = new Set(s0.players[0].hand.map((c) => c.iid))
+      const r = mustApply(s0, 0, { type: 'Mulligan', keepIids: [] })
+      for (const c of r.state.players[0].hand) {
+        expect(tossed.has(c.iid), `seed ${seed}: drew back tossed iid ${c.iid}`).toBe(false)
+      }
+      expect(r.events.filter((e) => e.type === 'CardDrawn')).toHaveLength(3)
+    }
   })
 
   it('rejects double mulligan and foreign iids', () => {
@@ -133,7 +154,7 @@ describe('turns', () => {
     const r = mustApply(s, 1, { type: 'Concede' })
     expect(r.state.phase).toBe('ended')
     expect(r.state.winner).toBe(0)
-    expect(legalCommands(r.state, 0)).toHaveLength(0)
+    expect(legalCommands(r.state, 0, LIB)).toHaveLength(0)
   })
 })
 

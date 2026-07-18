@@ -43,8 +43,10 @@ export function createGame(cfg: GameConfig, lib: CardLibrary): GameState {
     const shuffledDeck = rngShuffle(rng, instances)
     rng = shuffledDeck.next
     const deck = shuffledDeck.result
+    // 手牌数按先后手定(先手 3 后手 4),不是按座位号
+    const handSize = side === cfg.first ? OPENING_HAND[0] : OPENING_HAND[1]
     // 数组末尾为牌库顶
-    const hand = deck.splice(deck.length - OPENING_HAND[side], OPENING_HAND[side])
+    const hand = deck.splice(deck.length - handSize, handSize)
     return {
       heroId: cfg.heroIds[side],
       heroHp: START_HP,

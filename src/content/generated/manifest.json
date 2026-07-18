@@ -1,17 +1,85 @@
 {
   "signatureIds": [
     "liu-bei",
-    "cao-cao",
-    "sun-quan",
     "guan-yu",
     "zhang-fei",
     "zhao-yun",
     "zhuge-liang",
-    "lu-bu",
-    "diaochan",
-    "zhou-yu",
     "hist-sun-wu",
-    "hist-yue-fei"
+    "hist-wei-qing",
+    "hist-li-jing",
+    "hist-guo-ziyi",
+    "hist-tang-taizong",
+    "hist-zhao-kuangyin",
+    "hist-yue-fei",
+    "hist-han-shizhong",
+    "hist-qi-jiguang",
+    "hist-xu-da",
+    "cao-cao",
+    "xiahou-dun",
+    "zhang-liao",
+    "xu-chu",
+    "pang-de",
+    "gao-shun",
+    "ma-chao",
+    "hist-wu-qi",
+    "hist-bai-qi",
+    "hist-xiang-yu",
+    "hist-han-xin",
+    "hist-huo-qubing",
+    "hist-chang-yuchun",
+    "hist-lian-po",
+    "hist-fan-kuai",
+    "hist-confucius",
+    "xun-yu",
+    "huang-zhong",
+    "hist-fan-zhongyan",
+    "hist-bao-zheng",
+    "hist-yan-zhenqing",
+    "hist-yu-qian",
+    "hist-wang-shouren",
+    "sima-yi",
+    "zhou-yu",
+    "lu-xun",
+    "guo-jia",
+    "jia-xu",
+    "diaochan",
+    "zhang-jiao",
+    "hist-su-qin",
+    "hist-jing-ke",
+    "sun-quan",
+    "sun-ce",
+    "taishi-ci",
+    "lu-meng",
+    "gan-ning",
+    "dong-zhuo",
+    "yuan-shao",
+    "meng-huo",
+    "hist-li-cunxiao",
+    "hist-an-lushan",
+    "hist-laozi",
+    "hist-zhuangzi",
+    "zuo-ci",
+    "yu-ji",
+    "hua-tuo",
+    "sima-hui",
+    "hist-tao-yuanming",
+    "ji-kang",
+    "xu-shu",
+    "hist-li-bai",
+    "hist-guiguzi",
+    "lu-bu",
+    "dian-wei",
+    "hua-xiong",
+    "yan-liang",
+    "wen-chou",
+    "zhou-tai",
+    "huang-gai",
+    "ding-feng",
+    "wei-yan",
+    "liao-hua",
+    "chen-dao",
+    "ma-dai"
   ],
   "portraits": {
     "liu-bei": {
@@ -20,20 +88,6 @@
         "liu-bei-full.webp"
       ],
       "bytes": 242062
-    },
-    "cao-cao": {
-      "files": [
-        "cao-cao.webp",
-        "cao-cao-full.webp"
-      ],
-      "bytes": 218536
-    },
-    "sun-quan": {
-      "files": [
-        "sun-quan.webp",
-        "sun-quan-full.webp"
-      ],
-      "bytes": 232966
     },
     "guan-yu": {
       "files": [
@@ -63,19 +117,243 @@
       ],
       "bytes": 267844
     },
-    "lu-bu": {
+    "hist-sun-wu": {
       "files": [
-        "lu-bu.webp",
-        "lu-bu-full.webp"
+        "hist-sun-wu.webp",
+        "hist-sun-wu-full.webp"
       ],
-      "bytes": 223274
+      "bytes": 168030
     },
-    "diaochan": {
+    "hist-wei-qing": {
       "files": [
-        "diaochan.webp",
-        "diaochan-full.webp"
+        "hist-wei-qing.webp",
+        "hist-wei-qing-full.webp"
       ],
-      "bytes": 195488
+      "bytes": 188834
+    },
+    "hist-li-jing": {
+      "files": [
+        "hist-li-jing.webp",
+        "hist-li-jing-full.webp"
+      ],
+      "bytes": 245288
+    },
+    "hist-guo-ziyi": {
+      "files": [
+        "hist-guo-ziyi.webp",
+        "hist-guo-ziyi-full.webp"
+      ],
+      "bytes": 264774
+    },
+    "hist-tang-taizong": {
+      "files": [
+        "hist-tang-taizong.webp",
+        "hist-tang-taizong-full.webp"
+      ],
+      "bytes": 223516
+    },
+    "hist-zhao-kuangyin": {
+      "files": [
+        "hist-zhao-kuangyin.webp",
+        "hist-zhao-kuangyin-full.webp"
+      ],
+      "bytes": 209526
+    },
+    "hist-yue-fei": {
+      "files": [
+        "hist-yue-fei.webp",
+        "hist-yue-fei-full.webp"
+      ],
+      "bytes": 253952
+    },
+    "hist-han-shizhong": {
+      "files": [
+        "hist-han-shizhong.webp",
+        "hist-han-shizhong-full.webp"
+      ],
+      "bytes": 239572
+    },
+    "hist-qi-jiguang": {
+      "files": [
+        "hist-qi-jiguang.webp",
+        "hist-qi-jiguang-full.webp"
+      ],
+      "bytes": 225412
+    },
+    "hist-xu-da": {
+      "files": [
+        "hist-xu-da.webp",
+        "hist-xu-da-full.webp"
+      ],
+      "bytes": 181010
+    },
+    "cao-cao": {
+      "files": [
+        "cao-cao.webp",
+        "cao-cao-full.webp"
+      ],
+      "bytes": 218536
+    },
+    "xiahou-dun": {
+      "files": [
+        "xiahou-dun.webp",
+        "xiahou-dun-full.webp"
+      ],
+      "bytes": 257424
+    },
+    "zhang-liao": {
+      "files": [
+        "zhang-liao.webp",
+        "zhang-liao-full.webp"
+      ],
+      "bytes": 281850
+    },
+    "xu-chu": {
+      "files": [
+        "xu-chu.webp",
+        "xu-chu-full.webp"
+      ],
+      "bytes": 220938
+    },
+    "pang-de": {
+      "files": [
+        "pang-de.webp",
+        "pang-de-full.webp"
+      ],
+      "bytes": 233872
+    },
+    "gao-shun": {
+      "files": [
+        "gao-shun.webp",
+        "gao-shun-full.webp"
+      ],
+      "bytes": 218590
+    },
+    "ma-chao": {
+      "files": [
+        "ma-chao.webp",
+        "ma-chao-full.webp"
+      ],
+      "bytes": 282026
+    },
+    "hist-wu-qi": {
+      "files": [
+        "hist-wu-qi.webp",
+        "hist-wu-qi-full.webp"
+      ],
+      "bytes": 180630
+    },
+    "hist-bai-qi": {
+      "files": [
+        "hist-bai-qi.webp",
+        "hist-bai-qi-full.webp"
+      ],
+      "bytes": 180660
+    },
+    "hist-xiang-yu": {
+      "files": [
+        "hist-xiang-yu.webp",
+        "hist-xiang-yu-full.webp"
+      ],
+      "bytes": 213272
+    },
+    "hist-han-xin": {
+      "files": [
+        "hist-han-xin.webp",
+        "hist-han-xin-full.webp"
+      ],
+      "bytes": 207196
+    },
+    "hist-huo-qubing": {
+      "files": [
+        "hist-huo-qubing.webp",
+        "hist-huo-qubing-full.webp"
+      ],
+      "bytes": 192204
+    },
+    "hist-chang-yuchun": {
+      "files": [
+        "hist-chang-yuchun.webp",
+        "hist-chang-yuchun-full.webp"
+      ],
+      "bytes": 252710
+    },
+    "hist-lian-po": {
+      "files": [
+        "hist-lian-po.webp",
+        "hist-lian-po-full.webp"
+      ],
+      "bytes": 242144
+    },
+    "hist-fan-kuai": {
+      "files": [
+        "hist-fan-kuai.webp",
+        "hist-fan-kuai-full.webp"
+      ],
+      "bytes": 207082
+    },
+    "hist-confucius": {
+      "files": [
+        "hist-confucius.webp",
+        "hist-confucius-full.webp"
+      ],
+      "bytes": 233390
+    },
+    "xun-yu": {
+      "files": [
+        "xun-yu.webp",
+        "xun-yu-full.webp"
+      ],
+      "bytes": 220914
+    },
+    "huang-zhong": {
+      "files": [
+        "huang-zhong.webp",
+        "huang-zhong-full.webp"
+      ],
+      "bytes": 245256
+    },
+    "hist-fan-zhongyan": {
+      "files": [
+        "hist-fan-zhongyan.webp",
+        "hist-fan-zhongyan-full.webp"
+      ],
+      "bytes": 134662
+    },
+    "hist-bao-zheng": {
+      "files": [
+        "hist-bao-zheng.webp",
+        "hist-bao-zheng-full.webp"
+      ],
+      "bytes": 117770
+    },
+    "hist-yan-zhenqing": {
+      "files": [
+        "hist-yan-zhenqing.webp",
+        "hist-yan-zhenqing-full.webp"
+      ],
+      "bytes": 126328
+    },
+    "hist-yu-qian": {
+      "files": [
+        "hist-yu-qian.webp",
+        "hist-yu-qian-full.webp"
+      ],
+      "bytes": 242118
+    },
+    "hist-wang-shouren": {
+      "files": [
+        "hist-wang-shouren.webp",
+        "hist-wang-shouren-full.webp"
+      ],
+      "bytes": 209848
+    },
+    "sima-yi": {
+      "files": [
+        "sima-yi.webp",
+        "sima-yi-full.webp"
+      ],
+      "bytes": 126334
     },
     "zhou-yu": {
       "files": [
@@ -84,20 +362,286 @@
       ],
       "bytes": 208272
     },
-    "hist-sun-wu": {
+    "lu-xun": {
       "files": [
-        "hist-sun-wu.webp",
-        "hist-sun-wu-full.webp"
+        "lu-xun.webp",
+        "lu-xun-full.webp"
       ],
-      "bytes": 168030
+      "bytes": 194552
     },
-    "hist-yue-fei": {
+    "guo-jia": {
       "files": [
-        "hist-yue-fei.webp",
-        "hist-yue-fei-full.webp"
+        "guo-jia.webp",
+        "guo-jia-full.webp"
       ],
-      "bytes": 253952
+      "bytes": 205444
+    },
+    "jia-xu": {
+      "files": [
+        "jia-xu.webp",
+        "jia-xu-full.webp"
+      ],
+      "bytes": 188184
+    },
+    "diaochan": {
+      "files": [
+        "diaochan.webp",
+        "diaochan-full.webp"
+      ],
+      "bytes": 195488
+    },
+    "zhang-jiao": {
+      "files": [
+        "zhang-jiao.webp",
+        "zhang-jiao-full.webp"
+      ],
+      "bytes": 215658
+    },
+    "hist-su-qin": {
+      "files": [
+        "hist-su-qin.webp",
+        "hist-su-qin-full.webp"
+      ],
+      "bytes": 166026
+    },
+    "hist-jing-ke": {
+      "files": [
+        "hist-jing-ke.webp",
+        "hist-jing-ke-full.webp"
+      ],
+      "bytes": 192408
+    },
+    "sun-quan": {
+      "files": [
+        "sun-quan.webp",
+        "sun-quan-full.webp"
+      ],
+      "bytes": 232966
+    },
+    "sun-ce": {
+      "files": [
+        "sun-ce.webp",
+        "sun-ce-full.webp"
+      ],
+      "bytes": 201610
+    },
+    "taishi-ci": {
+      "files": [
+        "taishi-ci.webp",
+        "taishi-ci-full.webp"
+      ],
+      "bytes": 227258
+    },
+    "lu-meng": {
+      "files": [
+        "lu-meng.webp",
+        "lu-meng-full.webp"
+      ],
+      "bytes": 186766
+    },
+    "gan-ning": {
+      "files": [
+        "gan-ning.webp",
+        "gan-ning-full.webp"
+      ],
+      "bytes": 191182
+    },
+    "dong-zhuo": {
+      "files": [
+        "dong-zhuo.webp",
+        "dong-zhuo-full.webp"
+      ],
+      "bytes": 206106
+    },
+    "yuan-shao": {
+      "files": [
+        "yuan-shao.webp",
+        "yuan-shao-full.webp"
+      ],
+      "bytes": 231878
+    },
+    "meng-huo": {
+      "files": [
+        "meng-huo.webp",
+        "meng-huo-full.webp"
+      ],
+      "bytes": 221156
+    },
+    "hist-li-cunxiao": {
+      "files": [
+        "hist-li-cunxiao.webp",
+        "hist-li-cunxiao-full.webp"
+      ],
+      "bytes": 244258
+    },
+    "hist-an-lushan": {
+      "files": [
+        "hist-an-lushan.webp",
+        "hist-an-lushan-full.webp"
+      ],
+      "bytes": 231868
+    },
+    "hist-laozi": {
+      "files": [
+        "hist-laozi.webp",
+        "hist-laozi-full.webp"
+      ],
+      "bytes": 199410
+    },
+    "hist-zhuangzi": {
+      "files": [
+        "hist-zhuangzi.webp",
+        "hist-zhuangzi-full.webp"
+      ],
+      "bytes": 238436
+    },
+    "zuo-ci": {
+      "files": [
+        "zuo-ci.webp",
+        "zuo-ci-full.webp"
+      ],
+      "bytes": 195354
+    },
+    "yu-ji": {
+      "files": [
+        "yu-ji.webp",
+        "yu-ji-full.webp"
+      ],
+      "bytes": 224636
+    },
+    "hua-tuo": {
+      "files": [
+        "hua-tuo.webp",
+        "hua-tuo-full.webp"
+      ],
+      "bytes": 175958
+    },
+    "sima-hui": {
+      "files": [
+        "sima-hui.webp",
+        "sima-hui-full.webp"
+      ],
+      "bytes": 173338
+    },
+    "hist-tao-yuanming": {
+      "files": [
+        "hist-tao-yuanming.webp",
+        "hist-tao-yuanming-full.webp"
+      ],
+      "bytes": 275446
+    },
+    "ji-kang": {
+      "files": [
+        "ji-kang.webp",
+        "ji-kang-full.webp"
+      ],
+      "bytes": 203512
+    },
+    "xu-shu": {
+      "files": [
+        "xu-shu.webp",
+        "xu-shu-full.webp"
+      ],
+      "bytes": 197386
+    },
+    "hist-li-bai": {
+      "files": [
+        "hist-li-bai.webp",
+        "hist-li-bai-full.webp"
+      ],
+      "bytes": 196022
+    },
+    "hist-guiguzi": {
+      "files": [
+        "hist-guiguzi.webp",
+        "hist-guiguzi-full.webp"
+      ],
+      "bytes": 226890
+    },
+    "lu-bu": {
+      "files": [
+        "lu-bu.webp",
+        "lu-bu-full.webp"
+      ],
+      "bytes": 223274
+    },
+    "dian-wei": {
+      "files": [
+        "dian-wei.webp",
+        "dian-wei-full.webp"
+      ],
+      "bytes": 215158
+    },
+    "hua-xiong": {
+      "files": [
+        "hua-xiong.webp",
+        "hua-xiong-full.webp"
+      ],
+      "bytes": 236288
+    },
+    "yan-liang": {
+      "files": [
+        "yan-liang.webp",
+        "yan-liang-full.webp"
+      ],
+      "bytes": 267822
+    },
+    "wen-chou": {
+      "files": [
+        "wen-chou.webp",
+        "wen-chou-full.webp"
+      ],
+      "bytes": 233388
+    },
+    "zhou-tai": {
+      "files": [
+        "zhou-tai.webp",
+        "zhou-tai-full.webp"
+      ],
+      "bytes": 223580
+    },
+    "huang-gai": {
+      "files": [
+        "huang-gai.webp",
+        "huang-gai-full.webp"
+      ],
+      "bytes": 238108
+    },
+    "ding-feng": {
+      "files": [
+        "ding-feng.webp",
+        "ding-feng-full.webp"
+      ],
+      "bytes": 189226
+    },
+    "wei-yan": {
+      "files": [
+        "wei-yan.webp",
+        "wei-yan-full.webp"
+      ],
+      "bytes": 268968
+    },
+    "liao-hua": {
+      "files": [
+        "liao-hua.webp",
+        "liao-hua-full.webp"
+      ],
+      "bytes": 278796
+    },
+    "chen-dao": {
+      "files": [
+        "chen-dao.webp",
+        "chen-dao-full.webp"
+      ],
+      "bytes": 238838
+    },
+    "ma-dai": {
+      "files": [
+        "ma-dai.webp",
+        "ma-dai-full.webp"
+      ],
+      "bytes": 201314
     }
   },
-  "totalBytes": 2868722
+  "totalBytes": 17476100
 }

@@ -17,6 +17,7 @@ const FORBIDDEN = [
   'crypto.',
   "from 'react",
   "from 'zustand",
+  'import(', // 动态 import 会绕过 ESLint 静态围栏
 ]
 
 describe('engine purity', () => {
