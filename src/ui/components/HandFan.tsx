@@ -9,13 +9,13 @@ interface HandFanProps {
   onCardClick: (iid: number) => void
 }
 
-// 我方手牌扇形排布。CSS 变量承载每张牌的旋转/下沉,便于 hover 时用类覆盖。
+// 我方手牌扇形排布。CSS 变量承载每张牌的旋转/下沉与自适应叠压,便于 hover 时用类覆盖。
 export function HandFan({ hand, playableIids, selectedIid, onCardClick }: HandFanProps) {
   const n = hand.length
   const mid = (n - 1) / 2
   const rotStep = Math.min(4.5, 36 / Math.max(n, 1))
   return (
-    <div className={styles.fan}>
+    <div className={styles.fan} style={{ '--n': Math.max(n, 1) } as React.CSSProperties}>
       {hand.map((c, i) => {
         const selected = selectedIid === c.iid
         return (
@@ -25,7 +25,7 @@ export function HandFan({ hand, playableIids, selectedIid, onCardClick }: HandFa
             style={
               {
                 '--rot': `${(i - mid) * rotStep}deg`,
-                '--sink': `${Math.abs(i - mid) * 5}px`,
+                '--sink': `${Math.abs(i - mid) * 4}px`,
                 zIndex: selected ? 50 : i + 1,
               } as React.CSSProperties
             }

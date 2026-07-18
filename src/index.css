@@ -8,9 +8,31 @@ body {
   padding: 0;
 }
 
+:root {
+  /* —— 千古名将 · 调色盘:暗金 / 朱砂 / 玉色 —— */
+  --gold-bright: #f7e1a8;
+  --gold: #e8c878;
+  --gold-mid: #d4a84a;
+  --gold-deep: #b8863b;
+  --gold-dark: #7a5a1e;
+  --cinnabar: #c53b2c;
+  --cinnabar-deep: #8a2318;
+  --jade: #7a9a5a;
+  --ink-0: #0c0a07;
+  --ink-1: #14110c;
+  --ink-2: #1d1913;
+  --ink-3: #29231a;
+  --parchment: #e8dfc8;
+  --parchment-dim: #c9bfa8;
+  --parchment-faint: #9a8a6a;
+
+  /* 显示字体:宋体书法感;正文保持 PingFang */
+  --font-display: 'Songti SC', 'STSong', 'Kaiti SC', 'Noto Serif SC', 'PingFang SC', serif;
+}
+
 body {
   background: radial-gradient(ellipse at 50% 30%, #26221b, #12100c);
-  color: #e8dfc8;
+  color: var(--parchment);
   font-family:
     'PingFang SC',
     'Hiragino Sans GB',

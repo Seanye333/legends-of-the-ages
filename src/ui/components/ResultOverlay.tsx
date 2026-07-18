@@ -8,19 +8,20 @@ interface ResultOverlayProps {
   onExit: () => void
 }
 
-// 终局结算:胜利/败北/平局 + 再来一局/返回标题。
+// 终局结算:胜/败战场画卷 + 书法大字 + 再来一局/返回标题。
 export function ResultOverlay({ winner, onRematch, onExit }: ResultOverlayProps) {
   const t = useT()
-  const [text, cls] =
+  const [glyph, word, verdictCls, bgCls] =
     winner === 0
-      ? [t('胜利!', 'Victory!'), styles.win]
+      ? ['勝', t('凯旋而归', 'Victory'), styles.win, styles.bgWin]
       : winner === 1
-        ? [t('败北', 'Defeat'), styles.lose]
-        : [t('平局', 'Draw'), styles.draw]
+        ? ['敗', t('卷土重来', 'Defeat'), styles.lose, styles.bgLose]
+        : ['和', t('平分秋色', 'Draw'), styles.draw, styles.bgDraw]
 
   return (
-    <div className={styles.overlay}>
-      <div className={`${styles.verdict} ${cls}`}>{text}</div>
+    <div className={`${styles.overlay} ${bgCls}`}>
+      <div className={`${styles.glyph} ${verdictCls}`}>{glyph}</div>
+      <div className={`${styles.word} ${verdictCls}`}>{word}</div>
       <div className={styles.buttons}>
         <button className={styles.primary} onClick={onRematch}>
           {t('再来一局', 'Rematch')}

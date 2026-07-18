@@ -1,4 +1,4 @@
-import type { MouseEvent } from 'react'
+import type { CSSProperties, MouseEvent } from 'react'
 import type { CardInstance } from '../../engine/types'
 import { CARDS_BY_ID } from '../../content/cards'
 import { useSettings } from '../../app/settingsStore'
@@ -14,7 +14,7 @@ interface CardFaceProps {
   onClick?: (e: MouseEvent) => void
 }
 
-// 手牌卡面:费用宝石、立绘、名字、攻血宝石、主义色边框、稀有度点。
+// 手牌卡面:多层描金卡框、费用宝石、立绘、名字铭牌、攻血宝石、稀有度玉印。
 export function CardFace({ inst, playable, selected, large, onClick }: CardFaceProps) {
   const lang = useSettings((s) => s.language)
   const def = CARDS_BY_ID[inst.defId]
@@ -30,9 +30,18 @@ export function CardFace({ inst, playable, selected, large, onClick }: CardFaceP
 
   const mainName = lang === 'en' ? def.name.en : def.name.zh
   const subName = lang === 'both' ? def.name.en : null
+  const isSpell = def.type !== 'general'
+  const frameRarity = {
+    common: '',
+    rare: styles.frameRare,
+    epic: styles.frameEpic,
+    legendary: styles.frameLegendary,
+  }[def.rarity]
   const cls = [
     styles.face,
     large ? styles.large : '',
+    frameRarity,
+    isSpell ? styles.stratagem : '',
     playable ? styles.playable : '',
     selected ? styles.selected : '',
   ]
@@ -42,7 +51,7 @@ export function CardFace({ inst, playable, selected, large, onClick }: CardFaceP
   return (
     <div
       className={cls}
-      style={{ borderColor: DOCTRINE_COLORS[def.doctrine] }}
+      style={{ '--doctrine': DOCTRINE_COLORS[def.doctrine] } as CSSProperties}
       onClick={onClick}
       title={def.text ? (lang === 'en' ? def.text.en : def.text.zh) : undefined}
     >
@@ -54,7 +63,7 @@ export function CardFace({ inst, playable, selected, large, onClick }: CardFaceP
         <div className={styles.name}>{mainName}</div>
         {subName && <div className={styles.sub}>{subName}</div>}
       </div>
-      <span className={`${styles.rarity} ${styles[def.rarity]}`}>●</span>
+      <span className={`${styles.rarity} ${styles[def.rarity]}`} />
       {def.type === 'general' ? (
         <>
           <span className={styles.atk}>{inst.attack}</span>

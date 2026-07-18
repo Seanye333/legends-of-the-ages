@@ -156,6 +156,30 @@ writeFileSync(
 )
 console.log(`cards.gen.ts: ${cards.length} cards`)
 
+// ---------- 界面美术复制(标题/战场/结算背景;可按需增补) ----------
+// [姊妹仓库 public/ 下相对路径, 本项目 public/art/ 下文件名]
+const ART_FILES: [string, string][] = [
+  ['title-hero.jpg', 'title-hero.jpg'],
+  ['map-bg.jpg', 'battlefield-bg.jpg'],
+  ['battle/field-victory.jpg', 'result-victory.jpg'],
+  ['battle/field-defeat.jpg', 'result-defeat.jpg'],
+  ['popups/grand-muster.jpg', 'mulligan-bg.jpg'],
+]
+const OUT_ART = join(ROOT, 'public', 'art')
+mkdirSync(OUT_ART, { recursive: true })
+let artBytes = 0
+for (const [srcRel, destName] of ART_FILES) {
+  const src = join(SIBLING, 'public', srcRel)
+  if (!existsSync(src)) {
+    console.warn(`⚠ missing art: ${srcRel}`)
+    continue
+  }
+  const dest = join(OUT_ART, destName)
+  copyFileSync(src, dest)
+  artBytes += statSync(dest).size
+}
+console.log(`art: ${ART_FILES.length} files, ${(artBytes / 1024 / 1024).toFixed(1)} MB`)
+
 // ---------- 签名卡立绘复制(签名集 = overrides + 主公,立绘自动跟随) ----------
 
 const allIds = new Set(unique.map((o) => o.id))

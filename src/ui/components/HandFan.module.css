@@ -1,18 +1,29 @@
 .fan {
+  --n: 1;
+  /* 与 CardFace 的 --card-w 同步定义,用于计算自适应叠压 */
+  --card-w: clamp(58px, 13vh, 100px);
+  container-type: inline-size;
+  width: 100%;
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  padding: 0 8px;
+  padding: 0 8px clamp(6px, 1.4vh, 14px);
   min-height: clamp(84px, 19vh, 150px);
 }
 
+/* 牌多时自动加大叠压,始终收进屏幕(90px 余量吸收扇形旋转的横向外摆) */
 .slot {
   transform: rotate(var(--rot)) translateY(var(--sink));
   transform-origin: 50% 120%;
   transition:
     transform 0.15s ease,
     z-index 0s;
-  margin: 0 clamp(-14px, -1.2vw, -6px);
+  margin: 0
+    clamp(
+      calc(var(--card-w) * -0.42),
+      calc((100cqw - 90px - var(--n) * var(--card-w)) / (var(--n) * 2)),
+      -6px
+    );
 }
 
 .slot:hover {

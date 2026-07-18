@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { CARDS, CARDS_BY_ID, SIGNATURE_IDS } from '../../content/cards'
 import { PRECON_DECKS } from '../../content/decks'
 import { HEROES } from '../../content/overrides/heroes'
@@ -12,19 +12,30 @@ import styles from './TitleScreen.module.css'
 
 function MiniCard({ card }: { card: CardDef }) {
   const pick = usePickText()
+  const frameRarity = {
+    common: '',
+    rare: styles.frameRare,
+    epic: styles.frameEpic,
+    legendary: styles.frameLegendary,
+  }[card.rarity]
   return (
-    <div className={styles.card} style={{ borderColor: DOCTRINE_COLORS[card.doctrine] }}>
+    <div
+      className={`${styles.card} ${frameRarity}`}
+      style={{ '--doctrine': DOCTRINE_COLORS[card.doctrine] } as CSSProperties}
+    >
       <span className={styles.cost}>{card.cost}</span>
-      <img
-        className={styles.portrait}
-        src={`${import.meta.env.BASE_URL}portraits/${card.id}.webp`}
-        alt={card.name.zh}
-        loading="lazy"
-      />
+      <div className={styles.portraitBox}>
+        <img
+          className={styles.portrait}
+          src={`${import.meta.env.BASE_URL}portraits/${card.id}.webp`}
+          alt={card.name.zh}
+          loading="lazy"
+        />
+      </div>
       <div className={styles.cardName}>{pick(card.name)}</div>
       <div className={styles.statsRow}>
         <span className={styles.attack}>{card.attack}</span>
-        <span className={`${styles.rarity} ${styles[card.rarity]}`}>●</span>
+        <span className={`${styles.rarity} ${styles[card.rarity]}`} />
         <span className={styles.health}>{card.health}</span>
       </div>
     </div>
@@ -73,25 +84,35 @@ export function TitleScreen({ onStart }: TitleScreenProps) {
 
   return (
     <div className={styles.screen}>
-      <h1 className={styles.title}>千古名将</h1>
-      <p className={styles.subtitle}>Legends of the Ages</p>
-      <p className={styles.tagline}>
-        {t(
-          `全卡池 ${CARDS.length} 张 · 横跨 ${dynastyCount} 个朝代阵营`,
-          `${CARDS.length} cards across ${dynastyCount} dynasties`,
-        )}
-      </p>
-      <div className={styles.gallery}>
-        {gallery.map((card) => (
-          <MiniCard key={card.id} card={card} />
-        ))}
-      </div>
+      <div className={styles.bg} aria-hidden="true" />
+      <div className={styles.bgVignette} aria-hidden="true" />
+
+      <header className={styles.masthead}>
+        <div className={styles.titleRow}>
+          <h1 className={styles.title}>千古名将</h1>
+          <span className={styles.seal} aria-hidden="true">
+            <span>名</span>
+            <span>将</span>
+          </span>
+        </div>
+        <p className={styles.subtitle}>Legends of the Ages</p>
+        <div className={styles.rule} aria-hidden="true">
+          <span className={styles.ruleDiamond} />
+        </div>
+        <p className={styles.tagline}>
+          {t(
+            `全卡池 ${CARDS.length} 张 · 横跨 ${dynastyCount} 个朝代阵营`,
+            `${CARDS.length} cards across ${dynastyCount} dynasties`,
+          )}
+        </p>
+      </header>
+
       {hasPrecons && (
-        <div className={styles.langSwitch}>
+        <div className={styles.deckRow}>
           {PRECON_DECKS.map((deck, i) => (
             <button
               key={`${deck.heroId}-${i}`}
-              className={i === deckIndex ? styles.langActive : styles.lang}
+              className={i === deckIndex ? styles.deckActive : styles.deckBtn}
               onClick={() => setDeckIndex(i)}
             >
               {pick(deck.name)}
@@ -99,15 +120,17 @@ export function TitleScreen({ onStart }: TitleScreenProps) {
           ))}
         </div>
       )}
+
       <button className={styles.playButton} onClick={onPlay}>
         {t('开始对战', 'Play')}
       </button>
       {startError && (
-        <p className={styles.tagline} role="alert">
+        <p className={styles.errorLine} role="alert">
           {t('开局失败:', 'Failed to start: ')}
           {startError}
         </p>
       )}
+
       <div className={styles.langSwitch}>
         {(['zh', 'en', 'both'] as const).map((lang) => (
           <button
@@ -117,6 +140,18 @@ export function TitleScreen({ onStart }: TitleScreenProps) {
           >
             {lang === 'zh' ? '中' : lang === 'en' ? 'EN' : '双'}
           </button>
+        ))}
+      </div>
+
+      <div className={styles.galleryHead} aria-hidden="true">
+        <span className={styles.galleryHeadLine} />
+        <span className={styles.galleryHeadText}>{t('名将图鉴', 'Gallery of Legends')}</span>
+        <span className={styles.galleryHeadLine} />
+      </div>
+
+      <div className={styles.gallery}>
+        {gallery.map((card) => (
+          <MiniCard key={card.id} card={card} />
         ))}
       </div>
     </div>

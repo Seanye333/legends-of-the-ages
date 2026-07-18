@@ -1,4 +1,4 @@
-import type { MouseEvent } from 'react'
+import type { CSSProperties, MouseEvent } from 'react'
 import type { CardInstance } from '../../engine/types'
 import { CARDS_BY_ID } from '../../content/cards'
 import { DOCTRINE_COLORS, KEYWORD_BADGE, KEYWORD_ZH } from '../doctrineColors'
@@ -15,7 +15,7 @@ interface GeneralTokenProps {
   onClick?: (e: MouseEvent) => void
 }
 
-// 战场上的武将圆形令牌。
+// 战场上的武将勋章令牌:鎏金外环 + 主义色内圈。
 export function GeneralToken({ inst, ready, selected, targetable, floats, onClick }: GeneralTokenProps) {
   const def = CARDS_BY_ID[inst.defId]
   const nameZh = def?.name.zh ?? inst.defId
@@ -24,6 +24,7 @@ export function GeneralToken({ inst, ready, selected, targetable, floats, onClic
 
   const cls = [
     styles.token,
+    hasGuard ? styles.guard : '',
     inst.exhausted ? styles.exhausted : '',
     ready ? styles.ready : '',
     selected ? styles.selected : '',
@@ -33,11 +34,13 @@ export function GeneralToken({ inst, ready, selected, targetable, floats, onClic
     .join(' ')
 
   return (
-    <div className={cls} onClick={onClick} title={nameZh}>
-      <div
-        className={`${styles.circle} ${hasGuard ? styles.guardRing : ''}`}
-        style={hasGuard ? undefined : { borderColor: `${DOCTRINE_COLORS[doctrine]}aa` }}
-      >
+    <div
+      className={cls}
+      style={{ '--doctrine': DOCTRINE_COLORS[doctrine] } as CSSProperties}
+      onClick={onClick}
+      title={nameZh}
+    >
+      <div className={styles.circle}>
         <Portrait id={inst.defId} nameZh={nameZh} doctrine={doctrine} />
       </div>
       {hasGuard && <span className={styles.guardMark}>盾</span>}

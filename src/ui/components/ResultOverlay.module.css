@@ -6,11 +6,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: clamp(14px, 3.5vh, 28px);
-  background: rgba(10, 8, 5, 0.8);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
-  animation: fadeIn 0.4s ease;
+  gap: clamp(6px, 1.6vh, 14px);
+  animation: fadeIn 0.5s ease;
 }
 
 @keyframes fadeIn {
@@ -22,16 +19,68 @@
   }
 }
 
-.verdict {
-  font-size: clamp(40px, 11vh, 84px);
-  font-weight: 800;
-  letter-spacing: 0.25em;
-  animation: dropIn 0.5s cubic-bezier(0.2, 1.4, 0.4, 1);
+/* 胜:金辉战场 */
+.bgWin {
+  background:
+    radial-gradient(ellipse 120% 90% at 50% 40%, transparent 25%, rgba(8, 6, 2, 0.9) 100%),
+    linear-gradient(180deg, rgba(14, 10, 4, 0.72), rgba(20, 14, 5, 0.5) 45%, rgba(8, 6, 2, 0.86)),
+    url('/art/result-victory.jpg') center 35% / cover no-repeat,
+    #0c0a07;
 }
 
-@keyframes dropIn {
+/* 败:灰烬战场 */
+.bgLose {
+  background:
+    radial-gradient(ellipse 120% 90% at 50% 40%, transparent 25%, rgba(4, 3, 3, 0.94) 100%),
+    linear-gradient(180deg, rgba(8, 6, 6, 0.8), rgba(10, 8, 8, 0.62) 45%, rgba(4, 3, 3, 0.92)),
+    url('/art/result-defeat.jpg') center 35% / cover no-repeat,
+    #0a0808;
+}
+
+.bgDraw {
+  background:
+    radial-gradient(ellipse 120% 90% at 50% 40%, transparent 25%, rgba(6, 5, 3, 0.94) 100%),
+    linear-gradient(180deg, rgba(10, 8, 5, 0.82), rgba(10, 8, 5, 0.7)),
+    url('/art/battlefield-bg.jpg') center 40% / cover no-repeat,
+    #0c0a07;
+}
+
+/* 书法大字 */
+.glyph {
+  font-family: var(--font-display);
+  font-size: clamp(120px, 30vh, 260px);
+  font-weight: 700;
+  line-height: 1.05;
+  animation: glyphIn 0.6s cubic-bezier(0.2, 1.3, 0.4, 1);
+}
+
+@keyframes glyphIn {
+  0% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(0.94);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.word {
+  font-family: var(--font-display);
+  font-size: clamp(18px, 4vh, 30px);
+  font-weight: 700;
+  letter-spacing: 0.6em;
+  text-indent: 0.6em;
+  animation: wordIn 0.7s ease 0.15s backwards;
+}
+
+@keyframes wordIn {
   from {
-    transform: translateY(-30px) scale(0.8);
+    transform: translateY(14px);
     opacity: 0;
   }
   to {
@@ -41,53 +90,79 @@
 }
 
 .win {
-  background: linear-gradient(180deg, #f5d78a, #b8863b);
+  background: linear-gradient(175deg, #fdf3d0 6%, #f5d78a 36%, #c89644 66%, #e8c060 94%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  text-shadow: 0 2px 30px rgba(212, 168, 74, 0.35);
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.9)) drop-shadow(0 0 14px rgba(212, 168, 74, 0.4));
 }
 
 .lose {
-  color: #b0453a;
-  text-shadow: 0 2px 24px rgba(176, 69, 58, 0.4);
+  background: linear-gradient(175deg, #d8968a 6%, #b0453a 45%, #6e241c 90%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.95)) drop-shadow(0 0 12px rgba(140, 50, 40, 0.45));
 }
 
 .draw {
-  color: #9a8a6a;
+  background: linear-gradient(175deg, #d8ccb0 8%, #9a8a6a 55%, #6a5e46 92%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.9));
 }
 
 .buttons {
   display: flex;
   gap: clamp(10px, 2vw, 20px);
+  margin-top: clamp(14px, 3.5vh, 30px);
+  animation: wordIn 0.7s ease 0.3s backwards;
 }
 
 .primary,
 .secondary {
+  font-family: var(--font-display);
+  font-weight: 700;
   font-size: clamp(14px, 2.6vh, 18px);
-  padding: clamp(8px, 1.6vh, 12px) clamp(22px, 4vw, 40px);
-  border-radius: 8px;
-  letter-spacing: 0.2em;
+  padding: clamp(9px, 1.7vh, 13px) clamp(24px, 4.5vw, 44px);
+  border-radius: 6px;
+  letter-spacing: 0.22em;
+  text-indent: 0.22em;
   cursor: pointer;
+  transition: transform 0.15s ease, filter 0.2s ease;
 }
 
 .primary {
-  border: 1px solid #b8863b;
-  background: linear-gradient(180deg, #3a2f1d, #241d12);
-  color: #e8cf9a;
+  border: 1px solid #f0d090;
+  background:
+    linear-gradient(180deg, rgba(255, 244, 210, 0.28), rgba(255, 244, 210, 0) 45%),
+    linear-gradient(180deg, #6a4d1e, #46310f 55%, #2e1f08);
+  color: var(--gold-bright);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+  box-shadow:
+    inset 0 0 0 2.5px rgba(24, 16, 5, 0.9),
+    inset 0 0 0 3.5px rgba(224, 184, 96, 0.55),
+    0 4px 14px rgba(0, 0, 0, 0.6),
+    0 0 20px rgba(212, 168, 74, 0.35);
 }
 
 .primary:hover {
-  background: linear-gradient(180deg, #4a3d26, #2e2517);
+  filter: brightness(1.1);
+}
+
+.primary:active,
+.secondary:active {
+  transform: translateY(1px);
 }
 
 .secondary {
-  border: 1px solid #5a4f3a;
-  background: transparent;
-  color: #9a8a6a;
+  border: 1px solid rgba(122, 100, 58, 0.7);
+  background: rgba(16, 13, 8, 0.72);
+  color: var(--parchment-faint);
 }
 
 .secondary:hover {
-  color: #c9bfa8;
+  color: var(--parchment-dim);
   border-color: #7a6a4a;
 }

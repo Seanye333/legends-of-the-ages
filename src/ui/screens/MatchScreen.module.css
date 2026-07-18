@@ -5,8 +5,17 @@
   flex-direction: column;
   overflow: hidden;
   background:
-    radial-gradient(ellipse at 50% 42%, rgba(84, 66, 38, 0.28), transparent 65%),
-    radial-gradient(ellipse at 50% 30%, #26221b, #12100c);
+    radial-gradient(ellipse 130% 80% at 50% 42%, transparent 30%, rgba(8, 6, 3, 0.72) 100%),
+    linear-gradient(
+      180deg,
+      rgba(40, 29, 13, 0.93) 0%,
+      rgba(48, 36, 17, 0.86) 30%,
+      rgba(48, 36, 17, 0.85) 62%,
+      rgba(30, 21, 9, 0.94) 100%
+    ),
+    url('/art/battlefield-bg.jpg') center 40% / cover no-repeat,
+    #12100c;
+  background-blend-mode: normal, multiply, normal;
   padding:
     max(4px, env(safe-area-inset-top))
     max(4px, env(safe-area-inset-right))
@@ -41,40 +50,68 @@
   padding: 0 clamp(48px, 10vw, 140px);
 }
 
+/* 战阵行:压暗的材质长案 */
 .row {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: clamp(6px, 1.2vw, 16px);
-  min-height: clamp(54px, 12.5vh, 96px);
+  min-height: clamp(58px, 13vh, 100px);
+  padding: clamp(3px, 0.8vh, 8px) clamp(8px, 2vw, 20px);
+  border-radius: 999px;
+  background:
+    radial-gradient(ellipse 70% 100% at 50% 50%, rgba(58, 44, 22, 0.30), rgba(14, 10, 5, 0.38) 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(212, 168, 74, 0.14),
+    inset 0 3px 12px rgba(0, 0, 0, 0.45);
 }
 
+/* 楚河汉界:饰线 + 中央菱钮 */
 .divider {
-  height: 1px;
+  position: relative;
+  height: 9px;
+  margin: 0 clamp(10px, 4vw, 60px);
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(184, 134, 59, 0.35) 20%,
-    rgba(184, 134, 59, 0.35) 80%,
+    rgba(212, 168, 74, 0.4) 18%,
+    rgba(212, 168, 74, 0.4) 82%,
     transparent
   );
-  margin: 0 clamp(10px, 4vw, 60px);
+  -webkit-mask: linear-gradient(180deg, transparent 44%, #000 44% 56%, transparent 56%);
+  mask: linear-gradient(180deg, transparent 44%, #000 44% 56%, transparent 56%);
+}
+
+.divider::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  background: #d4a84a;
+  box-shadow: 0 0 8px rgba(232, 200, 120, 0.8);
 }
 
 .bottom {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
+  justify-content: center;
   padding: 0 clamp(8px, 2vw, 24px) clamp(2px, 0.8vh, 8px);
-  gap: 10px;
+  column-gap: 10px;
+  row-gap: 4px;
 }
 
+/* 宽屏:牌位与手牌同行;窄屏(手机竖屏)自动换行,牌位居中于手牌上方 */
 .bottom > :first-child {
-  margin-bottom: clamp(6px, 1.5vh, 14px);
+  margin-bottom: clamp(4px, 1vh, 14px);
 }
 
 .handArea {
   flex: 1;
-  min-width: 0;
+  min-width: min(100%, 340px);
   display: flex;
   justify-content: center;
 }
@@ -88,70 +125,108 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
 }
 
 .turnNo {
+  font-family: var(--font-display);
   font-size: clamp(10px, 1.8vh, 13px);
-  color: #9a8a6a;
-  letter-spacing: 0.1em;
+  color: #c8ae6e;
+  letter-spacing: 0.12em;
   white-space: nowrap;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
 }
 
+/* 结束回合:鎏金令牌 */
 .endTurn {
-  border: 1px solid #b8863b;
-  background: linear-gradient(180deg, #3a2f1d, #241d12);
-  color: #e8cf9a;
-  border-radius: 8px;
-  padding: clamp(6px, 1.4vh, 10px) clamp(10px, 1.8vw, 18px);
-  font-size: clamp(11px, 2vh, 15px);
-  letter-spacing: 0.15em;
+  position: relative;
+  font-family: var(--font-display);
+  font-weight: 700;
+  border: 1px solid #33240c;
+  background:
+    linear-gradient(180deg, rgba(255, 244, 210, 0.42), rgba(255, 244, 210, 0) 46%),
+    linear-gradient(180deg, #f0cf7e, #c89a3e 55%, #a1762a);
+  color: #33240c;
+  border-radius: 9px;
+  padding: clamp(7px, 1.5vh, 11px) clamp(11px, 2vw, 19px);
+  font-size: clamp(12px, 2.1vh, 16px);
+  letter-spacing: 0.18em;
+  text-indent: 0.18em;
+  text-shadow: 0 1px 0 rgba(255, 240, 200, 0.55);
   cursor: pointer;
   white-space: nowrap;
-  transition: box-shadow 0.15s ease;
+  box-shadow:
+    inset 0 0 0 1.5px rgba(51, 36, 12, 0.55),
+    inset 0 0 0 2.5px rgba(255, 236, 180, 0.5),
+    0 3px 10px rgba(0, 0, 0, 0.55);
+  transition: transform 0.12s ease, filter 0.2s ease;
 }
 
-.endTurn:not(:disabled) {
-  box-shadow: 0 0 10px 2px rgba(212, 168, 74, 0.35);
+/* 可用时:呼吸金晕(纯 opacity 动画) */
+.endTurn:not(:disabled)::after {
+  content: '';
+  position: absolute;
+  inset: -9px;
+  z-index: -1;
+  border-radius: 16px;
+  background: radial-gradient(closest-side, rgba(240, 200, 100, 0.55), transparent 75%);
+  animation: sealGlow 2.2s ease-in-out infinite;
+}
+
+@keyframes sealGlow {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 .endTurn:not(:disabled):hover {
-  background: linear-gradient(180deg, #4a3d26, #2e2517);
+  filter: brightness(1.08);
+}
+
+.endTurn:not(:disabled):active {
+  transform: translateY(1px);
 }
 
 .endTurn:disabled {
-  opacity: 0.4;
   cursor: default;
+  filter: saturate(0.35) brightness(0.62);
 }
 
 .plainBtn {
-  border: 1px solid #5a4f3a;
-  background: rgba(28, 24, 18, 0.85);
-  color: #9a8a6a;
-  border-radius: 6px;
-  padding: 4px 10px;
+  border: 1px solid rgba(122, 100, 58, 0.65);
+  background: rgba(20, 16, 10, 0.82);
+  color: var(--parchment-faint);
+  border-radius: 7px;
+  padding: 4px 11px;
   font-size: clamp(10px, 1.8vh, 13px);
   cursor: pointer;
   letter-spacing: 0.1em;
   white-space: nowrap;
+  transition: color 0.15s ease, border-color 0.15s ease;
 }
 
 .plainBtn:hover {
-  color: #c9bfa8;
+  color: var(--parchment-dim);
   border-color: #7a6a4a;
 }
 
 .goldBtn {
-  border: 1px solid #b8863b;
-  background: linear-gradient(180deg, #3a2f1d, #241d12);
-  color: #e8cf9a;
-  border-radius: 6px;
-  padding: 4px 12px;
+  border: 1px solid #e0be74;
+  background: linear-gradient(180deg, #52401e, #2e2310);
+  color: var(--gold-bright);
+  border-radius: 7px;
+  padding: 4px 13px;
   font-size: clamp(10px, 1.8vh, 13px);
   cursor: pointer;
   letter-spacing: 0.1em;
   white-space: nowrap;
-  box-shadow: 0 0 8px 2px rgba(212, 168, 74, 0.3);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 236, 180, 0.2),
+    0 0 8px 2px rgba(212, 168, 74, 0.3);
 }
 
 .targetBar {
@@ -163,20 +238,27 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(18, 15, 11, 0.92);
-  border: 1px solid #b8863b;
+  background: linear-gradient(180deg, rgba(30, 24, 14, 0.96), rgba(14, 11, 6, 0.96));
+  border: 1px solid rgba(212, 168, 74, 0.75);
   border-radius: 10px;
-  padding: 6px 14px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
+  padding: 7px 15px;
+  box-shadow:
+    inset 0 0 0 2px rgba(10, 7, 3, 0.8),
+    inset 0 0 0 3px rgba(212, 168, 74, 0.3),
+    0 6px 20px rgba(0, 0, 0, 0.6);
 }
 
 .targetHint {
-  font-size: clamp(11px, 2vh, 14px);
-  color: #e8cf9a;
-  letter-spacing: 0.1em;
+  font-family: var(--font-display);
+  font-size: clamp(12px, 2.1vh, 15px);
+  font-weight: 600;
+  color: var(--gold-bright);
+  letter-spacing: 0.12em;
   white-space: nowrap;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
 }
 
+/* 对方回合:中央横幅 */
 .enemyTurn {
   position: absolute;
   inset: 0;
@@ -184,12 +266,25 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(8, 6, 4, 0.45);
-  color: #e8cf9a;
-  font-size: clamp(22px, 5vh, 40px);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(8, 6, 4, 0.28) 0%,
+      rgba(8, 6, 4, 0.28) 38%,
+      rgba(4, 3, 2, 0.78) 46%,
+      rgba(4, 3, 2, 0.78) 54%,
+      rgba(8, 6, 4, 0.28) 62%,
+      rgba(8, 6, 4, 0.28) 100%
+    );
+  color: var(--gold-bright);
+  font-family: var(--font-display);
+  font-size: clamp(24px, 5vh, 42px);
   font-weight: 700;
-  letter-spacing: 0.4em;
-  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.8);
+  letter-spacing: 0.5em;
+  text-indent: 0.5em;
+  text-shadow:
+    0 2px 10px rgba(0, 0, 0, 0.9),
+    0 0 30px rgba(212, 168, 74, 0.35);
 }
 
 .toast {
@@ -198,10 +293,13 @@
   left: 50%;
   transform: translateX(-50%);
   z-index: 60;
-  background: rgba(90, 26, 18, 0.95);
-  border: 1px solid #d0453a;
+  background: linear-gradient(180deg, rgba(108, 30, 20, 0.97), rgba(70, 18, 12, 0.97));
+  border: 1px solid #d0655a;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 200, 190, 0.2),
+    0 4px 14px rgba(0, 0, 0, 0.55);
   color: #ffd8d0;
-  border-radius: 8px;
+  border-radius: 9px;
   padding: 6px 16px;
   font-size: clamp(11px, 2vh, 14px);
   animation: toastIn 0.2s ease;
@@ -227,5 +325,5 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  color: #c9bfa8;
+  color: var(--parchment-dim);
 }

@@ -1,15 +1,22 @@
 .plate {
   display: flex;
   align-items: center;
-  gap: clamp(6px, 1.2vw, 14px);
+  gap: clamp(8px, 1.4vw, 16px);
+  padding: clamp(4px, 0.8vh, 8px) clamp(8px, 1.4vw, 14px);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(26, 21, 13, 0.72), rgba(14, 11, 6, 0.78));
+  box-shadow:
+    inset 0 0 0 1px rgba(212, 168, 74, 0.22),
+    inset 0 1px 0 rgba(255, 236, 180, 0.08),
+    0 4px 12px rgba(0, 0, 0, 0.45);
   -webkit-user-select: none;
   user-select: none;
 }
 
 .portraitWrap {
   position: relative;
-  width: clamp(44px, 9.5vh, 72px);
-  height: clamp(44px, 9.5vh, 72px);
+  width: clamp(46px, 10vh, 76px);
+  height: clamp(46px, 10vh, 76px);
   flex: none;
   border-radius: 12px;
   overflow: visible;
@@ -17,12 +24,17 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* 描金相框 */
 .portraitWrap > :first-child {
-  border-radius: 12px;
+  border-radius: 11px;
   overflow: hidden;
   width: 100%;
   height: 100%;
-  border: 2px solid #b8863b;
+  border: 2px solid #caa050;
+  box-shadow:
+    0 0 0 1px rgba(10, 7, 3, 0.9),
+    inset 0 0 0 1px rgba(255, 236, 180, 0.3),
+    0 3px 9px rgba(0, 0, 0, 0.55);
 }
 
 .targetable {
@@ -46,17 +58,24 @@
 
 .hp {
   position: absolute;
-  right: -6px;
-  bottom: -6px;
-  min-width: clamp(20px, 4vh, 28px);
-  height: clamp(20px, 4vh, 28px);
+  right: -7px;
+  bottom: -7px;
+  min-width: clamp(21px, 4.2vh, 30px);
+  height: clamp(21px, 4.2vh, 30px);
   padding: 0 3px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #d0453a, #6e1c14);
+  background:
+    radial-gradient(circle at 32% 24%, rgba(255, 235, 225, 0.85), rgba(255, 255, 255, 0) 42%),
+    radial-gradient(circle at 50% 65%, #e05a48 0%, #a82e20 55%, #5e130c 100%);
   border: 1px solid #e88a7a;
+  box-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.7),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.5);
   color: #fff;
-  font-weight: 700;
-  font-size: clamp(11px, 2.2vh, 15px);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(11px, 2.3vh, 16px);
+  text-shadow: 0 1px 2px rgba(60, 8, 0, 0.9);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -65,16 +84,22 @@
 
 .armor {
   position: absolute;
-  left: -6px;
-  bottom: -6px;
-  min-width: clamp(18px, 3.4vh, 24px);
-  height: clamp(18px, 3.4vh, 24px);
+  left: -7px;
+  bottom: -7px;
+  min-width: clamp(19px, 3.6vh, 26px);
+  height: clamp(19px, 3.6vh, 26px);
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #9aa4b8, #47506a);
+  background:
+    radial-gradient(circle at 32% 24%, rgba(240, 246, 255, 0.85), rgba(255, 255, 255, 0) 42%),
+    radial-gradient(circle at 50% 65%, #9aa4b8 0%, #5a6478 55%, #2e3442 100%);
   border: 1px solid #c8d0e0;
+  box-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.7),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.5);
   color: #fff;
-  font-weight: 700;
-  font-size: clamp(10px, 1.8vh, 13px);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(10px, 1.9vh, 14px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -84,15 +109,17 @@
 .info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   min-width: 0;
 }
 
 .name {
-  font-size: clamp(12px, 2.2vh, 16px);
+  font-family: var(--font-display);
+  font-size: clamp(13px, 2.4vh, 17px);
   font-weight: 700;
-  color: #e8cf9a;
-  letter-spacing: 0.1em;
+  color: var(--gold-bright);
+  letter-spacing: 0.12em;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -101,25 +128,28 @@
 .mana {
   display: flex;
   align-items: center;
-  gap: 1px;
-  font-size: clamp(9px, 1.8vh, 13px);
+  gap: 2px;
+  font-size: clamp(10px, 2vh, 14px);
   line-height: 1;
 }
 
 .gemFull {
-  color: #4a90d9;
-  text-shadow: 0 0 4px rgba(74, 144, 217, 0.8);
+  color: #5aa8f0;
+  text-shadow:
+    0 0 4px rgba(90, 168, 240, 0.95),
+    0 1px 1px rgba(0, 20, 60, 0.8);
 }
 
 .gemEmpty {
-  color: #2a3a50;
+  color: #253248;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.6);
 }
 
 .manaText {
-  margin-left: 4px;
+  margin-left: 5px;
   color: #8ab0d8;
   font-size: clamp(9px, 1.7vh, 12px);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .backs {
@@ -129,17 +159,21 @@
 }
 
 .back {
-  width: clamp(8px, 1.6vh, 12px);
-  height: clamp(12px, 2.4vh, 17px);
-  border-radius: 2px;
-  background: linear-gradient(150deg, #3a2f1d, #241d12);
-  border: 1px solid #7a6534;
+  width: clamp(9px, 1.7vh, 13px);
+  height: clamp(13px, 2.5vh, 18px);
+  border-radius: 2.5px;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(232, 200, 120, 0.4) 0 12%, transparent 14%),
+    linear-gradient(150deg, #45361c, #241d12);
+  border: 1px solid #8a7238;
+  box-shadow: inset 0 0 0 0.5px rgba(20, 14, 6, 0.9);
 }
 
 .backCount {
   margin-left: 4px;
   font-size: clamp(9px, 1.8vh, 12px);
-  color: #9a8a6a;
+  font-weight: 600;
+  color: var(--parchment-faint);
 }
 
 /* 敌方:信息在头像左侧,靠右排布时镜像 */
@@ -151,15 +185,15 @@
   position: absolute;
   left: 50%;
   top: 0;
-  transform: translateX(-50%);
-  font-size: clamp(14px, 3vh, 22px);
+  font-family: var(--font-display);
+  font-size: clamp(16px, 3.4vh, 26px);
   font-weight: 800;
   pointer-events: none;
   z-index: 5;
   text-shadow:
     0 1px 2px #000,
-    0 0 6px rgba(0, 0, 0, 0.8);
-  animation: heroFloatUp 1.4s ease-out forwards;
+    0 0 8px rgba(0, 0, 0, 0.85);
+  animation: heroFloatUp 1.4s cubic-bezier(0.2, 0.8, 0.4, 1) forwards;
 }
 
 .damage {
@@ -177,16 +211,21 @@
 @keyframes heroFloatUp {
   0% {
     opacity: 0;
-    translate: 0 6px;
+    transform: translate(-50%, 10px) scale(0.5);
   }
-  15% {
+  18% {
     opacity: 1;
+    transform: translate(-50%, 0) scale(1.25);
+  }
+  32% {
+    transform: translate(-50%, -2px) scale(1);
   }
   70% {
     opacity: 1;
+    transform: translate(-50%, -18px) scale(1);
   }
   100% {
     opacity: 0;
-    translate: 0 -26px;
+    transform: translate(-50%, -30px) scale(0.95);
   }
 }
