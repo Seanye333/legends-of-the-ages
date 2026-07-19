@@ -7,10 +7,11 @@ interface HandFanProps {
   playableIids: ReadonlySet<number>
   selectedIid: number | null
   onCardClick: (iid: number) => void
+  onInspectCard?: (defId: string) => void
 }
 
 // 我方手牌扇形排布。CSS 变量承载每张牌的旋转/下沉与自适应叠压,便于 hover 时用类覆盖。
-export function HandFan({ hand, playableIids, selectedIid, onCardClick }: HandFanProps) {
+export function HandFan({ hand, playableIids, selectedIid, onCardClick, onInspectCard }: HandFanProps) {
   const n = hand.length
   const mid = (n - 1) / 2
   const rotStep = Math.min(4.5, 36 / Math.max(n, 1))
@@ -34,6 +35,7 @@ export function HandFan({ hand, playableIids, selectedIid, onCardClick }: HandFa
               inst={c}
               playable={playableIids.has(c.iid)}
               selected={selected}
+              onInspect={onInspectCard ? () => onInspectCard(c.defId) : undefined}
               onClick={(e) => {
                 e.stopPropagation()
                 onCardClick(c.iid)

@@ -4,6 +4,7 @@ import { CARDS_BY_ID } from '../../content/cards'
 import { useSettings } from '../../app/settingsStore'
 import { DOCTRINE_COLORS } from '../doctrineColors'
 import { Portrait } from './Portrait'
+import { useLongPress } from '../useLongPress'
 import styles from './CardFace.module.css'
 
 interface CardFaceProps {
@@ -12,11 +13,13 @@ interface CardFaceProps {
   selected?: boolean
   large?: boolean
   onClick?: (e: MouseEvent) => void
+  onInspect?: () => void // 长按查看详情
 }
 
 // 手牌卡面:多层描金卡框、费用宝石、立绘、名字铭牌、攻血宝石、稀有度玉印。
-export function CardFace({ inst, playable, selected, large, onClick }: CardFaceProps) {
+export function CardFace({ inst, playable, selected, large, onClick, onInspect }: CardFaceProps) {
   const lang = useSettings((s) => s.language)
+  const longPress = useLongPress(() => onInspect?.())
   const def = CARDS_BY_ID[inst.defId]
   if (!def) {
     return (
@@ -52,7 +55,14 @@ export function CardFace({ inst, playable, selected, large, onClick }: CardFaceP
     <div
       className={cls}
       style={{ '--doctrine': DOCTRINE_COLORS[def.doctrine] } as CSSProperties}
-      onClick={onClick}
+      {...(onInspect ? longPress.handlers : {})}
+      onClick={(e) => {
+        if (onInspect && longPress.consumed()) {
+          e.stopPropagation()
+          return
+        }
+        onClick?.(e)
+      }}
       title={def.text ? (lang === 'en' ? def.text.en : def.text.zh) : undefined}
     >
       <span className={styles.cost}>{def.cost}</span>

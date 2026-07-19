@@ -5,6 +5,7 @@ import { CARDS } from '../../content/cards'
 import { useCollection } from '../../app/collectionStore'
 import { DOCTRINE_COLORS } from '../doctrineColors'
 import { CardFace } from '../components/CardFace'
+import { CardInspect } from '../components/CardInspect'
 import { useT, usePickText } from '../i18n'
 import { playSfx } from '../sound'
 import styles from './CollectionScreen.module.css'
@@ -50,6 +51,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
   const [query, setQuery] = useState('')
   const [ownedOnly, setOwnedOnly] = useState(false)
   const [limit, setLimit] = useState(PAGE)
+  const [inspect, setInspect] = useState<CardDef | null>(null)
 
   const filtered = useMemo(() => {
     const q = query.trim()
@@ -137,7 +139,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
           const n = owned[def.id] ?? 0
           return (
             <div key={def.id} className={`${styles.cell} ${n === 0 ? styles.unowned : ''}`}>
-              <CardFace inst={fakeInstance(def)} />
+              <CardFace inst={fakeInstance(def)} onClick={() => setInspect(def)} />
               {n > 0 && <span className={styles.ownedBadge}>×{n}</span>}
             </div>
           )
@@ -156,6 +158,8 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
         </button>
       )}
       {filtered.length === 0 && <p className={styles.empty}>{t('没有符合条件的卡', 'No cards match')}</p>}
+
+      {inspect && <CardInspect def={inspect} onClose={() => setInspect(null)} />}
     </div>
   )
 }

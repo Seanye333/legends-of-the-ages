@@ -5,6 +5,7 @@ import { DOCTRINE_COLORS, KEYWORD_BADGE, KEYWORD_ZH } from '../doctrineColors'
 import { Portrait } from './Portrait'
 import type { FloatItem } from './floats'
 import type { TokenFx } from '../useEventAnimations'
+import { useLongPress } from '../useLongPress'
 import styles from './GeneralToken.module.css'
 
 const MOTION_CLASS = { lunge: 'fx-lunge', shake: 'fx-shake', shakeHard: 'fx-shake-hard' } as const
@@ -17,10 +18,12 @@ interface GeneralTokenProps {
   floats?: FloatItem[]
   fx?: TokenFx // 战斗动效(突进/震颤/闪光)
   onClick?: (e: MouseEvent) => void
+  onInspect?: () => void // 长按查看详情
 }
 
 // 战场上的武将勋章令牌:鎏金外环 + 主义色内圈。
-export function GeneralToken({ inst, ready, selected, targetable, floats, fx, onClick }: GeneralTokenProps) {
+export function GeneralToken({ inst, ready, selected, targetable, floats, fx, onClick, onInspect }: GeneralTokenProps) {
+  const longPress = useLongPress(() => onInspect?.())
   const def = CARDS_BY_ID[inst.defId]
   const nameZh = def?.name.zh ?? inst.defId
   const doctrine = def?.doctrine ?? 'neutral'
@@ -51,7 +54,14 @@ export function GeneralToken({ inst, ready, selected, targetable, floats, fx, on
       className={cls}
       data-fxkey={`gen-${inst.iid}`}
       style={{ '--doctrine': DOCTRINE_COLORS[doctrine], ...fxVars } as CSSProperties}
-      onClick={onClick}
+      {...(onInspect ? longPress.handlers : {})}
+      onClick={(e) => {
+        if (onInspect && longPress.consumed()) {
+          e.stopPropagation()
+          return
+        }
+        onClick?.(e)
+      }}
       title={nameZh}
     >
       {fx?.flash && (

@@ -15,6 +15,8 @@ import { BattleLog } from '../components/BattleLog'
 import { formatEvent } from '../components/eventText'
 import { targetFloatKey } from '../components/floats'
 import { Portrait } from '../components/Portrait'
+import { CardInspect } from '../components/CardInspect'
+import type { CardDef } from '../../engine/types'
 import { useEventAnimations } from '../useEventAnimations'
 import { initSound, playSfx } from '../sound'
 import { useSettings } from '../../app/settingsStore'
@@ -37,6 +39,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
   const [selection, setSelection] = useState<Selection>(null)
   const [log, setLog] = useState<string[]>([])
   const [toast, setToast] = useState<string | null>(null)
+  const [inspect, setInspect] = useState<CardDef | null>(null)
 
   // 事件时间轴:动效 + 音效 + 飘字都由它按节拍产出
   const anim = useEventAnimations(state, lastEvents)
@@ -111,9 +114,10 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
     const ctx = {
       name: (iid: number) => {
         const defId = names.get(iid)
-        return defId ? (CARDS_BY_ID[defId]?.name.zh ?? defId) : `#${iid}`
+        // 联机时对手抽牌 defId 被裁剪为空:显示「一张牌」
+        return defId ? (CARDS_BY_ID[defId]?.name.zh ?? defId) : '一张牌'
       },
-      defName: (defId: string) => CARDS_BY_ID[defId]?.name.zh ?? defId,
+      defName: (defId: string) => (defId ? (CARDS_BY_ID[defId]?.name.zh ?? defId) : '一张牌'),
       heroName: (p: 0 | 1) =>
         HEROES_BY_ID[state.players[p].heroId]?.name.zh ?? state.players[p].heroId,
     }
@@ -267,6 +271,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
               targetable={activeTargets.has(`gen-${c.iid}`)}
               floats={floatsFor(`gen-${c.iid}`)}
               fx={fxFor(`gen-${c.iid}`)}
+              onInspect={() => setInspect(CARDS_BY_ID[c.defId] ?? null)}
               onClick={(e) => {
                 e.stopPropagation()
                 onEntityClick({ kind: 'general', iid: c.iid })
@@ -285,6 +290,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
               targetable={activeTargets.has(`gen-${c.iid}`)}
               floats={floatsFor(`gen-${c.iid}`)}
               fx={fxFor(`gen-${c.iid}`)}
+              onInspect={() => setInspect(CARDS_BY_ID[c.defId] ?? null)}
               onClick={(e) => {
                 e.stopPropagation()
                 onEntityClick({ kind: 'general', iid: c.iid })
@@ -309,6 +315,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
         />
         <div className={styles.handArea}>
           <HandFan
+            onInspectCard={(defId) => setInspect(CARDS_BY_ID[defId] ?? null)}
             hand={me.hand}
             playableIids={myTurn ? playableIids : new Set()}
             selectedIid={selection?.kind === 'hand' ? selection.iid : null}
@@ -357,6 +364,8 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
       )}
 
       <BattleLog entries={log} />
+
+      {inspect && <CardInspect def={inspect} onClose={() => setInspect(null)} />}
 
       {toast && <div className={styles.toast}>{toast}</div>}
 

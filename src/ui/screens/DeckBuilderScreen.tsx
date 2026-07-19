@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
-import type { HeroDef } from '../../engine/types'
+import type { CardDef, HeroDef } from '../../engine/types'
 import { DECK_SIZE } from '../../engine/types'
 import { CARDS, CARDS_BY_ID } from '../../content/cards'
 import { HEROES } from '../../content/overrides/heroes'
 import { useCollection, copyLimit } from '../../app/collectionStore'
 import { DOCTRINE_COLORS, DOCTRINE_ZH } from '../doctrineColors'
 import { CardFace } from '../components/CardFace'
+import { CardInspect } from '../components/CardInspect'
 import { Portrait } from '../components/Portrait'
 import { fakeInstance } from './CollectionScreen'
 import { useT } from '../i18n'
@@ -30,6 +31,7 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
   const [counts, setCounts] = useState<Record<string, number>>({})
   const [errors, setErrors] = useState<string[]>([])
   const [savedMsg, setSavedMsg] = useState(false)
+  const [inspect, setInspect] = useState<CardDef | null>(null)
 
   const total = useMemo(() => Object.values(counts).reduce((a, b) => a + b, 0), [counts])
 
@@ -182,7 +184,11 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
               const maxed = inDeck >= limit || total >= DECK_SIZE
               return (
                 <div key={def.id} className={`${styles.poolCell} ${maxed ? styles.maxed : ''}`}>
-                  <CardFace inst={fakeInstance(def)} onClick={() => add(def.id)} />
+                  <CardFace
+                    inst={fakeInstance(def)}
+                    onInspect={() => setInspect(def)}
+                    onClick={() => add(def.id)}
+                  />
                   <span className={styles.limitTag}>
                     {inDeck}/{limit}
                   </span>
@@ -250,6 +256,8 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
           </div>
         </div>
       </div>
+
+      {inspect && <CardInspect def={inspect} onClose={() => setInspect(null)} />}
     </div>
   )
 }

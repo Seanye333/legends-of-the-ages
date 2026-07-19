@@ -41,9 +41,14 @@ test('collection screen filters and shows cards', async ({ page }) => {
   await page.getByRole('button', { name: '名将图鉴' }).click()
   await expect(page.getByRole('heading', { name: '名将图鉴' })).toBeVisible()
   await expect(page.getByText(/已收 \d+ \/ \d+/)).toBeVisible()
-  // 搜索关羽
+  // 搜索关羽 → 点卡打开详情(效果文本 + 关键词图例可见)
   await page.getByPlaceholder('搜索名将…').fill('關羽')
   await expect(page.getByText('關羽').first()).toBeVisible()
+  await page.getByText('關羽').first().click()
+  await expect(page.getByText(/№\d+/)).toBeVisible()
+  await expect(page.getByText('攻高者先手')).toBeVisible() // 单挑规则图例
+  await page.keyboard.press('Escape')
+  await page.locator('[class*="overlay"]').first().click({ position: { x: 10, y: 10 } })
   await page.getByRole('button', { name: '← 返回' }).click()
   await expect(page.getByRole('heading', { name: '千古名将' })).toBeVisible()
 })
