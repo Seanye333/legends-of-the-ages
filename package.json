@@ -8,6 +8,7 @@
     "build": "tsc -b && tsc -p tsconfig.test.json && vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "e2e": "playwright test",
     "lint": "eslint .",
     "import-content": "node --import tsx scripts/import-content.ts",
     "sim-balance": "node --import tsx scripts/sim-balance.ts",
@@ -20,6 +21,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
+    "@playwright/test": "^1.61.1",
     "@tauri-apps/cli": "^2.11.4",
     "@types/node": "^26.1.1",
     "@types/react": "^19.0.0",

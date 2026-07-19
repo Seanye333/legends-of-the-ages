@@ -12,6 +12,7 @@ import { initSound, playSfx } from '../sound'
 import { useCollection } from '../../app/collectionStore'
 import type { DeckList } from '../../content/decks'
 import { PackOpening } from '../components/PackOpening'
+import { LeaderboardPanel } from '../components/LeaderboardPanel'
 import styles from './TitleScreen.module.css'
 
 function MiniCard({ card }: { card: CardDef }) {
@@ -76,6 +77,7 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
   const [deckIndex, setDeckIndex] = useState(0)
   const [startError, setStartError] = useState<string | null>(null)
   const [packsOpen, setPacksOpen] = useState(false)
+  const [ladderOpen, setLadderOpen] = useState(false)
   const dynastyCount = new Set(CARDS.map((c) => c.dynasty)).size
   const gallery = SIGNATURE_IDS.map((id) => CARDS_BY_ID[id]).filter(Boolean)
   const selectableDecks = useMemo(
@@ -171,6 +173,15 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
         >
           {t(`卡包 ×${packs}`, `Packs ×${packs}`)}
         </button>
+        <button
+          className={styles.navBtn}
+          onClick={() => {
+            playSfx('buttonTap')
+            setLadderOpen(true)
+          }}
+        >
+          {t('群雄榜', 'Ladder')}
+        </button>
       </div>
       {startError && (
         <p className={styles.errorLine} role="alert">
@@ -214,6 +225,7 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
       </div>
 
       {packsOpen && <PackOpening onClose={() => setPacksOpen(false)} />}
+      {ladderOpen && <LeaderboardPanel onClose={() => setLadderOpen(false)} />}
     </div>
   )
 }

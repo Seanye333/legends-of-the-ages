@@ -6,6 +6,7 @@ import { CARDS, CARDS_BY_ID } from '../content/cards'
 import { LocalMatch } from './transport'
 import { AI_NORMAL } from '../ai/greedy'
 import { useCollection } from './collectionStore'
+import { reportWin } from './leaderboard'
 
 export interface StartMatchArgs {
   heroIds: [string, string]
@@ -52,10 +53,11 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
     }
     const events = r.updates.flatMap((u) => u.events)
     const last = r.updates[r.updates.length - 1]
-    // 终局:记战绩,胜场得卡包(GameEnded 每局只出现一次)
+    // 终局:记战绩,胜场得卡包 + 静默上报排行榜(GameEnded 每局只出现一次)
     const ended = events.find((e) => e.type === 'GameEnded')
     if (ended && ended.type === 'GameEnded') {
       useCollection.getState().recordResult(ended.winner === 0)
+      if (ended.winner === 0) reportWin()
     }
     set({ state: last.state, lastEvents: events, error: null })
   },
