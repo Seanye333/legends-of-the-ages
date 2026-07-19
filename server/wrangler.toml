@@ -1,0 +1,15 @@
+name = "qiangu-server"
+main = "src/index.ts"
+compatibility_date = "2026-07-01"
+
+[[durable_objects.bindings]]
+name = "QUEUE"
+class_name = "QueueDO"
+
+[[durable_objects.bindings]]
+name = "MATCH"
+class_name = "MatchDO"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["QueueDO", "MatchDO"]

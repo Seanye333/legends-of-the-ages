@@ -1,0 +1,120 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(8, 6, 3, 0.9);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(92vw, 380px);
+  padding: 22px 20px;
+  border-radius: 14px;
+  border: 1px solid var(--gold-deep);
+  background: linear-gradient(180deg, #241d12, #14100a);
+  box-shadow:
+    inset 0 0 0 3px rgba(24, 16, 5, 0.9),
+    0 0 40px rgba(0, 0, 0, 0.7);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 0.24em;
+  color: var(--gold-bright);
+  text-align: center;
+}
+
+.deckLine {
+  margin: 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--parchment-dim);
+}
+
+.label {
+  font-size: 12px;
+  color: var(--parchment-faint);
+}
+
+.input {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(122, 100, 58, 0.55);
+  background: rgba(12, 10, 7, 0.8);
+  color: var(--parchment);
+  font-size: 14px;
+}
+
+.input:disabled {
+  opacity: 0.6;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--gold);
+  padding: 8px 0;
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(212, 168, 74, 0.3);
+  border-top-color: var(--gold);
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.error {
+  font-size: 13px;
+  color: #e8a094;
+  text-align: center;
+}
+
+.buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.goldBtn,
+.plainBtn {
+  flex: 1;
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: 0.16em;
+  padding: 10px 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.goldBtn {
+  border: 1px solid #f0d090;
+  background: linear-gradient(180deg, #6a4d1e, #46310f 55%, #2e1f08);
+  color: var(--gold-bright);
+}
+
+.plainBtn {
+  border: 1px solid rgba(122, 100, 58, 0.6);
+  background: rgba(20, 16, 10, 0.72);
+  color: var(--parchment-dim);
+}

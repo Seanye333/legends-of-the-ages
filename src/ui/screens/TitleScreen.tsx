@@ -13,6 +13,7 @@ import { useCollection } from '../../app/collectionStore'
 import type { DeckList } from '../../content/decks'
 import { PackOpening } from '../components/PackOpening'
 import { LeaderboardPanel } from '../components/LeaderboardPanel'
+import { RemoteMatchPanel } from '../components/RemoteMatchPanel'
 import styles from './TitleScreen.module.css'
 
 function MiniCard({ card }: { card: CardDef }) {
@@ -78,6 +79,7 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
   const [startError, setStartError] = useState<string | null>(null)
   const [packsOpen, setPacksOpen] = useState(false)
   const [ladderOpen, setLadderOpen] = useState(false)
+  const [remoteOpen, setRemoteOpen] = useState(false)
   const dynastyCount = new Set(CARDS.map((c) => c.dynasty)).size
   const gallery = SIGNATURE_IDS.map((id) => CARDS_BY_ID[id]).filter(Boolean)
   const selectableDecks = useMemo(
@@ -141,9 +143,20 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
         </div>
       )}
 
-      <button className={styles.playButton} onClick={onPlay}>
-        {t('开始对战', 'Play')}
-      </button>
+      <div className={styles.playRow}>
+        <button className={styles.playButton} onClick={onPlay}>
+          {t('开始对战', 'Play')}
+        </button>
+        <button
+          className={styles.remoteButton}
+          onClick={() => {
+            playSfx('buttonTap')
+            setRemoteOpen(true)
+          }}
+        >
+          {t('联机对战', 'Online')}
+        </button>
+      </div>
 
       <div className={styles.navRow}>
         <button
@@ -226,6 +239,16 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
 
       {packsOpen && <PackOpening onClose={() => setPacksOpen(false)} />}
       {ladderOpen && <LeaderboardPanel onClose={() => setLadderOpen(false)} />}
+      {remoteOpen && selectableDecks.length > 0 && (
+        <RemoteMatchPanel
+          deck={selectableDecks[deckIndex % selectableDecks.length]}
+          onStart={() => {
+            setRemoteOpen(false)
+            onStart?.()
+          }}
+          onClose={() => setRemoteOpen(false)}
+        />
+      )}
     </div>
   )
 }

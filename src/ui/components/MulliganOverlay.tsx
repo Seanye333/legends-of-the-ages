@@ -14,6 +14,8 @@ interface MulliganOverlayProps {
 export function MulliganOverlay({ hand, waiting, onConfirm }: MulliganOverlayProps) {
   const t = useT()
   const [replaced, setReplaced] = useState<ReadonlySet<number>>(new Set())
+  // 联机时服务器确认前 waiting 尚未翻转,防双击重复提交
+  const [submitted, setSubmitted] = useState(false)
 
   const toggle = (iid: number) => {
     setReplaced((prev) => {
@@ -50,7 +52,11 @@ export function MulliganOverlay({ hand, waiting, onConfirm }: MulliganOverlayPro
       </div>
       <button
         className={styles.confirm}
-        onClick={() => onConfirm(hand.filter((c) => !replaced.has(c.iid)).map((c) => c.iid))}
+        disabled={submitted}
+        onClick={() => {
+          setSubmitted(true)
+          onConfirm(hand.filter((c) => !replaced.has(c.iid)).map((c) => c.iid))
+        }}
       >
         {replaced.size > 0
           ? t(`确认(换 ${replaced.size} 张)`, `Confirm (replace ${replaced.size})`)

@@ -7,6 +7,8 @@ import { LocalMatch } from './transport'
 import { AI_NORMAL } from '../ai/greedy'
 import { useCollection } from './collectionStore'
 import { reportWin } from './leaderboard'
+import { RemoteMatch, type RemoteStatus } from './remoteMatch'
+import type { DeckList } from '../content/decks'
 
 export interface StartMatchArgs {
   heroIds: [string, string]
@@ -14,23 +16,47 @@ export interface StartMatchArgs {
   seed?: number
 }
 
+export interface StartRemoteArgs {
+  server: string
+  deck: DeckList
+  playerName: string
+}
+
 interface MatchStoreState {
+  mode: 'local' | 'remote'
   match: LocalMatch | null
+  remote: RemoteMatch | null
+  remoteStatus: RemoteStatus | null
+  opponentName: string | null
   state: GameState | null
   lastEvents: GameEvent[]
   error: string | null
   startMatch(args: StartMatchArgs): void
+  startRemoteMatch(args: StartRemoteArgs): void
   send(cmd: Command): void
   reset(): void
 }
 
+// 终局统计:胜得卡包 + 上报排行;平局不计胜负
+function settleMatch(events: GameEvent[]): void {
+  const ended = events.find((e) => e.type === 'GameEnded')
+  if (!ended || ended.type !== 'GameEnded' || ended.winner === 'draw') return
+  useCollection.getState().recordResult(ended.winner === 0)
+  if (ended.winner === 0) reportWin()
+}
+
 export const useMatch = create<MatchStoreState>()((set, get) => ({
+  mode: 'local',
   match: null,
+  remote: null,
+  remoteStatus: null,
+  opponentName: null,
   state: null,
   lastEvents: [],
   error: null,
 
   startMatch(args) {
+    get().reset()
     // 应用层允许非确定性;引擎内部只吃这里传进去的种子
     const seed = args.seed ?? Math.floor(Math.random() * 0x7fffffff)
     const first = (seed & 1) as 0 | 1
@@ -40,11 +66,29 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       AI_NORMAL,
     )
     const { state, events } = match.start()
-    set({ match, state, lastEvents: events, error: null })
+    set({ mode: 'local', match, state, lastEvents: events, error: null })
+  },
+
+  startRemoteMatch(args) {
+    get().reset()
+    const remote = new RemoteMatch(args.server, args.deck, args.playerName, {
+      onStatus: (remoteStatus) => set({ remoteStatus }),
+      onUpdate: (state, events, opponentName) => {
+        settleMatch(events)
+        set({ state, lastEvents: events, opponentName: opponentName ?? null, error: null })
+      },
+      onError: (error) => set({ error }),
+    })
+    set({ mode: 'remote', remote, remoteStatus: 'connecting', state: null, lastEvents: [], error: null })
+    remote.start()
   },
 
   send(cmd) {
-    const { match } = get()
+    const { mode, match, remote } = get()
+    if (mode === 'remote') {
+      remote?.send(cmd)
+      return
+    }
     if (!match) return
     const r = match.sendCommand(cmd)
     if ('error' in r) {
@@ -53,17 +97,22 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
     }
     const events = r.updates.flatMap((u) => u.events)
     const last = r.updates[r.updates.length - 1]
-    // 终局:记战绩,胜场得卡包 + 静默上报排行榜(GameEnded 每局只出现一次)
-    const ended = events.find((e) => e.type === 'GameEnded')
-    if (ended && ended.type === 'GameEnded') {
-      useCollection.getState().recordResult(ended.winner === 0)
-      if (ended.winner === 0) reportWin()
-    }
+    settleMatch(events)
     set({ state: last.state, lastEvents: events, error: null })
   },
 
   reset() {
-    set({ match: null, state: null, lastEvents: [], error: null })
+    get().remote?.close()
+    set({
+      mode: 'local',
+      match: null,
+      remote: null,
+      remoteStatus: null,
+      opponentName: null,
+      state: null,
+      lastEvents: [],
+      error: null,
+    })
   },
 }))
 

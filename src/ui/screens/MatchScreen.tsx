@@ -32,7 +32,7 @@ interface MatchScreenProps {
 // 对战主画面:横屏炉石式布局。人类恒为 0 号玩家。
 export function MatchScreen({ onExit }: MatchScreenProps) {
   const t = useT()
-  const { state, lastEvents, error, send, reset } = useMatch()
+  const { state, lastEvents, error, send, reset, mode } = useMatch()
   const { soundEnabled, setSoundEnabled } = useSettings()
   const [selection, setSelection] = useState<Selection>(null)
   const [log, setLog] = useState<string[]>([])
@@ -405,7 +405,12 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
       )}
 
       {state.phase === 'ended' && !anim.holdResult && (
-        <ResultOverlay winner={state.winner} onRematch={handleRematch} onExit={handleExit} />
+        <ResultOverlay
+          winner={state.winner}
+          canRematch={mode === 'local'}
+          onRematch={handleRematch}
+          onExit={handleExit}
+        />
       )}
     </div>
   )

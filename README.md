@@ -33,6 +33,16 @@ iOS 模拟器:`xcrun simctl boot 'iPhone 17 Pro' && npx tauri ios dev 'iPhone 17
 - `src/app/` — Zustand stores、LocalMatch transport、收集系统、排行榜客户端
 - `src/ui/` — React 界面(事件时间轴动效 + Web Audio 合成音效)
 - `api/` — Vercel serverless 每日胜场榜(KV 未配置时优雅降级)
+- `server/` — 联机对战服务器(Cloudflare Workers + Durable Objects):QueueDO 匹配、MatchDO 权威对局(同一个 `applyCommand` 校验每条命令,客户端只收 redact 后的视角状态)
+
+## 联机对战
+
+```bash
+cd server && npx wrangler dev          # 本地服务器 localhost:8787
+node --import tsx server/drive-test.ts # 双 AI 客户端端到端验证
+```
+
+游戏内:标题页「联机对战」→ 填服务器地址 → 开始匹配。部署:`cd server && npx wrangler deploy`(需 Cloudflare 账号,免费档即可),客户端填 `wss://qiangu-server.<你的子域>.workers.dev`。
 
 详细约定见 [CLAUDE.md](CLAUDE.md);完整设计方案见 `~/.claude/plans/14-groovy-flame.md`。
 
