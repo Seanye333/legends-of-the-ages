@@ -546,3 +546,46 @@
   border: 1px solid rgba(255, 235, 180, 0.7);
   box-shadow: 0 0 6px rgba(232, 178, 58, 1);
 }
+
+/* —— 图鉴/组卡/卡包 导航 —— */
+.navRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.navBtn {
+  font-family: var(--font-display);
+  font-size: clamp(13px, 3.2vw, 15px);
+  letter-spacing: 0.16em;
+  padding: 8px 20px;
+  border-radius: 6px;
+  border: 1px solid rgba(184, 134, 59, 0.65);
+  background: linear-gradient(180deg, rgba(42, 34, 20, 0.92), rgba(24, 19, 11, 0.92));
+  color: var(--parchment-dim);
+  cursor: pointer;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.navBtn:hover {
+  color: var(--gold-bright);
+  transform: translateY(-1px);
+}
+
+.navGlow {
+  color: var(--gold-bright);
+  border-color: var(--gold-mid);
+  animation: navBreath 1.8s ease-in-out infinite;
+}
+
+@keyframes navBreath {
+  0%,
+  100% {
+    box-shadow: 0 0 6px rgba(212, 168, 74, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(232, 200, 120, 0.65);
+  }
+}

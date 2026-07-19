@@ -27,3 +27,13 @@ export const KEYWORD_ZH: Record<Keyword, string> = {
   windfury: '连击',
   duel: '单挑',
 }
+
+export const DOCTRINE_ZH: Record<CardDef['doctrine'], string> = {
+  royal: '王道',
+  hegemonic: '霸道',
+  ritual: '礼教',
+  fame: '名利',
+  separatist: '割据',
+  reclusion: '隐逸',
+  neutral: '中立',
+}

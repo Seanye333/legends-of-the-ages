@@ -22,6 +22,7 @@ export function ResultOverlay({ winner, onRematch, onExit }: ResultOverlayProps)
     <div className={`${styles.overlay} ${bgCls}`}>
       <div className={`${styles.glyph} ${verdictCls}`}>{glyph}</div>
       <div className={`${styles.word} ${verdictCls}`}>{word}</div>
+      {winner === 0 && <div className={styles.loot}>{t('战利:卡包 ×1', 'Spoils: 1 card pack')}</div>}
       <div className={styles.buttons}>
         <button className={styles.primary} onClick={onRematch}>
           {t('再来一局', 'Rematch')}

@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { CARDS, CARDS_BY_ID, SIGNATURE_IDS } from '../../content/cards'
 import { PRECON_DECKS } from '../../content/decks'
 import { HEROES } from '../../content/overrides/heroes'
@@ -9,6 +9,9 @@ import { useSettings } from '../../app/settingsStore'
 import { DOCTRINE_COLORS } from '../doctrineColors'
 import { launchMatch } from '../matchSetup'
 import { initSound, playSfx } from '../sound'
+import { useCollection } from '../../app/collectionStore'
+import type { DeckList } from '../../content/decks'
+import { PackOpening } from '../components/PackOpening'
 import styles from './TitleScreen.module.css'
 
 function MiniCard({ card }: { card: CardDef }) {
@@ -43,10 +46,10 @@ function MiniCard({ card }: { card: CardDef }) {
   )
 }
 
-// 预组齐备(≥2 套)则用预组:我选一套,AI 拿下一套;否则退回速成卡组。
-function buildMatchArgs(myDeckIndex: number): StartMatchArgs {
-  if (PRECON_DECKS.length >= 2) {
-    const mine = PRECON_DECKS[myDeckIndex % PRECON_DECKS.length]
+// 可选卡组 = 预组 + 自组;AI 恒拿一套预组。
+function buildMatchArgs(decks: DeckList[], myDeckIndex: number): StartMatchArgs {
+  if (decks.length >= 1 && PRECON_DECKS.length >= 1) {
+    const mine = decks[myDeckIndex % decks.length]
     const ai = PRECON_DECKS[(myDeckIndex + 1) % PRECON_DECKS.length]
     return {
       heroIds: [mine.heroId, ai.heroId],
@@ -61,24 +64,32 @@ function buildMatchArgs(myDeckIndex: number): StartMatchArgs {
 
 interface TitleScreenProps {
   onStart?: () => void
+  onNavigate?: (screen: 'collection' | 'deckbuilder') => void
 }
 
-export function TitleScreen({ onStart }: TitleScreenProps) {
+export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
   const t = useT()
   const pick = usePickText()
   const { language, setLanguage, soundEnabled, setSoundEnabled } = useSettings()
+  const customDecks = useCollection((s) => s.customDecks)
+  const packs = useCollection((s) => s.packs)
   const [deckIndex, setDeckIndex] = useState(0)
   const [startError, setStartError] = useState<string | null>(null)
+  const [packsOpen, setPacksOpen] = useState(false)
   const dynastyCount = new Set(CARDS.map((c) => c.dynasty)).size
   const gallery = SIGNATURE_IDS.map((id) => CARDS_BY_ID[id]).filter(Boolean)
-  const hasPrecons = PRECON_DECKS.length >= 2
+  const selectableDecks = useMemo(
+    () => [...PRECON_DECKS, ...customDecks],
+    [customDecks],
+  )
+  const hasPrecons = selectableDecks.length >= 2
 
   useEffect(() => initSound(), [])
 
   const onPlay = () => {
     playSfx('buttonTap')
     try {
-      launchMatch(buildMatchArgs(deckIndex))
+      launchMatch(buildMatchArgs(selectableDecks, deckIndex))
       setStartError(null)
       onStart?.()
     } catch (e) {
@@ -113,9 +124,9 @@ export function TitleScreen({ onStart }: TitleScreenProps) {
 
       {hasPrecons && (
         <div className={styles.deckRow}>
-          {PRECON_DECKS.map((deck, i) => (
+          {selectableDecks.map((deck, i) => (
             <button
-              key={`${deck.heroId}-${i}`}
+              key={`${deck.heroId}-${deck.name.zh}-${i}`}
               className={i === deckIndex ? styles.deckActive : styles.deckBtn}
               onClick={() => {
                 playSfx('buttonTap')
@@ -131,6 +142,36 @@ export function TitleScreen({ onStart }: TitleScreenProps) {
       <button className={styles.playButton} onClick={onPlay}>
         {t('开始对战', 'Play')}
       </button>
+
+      <div className={styles.navRow}>
+        <button
+          className={styles.navBtn}
+          onClick={() => {
+            playSfx('buttonTap')
+            onNavigate?.('collection')
+          }}
+        >
+          {t('名将图鉴', 'Collection')}
+        </button>
+        <button
+          className={styles.navBtn}
+          onClick={() => {
+            playSfx('buttonTap')
+            onNavigate?.('deckbuilder')
+          }}
+        >
+          {t('组建卡组', 'Deck Builder')}
+        </button>
+        <button
+          className={`${styles.navBtn} ${packs > 0 ? styles.navGlow : ''}`}
+          onClick={() => {
+            playSfx('buttonTap')
+            setPacksOpen(true)
+          }}
+        >
+          {t(`卡包 ×${packs}`, `Packs ×${packs}`)}
+        </button>
+      </div>
       {startError && (
         <p className={styles.errorLine} role="alert">
           {t('开局失败:', 'Failed to start: ')}
@@ -171,6 +212,8 @@ export function TitleScreen({ onStart }: TitleScreenProps) {
           <MiniCard key={card.id} card={card} />
         ))}
       </div>
+
+      {packsOpen && <PackOpening onClose={() => setPacksOpen(false)} />}
     </div>
   )
 }

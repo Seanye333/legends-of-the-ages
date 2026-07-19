@@ -1,0 +1,367 @@
+.screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: max(20px, env(safe-area-inset-top) + 8px) 16px 32px;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(96vw, 1080px);
+}
+
+.backBtn {
+  border: 1px solid rgba(122, 100, 58, 0.6);
+  background: rgba(20, 16, 10, 0.72);
+  color: var(--parchment-dim);
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(18px, 4.6vw, 26px);
+  letter-spacing: 0.22em;
+  color: var(--gold-bright);
+}
+
+/* —— 选主公 —— */
+.heroRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  max-width: 760px;
+}
+
+.heroCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: clamp(96px, 26vw, 130px);
+  padding: 10px 8px 12px;
+  border-radius: 12px;
+  border: 1.5px solid var(--doctrine);
+  background: linear-gradient(180deg, #241d12, #14100a);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.heroCard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6), 0 0 18px color-mix(in srgb, var(--doctrine) 50%, transparent);
+}
+
+.heroPortrait {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(212, 168, 74, 0.4);
+}
+
+.heroName {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--parchment);
+}
+
+.heroDoctrine {
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  color: var(--doctrine);
+}
+
+.savedList {
+  width: min(94vw, 560px);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.savedHead {
+  font-family: var(--font-display);
+  letter-spacing: 0.24em;
+  color: var(--parchment-faint);
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+.savedRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(122, 100, 58, 0.4);
+  background: rgba(20, 16, 10, 0.7);
+}
+
+.savedName {
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: var(--gold-bright);
+  background: none;
+  border: none;
+  cursor: pointer;
+  letter-spacing: 0.1em;
+}
+
+.savedHero {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--parchment-faint);
+}
+
+.deleteBtn {
+  font-size: 12px;
+  color: #c88;
+  background: none;
+  border: 1px solid rgba(160, 80, 70, 0.5);
+  border-radius: 5px;
+  padding: 3px 9px;
+  cursor: pointer;
+}
+
+/* —— 构筑区 —— */
+.heroChip {
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: 0.14em;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1.5px solid var(--doctrine);
+  color: var(--parchment);
+  background: rgba(20, 16, 10, 0.8);
+}
+
+.deckCount {
+  margin-left: auto;
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--gold-bright);
+}
+
+.builder {
+  display: flex;
+  gap: 14px;
+  width: min(96vw, 1080px);
+  align-items: flex-start;
+}
+
+.poolPane {
+  flex: 1.6;
+  max-height: 74vh;
+  overflow-y: auto;
+  border-radius: 10px;
+  border: 1px solid rgba(122, 100, 58, 0.35);
+  background: rgba(12, 10, 7, 0.5);
+  padding: 10px;
+}
+
+.poolGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+}
+
+.poolCell {
+  position: relative;
+  cursor: pointer;
+}
+
+.maxed {
+  opacity: 0.45;
+}
+
+.limitTag {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  z-index: 3;
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  color: var(--parchment);
+  background: rgba(12, 10, 7, 0.85);
+  border: 1px solid rgba(122, 100, 58, 0.5);
+}
+
+.deckPane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 240px;
+  max-height: 74vh;
+}
+
+.nameInput {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(122, 100, 58, 0.55);
+  background: rgba(20, 16, 10, 0.8);
+  color: var(--parchment);
+  font-size: 14px;
+  font-family: var(--font-display);
+  letter-spacing: 0.1em;
+}
+
+.curve {
+  display: flex;
+  gap: 4px;
+  height: 58px;
+  align-items: flex-end;
+  padding: 4px 6px 0;
+  border-radius: 8px;
+  border: 1px solid rgba(122, 100, 58, 0.3);
+  background: rgba(12, 10, 7, 0.5);
+}
+
+.curveCol {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  gap: 2px;
+}
+
+.curveBar {
+  width: 70%;
+  min-height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: linear-gradient(180deg, var(--gold), var(--gold-dark));
+  transition: height 0.2s ease;
+}
+
+.curveLabel {
+  font-size: 9px;
+  color: var(--parchment-faint);
+}
+
+.deckList {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-right: 2px;
+}
+
+.deckRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--doctrine) 45%, transparent);
+  background: linear-gradient(90deg, rgba(29, 25, 19, 0.95), rgba(18, 15, 10, 0.95));
+  color: var(--parchment);
+  cursor: pointer;
+  text-align: left;
+  font-size: 13px;
+}
+
+.deckRow:hover {
+  border-color: #c88;
+}
+
+.rowCost {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  background: #2359a8;
+  flex-shrink: 0;
+}
+
+.rowName {
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rowCount {
+  margin-left: auto;
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.hint {
+  color: var(--parchment-faint);
+  font-size: 13px;
+  text-align: center;
+  margin-top: 20px;
+}
+
+.errors {
+  font-size: 12px;
+  color: #e8a094;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.savedOk {
+  font-size: 13px;
+  color: #a8d89a;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.saveBtn {
+  flex: 1;
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: 0.12em;
+  padding: 10px 0;
+  border-radius: 6px;
+  border: 1px solid #f0d090;
+  background: linear-gradient(180deg, #6a4d1e, #46310f 55%, #2e1f08);
+  color: var(--gold-bright);
+  cursor: pointer;
+}
+
+.saveBtn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* 手机竖屏:上下布局 */
+@media (max-width: 720px) {
+  .builder {
+    flex-direction: column;
+  }
+  .poolPane {
+    max-height: 44vh;
+    width: 100%;
+  }
+  .deckPane {
+    width: 100%;
+    max-height: none;
+  }
+  .deckList {
+    max-height: 30vh;
+  }
+}

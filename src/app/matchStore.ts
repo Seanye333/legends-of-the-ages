@@ -5,6 +5,7 @@ import type { CardDef, Doctrine } from '../engine/types'
 import { CARDS, CARDS_BY_ID } from '../content/cards'
 import { LocalMatch } from './transport'
 import { AI_NORMAL } from '../ai/greedy'
+import { useCollection } from './collectionStore'
 
 export interface StartMatchArgs {
   heroIds: [string, string]
@@ -51,6 +52,11 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
     }
     const events = r.updates.flatMap((u) => u.events)
     const last = r.updates[r.updates.length - 1]
+    // 终局:记战绩,胜场得卡包(GameEnded 每局只出现一次)
+    const ended = events.find((e) => e.type === 'GameEnded')
+    if (ended && ended.type === 'GameEnded') {
+      useCollection.getState().recordResult(ended.winner === 0)
+    }
     set({ state: last.state, lastEvents: events, error: null })
   },
 
