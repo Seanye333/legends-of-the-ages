@@ -14,6 +14,8 @@ import { launchMatch } from '../matchSetup'
 import { initSound, playSfx } from '../sound'
 import { useCollection } from '../../app/collectionStore'
 import { useArena } from '../../app/arenaStore'
+import { ACHIEVEMENTS, useAchievements } from '../../app/achievementStore'
+import { AchievementPanel } from '../components/AchievementPanel'
 import type { DeckList } from '../../content/decks'
 import { PackOpening } from '../components/PackOpening'
 import { LeaderboardPanel } from '../components/LeaderboardPanel'
@@ -95,6 +97,12 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
   const customDecks = useCollection((s) => s.customDecks)
   const packs = useCollection((s) => s.packs)
   const arenaLive = useArena((s) => s.phase !== 'idle')
+  // 订阅 stats/claimed 而不是调 claimableCount() —— 后者不是响应式的
+  const achStats = useAchievements((s) => s.stats)
+  const achClaimed = useAchievements((s) => s.claimed)
+  const achClaimable = ACHIEVEMENTS.filter(
+    (a) => !achClaimed.includes(a.id) && (achStats[a.stat] ?? 0) >= a.goal,
+  ).length
   const [deckIndex, setDeckIndex] = useState(0)
   const [startError, setStartError] = useState<string | null>(null)
   const [packsOpen, setPacksOpen] = useState(false)
@@ -102,6 +110,7 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
   const [remoteOpen, setRemoteOpen] = useState(false)
   const [pendingSession] = useState(() => loadSession() !== null)
   const [questsOpen, setQuestsOpen] = useState(false)
+  const [achOpen, setAchOpen] = useState(false)
   const [offerTutorial, setOfferTutorial] = useState(() => shouldOfferTutorial())
   const resumeRemoteMatch = useMatch((s) => s.resumeRemoteMatch)
   const quests = useQuests((s) => s.quests)
@@ -289,6 +298,17 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
           {claimable > 0 ? t(`军令 ●${claimable}`, `Orders ●${claimable}`) : t('每日军令', 'Daily Orders')}
         </button>
         <button
+          className={`${styles.navBtn} ${achClaimable > 0 ? styles.navGlow : ''}`}
+          onClick={() => {
+            playSfx('buttonTap')
+            setAchOpen(true)
+          }}
+        >
+          {achClaimable > 0
+            ? t(`功名簿 ●${achClaimable}`, `Feats ●${achClaimable}`)
+            : t('功名簿', 'Achievements')}
+        </button>
+        <button
           className={styles.navBtn}
           onClick={() => {
             playSfx('buttonTap')
@@ -357,6 +377,7 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
       </div>
 
       {questsOpen && <QuestPanel onClose={() => setQuestsOpen(false)} />}
+      {achOpen && <AchievementPanel onClose={() => setAchOpen(false)} />}
       {packsOpen && <PackOpening onClose={() => setPacksOpen(false)} />}
       {ladderOpen && <LeaderboardPanel onClose={() => setLadderOpen(false)} />}
       {remoteOpen && selectableDecks.length > 0 && (

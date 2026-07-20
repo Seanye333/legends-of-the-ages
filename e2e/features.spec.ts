@@ -202,3 +202,31 @@ test('arena: entry gate, hero pick, drafting, and fighting', async ({ page }) =>
   await page.getByRole('button', { name: '出战' }).click()
   await expect(page.getByRole('button', { name: /全部保留|确认/ })).toBeVisible()
 })
+
+test('achievements: permanent progress, gated claim, reward payout', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: '功名簿' }).click()
+  await expect(page.getByRole('dialog', { name: '功名簿' })).toBeVisible()
+
+  // 未达成的成就领取按钮是锁着的
+  await expect(page.getByRole('button', { name: '未达成' }).first()).toBeDisabled()
+
+  // 注入一个已达成的统计,面板应立刻可领
+  await page.getByRole('button', { name: '关闭' }).click()
+  await page.evaluate(() => {
+    const raw = localStorage.getItem('qiangu-achievements')
+    const s = raw ? JSON.parse(raw) : { state: {}, version: 0 }
+    s.state = { ...s.state, stats: { matchesWon: 10 }, claimed: [] }
+    localStorage.setItem('qiangu-achievements', JSON.stringify(s))
+  })
+  await page.reload()
+
+  // 标题页入口应带上可领标记
+  await expect(page.getByRole('button', { name: /功名簿 ●\d+/ })).toBeVisible()
+  await page.getByRole('button', { name: /功名簿 ●\d+/ }).click()
+  const claim = page.getByRole('button', { name: '领取' }).first()
+  await expect(claim).toBeEnabled()
+  await claim.click()
+  await expect(page.getByText(/功勋 \+\d+/)).toBeVisible()
+  await expect(page.getByText('已领').first()).toBeVisible()
+})

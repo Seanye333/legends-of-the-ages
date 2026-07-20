@@ -7,6 +7,7 @@ import { CARDS_BY_ID, COLLECTIBLE_CARDS } from '../content/cards'
 import { PRECON_DECKS, validateDeckDetailed, type DeckList } from '../content/decks'
 import { deckViolationText } from '../content/deckErrorText'
 import { HEROES_BY_ID } from '../content/overrides/heroes'
+import { useAchievements } from './achievementStore'
 
 export const PACK_SIZE = 5
 const MAX_COPIES = 2
@@ -185,6 +186,7 @@ export const useCollection = create<CollectionState>()(
             meritGained += disenchantValue(id)
           }
         }
+        useAchievements.getState().bump('packsOpened')
         const gotLegendary = cardIds.some((id) => CARDS_BY_ID[id]?.rarity === 'legendary')
         set((s) => ({
           packs: s.packs - 1,
@@ -220,6 +222,7 @@ export const useCollection = create<CollectionState>()(
           merit: s.merit - cost,
           owned: { ...s.owned, [cardId]: (s.owned[cardId] ?? 0) + 1 },
         }))
+        useAchievements.getState().bump('cardsCrafted')
         return true
       },
 

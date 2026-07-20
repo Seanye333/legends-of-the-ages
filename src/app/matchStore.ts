@@ -10,6 +10,7 @@ import { useSettings } from './settingsStore'
 import { useCollection } from './collectionStore'
 import { useQuests } from './questStore'
 import { useArena } from './arenaStore'
+import { useAchievements } from './achievementStore'
 import { reportWin } from './leaderboard'
 import type { EmoteId } from './protocol'
 import {
@@ -73,10 +74,12 @@ interface MatchStoreState {
 // 表情序号:同一个表情连发两次,UI 也要能触发两次动画
 let emoteSeq = 1
 
-// 每批事件都记一次任务进度(计数类任务天然累加,不会重复计)
+// 每批事件都记一次任务与成就进度(计数类天然累加,不会重复计)
 function settleQuests(events: GameEvent[], state: GameState | null): void {
   if (events.length === 0 || !state) return
-  useQuests.getState().recordMatch(events, state.players[0].heroId)
+  const heroId = state.players[0].heroId
+  useQuests.getState().recordMatch(events, heroId)
+  useAchievements.getState().recordMatch(events, heroId)
 }
 
 // 终局统计:胜得卡包、负得安慰功勋、和局也给一点 —— 输了颗粒无收太劝退。

@@ -9,6 +9,7 @@
 //   真反作弊要把卡包发放搬到服务器(联机胜负已由 MatchDO 权威判定,是现成的落点)。
 import { useCollection } from './collectionStore'
 import { useQuests } from './questStore'
+import { useAchievements } from './achievementStore'
 import { getPlayerId } from './leaderboard'
 import { DEFAULT_SERVER, httpBase } from './protocol'
 
@@ -28,6 +29,8 @@ export interface ProfileData {
   customDecks: unknown[]
   questDate: string
   quests: unknown[]
+  achievementStats: Record<string, number>
+  achievementsClaimed: string[]
 }
 
 interface Envelope {
@@ -88,6 +91,7 @@ function setLocalVersion(v: number): void {
 export function snapshot(): ProfileData {
   const c = useCollection.getState()
   const q = useQuests.getState()
+  const a = useAchievements.getState()
   return {
     owned: c.owned,
     packs: c.packs,
@@ -98,6 +102,8 @@ export function snapshot(): ProfileData {
     customDecks: c.customDecks,
     questDate: q.date,
     quests: q.quests,
+    achievementStats: a.stats as Record<string, number>,
+    achievementsClaimed: a.claimed,
   }
 }
 
@@ -117,6 +123,11 @@ function adopt(data: ProfileData): void {
     useQuests.setState({ date: data.questDate, quests: data.quests as never })
     useQuests.getState().refreshIfNewDay() // 服务器那份可能是昨天的
   }
+  // 成就是终身累计,采纳服务器版时同样整份替换(版本号已表明它更新)
+  useAchievements.setState({
+    stats: (data.achievementStats ?? {}) as never,
+    claimed: data.achievementsClaimed ?? [],
+  })
 }
 
 // 存档归属密钥:首次同步时随机生成并留在本地,之后每次读写都带上。
@@ -205,6 +216,7 @@ export function startProfileSync(): void {
   // 收藏与任务任一变化就排一次回推(防抖合并连续变更)
   useCollection.subscribe(schedulePush)
   useQuests.subscribe(schedulePush)
+  useAchievements.subscribe(schedulePush)
 
   // 关页面前尽力推一把,别把刚开的卡包丢了。
   // 用 globalThis 特性探测而非直接摸 window:这个模块在测试(无 DOM)里也会被加载。

@@ -6,6 +6,7 @@ import { COLLECTIBLE_CARDS } from '../content/cards'
 import { HEROES } from '../content/overrides/heroes'
 import type { DeckList } from '../content/decks'
 import { useCollection } from './collectionStore'
+import { useAchievements } from './achievementStore'
 
 // 竞技场「校场点将」。
 //
@@ -167,6 +168,8 @@ export const useArena = create<ArenaState>()(
         const wins = s.wins + (win ? 1 : 0)
         const losses = s.losses + (win ? 0 : 1)
         const over = wins >= ARENA_MAX_WINS || losses >= ARENA_MAX_LOSSES
+        // arenaBestWins 是「取最大」型统计,重复上报同一轮不会累加
+        useAchievements.getState().bump('arenaBestWins', wins)
         set({ wins, losses, phase: over ? 'done' : 'ready' })
       },
 
