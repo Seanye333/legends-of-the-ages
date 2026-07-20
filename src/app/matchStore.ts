@@ -51,6 +51,8 @@ interface MatchStoreState {
   opponentName: string | null
   roomCode: string | null
   ratingResult: RatingResult | null
+  // 服务器的回合时限(epoch ms)。只有联机局有;本地局恒为 null。
+  turnDeadline: number | null
   state: GameState | null
   lastEvents: GameEvent[]
   error: string | null
@@ -84,11 +86,22 @@ type SetState = (partial: Partial<MatchStoreState>) => void
 function remoteCallbacks(set: SetState) {
   return {
     onStatus: (remoteStatus: RemoteStatus) => set({ remoteStatus }),
-    onUpdate: (state: GameState, events: GameEvent[], opponentName?: string) => {
+    onUpdate: (
+      state: GameState,
+      events: GameEvent[],
+      opponentName?: string,
+      turnDeadline?: number,
+    ) => {
       settleMatch(events)
       settleQuests(events, state)
       recordReplayFrame(state, events, opponentName)
-      set({ state, lastEvents: events, opponentName: opponentName ?? null, error: null })
+      set({
+        state,
+        lastEvents: events,
+        opponentName: opponentName ?? null,
+        turnDeadline: turnDeadline ?? null,
+        error: null,
+      })
     },
     onError: (error: string) => set({ error }),
     onRoomCode: (roomCode: string) => set({ roomCode }),
@@ -105,6 +118,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
   opponentName: null,
   roomCode: null,
   ratingResult: null,
+  turnDeadline: null,
   state: null,
   lastEvents: [],
   error: null,
@@ -200,6 +214,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       opponentName: null,
       roomCode: null,
       ratingResult: null,
+      turnDeadline: null,
       state: null,
       lastEvents: [],
       error: null,

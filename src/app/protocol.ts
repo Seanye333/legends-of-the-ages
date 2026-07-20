@@ -49,6 +49,9 @@ export interface MatchUpdateMsg {
   state: RedactedState
   events: GameEvent[]
   opponentName?: string
+  // 本回合的强制结束时刻(epoch ms)。服务器有 90 秒回合时限,
+  // 不把它推给客户端的话,玩家会被一个看不见的计时器判掉回合。
+  turnDeadline?: number
 }
 
 export type MatchServerMsg =

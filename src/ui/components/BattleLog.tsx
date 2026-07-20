@@ -31,7 +31,7 @@ export function BattleLog({ entries }: BattleLogProps) {
         {open ? '✕' : t('战报', 'Log')}
       </button>
       {open && (
-        <div className={styles.list} ref={listRef} onClick={(e) => e.stopPropagation()}>
+        <div role="log" aria-live="polite" aria-label="战报 Battle log" className={styles.list} ref={listRef} onClick={(e) => e.stopPropagation()}>
           {entries.length === 0 ? (
             <div className={styles.empty}>{t('暂无战报', 'No entries yet')}</div>
           ) : (

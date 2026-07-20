@@ -5,6 +5,7 @@ import { DECK_SIZE } from '../../engine/types'
 import { CARDS_BY_ID, COLLECTIBLE_CARDS } from '../../content/cards'
 import { HEROES } from '../../content/overrides/heroes'
 import { PRECON_DECKS, type DeckList } from '../../content/decks'
+import { decodeDeck, encodeDeck } from '../../content/deckCode'
 import { useCollection, copyLimit } from '../../app/collectionStore'
 import { DOCTRINE_COLORS, DOCTRINE_NAME } from '../doctrineColors'
 import { CardFace } from '../components/CardFace'
@@ -59,6 +60,8 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
   const [typeFilter, setTypeFilter] = useState<'all' | CardType>('all')
   const [sort, setSort] = useState<SortKey>('cost')
   const [poolLimit, setPoolLimit] = useState(POOL_PAGE)
+  const [codeInput, setCodeInput] = useState('')
+  const [codeCopied, setCodeCopied] = useState(false)
   const deferredQuery = useDeferredValue(query)
 
   const total = useMemo(() => Object.values(counts).reduce((a, b) => a + b, 0), [counts])
@@ -145,6 +148,53 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
     setCounts(c)
     setErrors([])
     setSavedMsg(false)
+  }
+
+  const onCopyCode = () => {
+    if (!hero || total !== DECK_SIZE) return
+    playSfx('buttonTap')
+    const cardIds = Object.entries(counts).flatMap(([id, n]) => Array.from({ length: n }, () => id))
+    const heroNo = CARDS_BY_ID[hero.id]?.collectorNo ?? 0
+    try {
+      const code = encodeDeck(
+        { heroId: hero.id, name: { zh: deckName, en: deckName }, cardIds },
+        CARDS_BY_ID,
+        heroNo,
+      )
+      void navigator.clipboard?.writeText(code)
+      setCodeCopied(true)
+      window.setTimeout(() => setCodeCopied(false), 1800)
+    } catch {
+      setErrors([{ zh: '生成卡组码失败', en: 'Could not generate a deck code' }])
+    }
+  }
+
+  // 解码失败要给人话,不能把 'bad-base64' 这种内部码怼给玩家
+  const onImportCode = () => {
+    playSfx('buttonTap')
+    try {
+      const decoded = decodeDeck(codeInput, CARDS_BY_ID)
+      const h = HEROES.find((x) => x.id === decoded.heroId)
+      if (!h) throw new Error('unknown-hero')
+      setHero(h)
+      const c: Record<string, number> = {}
+      for (const id of decoded.cardIds) c[id] = (c[id] ?? 0) + 1
+      setCounts(c)
+      setDeckName(t('导入的卡组', 'Imported deck'))
+      setCodeInput('')
+      setErrors([])
+      setSavedMsg(false)
+      playSfx('heal')
+    } catch (e) {
+      const reason = e instanceof Error ? e.message : ''
+      setErrors([
+        reason.startsWith('unknown-card')
+          ? { zh: '卡组码里有本版本不存在的卡', en: 'This code contains cards not in this version' }
+          : reason === 'bad-size'
+            ? { zh: '卡组码不是完整的 30 张', en: 'That code is not a full 30-card deck' }
+            : { zh: '卡组码无法识别', en: 'That deck code could not be read' },
+      ])
+    }
   }
 
   const loadDeck = (deckNameZh: string) => {
@@ -389,6 +439,27 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
             </button>
             <button className={styles.backBtn} onClick={() => { playSfx('buttonTap'); onBack() }}>
               {t('完成', 'Done')}
+            </button>
+          </div>
+
+          {/* 卡组码:以前只能导出单张卡面的 PNG,卡组本身没法分享给任何人 */}
+          <div className={styles.codeRow}>
+            <button
+              className={styles.codeBtn}
+              disabled={total !== DECK_SIZE}
+              onClick={onCopyCode}
+            >
+              {codeCopied ? t('已复制卡组码', 'Code copied') : t('复制卡组码', 'Copy deck code')}
+            </button>
+            <input
+              className={styles.codeInput}
+              placeholder={t('粘贴卡组码…', 'Paste a deck code…')}
+              value={codeInput}
+              aria-label={t('粘贴卡组码', 'Paste a deck code')}
+              onChange={(e) => setCodeInput(e.target.value)}
+            />
+            <button className={styles.codeBtn} disabled={!codeInput.trim()} onClick={onImportCode}>
+              {t('导入', 'Import')}
             </button>
           </div>
         </div>

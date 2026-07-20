@@ -6,7 +6,7 @@ import { Portrait } from './Portrait'
 import type { FloatItem } from './floats'
 import type { TokenFx } from '../useEventAnimations'
 import { useLongPress } from '../useLongPress'
-import { usePickCompact } from '../i18n'
+import { usePickCompact, useLang } from '../i18n'
 import styles from './GeneralToken.module.css'
 
 const MOTION_CLASS = { lunge: 'fx-lunge', shake: 'fx-shake', shakeHard: 'fx-shake-hard' } as const
@@ -31,6 +31,7 @@ export function GeneralToken({ inst, ready, selected, targetable, floats, fx, on
   const name = def ? pickCompact(def.name) : inst.defId
   const doctrine = def?.doctrine ?? 'neutral'
   const hasGuard = inst.keywords.includes('guard')
+  const zhLabels = useLang() !== 'en'
 
   // 状态一眼可辨:铁壁描金环 / 潜行半透虚边 / 冰封蓝罩 / 沉默灰化
   const cls = [
@@ -57,12 +58,35 @@ export function GeneralToken({ inst, ready, selected, targetable, floats, fx, on
       } as CSSProperties)
     : {}
 
+  // 与 CardFace 同理:场上单位原来是纯 <div onClick>,键盘与读屏器都够不到。
+  // 状态(守护/铁壁/潜行/冰封/沉默)也一并读出来 —— 这些信息此前只靠颜色和小徽章传达。
+  const interactive = Boolean(onClick || onInspect)
+  const stateWords = [
+    hasGuard ? (zhLabels ? '守护' : 'Guard') : '',
+    inst.keywords.includes('divineShield') ? (zhLabels ? '铁壁' : 'Divine Shield') : '',
+    inst.keywords.includes('stealth') ? (zhLabels ? '潜行' : 'Stealth') : '',
+    inst.frozen ? (zhLabels ? '冰封' : 'Frozen') : '',
+    inst.silenced ? (zhLabels ? '沉默' : 'Silenced') : '',
+    ready ? (zhLabels ? '可攻击' : 'ready to attack') : '',
+  ].filter(Boolean)
+  const a11yLabel = [`${name} ${inst.attack}/${inst.health}`, ...stateWords].join(' · ')
+
   return (
     <div
       className={cls}
       data-fxkey={`gen-${inst.iid}`}
       style={{ '--doctrine': DOCTRINE_COLORS[doctrine], ...fxVars } as CSSProperties}
       {...(onInspect ? longPress.handlers : {})}
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      aria-label={interactive ? a11yLabel : undefined}
+      onKeyDown={(e) => {
+        if (!interactive) return
+        if (e.key !== 'Enter' && e.key !== ' ') return
+        e.preventDefault()
+        if (e.shiftKey && onInspect) onInspect()
+        else onClick?.(e as unknown as MouseEvent)
+      }}
       onClick={(e) => {
         if (onInspect && longPress.consumed()) {
           e.stopPropagation()

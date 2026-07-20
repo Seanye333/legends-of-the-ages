@@ -39,7 +39,12 @@ export type RemoteStatus =
 
 export interface RemoteCallbacks {
   onStatus(status: RemoteStatus): void
-  onUpdate(state: GameState, events: GameEvent[], opponentName?: string): void
+  onUpdate(
+    state: GameState,
+    events: GameEvent[],
+    opponentName?: string,
+    turnDeadline?: number,
+  ): void
   onError(error: string): void
   onRoomCode?(code: string): void
   onRated?(rating: number, delta: number): void
@@ -315,6 +320,7 @@ export class RemoteMatch {
           state,
           msg.events.map((e) => flipEvent(e, this.seat)),
           msg.opponentName,
+          msg.turnDeadline,
         )
         return
       }

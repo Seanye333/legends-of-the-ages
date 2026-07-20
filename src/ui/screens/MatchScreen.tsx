@@ -3,7 +3,7 @@ import type { Command, GameEvent, LocalizedText, TargetRef } from '../../engine/
 import { legalCommands } from '../../engine/legal'
 import { CARDS_BY_ID } from '../../content/cards'
 import { useMatch } from '../../app/matchStore'
-import { usePickCompact, useT } from '../i18n'
+import { usePickCompact, usePickText, useT } from '../i18n'
 import { rematch } from '../matchSetup'
 import { HeroPlate } from '../components/HeroPlate'
 import { GeneralToken } from '../components/GeneralToken'
@@ -13,10 +13,12 @@ import { ResultOverlay } from '../components/ResultOverlay'
 import { BattleLog } from '../components/BattleLog'
 import { cardName, formatEvent, heroName } from '../components/eventText'
 import { targetFloatKey } from '../components/floats'
+import { matchErrorText } from '../components/errorText'
 import { Portrait } from '../components/Portrait'
 import { CardInspect } from '../components/CardInspect'
 import { TutorialCoach } from '../components/TutorialCoach'
 import { ConfirmDialog } from '../components/ConfirmDialog'
+import { TurnRope } from '../components/TurnRope'
 import type { CardDef } from '../../engine/types'
 import { useEventAnimations } from '../useEventAnimations'
 import { initSound, playSfx } from '../sound'
@@ -41,8 +43,19 @@ interface MatchScreenProps {
 export function MatchScreen({ onExit }: MatchScreenProps) {
   const t = useT()
   const pickCompact = usePickCompact()
-  const { state, lastEvents, error, send, reset, mode, tutorial, remoteStatus, ratingResult } =
-    useMatch()
+  const pickText = usePickText()
+  const {
+    state,
+    lastEvents,
+    error,
+    send,
+    reset,
+    mode,
+    tutorial,
+    remoteStatus,
+    ratingResult,
+    turnDeadline,
+  } = useMatch()
   const { soundEnabled, setSoundEnabled } = useSettings()
   const [selection, setSelection] = useState<Selection>(null)
   const [log, setLog] = useState<LocalizedText[]>([])
@@ -152,13 +165,14 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  // 错误 → 短暂 toast
+  // 错误 → 短暂 toast。错误码要翻成人话:
+  // 从前 `connect-failed` / `match-abandoned` 这种内部码是直接怼给玩家看的。
   useEffect(() => {
     if (!error) return
-    setToast(error)
+    setToast(pickText(matchErrorText(error)))
     const timer = window.setTimeout(() => setToast(null), 2500)
     return () => window.clearTimeout(timer)
-  }, [error])
+  }, [error, pickText])
 
   // 对手回归 → 短暂 toast
   useEffect(() => {
@@ -405,14 +419,33 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
 
       {/* 对方回合遮罩(本地 AI 即时,一般一闪而过) */}
       {state.phase === 'main' && state.activePlayer === 1 && (
-        <div className={styles.enemyTurn}>{t('对方回合', "Opponent's Turn")}</div>
+        <div className={styles.enemyTurn} role="status" aria-live="polite">
+          {t('对方回合', "Opponent's Turn")}
+        </div>
       )}
+
+      {/* 竖屏提示:牌桌是按横屏设计的,窄屏竖着会被压扁(纯 CSS 控制显隐) */}
+      <div className={styles.rotateHint}>
+        <span className={styles.rotateGlyph} aria-hidden="true">
+          ▭
+        </span>
+        <span className={styles.rotateTitle}>{t('请横持设备', 'Please rotate your device')}</span>
+        <span className={styles.rotateBody}>
+          {t(
+            '战场按横屏排布 —— 转成横屏才看得全两方阵列与手牌。',
+            'The battlefield is laid out for landscape — rotate to see both boards and your hand.',
+          )}
+        </span>
+      </div>
+
+      {/* 回合绳:只有联机局有服务器时限,本地局 turnDeadline 恒为 null */}
+      <TurnRope deadline={turnDeadline} myTurn={myTurn} />
 
       <BattleLog entries={log} />
 
       {/* 联机连接横幅:自己重连中 / 对手掉线等待 */}
       {mode === 'remote' && remoteStatus === 'reconnecting' && (
-        <div className={styles.linkBanner}>{t('连接中断,重连中…', 'Connection lost, reconnecting…')}</div>
+        <div className={styles.linkBanner} role="status" aria-live="polite">{t('连接中断,重连中…', 'Connection lost, reconnecting…')}</div>
       )}
       {mode === 'remote' && remoteStatus === 'opponent-left' && state.phase !== 'ended' && (
         <div className={styles.linkBanner}>{t('对手掉线,等待重连…', 'Opponent disconnected, waiting…')}</div>
@@ -442,7 +475,12 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
         />
       )}
 
-      {toast && <div className={styles.toast}>{toast}</div>}
+      {/* 读屏器此前完全收不到 toast 与横幅 —— 补 aria-live */}
+      {toast && (
+        <div className={styles.toast} role="status" aria-live="polite">
+          {toast}
+        </div>
+      )}
 
       {/* 阵亡残影:从原位放大消散 */}
       {anim.ghosts.map((g) => {

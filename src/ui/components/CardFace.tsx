@@ -51,11 +51,36 @@ export function CardFace({ inst, playable, selected, large, onClick, onInspect }
     .filter(Boolean)
     .join(' ')
 
+  // 卡牌以前是纯 <div onClick>:不可键盘聚焦,读屏器什么都读不出来。
+  // 这里不改成 <button>(卡面里有嵌套结构与长按手势,button 的默认行为会打架),
+  // 而是补齐 button 的语义契约:role + tabIndex + 键盘激活 + 可读的标签。
+  const interactive = Boolean(onClick || onInspect)
+  const a11yLabel = [
+    mainName,
+    `${def.cost} ${lang === 'en' ? 'mana' : '费'}`,
+    def.type === 'general' ? `${def.attack ?? 0}/${def.health ?? 0}` : '',
+    def.text ? (lang === 'en' ? def.text.en : def.text.zh) : '',
+  ]
+    .filter(Boolean)
+    .join(' · ')
+
   return (
     <div
       className={cls}
       style={{ '--doctrine': DOCTRINE_COLORS[def.doctrine] } as CSSProperties}
       {...(onInspect ? longPress.handlers : {})}
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      aria-label={interactive ? a11yLabel : undefined}
+      aria-disabled={onClick && playable === false ? true : undefined}
+      onKeyDown={(e) => {
+        if (!interactive) return
+        if (e.key !== 'Enter' && e.key !== ' ') return
+        e.preventDefault()
+        // 键盘上没有「长按」:回车出牌,Shift+回车看详情
+        if (e.shiftKey && onInspect) onInspect()
+        else onClick?.(e as unknown as MouseEvent)
+      }}
       onClick={(e) => {
         if (onInspect && longPress.consumed()) {
           e.stopPropagation()

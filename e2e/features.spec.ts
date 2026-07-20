@@ -138,3 +138,29 @@ test('settings screen: record, volume, sync and reset are all reachable', async 
   await page.getByRole('button', { name: '取消' }).click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
 })
+
+test('deck codes: copy from a precon and import it back', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+  await page.goto('/')
+  await page.getByRole('button', { name: '组建卡组' }).click()
+  await page.getByRole('button', { name: '桃園仁德' }).click()
+
+  // 满 30 张才允许导出
+  const copyBtn = page.getByRole('button', { name: '复制卡组码' })
+  await expect(copyBtn).toBeEnabled()
+  await copyBtn.click()
+  await expect(page.getByRole('button', { name: '已复制卡组码' })).toBeVisible()
+
+  const code = await page.evaluate(() => navigator.clipboard.readText())
+  expect(code.startsWith('QG1.')).toBe(true)
+
+  // 导入同一串码 → 仍是满编卡组
+  await page.getByPlaceholder('粘贴卡组码…').fill(code)
+  await page.getByRole('button', { name: '导入' }).click()
+  await expect(page.getByRole('button', { name: '保存卡组(30/30)' })).toBeVisible()
+
+  // 垃圾码要给人话,而不是内部错误码
+  await page.getByPlaceholder('粘贴卡组码…').fill('QG1.garbage')
+  await page.getByRole('button', { name: '导入' }).click()
+  await expect(page.getByText('卡组码无法识别')).toBeVisible()
+})

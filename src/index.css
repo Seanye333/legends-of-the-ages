@@ -165,3 +165,20 @@ button {
     transform: none !important;
   }
 }
+
+/* ---- 键盘焦点 ----
+   此前全库没有一条 :focus / :focus-visible 规则,也没人覆盖默认焦点圈,
+   等于「能不能看见焦点」全看浏览器心情。这里给一个统一、够显眼的描边。
+   只用 :focus-visible,鼠标点击不会平白多出一圈。 */
+:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* 卡牌与场上单位是自绘的圆/矩形,描边跟着形状走才不难看 */
+[role='button']:focus-visible {
+  outline: 2px solid #ffe6a8;
+  outline-offset: 3px;
+  box-shadow: 0 0 14px 3px rgba(255, 230, 168, 0.45);
+}

@@ -171,6 +171,7 @@ export class MatchDO {
         state: redactState(this.state, me),
         events: [],
         opponentName: this.seats[other(me)].name,
+        turnDeadline: this.deadlines.turn?.at,
       })
       if (this.state.phase !== 'ended') {
         this.sendTo(other(me), { type: 'opponent-back' })
@@ -359,6 +360,9 @@ export class MatchDO {
       heroHps: [heroes[0]?.hp ?? START_HP, heroes[1]?.hp ?? START_HP],
     }
     this.state = createGame(this.cfg, CARDS_BY_ID)
+    this.deadlines.abandon = Date.now() + ABANDON_MS
+    this.touchTurnDeadline()
+    await this.armAlarm()
     await this.persist()
     this.broadcast('start', [])
   }
@@ -413,6 +417,7 @@ export class MatchDO {
         state: redactState(this.state, seatIdx),
         events: events.map((e) => redactEvent(e, seatIdx)),
         opponentName: this.seats[other(seatIdx)].name,
+        turnDeadline: this.deadlines.turn?.at,
       })
     }
   }

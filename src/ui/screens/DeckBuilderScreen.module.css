@@ -465,3 +465,51 @@
   line-height: 1.45;
   color: var(--parchment-faint);
 }
+
+/* ---- 卡组码 ---- */
+.codeRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(212, 168, 74, 0.15);
+}
+
+.codeInput {
+  flex: 1 1 140px;
+  min-width: 110px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(212, 168, 74, 0.3);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--parchment);
+  font-size: 12px;
+}
+
+.codeInput::placeholder {
+  color: var(--parchment-faint);
+}
+
+.codeBtn {
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(212, 168, 74, 0.35);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--parchment);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.codeBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.codeInput:focus-visible,
+.codeBtn:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
+}
