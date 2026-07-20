@@ -20,6 +20,9 @@ const SettingsScreen = lazy(() =>
 const ArenaScreen = lazy(() =>
   import('./ui/screens/ArenaScreen').then((m) => ({ default: m.ArenaScreen })),
 )
+const CampaignScreen = lazy(() =>
+  import('./ui/screens/CampaignScreen').then((m) => ({ default: m.CampaignScreen })),
+)
 
 export type Screen =
   | 'title'
@@ -29,6 +32,7 @@ export type Screen =
   | 'replays'
   | 'settings'
   | 'arena'
+  | 'campaign'
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('title')
@@ -70,6 +74,18 @@ export default function App() {
             onBack={back}
             onEnterMatch={() => {
               setAfterMatch('arena')
+              setScreen('match')
+            }}
+          />
+        </Suspense>
+      )
+    case 'campaign':
+      return (
+        <Suspense fallback={<ScreenFallback />}>
+          <CampaignScreen
+            onBack={back}
+            onEnterMatch={() => {
+              setAfterMatch('campaign')
               setScreen('match')
             }}
           />

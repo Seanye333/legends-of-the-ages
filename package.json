@@ -14,7 +14,9 @@
     "export-portraits": "node --import tsx scripts/export-portraits.ts",
     "sim-balance": "node --import tsx scripts/sim-balance.ts",
     "deck-stats": "node --import tsx scripts/deck-stats.ts",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "sim-campaign": "node --import tsx scripts/sim-campaign.ts",
+    "tune-campaign": "node --import tsx scripts/tune-campaign.ts"
   },
   "dependencies": {
     "react": "^19.0.0",

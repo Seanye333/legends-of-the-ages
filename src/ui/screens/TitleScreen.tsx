@@ -14,6 +14,8 @@ import { launchMatch } from '../matchSetup'
 import { initSound, playSfx } from '../sound'
 import { useCollection } from '../../app/collectionStore'
 import { useArena } from '../../app/arenaStore'
+import { useCampaign } from '../../app/campaignStore'
+import { BOSSES } from '../../content/campaign'
 import { ACHIEVEMENTS, useAchievements } from '../../app/achievementStore'
 import { AchievementPanel } from '../components/AchievementPanel'
 import type { DeckList } from '../../content/decks'
@@ -85,7 +87,7 @@ const DIFFICULTIES: { key: Difficulty; name: LocalizedText }[] = [
 interface TitleScreenProps {
   onStart?: () => void
   onNavigate?: (
-    screen: 'collection' | 'deckbuilder' | 'replays' | 'settings' | 'arena',
+    screen: 'collection' | 'deckbuilder' | 'replays' | 'settings' | 'arena' | 'campaign',
   ) => void
 }
 
@@ -97,6 +99,7 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
   const customDecks = useCollection((s) => s.customDecks)
   const packs = useCollection((s) => s.packs)
   const arenaLive = useArena((s) => s.phase !== 'idle')
+  const campaignDone = useCampaign((s) => s.cleared.length)
   // 订阅 stats/claimed 而不是调 claimableCount() —— 后者不是响应式的
   const achStats = useAchievements((s) => s.stats)
   const achClaimed = useAchievements((s) => s.claimed)
@@ -234,6 +237,17 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
       </div>
 
       <div className={styles.navRow}>
+        <button
+          className={styles.navBtn}
+          onClick={() => {
+            playSfx('buttonTap')
+            onNavigate?.('campaign')
+          }}
+        >
+          {campaignDone < BOSSES.length
+            ? t(`群雄逐鹿 ${campaignDone}/${BOSSES.length}`, `Contenders ${campaignDone}/${BOSSES.length}`)
+            : t('群雄逐鹿 ✦', 'Contenders ✦')}
+        </button>
         <button
           className={`${styles.navBtn} ${arenaLive ? styles.navGlow : ''}`}
           onClick={() => {

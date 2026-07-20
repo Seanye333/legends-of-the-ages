@@ -1,0 +1,341 @@
+.screen {
+  min-height: 100dvh;
+  padding: max(20px, env(safe-area-inset-top) + 8px) 16px max(28px, env(safe-area-inset-bottom));
+  background: radial-gradient(ellipse at 50% 0%, #1d1710 0%, #0b0805 65%);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 720px;
+  margin: 0 auto 14px;
+}
+
+.backBtn {
+  padding: 8px 14px;
+  border-radius: 9px;
+  border: 1px solid rgba(212, 168, 74, 0.35);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--parchment);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(18px, 3.2vh, 24px);
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: var(--gold-bright);
+}
+
+.progress {
+  margin-left: auto;
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--parchment-faint);
+}
+
+.deckPicker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  max-width: 720px;
+  margin: 0 auto 16px;
+}
+
+.deckLabel {
+  font-size: 12px;
+  color: var(--parchment-faint);
+  margin-right: 4px;
+}
+
+.deckBtn,
+.deckActive {
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid rgba(212, 168, 74, 0.28);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--parchment-faint);
+}
+
+.deckActive {
+  background: rgba(212, 168, 74, 0.2);
+  border-color: rgba(212, 168, 74, 0.75);
+  color: var(--gold-bright);
+}
+
+/* ---- 关卡路线 ---- */
+.road {
+  list-style: none;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.stage {
+  position: relative;
+}
+
+/* 关卡之间的连线 */
+.stage:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 26px;
+  bottom: -9px;
+  width: 2px;
+  height: 9px;
+  background: rgba(212, 168, 74, 0.3);
+}
+
+.stageBtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--doctrine) 45%, transparent);
+  background: linear-gradient(180deg, rgba(32, 25, 15, 0.85), rgba(15, 11, 6, 0.9));
+  cursor: pointer;
+  text-align: left;
+  transition: filter 0.15s ease, transform 0.12s ease;
+}
+
+.stageBtn:not(:disabled):hover {
+  filter: brightness(1.15);
+  transform: translateX(3px);
+}
+
+.stageBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+  filter: grayscale(0.7);
+}
+
+.stageBtn:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
+}
+
+.stageNo {
+  flex: none;
+  width: 24px;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--doctrine);
+  text-align: center;
+}
+
+.stagePortrait {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 9px;
+  overflow: hidden;
+  border: 2px solid var(--doctrine);
+}
+
+.stageText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stageName {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--parchment);
+}
+
+.stageTitle {
+  font-size: 11px;
+  color: var(--parchment-faint);
+}
+
+.stageMeta {
+  flex: none;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.hp {
+  color: #e88a7a;
+}
+
+.clearedTag {
+  color: #7ae87a;
+}
+
+.lockTag {
+  color: var(--parchment-faint);
+}
+
+.done .stageName {
+  color: var(--gold-bright);
+}
+
+/* ---- 战前简报 ---- */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+  background: rgba(6, 4, 2, 0.76);
+  backdrop-filter: blur(3px);
+}
+
+.brief {
+  width: min(400px, 100%);
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 0 0 18px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--doctrine) 60%, transparent);
+  background: linear-gradient(180deg, #241c10, #120e08);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.72);
+  text-align: center;
+}
+
+.briefPortrait {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  border-radius: 15px 15px 0 0;
+}
+
+.briefName {
+  margin: 12px 18px 0;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: var(--gold-bright);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.briefTitle {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  color: var(--doctrine);
+}
+
+.briefIntro {
+  margin: 12px 18px 0;
+  font-size: 12px;
+  line-height: 1.9;
+  color: var(--parchment);
+  text-align: left;
+}
+
+.briefStats {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin: 14px 18px 0;
+  font-size: 12px;
+  color: var(--parchment-faint);
+}
+
+.briefStats b {
+  color: var(--parchment);
+  font-family: var(--font-display);
+  margin-left: 4px;
+}
+
+.briefPower {
+  margin: 12px 18px 0;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(212, 168, 74, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: left;
+}
+
+.briefPowerName {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--gold-bright);
+}
+
+.briefPowerText {
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--parchment-faint);
+}
+
+.briefReward {
+  margin: 12px 18px 0;
+  font-size: 11px;
+  color: #e8c878;
+}
+
+.briefActions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin: 16px 18px 0;
+}
+
+.primary,
+.plain {
+  padding: 10px 22px;
+  border-radius: 10px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.primary {
+  background: linear-gradient(180deg, #d4a84a, #8a6c26);
+  color: #1a1206;
+}
+
+.plain {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(212, 168, 74, 0.35);
+  color: var(--parchment);
+}
+
+.primary:focus-visible,
+.plain:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stageBtn {
+    transition: none;
+  }
+}

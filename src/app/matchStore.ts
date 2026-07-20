@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { Command, GameEvent, GameState } from '../engine/types'
 import { DECK_SIZE, START_HP } from '../engine/types'
-import type { CardDef, Doctrine } from '../engine/types'
+import type { CardDef, Doctrine, HeroPowerDef } from '../engine/types'
 import { CARDS, CARDS_BY_ID } from '../content/cards'
 import { HEROES_BY_ID } from '../content/overrides/heroes'
 import { LocalMatch } from './transport'
@@ -11,6 +11,7 @@ import { useCollection } from './collectionStore'
 import { useQuests } from './questStore'
 import { useArena } from './arenaStore'
 import { useAchievements } from './achievementStore'
+import { useCampaign } from './campaignStore'
 import { reportWin } from './leaderboard'
 import type { EmoteId } from './protocol'
 import {
@@ -31,6 +32,10 @@ export interface StartMatchArgs {
   seed?: number
   tutorial?: boolean // 教学对局:对战画面挂教鞭浮层
   arena?: boolean // 竞技场对局:胜负记进当前 run,而不是普通战绩
+  campaign?: boolean // 关底战:胜负记进冒险进度,首通发奖
+  // 关底战的不对称配置(Boss 血量与主公技由内容层给)
+  heroPowersOverride?: [HeroPowerDef | undefined, HeroPowerDef | undefined]
+  heroHpsOverride?: [number, number]
 }
 
 export interface StartRemoteArgs {
@@ -50,6 +55,7 @@ interface MatchStoreState {
   mode: 'local' | 'remote'
   tutorial: boolean
   arena: boolean
+  campaign: boolean
   match: LocalMatch | null
   remote: RemoteMatch | null
   remoteStatus: RemoteStatus | null
@@ -84,9 +90,13 @@ function settleQuests(events: GameEvent[], state: GameState | null): void {
 
 // 终局统计:胜得卡包、负得安慰功勋、和局也给一点 —— 输了颗粒无收太劝退。
 // 竞技场局走另一条账:胜负记进 run,奖励等整轮结束一次性结算。
-function settleMatch(events: GameEvent[], arena: boolean): void {
+function settleMatch(events: GameEvent[], arena: boolean, campaign: boolean): void {
   const ended = events.find((e) => e.type === 'GameEnded')
   if (!ended || ended.type !== 'GameEnded') return
+  if (campaign) {
+    useCampaign.getState().settle(ended.winner === 0)
+    return
+  }
   if (arena) {
     if (ended.winner !== 'draw') useArena.getState().recordResult(ended.winner === 0)
     return
@@ -110,7 +120,7 @@ function remoteCallbacks(set: SetState) {
       opponentName?: string,
       turnDeadline?: number,
     ) => {
-      settleMatch(events, false)
+      settleMatch(events, false, false)
       settleQuests(events, state)
       recordReplayFrame(state, events, opponentName)
       set({
@@ -133,6 +143,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
   mode: 'local',
   tutorial: false,
   arena: false,
+  campaign: false,
   match: null,
   remote: null,
   remoteStatus: null,
@@ -163,10 +174,12 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
         heroIds: args.heroIds,
         deckIds: args.deckIds,
         first,
-        heroPowers: args.tutorial
-          ? [undefined, undefined]
-          : [heroDefs[0]?.power, heroDefs[1]?.power],
-        heroHps: [heroDefs[0]?.hp ?? START_HP, heroDefs[1]?.hp ?? START_HP],
+        // 关底战的对手不是普通主公:血量与主公技由 campaign.ts 指定
+        heroPowers:
+          args.heroPowersOverride ??
+          (args.tutorial ? [undefined, undefined] : [heroDefs[0]?.power, heroDefs[1]?.power]),
+        heroHps:
+          args.heroHpsOverride ?? [heroDefs[0]?.hp ?? START_HP, heroDefs[1]?.hp ?? START_HP],
       },
       CARDS_BY_ID,
       ai,
@@ -178,6 +191,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       mode: 'local',
       tutorial: args.tutorial === true,
       arena: args.arena === true,
+      campaign: args.campaign === true,
       match,
       state,
       lastEvents: events,
@@ -219,7 +233,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
     }
     const events = r.updates.flatMap((u) => u.events)
     const last = r.updates[r.updates.length - 1]
-    settleMatch(events, get().arena)
+    settleMatch(events, get().arena, get().campaign)
     settleQuests(events, last.state)
     recordReplayFrame(last.state, events)
     set({ state: last.state, lastEvents: events, error: null })
@@ -236,6 +250,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       mode: 'local',
       tutorial: false,
       arena: false,
+      campaign: false,
       match: null,
       remote: null,
       remoteStatus: null,

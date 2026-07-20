@@ -230,3 +230,25 @@ test('achievements: permanent progress, gated claim, reward payout', async ({ pa
   await expect(page.getByText(/功勋 \+\d+/)).toBeVisible()
   await expect(page.getByText('已领').first()).toBeVisible()
 })
+
+test('campaign: stages unlock in order, brief shows the asymmetry, fight starts', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: /群雄逐鹿/ }).click()
+  await expect(page.getByRole('heading', { name: '群雄逐鹿' })).toBeVisible()
+
+  // 第 1 关开着,后面的锁着
+  await expect(page.getByText('未解锁').first()).toBeVisible()
+  const stages = page.locator('ol li button')
+  await expect(stages.first()).toBeEnabled()
+  await expect(stages.nth(1)).toBeDisabled()
+
+  // 战前简报要说清「凭什么它是 Boss」:血量 + 主公技
+  await stages.first().click()
+  const brief = page.getByRole('dialog')
+  await expect(brief).toBeVisible()
+  await expect(brief.getByText('太平要術')).toBeVisible()
+  await expect(brief.getByText(/首通战利/)).toBeVisible()
+
+  await brief.getByRole('button', { name: '出战' }).click()
+  await expect(page.getByRole('button', { name: /全部保留|确认/ })).toBeVisible()
+})
