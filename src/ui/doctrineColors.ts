@@ -67,15 +67,8 @@ export const KEYWORD_RULE: Record<Keyword, LocalizedText> = {
   },
 }
 
-export const DOCTRINE_NAME: Record<CardDef['doctrine'], LocalizedText> = {
-  royal: { zh: '王道', en: 'Royal' },
-  hegemonic: { zh: '霸道', en: 'Hegemony' },
-  ritual: { zh: '礼教', en: 'Ritual' },
-  fame: { zh: '名利', en: 'Fame' },
-  separatist: { zh: '割据', en: 'Separatist' },
-  reclusion: { zh: '隐逸', en: 'Reclusion' },
-  neutral: { zh: '中立', en: 'Neutral' },
-}
+// 主义名的唯一来源在 content/names.ts(app 层也要用,不能只存在于 ui)
+export { DOCTRINE_NAME } from '../content/names'
 
 export const RARITY_NAME: Record<Rarity, LocalizedText> = {
   common: { zh: '普通', en: 'Common' },

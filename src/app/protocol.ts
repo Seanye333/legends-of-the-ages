@@ -42,7 +42,25 @@ export interface MatchCmdMsg {
   cmd: Command
 }
 
-export type MatchClientMsg = MatchJoinMsg | MatchCmdMsg
+// 表情:唯一的社交通道。刻意做成**固定六句**而不是自由聊天 ——
+// 没有举报/封禁系统的前提下开自由文本,等于给骚扰开一扇没锁的门。
+export type EmoteId = 'greet' | 'well-played' | 'thanks' | 'oops' | 'threaten' | 'hurry'
+
+export const EMOTES: { id: EmoteId; zh: string; en: string }[] = [
+  { id: 'greet', zh: '幸会', en: 'Well met' },
+  { id: 'well-played', zh: '好手段', en: 'Well played' },
+  { id: 'thanks', zh: '承让', en: 'Thanks' },
+  { id: 'oops', zh: '失算', en: 'Oops' },
+  { id: 'threaten', zh: '看招', en: 'Have at you' },
+  { id: 'hurry', zh: '请', en: 'Your move' },
+]
+
+export interface MatchEmoteMsg {
+  type: 'emote'
+  emote: EmoteId
+}
+
+export type MatchClientMsg = MatchJoinMsg | MatchCmdMsg | MatchEmoteMsg
 
 export interface MatchUpdateMsg {
   type: 'start' | 'update'
@@ -60,6 +78,7 @@ export type MatchServerMsg =
   | { type: 'opponent-left' }
   | { type: 'opponent-back' }
   | { type: 'rated'; rating: number; delta: number }
+  | { type: 'emote'; emote: EmoteId; from: 'opponent' }
 
 // ---- 天梯 ----
 

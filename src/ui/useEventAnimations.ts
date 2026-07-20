@@ -9,6 +9,7 @@ import { CARDS_BY_ID } from '../content/cards'
 import { extractFloats, targetFloatKey, type FloatItem } from './components/floats'
 import { useLang } from './i18n'
 import { playSfx, type SfxName } from './sound'
+import { haptic, type HapticKind } from './haptics'
 
 // ---------- 对外状态 ----------
 
@@ -77,6 +78,17 @@ interface Entry {
   pulse?: boolean
   release?: boolean // 放行终局结算
   sfx: SfxName[]
+}
+
+// 音效 → 触感的映射。只挑几个真正该有手感的时刻,不是每声都震。
+const HAPTIC_FOR: Partial<Record<SfxName, HapticKind>> = {
+  cardPlay: 'play',
+  stratagemCast: 'play',
+  attack: 'impact',
+  hit: 'impact',
+  duel: 'impact',
+  lethal: 'lethal',
+  victory: 'reward',
 }
 
 const LOOSE_DUR = 220 // 松散伤害/治疗条目的节拍
@@ -389,6 +401,10 @@ export function useEventAnimations(
       }
     })
     for (const name of e.sfx) playSfx(name)
+    // 触感跟着同一条时间轴走 —— 音效响的那一拍才震,不另起节奏
+    const first = e.sfx[0]
+    const feel = first ? HAPTIC_FOR[first] : undefined
+    if (feel) haptic(feel)
 
     // —— 逐项定时回收(按 id 匹配,绝不误伤后续动效)——
     if (floats.length > 0) {

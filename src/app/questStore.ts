@@ -1,5 +1,6 @@
 // 每日任务:每天三条,当日零点刷新,完成领卡包。
 // 进度只从对局事件流统计(与引擎解耦,纯函数可测)。
+import { DOCTRINE_NAME } from '../content/names'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { GameEvent } from '../engine/types'
@@ -32,23 +33,9 @@ export interface QuestState extends QuestDef {
   claimed: boolean
 }
 
-const DOCTRINE_ZH: Record<Doctrine, string> = {
-  royal: '王道',
-  hegemonic: '霸道',
-  ritual: '礼教',
-  fame: '名利',
-  separatist: '割据',
-  reclusion: '隐逸',
-}
-
-const DOCTRINE_EN: Record<Doctrine, string> = {
-  royal: 'Royal',
-  hegemonic: 'Hegemonic',
-  ritual: 'Ritual',
-  fame: 'Fame',
-  separatist: 'Separatist',
-  reclusion: 'Reclusion',
-}
+// 主义名走 content/names.ts 的唯一来源(这里原本自己抄了一份,两边会飘)
+const DOCTRINE_ZH = (d: Doctrine) => DOCTRINE_NAME[d].zh
+const DOCTRINE_EN = (d: Doctrine) => DOCTRINE_NAME[d].en
 
 export function questText(q: QuestDef): { zh: string; en: string } {
   switch (q.kind) {
@@ -66,8 +53,8 @@ export function questText(q: QuestDef): { zh: string; en: string } {
       return { zh: `对敌方主公造成 ${q.goal} 点伤害`, en: `Deal ${q.goal} damage to enemy heroes` }
     case 'winWithDoctrine':
       return {
-        zh: `以${DOCTRINE_ZH[q.doctrine ?? 'royal']}主公赢下 ${q.goal} 场`,
-        en: `Win ${q.goal} match with a ${DOCTRINE_EN[q.doctrine ?? 'royal']} hero`,
+        zh: `以${DOCTRINE_ZH(q.doctrine ?? 'royal')}主公赢下 ${q.goal} 场`,
+        en: `Win ${q.goal} match with a ${DOCTRINE_EN(q.doctrine ?? 'royal')} hero`,
       }
   }
 }

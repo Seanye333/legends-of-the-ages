@@ -1,3 +1,4 @@
+import { haptic } from '../haptics'
 import { useState } from 'react'
 import type { CSSProperties } from 'react'
 import { CARDS_BY_ID } from '../../content/cards'
@@ -34,6 +35,8 @@ export function PackOpening({ onClose }: PackOpeningProps) {
     if (!result || index !== revealed) return
     const def = CARDS_BY_ID[result.cardIds[index]]
     playSfx(def?.rarity === 'legendary' ? 'victory' : def?.rarity === 'epic' ? 'heal' : 'cardPlay')
+    // 传说/史诗给一记明显的触感 —— 开包的高光时刻本来就该有手感
+    haptic(def?.rarity === 'legendary' ? 'reward' : def?.rarity === 'epic' ? 'impact' : 'tap')
     setRevealed(index + 1)
   }
 
@@ -93,6 +96,16 @@ export function PackOpening({ onClose }: PackOpeningProps) {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* 重复卡折算的功勋:以前这些卡直接蒸发,界面还只标一个「不是新的」*/}
+      {allRevealed && result && result.meritGained > 0 && (
+        <div className={styles.meritLine} role="status">
+          {t(
+            `重复卡折算 功勋 +${result.meritGained}`,
+            `Duplicates converted — +${result.meritGained} merit`,
+          )}
         </div>
       )}
 

@@ -19,6 +19,7 @@ import { CardInspect } from '../components/CardInspect'
 import { TutorialCoach } from '../components/TutorialCoach'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { TurnRope } from '../components/TurnRope'
+import { EmoteWheel } from '../components/EmoteWheel'
 import type { CardDef } from '../../engine/types'
 import { useEventAnimations } from '../useEventAnimations'
 import { initSound, playSfx } from '../sound'
@@ -55,6 +56,8 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
     remoteStatus,
     ratingResult,
     turnDeadline,
+    incomingEmote,
+    sendEmote,
   } = useMatch()
   const { soundEnabled, setSoundEnabled } = useSettings()
   const [selection, setSelection] = useState<Selection>(null)
@@ -440,6 +443,11 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
 
       {/* 回合绳:只有联机局有服务器时限,本地局 turnDeadline 恒为 null */}
       <TurnRope deadline={turnDeadline} myTurn={myTurn} />
+
+      {/* 表情轮盘:只有联机局有对手可言 */}
+      {mode === 'remote' && state.phase !== 'ended' && (
+        <EmoteWheel onSend={sendEmote} incoming={incomingEmote} />
+      )}
 
       <BattleLog entries={log} />
 

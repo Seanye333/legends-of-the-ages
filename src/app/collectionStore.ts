@@ -4,7 +4,8 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { CardDef, LocalizedText, Rarity } from '../engine/types'
 import { CARDS_BY_ID, COLLECTIBLE_CARDS } from '../content/cards'
-import { PRECON_DECKS, validateDeck, type DeckList } from '../content/decks'
+import { PRECON_DECKS, validateDeckDetailed, type DeckList } from '../content/decks'
+import { deckViolationText } from '../content/deckErrorText'
 import { HEROES_BY_ID } from '../content/overrides/heroes'
 
 export const PACK_SIZE = 5
@@ -223,11 +224,11 @@ export const useCollection = create<CollectionState>()(
       },
 
       saveDeck(deck) {
-        // validateDeck 返回的是内部英文诊断信息,原样双语透传
-        const errors: LocalizedText[] = validateDeck(deck, CARDS_BY_ID, HEROES_BY_ID).map((e) => ({
-          zh: e,
-          en: e,
-        }))
+        const errors: LocalizedText[] = validateDeckDetailed(
+          deck,
+          CARDS_BY_ID,
+          HEROES_BY_ID,
+        ).map(deckViolationText)
         // 额外校验:必须实际拥有这些卡
         const counts: Record<string, number> = {}
         for (const id of deck.cardIds) counts[id] = (counts[id] ?? 0) + 1

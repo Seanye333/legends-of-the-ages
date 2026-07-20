@@ -23,6 +23,7 @@ import type {
   RoomServerMsg,
 } from './protocol'
 import { wsScheme } from './protocol'
+import type { EmoteId } from './protocol'
 import type { DeckList } from '../content/decks'
 import { getPlayerId } from './leaderboard'
 
@@ -48,6 +49,7 @@ export interface RemoteCallbacks {
   onError(error: string): void
   onRoomCode?(code: string): void
   onRated?(rating: number, delta: number): void
+  onEmote?(emote: EmoteId): void
 }
 
 // ---- 会话持久化(断线/刷新后续局) ----
@@ -328,6 +330,10 @@ export class RemoteMatch {
         this.cb.onRated?.(msg.rating, msg.delta)
         return
       }
+      if (msg.type === 'emote') {
+        this.cb.onEmote?.(msg.emote)
+        return
+      }
       if (msg.type === 'error') {
         this.cb.onError(msg.error)
         return
@@ -383,6 +389,12 @@ export class RemoteMatch {
   send(cmd: Command): void {
     if (!this.matchWs || this.matchWs.readyState !== WebSocket.OPEN) return
     const msg: MatchClientMsg = { type: 'cmd', cmd: flipCommand(cmd, this.seat) }
+    this.matchWs.send(JSON.stringify(msg))
+  }
+
+  sendEmote(emote: EmoteId): void {
+    if (!this.matchWs || this.matchWs.readyState !== WebSocket.OPEN) return
+    const msg: MatchClientMsg = { type: 'emote', emote }
     this.matchWs.send(JSON.stringify(msg))
   }
 

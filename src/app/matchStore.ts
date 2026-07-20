@@ -10,6 +10,7 @@ import { useSettings } from './settingsStore'
 import { useCollection } from './collectionStore'
 import { useQuests } from './questStore'
 import { reportWin } from './leaderboard'
+import type { EmoteId } from './protocol'
 import {
   RemoteMatch,
   loadSession,
@@ -53,6 +54,8 @@ interface MatchStoreState {
   ratingResult: RatingResult | null
   // 服务器的回合时限(epoch ms)。只有联机局有;本地局恒为 null。
   turnDeadline: number | null
+  // 对手最近发来的表情(带序号,好让 UI 分辨「同一个表情又发了一次」)
+  incomingEmote: { emote: EmoteId; seq: number } | null
   state: GameState | null
   lastEvents: GameEvent[]
   error: string | null
@@ -60,8 +63,12 @@ interface MatchStoreState {
   startRemoteMatch(args: StartRemoteArgs): void
   resumeRemoteMatch(): boolean
   send(cmd: Command): void
+  sendEmote(emote: EmoteId): void
   reset(): void
 }
+
+// 表情序号:同一个表情连发两次,UI 也要能触发两次动画
+let emoteSeq = 1
 
 // 每批事件都记一次任务进度(计数类任务天然累加,不会重复计)
 function settleQuests(events: GameEvent[], state: GameState | null): void {
@@ -106,6 +113,8 @@ function remoteCallbacks(set: SetState) {
     onError: (error: string) => set({ error }),
     onRoomCode: (roomCode: string) => set({ roomCode }),
     onRated: (rating: number, delta: number) => set({ ratingResult: { rating, delta } }),
+    onEmote: (emote: EmoteId) =>
+      set({ incomingEmote: { emote, seq: emoteSeq++ } }),
   }
 }
 
@@ -119,6 +128,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
   roomCode: null,
   ratingResult: null,
   turnDeadline: null,
+  incomingEmote: null,
   state: null,
   lastEvents: [],
   error: null,
@@ -202,6 +212,10 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
     set({ state: last.state, lastEvents: events, error: null })
   },
 
+  sendEmote(emote) {
+    get().remote?.sendEmote(emote)
+  },
+
   reset() {
     get().remote?.close()
     discardReplayRecording() // 未打完的对局不留战报
@@ -215,6 +229,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       roomCode: null,
       ratingResult: null,
       turnDeadline: null,
+      incomingEmote: null,
       state: null,
       lastEvents: [],
       error: null,

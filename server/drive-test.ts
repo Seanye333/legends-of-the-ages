@@ -280,6 +280,74 @@ async function checkProfileOwnership(): Promise<boolean> {
   return true
 }
 
+// 表情转发:合法 id 转给对手、非法 id 丢弃、3 秒内连发被限速。
+// 这是唯一的社交通道,做成封闭集合就必须验证「封闭」是真的。
+async function checkEmoteRelay(): Promise<boolean> {
+  const matchId = `emote-${crypto.randomUUID()}`
+  const open = (seat: 0 | 1) =>
+    new WebSocket(
+      `${wsScheme(SERVER)}${SERVER}/match/${matchId}?seat=${seat}&token=${crypto.randomUUID()}`,
+    )
+  const a = open(0)
+  const b = open(1)
+  const received: string[] = []
+  b.addEventListener('message', (ev) => {
+    const msg = JSON.parse(String((ev as MessageEvent).data)) as { type: string; emote?: string }
+    if (msg.type === 'emote' && msg.emote) received.push(msg.emote)
+  })
+  const ready = (ws: WebSocket) =>
+    new Promise<void>((res, rej) => {
+      const timer = setTimeout(() => rej(new Error('emote: open timeout')), TIMEOUT_MS)
+      ws.addEventListener('open', () => {
+        clearTimeout(timer)
+        res()
+      })
+      ws.addEventListener('error', () => {
+        clearTimeout(timer)
+        rej(new Error('emote: socket error'))
+      })
+    })
+  try {
+    await Promise.all([ready(a), ready(b)])
+    const deck = PRECON_DECKS[0]
+    const join = JSON.stringify({
+      type: 'join',
+      heroId: deck.heroId,
+      deckIds: deck.cardIds,
+      name: 'emote',
+      playerId: crypto.randomUUID(),
+    })
+    a.send(join)
+    b.send(join)
+    await new Promise((r) => setTimeout(r, 600))
+
+    a.send(JSON.stringify({ type: 'emote', emote: 'greet' }))
+    await new Promise((r) => setTimeout(r, 300))
+    // 3 秒内连发 → 被限速丢弃
+    a.send(JSON.stringify({ type: 'emote', emote: 'thanks' }))
+    // 不在白名单里的 id → 直接丢弃
+    a.send(JSON.stringify({ type: 'emote', emote: 'not-an-emote' }))
+    await new Promise((r) => setTimeout(r, 600))
+
+    if (received.length !== 1 || received[0] !== 'greet') {
+      console.log('✗ 表情转发异常,收到:', received)
+      return false
+    }
+    console.log('✓ 表情:合法 id 转发 / 非法 id 丢弃 / 3 秒内连发被限速')
+    return true
+  } catch (e) {
+    console.log('✗ 表情检查失败', e)
+    return false
+  } finally {
+    try {
+      a.close()
+      b.close()
+    } catch {
+      /* 忽略 */
+    }
+  }
+}
+
 // 自选(未签名)的 matchId 不得计入天梯 —— 否则两个串通的客户端可以随意刷分。
 async function checkUnsignedMatchIdIsUnrated(): Promise<boolean> {
   const pid1 = crypto.randomUUID()
@@ -446,6 +514,7 @@ const profileOk = await checkProfileSync()
 console.log('\n=== 安全加固 ===')
 const guardOk = await checkProfileOwnership()
 const matchIdOk = await checkUnsignedMatchIdIsUnrated()
+const emoteOk = await checkEmoteRelay()
 
 const pass =
   a.ended !== null &&
@@ -461,11 +530,12 @@ const pass =
   roomOk &&
   roomUnrated &&
   guardOk &&
-  matchIdOk
+  matchIdOk &&
+  emoteOk
 
 if (pass) {
   console.log(
-    '\n✓ 联机端到端验证通过:天梯匹配全流程(含重连/非法命令拒绝/ELO 结算)+ 好友房间流 + 存档同步 + 存档归属 + 天梯 id 验签',
+    '\n✓ 联机端到端验证通过:天梯匹配全流程(含重连/非法命令拒绝/ELO 结算)+ 好友房间流 + 存档同步 + 存档归属 + 天梯 id 验签 + 表情转发',
   )
   process.exit(0)
 } else {
@@ -481,6 +551,7 @@ if (pass) {
     profileOk,
     guardOk,
     matchIdOk,
+    emoteOk,
   })
   process.exit(1)
 }

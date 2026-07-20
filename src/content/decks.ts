@@ -114,36 +114,74 @@ export const PRECON_DECKS: DeckList[] = [
   },
 ]
 
-// 返回违规列表(空数组 = 合法)。
+// 结构化的违规项。UI 需要能翻成人话 ——
+// 从前 collectionStore 把 validateDeck 的英文诊断信息当双语原样透传,
+// 中文玩家会看到 `deck must have exactly 30 cards, got 27`。
+export type DeckViolation =
+  | { code: 'unknown-hero'; heroId: string }
+  | { code: 'bad-size'; size: number }
+  | { code: 'unknown-card'; cardId: string }
+  | { code: 'too-many-copies'; cardId: string; count: number; limit: number }
+  | { code: 'wrong-doctrine'; cardId: string; doctrine: string; heroDoctrine: string }
+  | { code: 'not-collectible'; cardId: string }
+
+export function validateDeckDetailed(
+  deck: DeckList,
+  cardsById: Record<string, CardDef | undefined>,
+  heroesById: Record<string, HeroDef | undefined>,
+): DeckViolation[] {
+  const out: DeckViolation[] = []
+  const hero = heroesById[deck.heroId]
+  if (!hero) return [{ code: 'unknown-hero', heroId: deck.heroId }]
+  if (deck.cardIds.length !== DECK_SIZE) {
+    out.push({ code: 'bad-size', size: deck.cardIds.length })
+  }
+  const counts = new Map<string, number>()
+  for (const id of deck.cardIds) counts.set(id, (counts.get(id) ?? 0) + 1)
+  for (const [cardId, count] of counts) {
+    const card = cardsById[cardId]
+    if (!card) {
+      out.push({ code: 'unknown-card', cardId })
+      continue
+    }
+    // 衍生物只能被召唤,不可构筑
+    if (card.token) out.push({ code: 'not-collectible', cardId })
+    const limit = card.rarity === 'legendary' ? 1 : 2
+    if (count > limit) out.push({ code: 'too-many-copies', cardId, count, limit })
+    if (card.doctrine !== 'neutral' && card.doctrine !== hero.doctrine) {
+      out.push({
+        code: 'wrong-doctrine',
+        cardId,
+        doctrine: card.doctrine,
+        heroDoctrine: hero.doctrine,
+      })
+    }
+  }
+  return out
+}
+
+// 英文诊断串。服务器日志与测试断言用这个;面向玩家的文案走 validateDeckDetailed。
 export function validateDeck(
   deck: DeckList,
   cardsById: Record<string, CardDef | undefined>,
   heroesById: Record<string, HeroDef | undefined>,
 ): string[] {
-  const violations: string[] = []
-  const hero = heroesById[deck.heroId]
-  if (!hero) {
-    violations.push(`unknown hero: ${deck.heroId}`)
-    return violations
-  }
-  if (deck.cardIds.length !== DECK_SIZE) {
-    violations.push(`deck must have exactly ${DECK_SIZE} cards, got ${deck.cardIds.length}`)
-  }
-  const counts = new Map<string, number>()
-  for (const id of deck.cardIds) counts.set(id, (counts.get(id) ?? 0) + 1)
-  for (const [id, count] of counts) {
-    const card = cardsById[id]
-    if (!card) {
-      violations.push(`unknown card id: ${id}`)
-      continue
+  return validateDeckDetailed(deck, cardsById, heroesById).map((v) => {
+    switch (v.code) {
+      case 'unknown-hero':
+        return `unknown hero: ${v.heroId}`
+      case 'bad-size':
+        return `deck must have exactly ${DECK_SIZE} cards, got ${v.size}`
+      case 'unknown-card':
+        return `unknown card id: ${v.cardId}`
+      case 'not-collectible':
+        return `token card is not collectible: ${v.cardId}`
+      case 'too-many-copies':
+        return v.limit === 1
+          ? `more than 1 copy of legendary ${v.cardId} (${v.count})`
+          : `more than 2 copies of ${v.cardId} (${v.count})`
+      case 'wrong-doctrine':
+        return `${v.cardId} doctrine ${v.doctrine} does not match hero doctrine ${v.heroDoctrine}`
     }
-    if (count > 2) violations.push(`more than 2 copies of ${id} (${count})`)
-    if (card.rarity === 'legendary' && count > 1) {
-      violations.push(`more than 1 copy of legendary ${id} (${count})`)
-    }
-    if (card.doctrine !== 'neutral' && card.doctrine !== hero.doctrine) {
-      violations.push(`${id} doctrine ${card.doctrine} does not match hero doctrine ${hero.doctrine}`)
-    }
-  }
-  return violations
+  })
 }

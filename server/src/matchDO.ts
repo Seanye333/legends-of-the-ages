@@ -17,6 +17,7 @@ import { CARDS_BY_ID } from '../../src/content/cards'
 import { HEROES_BY_ID } from '../../src/content/overrides/heroes'
 import { validateDeck } from '../../src/content/decks'
 import type { MatchClientMsg, MatchServerMsg } from '../../src/app/protocol'
+import { EMOTES } from '../../src/app/protocol'
 import type { ReportBody, ReportResult } from './ratingsDO'
 import { verifyMatchId } from './matchId'
 
@@ -46,6 +47,8 @@ interface Env {
   RATINGS: DurableObjectNamespace
   MATCH_SECRET?: string
 }
+
+const EMOTE_IDS = new Set(EMOTES.map((e) => e.id))
 
 // 弃坑对局的清理时限:超过这么久没有任何命令,DO storage 自行销毁
 const ABANDON_MS = 6 * 60 * 60 * 1000 // 6 小时
@@ -77,6 +80,8 @@ export class MatchDO {
   private cfg: GameConfig | null = null
   private seats: [SeatInfo, SeatInfo] = [emptySeat(), emptySeat()]
   private deadlines: Deadlines = { abandon: 0, turn: null, forfeit: null }
+  // 表情限速只需活在内存里:hibernation 把它清掉最多是让对手多收一个表情,无所谓
+  private lastEmoteAt: [number, number] = [0, 0]
   private loaded = false
 
   constructor(
@@ -313,6 +318,20 @@ export class MatchDO {
       if (this.seats[0].joined && this.seats[1].joined && !this.state) {
         await this.startGame()
       }
+      return
+    }
+
+    if (msg.type === 'emote') {
+      // 表情只在对局进行中转发,且**只有固定的六个 id** —— 客户端塞别的一律丢弃。
+      // 这是唯一的社交通道,做成封闭集合是为了在没有举报/封禁系统时不给骚扰留口子。
+      if (!this.state || this.state.phase === 'ended') return
+      if (!EMOTE_IDS.has(msg.emote)) return
+      // 限速另算一层:同一座位 3 秒内最多一个表情,防刷屏
+      const last = this.lastEmoteAt[seatIdx] ?? 0
+      const now = Date.now()
+      if (now - last < 3000) return
+      this.lastEmoteAt[seatIdx] = now
+      this.sendTo(other(seatIdx), { type: 'emote', emote: msg.emote, from: 'opponent' })
       return
     }
 
