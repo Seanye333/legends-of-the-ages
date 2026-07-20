@@ -1,15 +1,21 @@
 // 结算内核:伤害/治疗/抽牌/死亡处理 + 效果 DSL 解释器。
 // 所有数值变化都从这里走,保证事件流与状态变化一一对应。
+//
+// 【附魔层】attack / health / maxHealth / keywords 是派生字段。
+// 任何对数值的修改都必须记成一条 Enchant 再 refreshInstance(),而不是直接赋值。
+// 这是沉默、临时增益、光环三件事共用的撤销路径 —— 直接改数值就没法还原了。
 import type {
   CardInstance,
   CardLibrary,
   EffectScript,
+  Enchant,
   GameEvent,
   GameState,
+  Keyword,
   PlayerIdx,
   TargetRef,
 } from './types'
-import { BOARD_LIMIT, HAND_LIMIT, START_HP } from './types'
+import { BOARD_LIMIT, HAND_LIMIT, MANA_CAP, START_HP } from './types'
 import { rngInt } from './rng'
 
 export function other(p: PlayerIdx): PlayerIdx {
@@ -29,6 +35,180 @@ export function findGeneral(state: GameState, iid: number): GeneralLoc | undefin
   }
   return undefined
 }
+
+// ---------- 附魔层 ----------
+
+// 从卡面基础值 ⊕ 附魔 ⊖ 沉默 重算派生字段。任何改动附魔/伤害后都必须调用。
+export function refreshInstance(inst: CardInstance, lib: CardLibrary): void {
+  const def = lib[inst.defId]
+  let attack = def?.attack ?? 0
+  let maxHealth = def?.health ?? 0
+  // 沉默清空卡面关键词,但不改卡面攻血(炉石规则)
+  const keywords: Keyword[] = inst.silenced ? [] : (def?.keywords.slice() ?? [])
+  for (const e of inst.enchants) {
+    attack += e.attack
+    maxHealth += e.health
+    if (e.keywords) {
+      for (const kw of e.keywords) if (!keywords.includes(kw)) keywords.push(kw)
+    }
+  }
+  // 铁壁/潜行一旦消耗就不能被 refresh 从卡面加回来
+  const shieldIdx = keywords.indexOf('divineShield')
+  if (inst.shieldUsed && shieldIdx >= 0) keywords.splice(shieldIdx, 1)
+  const stealthIdx = keywords.indexOf('stealth')
+  if (inst.stealthBroken && stealthIdx >= 0) keywords.splice(stealthIdx, 1)
+
+  inst.attack = Math.max(0, attack)
+  inst.maxHealth = Math.max(1, maxHealth)
+  inst.damage = Math.max(0, inst.damage)
+  inst.health = inst.maxHealth - inst.damage
+  inst.keywords = keywords
+}
+
+// 挂一条附魔并广播增益事件。授予铁壁时重置消耗标记(相当于补一层新盾)。
+export function addEnchant(
+  inst: CardInstance,
+  lib: CardLibrary,
+  ench: Enchant,
+  events: GameEvent[] | null,
+  player: PlayerIdx,
+): void {
+  if (ench.keywords?.includes('divineShield')) inst.shieldUsed = false
+  inst.enchants.push(ench)
+  refreshInstance(inst, lib)
+  if (events && (ench.attack !== 0 || ench.health !== 0)) {
+    events.push({
+      type: 'GeneralBuffed',
+      player,
+      iid: inst.iid,
+      attack: ench.attack,
+      health: ench.health,
+    })
+  }
+  if (events && ench.keywords) {
+    for (const kw of ench.keywords) {
+      events.push({ type: 'KeywordGranted', player, iid: inst.iid, keyword: kw })
+    }
+  }
+}
+
+// 摘掉满足条件的附魔。clampAlive=true 时保证不会因为撤销增益而把单位打死
+// (「本回合内 +X/+X」到期不应该杀人;光环消失可以杀人,那是炉石规则)。
+function removeEnchants(
+  inst: CardInstance,
+  lib: CardLibrary,
+  pred: (e: Enchant) => boolean,
+  events: GameEvent[] | null,
+  player: PlayerIdx,
+  clampAlive: boolean,
+): void {
+  const removed = inst.enchants.filter(pred)
+  if (removed.length === 0) return
+  inst.enchants = inst.enchants.filter((e) => !pred(e))
+  refreshInstance(inst, lib)
+  if (clampAlive && inst.health <= 0) {
+    inst.damage = Math.max(0, inst.maxHealth - 1)
+    refreshInstance(inst, lib)
+  }
+  if (events) {
+    const atk = removed.reduce((n, e) => n + e.attack, 0)
+    const hp = removed.reduce((n, e) => n + e.health, 0)
+    if (atk !== 0 || hp !== 0) {
+      events.push({ type: 'GeneralBuffed', player, iid: inst.iid, attack: -atk, health: -hp })
+    }
+  }
+}
+
+// 光环重算:先撤掉所有光环附魔,再从当前在场的光环来源重新发一遍。
+// 来源死亡/回手/被沉默都自动失效,不需要任何反向登记。
+export function refreshAuras(state: GameState, lib: CardLibrary): void {
+  for (const player of [0, 1] as const) {
+    for (const inst of state.players[player].board) {
+      if (inst.enchants.some((e) => e.auraFrom !== undefined)) {
+        inst.enchants = inst.enchants.filter((e) => e.auraFrom === undefined)
+        refreshInstance(inst, lib)
+      }
+    }
+  }
+  for (const player of [0, 1] as const) {
+    for (const source of state.players[player].board) {
+      if (source.silenced) continue
+      const aura = lib[source.defId]?.aura
+      if (!aura) continue
+      for (const inst of state.players[player].board) {
+        if (aura.scope === 'friendlyOthers' && inst.iid === source.iid) continue
+        inst.enchants.push({
+          attack: aura.attack,
+          health: aura.health,
+          keywords: aura.keywords,
+          auraFrom: source.iid,
+        })
+        refreshInstance(inst, lib)
+      }
+    }
+  }
+}
+
+export function silenceGeneral(
+  loc: GeneralLoc,
+  lib: CardLibrary,
+  events: GameEvent[],
+): void {
+  const inst = loc.inst
+  if (inst.silenced) return
+  inst.silenced = true
+  // 光环附魔留给 refreshAuras 处理(来源可能还在),其余一律清空
+  inst.enchants = inst.enchants.filter((e) => e.auraFrom !== undefined)
+  inst.frozen = false
+  refreshInstance(inst, lib)
+  // 沉默不会把单位打死:溢出的伤害按当前上限截断
+  if (inst.health <= 0) {
+    inst.damage = Math.max(0, inst.maxHealth - 1)
+    refreshInstance(inst, lib)
+  }
+  events.push({ type: 'GeneralSilenced', player: loc.player, iid: inst.iid })
+}
+
+export function freezeGeneral(loc: GeneralLoc, events: GameEvent[]): void {
+  if (loc.inst.frozen) return
+  loc.inst.frozen = true
+  events.push({ type: 'GeneralFrozen', player: loc.player, iid: loc.inst.iid })
+}
+
+// 潜行在自身发起攻击后解除
+export function breakStealth(loc: GeneralLoc, lib: CardLibrary, events: GameEvent[]): void {
+  const inst = loc.inst
+  if (!inst.keywords.includes('stealth')) return
+  removeEnchants(
+    inst,
+    lib,
+    (e) => (e.keywords?.includes('stealth') ?? false) && e.auraFrom === undefined,
+    null,
+    loc.player,
+    false,
+  )
+  // 卡面自带潜行:用一条「反向附魔」压制不现实,直接标记沉默级别的移除
+  if (inst.keywords.includes('stealth')) {
+    inst.stealthBroken = true
+    refreshInstance(inst, lib)
+  }
+  events.push({ type: 'StealthBroken', player: loc.player, iid: inst.iid })
+}
+
+// 回合结束:撤销所有「本回合内」附魔
+export function expireTemporaryEnchants(
+  state: GameState,
+  lib: CardLibrary,
+  events: GameEvent[],
+): void {
+  for (const player of [0, 1] as const) {
+    for (const inst of state.players[player].board) {
+      removeEnchants(inst, lib, (e) => e.duration === 'endOfTurn', events, player, true)
+    }
+  }
+}
+
+// ---------- 抽牌 / 伤害 / 治疗 ----------
 
 export function drawCards(
   state: GameState,
@@ -79,51 +259,116 @@ export function healHero(
 ): void {
   if (amount <= 0) return
   const p = state.players[player]
-  const healed = Math.min(amount, START_HP - p.heroHp)
+  // 上限读主公自己的血量,而不是写死 30 —— 高血主公/冒险模式 Boss 才不会治不满
+  const healed = Math.min(amount, (p.heroMaxHp || START_HP) - p.heroHp)
   if (healed <= 0) return
   p.heroHp += healed
   events.push({ type: 'HeroHealed', player, amount: healed, hpAfter: p.heroHp })
 }
 
+const MAX_TRIGGER_DEPTH = 3
+
 export function damageGeneral(
-  _state: GameState, // 占位:Phase 2 受伤触发会用
+  state: GameState,
   loc: GeneralLoc,
   amount: number,
   events: GameEvent[],
+  lib: CardLibrary,
+  depth = 0,
 ): void {
   if (amount <= 0) return
-  loc.inst.health -= amount
+  const inst = loc.inst
+  // 铁壁:抵消整次伤害,不论多少
+  if (inst.keywords.includes('divineShield')) {
+    inst.shieldUsed = true
+    removeEnchants(
+      inst,
+      lib,
+      (e) => (e.keywords?.includes('divineShield') ?? false) && e.auraFrom === undefined,
+      null,
+      loc.player,
+      false,
+    )
+    refreshInstance(inst, lib)
+    events.push({ type: 'DivineShieldPopped', player: loc.player, iid: inst.iid })
+    return
+  }
+  inst.damage += amount
+  refreshInstance(inst, lib)
   events.push({
     type: 'GeneralDamaged',
     player: loc.player,
-    iid: loc.inst.iid,
+    iid: inst.iid,
     amount,
-    healthAfter: loc.inst.health,
+    healthAfter: inst.health,
+  })
+  // 受伤触发器(自身仍存活才触发,带递归深度上限)
+  const def = lib[inst.defId]
+  if (def?.onDamaged && inst.health > 0 && !inst.silenced && depth < MAX_TRIGGER_DEPTH) {
+    events.push({
+      type: 'EffectTriggered',
+      player: loc.player,
+      sourceIid: inst.iid,
+      sourceDefId: inst.defId,
+      kind: 'onDamaged',
+    })
+    runScript(state, events, lib, def.onDamaged, {
+      player: loc.player,
+      sourceDefId: inst.defId,
+      sourceIid: inst.iid,
+      degradeChosen: true,
+      kind: 'onDamaged',
+      depth: depth + 1,
+    })
+  }
+}
+
+// 真·消灭:无视铁壁,直接打到 0(与「造成等于当前血量的伤害」不同)
+export function destroyGeneral(
+  loc: GeneralLoc,
+  events: GameEvent[],
+  lib: CardLibrary,
+): void {
+  const inst = loc.inst
+  if (inst.health <= 0) return
+  const before = inst.health
+  inst.damage = inst.maxHealth
+  refreshInstance(inst, lib)
+  events.push({
+    type: 'GeneralDamaged',
+    player: loc.player,
+    iid: inst.iid,
+    amount: before,
+    healthAfter: inst.health,
   })
 }
 
 export function healGeneral(
-  _state: GameState, // 占位:Phase 2 治疗触发会用
+  _state: GameState,
   loc: GeneralLoc,
   amount: number,
   events: GameEvent[],
+  lib: CardLibrary,
 ): void {
   if (amount <= 0) return
-  const healed = Math.min(amount, loc.inst.maxHealth - loc.inst.health)
+  const inst = loc.inst
+  const healed = Math.min(amount, inst.damage)
   if (healed <= 0) return
-  loc.inst.health += healed
+  inst.damage -= healed
+  refreshInstance(inst, lib)
   events.push({
     type: 'GeneralHealed',
     player: loc.player,
-    iid: loc.inst.iid,
+    iid: inst.iid,
     amount: healed,
-    healthAfter: loc.inst.health,
+    healthAfter: inst.health,
   })
 }
 
-// 死亡结算:清场 → 遗计 → 循环直到稳定(遗计可能造成连锁死亡)
+// 死亡结算:光环重算 → 清场 → 遗计 → 循环直到稳定(遗计与光环消失都可能连锁致死)
 export function processDeaths(state: GameState, events: GameEvent[], lib: CardLibrary): void {
   for (let guard = 0; guard < 100; guard++) {
+    refreshAuras(state, lib)
     const dead: { player: PlayerIdx; inst: CardInstance }[] = []
     for (const player of [0, 1] as const) {
       const p = state.players[player]
@@ -142,6 +387,8 @@ export function processDeaths(state: GameState, events: GameEvent[], lib: CardLi
       events.push({ type: 'GeneralDied', player: d.player, iid: d.inst.iid, defId: d.inst.defId })
     }
     for (const d of dead) {
+      // 被沉默的单位不触发亡语
+      if (d.inst.silenced) continue
       const def = lib[d.inst.defId]
       if (def?.deathrattle) {
         events.push({
@@ -151,7 +398,12 @@ export function processDeaths(state: GameState, events: GameEvent[], lib: CardLi
           sourceDefId: d.inst.defId,
           kind: 'deathrattle',
         })
-        runScript(state, events, lib, d.player, d.inst.defId, undefined, def.deathrattle, undefined, true)
+        runScript(state, events, lib, def.deathrattle, {
+          player: d.player,
+          sourceDefId: d.inst.defId,
+          degradeChosen: true,
+          kind: 'deathrattle',
+        })
       }
     }
   }
@@ -159,12 +411,21 @@ export function processDeaths(state: GameState, events: GameEvent[], lib: CardLi
 
 // ---------- 效果 DSL ----------
 
+const CHOSEN_TARGETS = new Set([
+  'chosenEnemyGeneral',
+  'chosenAny',
+  'chosenFriendly',
+  'chosenFriendlyGeneral',
+])
+
 export function requiresChosenTarget(script: EffectScript | undefined): boolean {
   if (!script) return false
-  return script.ops.some(
-    (op) =>
-      'target' in op && (op.target === 'chosenEnemyGeneral' || op.target === 'chosenAny'),
-  )
+  return script.ops.some((op) => 'target' in op && CHOSEN_TARGETS.has(op.target))
+}
+
+// 潜行单位不能被敌方选为目标
+function selectableByEnemy(inst: CardInstance): boolean {
+  return !inst.keywords.includes('stealth')
 }
 
 // 该脚本可选目标池(供 UI 高亮与 AI 枚举;单挑目标池另见 combat.ts)
@@ -178,13 +439,21 @@ export function chosenTargetPool(
   const scopes = new Set(script.ops.filter((op) => 'target' in op).map((op) => op.target))
   const enemy = other(player)
   if (scopes.has('chosenEnemyGeneral')) {
-    for (const c of state.players[enemy].board) pool.push({ kind: 'general', iid: c.iid })
+    for (const c of state.players[enemy].board) {
+      if (selectableByEnemy(c)) pool.push({ kind: 'general', iid: c.iid })
+    }
   }
   if (scopes.has('chosenAny')) {
     for (const p of [0, 1] as const) {
-      for (const c of state.players[p].board) pool.push({ kind: 'general', iid: c.iid })
+      for (const c of state.players[p].board) {
+        if (p === player || selectableByEnemy(c)) pool.push({ kind: 'general', iid: c.iid })
+      }
       pool.push({ kind: 'hero', player: p })
     }
+  }
+  if (scopes.has('chosenFriendly') || scopes.has('chosenFriendlyGeneral')) {
+    for (const c of state.players[player].board) pool.push({ kind: 'general', iid: c.iid })
+    if (scopes.has('chosenFriendly')) pool.push({ kind: 'hero', player })
   }
   // 去重(chosenEnemyGeneral 与 chosenAny 同时存在时)
   const seen = new Set<string>()
@@ -209,9 +478,30 @@ function conditionMet(
     const count = state.players[player].board.filter(
       (c) => lib[c.defId]?.dynasty === dynasty,
     ).length
-    return count >= atLeast
+    if (count < atLeast) return false
+  }
+  if (cond.ifBoardCount) {
+    const { side, atLeast } = cond.ifBoardCount
+    const who = side === 'friendly' ? player : other(player)
+    if (state.players[who].board.length < atLeast) return false
+  }
+  if (cond.ifHeroHpBelow !== undefined) {
+    if (state.players[player].heroHp >= cond.ifHeroHpBelow) return false
+  }
+  if (cond.ifHandCount) {
+    if (state.players[player].hand.length < cond.ifHandCount.atLeast) return false
   }
   return true
+}
+
+// 在场友方单位提供的法术伤害加成
+export function spellPowerOf(state: GameState, player: PlayerIdx, lib: CardLibrary): number {
+  let n = 0
+  for (const c of state.players[player].board) {
+    if (c.silenced) continue
+    n += lib[c.defId]?.spellDamage ?? 0
+  }
+  return n
 }
 
 function resolveRefs(
@@ -226,12 +516,25 @@ function resolveRefs(
 ): TargetRef[] {
   const enemy = other(player)
   switch (target) {
+    case 'chosenFriendly':
+    case 'chosenFriendlyGeneral': {
+      if (chosen) return [chosen]
+      if (degradeChosen) {
+        // 亡语/回合结束等无法交互的场景:退化为随机友方武将
+        const board = state.players[player].board
+        if (board.length === 0) return []
+        const roll = rngInt(state.rng, board.length)
+        state.rng = roll.next
+        return [{ kind: 'general', iid: board[roll.value].iid }]
+      }
+      return []
+    }
     case 'chosenEnemyGeneral':
     case 'chosenAny': {
       if (chosen) return [chosen]
       if (degradeChosen) {
         // 遗计等无法选择的场景:退化为随机敌方武将
-        const board = state.players[enemy].board
+        const board = state.players[enemy].board.filter(selectableByEnemy)
         if (board.length === 0) return []
         const roll = rngInt(state.rng, board.length)
         state.rng = roll.next
@@ -241,8 +544,25 @@ function resolveRefs(
     }
     case 'allEnemyGenerals':
       return state.players[enemy].board.map((c) => ({ kind: 'general', iid: c.iid }))
+    case 'allFriendlyGenerals':
+      return state.players[player].board.map((c) => ({ kind: 'general', iid: c.iid }))
+    case 'allFriendlyOthers':
+      return state.players[player].board
+        .filter((c) => c.iid !== sourceIid)
+        .map((c) => ({ kind: 'general', iid: c.iid }))
+    case 'allGenerals':
+      return [0, 1].flatMap((p) =>
+        state.players[p as PlayerIdx].board.map((c) => ({ kind: 'general' as const, iid: c.iid })),
+      )
+    case 'randomFriendlyGeneral': {
+      const board = state.players[player].board
+      if (board.length === 0) return []
+      const roll = rngInt(state.rng, board.length)
+      state.rng = roll.next
+      return [{ kind: 'general', iid: board[roll.value].iid }]
+    }
     case 'randomEnemyGeneral': {
-      const board = state.players[enemy].board
+      const board = state.players[enemy].board.filter(selectableByEnemy)
       if (board.length === 0) return []
       const roll = rngInt(state.rng, board.length)
       state.rng = roll.next
@@ -265,36 +585,50 @@ function resolveRefs(
   }
 }
 
+export interface ScriptCtx {
+  player: PlayerIdx
+  sourceDefId: string
+  sourceIid?: number
+  chosen?: TargetRef
+  degradeChosen?: boolean
+  kind?: 'battlecry' | 'deathrattle' | 'spell' | 'endOfTurn' | 'startOfTurn' | 'onDamaged' | 'heroPower'
+  depth?: number
+}
+
 export function runScript(
   state: GameState,
   events: GameEvent[],
   lib: CardLibrary,
-  player: PlayerIdx,
-  sourceDefId: string,
-  sourceIid: number | undefined,
   script: EffectScript,
-  chosen: TargetRef | undefined,
-  degradeChosen: boolean,
+  ctx: ScriptCtx,
 ): void {
+  const { player, sourceDefId, sourceIid, chosen, kind } = ctx
+  const degradeChosen = ctx.degradeChosen ?? false
+  const depth = ctx.depth ?? 0
   if (!conditionMet(state, player, lib, script)) return
+  // 法术伤害只加成锦囊(战吼/主公技不吃加成,与炉石一致)
+  const bonus = kind === 'spell' ? spellPowerOf(state, player, lib) : 0
+  const refs = (target: string) =>
+    resolveRefs(state, player, sourceIid, sourceDefId, lib, target, chosen, degradeChosen)
+
   for (const op of script.ops) {
     switch (op.op) {
       case 'damage': {
-        for (const ref of resolveRefs(state, player, sourceIid, sourceDefId, lib, op.target, chosen, degradeChosen)) {
-          if (ref.kind === 'hero') damageHero(state, ref.player, op.amount, events)
+        for (const ref of refs(op.target)) {
+          if (ref.kind === 'hero') damageHero(state, ref.player, op.amount + bonus, events)
           else {
             const loc = findGeneral(state, ref.iid)
-            if (loc) damageGeneral(state, loc, op.amount, events)
+            if (loc) damageGeneral(state, loc, op.amount + bonus, events, lib, depth)
           }
         }
         break
       }
       case 'heal': {
-        for (const ref of resolveRefs(state, player, sourceIid, sourceDefId, lib, op.target, chosen, degradeChosen)) {
+        for (const ref of refs(op.target)) {
           if (ref.kind === 'hero') healHero(state, ref.player, op.amount, events)
           else {
             const loc = findGeneral(state, ref.iid)
-            if (loc) healGeneral(state, loc, op.amount, events)
+            if (loc) healGeneral(state, loc, op.amount, events, lib)
           }
         }
         break
@@ -303,43 +637,32 @@ export function runScript(
         drawCards(state, player, op.count, events)
         break
       case 'buffStats': {
-        for (const ref of resolveRefs(state, player, sourceIid, sourceDefId, lib, op.target, chosen, degradeChosen)) {
+        for (const ref of refs(op.target)) {
           if (ref.kind !== 'general') continue
           const loc = findGeneral(state, ref.iid)
           if (!loc) continue
-          loc.inst.attack = Math.max(0, loc.inst.attack + op.attack)
-          loc.inst.health += op.health
-          if (op.health > 0) loc.inst.maxHealth += op.health
-          events.push({
-            type: 'GeneralBuffed',
-            player: loc.player,
-            iid: loc.inst.iid,
-            attack: op.attack,
-            health: op.health,
-          })
+          addEnchant(
+            loc.inst,
+            lib,
+            { attack: op.attack, health: op.health, duration: op.duration },
+            events,
+            loc.player,
+          )
         }
         break
       }
-      case 'summon': {
+      case 'summon':
+      case 'summonForEnemy': {
         const def = lib[op.defId]
         if (!def) break
-        const p = state.players[player]
+        const side = op.op === 'summon' ? player : other(player)
+        const p = state.players[side]
         for (let i = 0; i < op.count && p.board.length < BOARD_LIMIT; i++) {
-          const inst: CardInstance = {
-            iid: state.nextIid++,
-            defId: def.id,
-            attack: def.attack ?? 0,
-            health: def.health ?? 0,
-            maxHealth: def.health ?? 0,
-            keywords: def.keywords.slice(),
-            exhausted: true,
-            attacksUsed: 0,
-            enchants: [],
-          }
+          const inst = makeBoardInstance(state, def.id, lib)
           p.board.push(inst)
           events.push({
             type: 'GeneralSummoned',
-            player,
+            player: side,
             iid: inst.iid,
             defId: inst.defId,
             position: p.board.length - 1,
@@ -353,34 +676,68 @@ export function runScript(
         const enemy = other(player)
         for (const c of state.players[enemy].board.slice()) {
           const loc = findGeneral(state, c.iid)
-          if (loc) damageGeneral(state, loc, op.amount, events)
+          if (loc) damageGeneral(state, loc, op.amount + bonus, events, lib, depth)
+        }
+        break
+      }
+      case 'damageAll': {
+        for (const side of [0, 1] as const) {
+          for (const c of state.players[side].board.slice()) {
+            const loc = findGeneral(state, c.iid)
+            if (loc) damageGeneral(state, loc, op.amount + bonus, events, lib, depth)
+          }
         }
         break
       }
       case 'destroy': {
-        for (const ref of resolveRefs(state, player, sourceIid, sourceDefId, lib, op.target, chosen, degradeChosen)) {
+        for (const ref of refs(op.target)) {
           if (ref.kind !== 'general') continue
           const loc = findGeneral(state, ref.iid)
-          if (loc && loc.inst.health > 0) {
-            damageGeneral(state, loc, loc.inst.health, events)
-          }
+          if (loc) destroyGeneral(loc, events, lib)
         }
         break
       }
       case 'grantKeyword': {
-        for (const ref of resolveRefs(state, player, sourceIid, sourceDefId, lib, op.target, chosen, degradeChosen)) {
+        for (const ref of refs(op.target)) {
           if (ref.kind !== 'general') continue
           const loc = findGeneral(state, ref.iid)
-          if (loc && !loc.inst.keywords.includes(op.keyword)) {
-            loc.inst.keywords.push(op.keyword)
-            events.push({
-              type: 'KeywordGranted',
-              player: loc.player,
-              iid: loc.inst.iid,
-              keyword: op.keyword,
-            })
-          }
+          if (!loc) continue
+          if (loc.inst.keywords.includes(op.keyword) && op.keyword !== 'divineShield') continue
+          addEnchant(
+            loc.inst,
+            lib,
+            { attack: 0, health: 0, keywords: [op.keyword], duration: op.duration },
+            events,
+            loc.player,
+          )
         }
+        break
+      }
+      case 'silence': {
+        for (const ref of refs(op.target)) {
+          if (ref.kind !== 'general') continue
+          const loc = findGeneral(state, ref.iid)
+          if (loc) silenceGeneral(loc, lib, events)
+        }
+        break
+      }
+      case 'freeze': {
+        for (const ref of refs(op.target)) {
+          if (ref.kind !== 'general') continue
+          const loc = findGeneral(state, ref.iid)
+          if (loc) freezeGeneral(loc, events)
+        }
+        break
+      }
+      case 'gainMana': {
+        const p = state.players[player]
+        if (op.temporary) {
+          p.mana.current = Math.min(MANA_CAP, p.mana.current + op.amount)
+        } else {
+          p.mana.max = Math.min(MANA_CAP, p.mana.max + op.amount)
+          p.mana.current = Math.min(p.mana.max, p.mana.current + op.amount)
+        }
+        events.push({ type: 'ManaGained', player, amount: op.amount, temporary: op.temporary })
         break
       }
       case 'gainArmor': {
@@ -390,7 +747,7 @@ export function runScript(
         break
       }
       case 'returnToHand': {
-        for (const ref of resolveRefs(state, player, sourceIid, sourceDefId, lib, op.target, chosen, degradeChosen)) {
+        for (const ref of refs(op.target)) {
           if (ref.kind !== 'general') continue
           const loc = findGeneral(state, ref.iid)
           if (!loc) continue
@@ -407,17 +764,9 @@ export function runScript(
             events.push({ type: 'CardBurned', player: loc.player, defId: loc.inst.defId })
             continue
           }
-          // 回手即重置为卡面原值(增益/受伤/授予关键词全部清除)
-          const def = lib[loc.inst.defId]
-          const inst = loc.inst
-          inst.attack = def?.attack ?? 0
-          inst.health = def?.health ?? 0
-          inst.maxHealth = def?.health ?? 0
-          inst.keywords = def?.keywords.slice() ?? []
-          inst.exhausted = false
-          inst.attacksUsed = 0
-          inst.enchants = []
-          owner.hand.push(inst)
+          // 回手即重置为卡面原值(附魔/受伤/沉默/冻结全部清除)
+          resetInstance(loc.inst, lib)
+          owner.hand.push(loc.inst)
         }
         break
       }
@@ -445,4 +794,43 @@ export function runScript(
     // 每个操作后结算死亡,避免后续操作作用在已死单位上
     processDeaths(state, events, lib)
   }
+}
+
+// ---------- 实例工厂 ----------
+
+export function resetInstance(inst: CardInstance, lib: CardLibrary): void {
+  inst.enchants = []
+  inst.damage = 0
+  inst.silenced = false
+  inst.frozen = false
+  inst.shieldUsed = false
+  inst.stealthBroken = false
+  inst.exhausted = false
+  inst.attacksUsed = 0
+  refreshInstance(inst, lib)
+}
+
+export function makeBoardInstance(
+  state: GameState,
+  defId: string,
+  lib: CardLibrary,
+): CardInstance {
+  const inst: CardInstance = {
+    iid: state.nextIid++,
+    defId,
+    attack: 0,
+    health: 0,
+    maxHealth: 0,
+    keywords: [],
+    exhausted: true,
+    attacksUsed: 0,
+    enchants: [],
+    damage: 0,
+    silenced: false,
+    frozen: false,
+    shieldUsed: false,
+    stealthBroken: false,
+  }
+  refreshInstance(inst, lib)
+  return inst
 }

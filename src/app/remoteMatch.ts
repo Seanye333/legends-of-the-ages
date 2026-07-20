@@ -97,6 +97,11 @@ function dummyInstance(iid: number): CardInstance {
     exhausted: false,
     attacksUsed: 0,
     enchants: [],
+    damage: 0,
+    silenced: false,
+    frozen: false,
+    shieldUsed: false,
+    stealthBroken: false,
   }
 }
 
@@ -106,6 +111,7 @@ export function inflateRedacted(rs: RedactedState, mySeat: PlayerIdx): GameState
   const self: PlayerState = {
     heroId: rs.self.heroId,
     heroHp: rs.self.heroHp,
+    heroMaxHp: rs.self.heroMaxHp,
     armor: rs.self.armor,
     fatigue: rs.self.fatigue,
     mana: rs.self.mana,
@@ -114,10 +120,13 @@ export function inflateRedacted(rs: RedactedState, mySeat: PlayerIdx): GameState
     board: rs.self.board,
     graveyard: rs.self.graveyard,
     mulliganDone: rs.self.mulliganDone,
+    heroPowerUsed: rs.self.heroPowerUsed,
+    heroPower: rs.self.heroPower,
   }
   const opponent: PlayerState = {
     heroId: rs.opponent.heroId,
     heroHp: rs.opponent.heroHp,
+    heroMaxHp: rs.opponent.heroMaxHp,
     armor: rs.opponent.armor,
     fatigue: rs.opponent.fatigue,
     mana: rs.opponent.mana,
@@ -126,6 +135,8 @@ export function inflateRedacted(rs: RedactedState, mySeat: PlayerIdx): GameState
     board: rs.opponent.board,
     graveyard: rs.opponent.graveyard,
     mulliganDone: rs.opponent.mulliganDone,
+    heroPowerUsed: rs.opponent.heroPowerUsed,
+    heroPower: rs.opponent.heroPower,
   }
   return {
     seed: 0,

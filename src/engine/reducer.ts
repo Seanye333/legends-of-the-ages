@@ -11,8 +11,10 @@ import type {
 import { BOARD_LIMIT, MANA_CAP, TURN_LIMIT } from './types'
 import { rngShuffle } from './rng'
 import {
+  addEnchant,
   chosenTargetPool,
   drawCards,
+  expireTemporaryEnchants,
   findGeneral,
   other,
   processDeaths,
@@ -75,13 +77,20 @@ export function applyCommand(
     case 'EndTurn': {
       if (next.phase !== 'main') return { ok: false, error: 'not-main-phase' }
       if (player !== next.activePlayer) return { ok: false, error: 'not-your-turn' }
-      events.push({ type: 'TurnEnded', player, turn: next.turn })
+      // 回合结束触发器可能直接把某一方打死(例如诸葛恪的自伤),此时不再开新回合
+      if (endTurn(next, events, lib, player)) return { ok: true, state: next, events }
       next.activePlayer = other(next.activePlayer)
       beginTurn(next, events, lib)
       return { ok: true, state: next, events }
     }
     case 'PlayCard': {
       const error = playCard(next, player, cmd.iid, cmd.boardPos, cmd.target, events, lib)
+      if (error) return { ok: false, error }
+      checkGameEnd(next, events)
+      return { ok: true, state: next, events }
+    }
+    case 'UseHeroPower': {
+      const error = useHeroPower(next, player, cmd.target, events, lib)
       if (error) return { ok: false, error }
       checkGameEnd(next, events)
       return { ok: true, state: next, events }
@@ -99,6 +108,62 @@ export function applyCommand(
       return { ok: false, error: `unknown-command: ${JSON.stringify(exhaustive)}` }
     }
   }
+}
+
+// 主公技:每回合一次,费用与效果由 PlayerState.heroPower 携带。
+function useHeroPower(
+  state: GameState,
+  player: PlayerIdx,
+  target: TargetRef | undefined,
+  events: GameEvent[],
+  lib: CardLibrary,
+): string | null {
+  if (state.phase !== 'main') return 'not-main-phase'
+  if (player !== state.activePlayer) return 'not-your-turn'
+  const p = state.players[player]
+  const power = p.heroPower
+  if (!power) return 'no-hero-power'
+  if (p.heroPowerUsed) return 'hero-power-used'
+  if (power.cost > p.mana.current) return 'not-enough-mana'
+
+  const needsChosen = requiresChosenTarget(power.script)
+  let chosen: TargetRef | undefined
+  if (needsChosen) {
+    const pool = chosenTargetPool(state, player, power.script)
+    if (pool.length === 0) return 'no-legal-target'
+    if (!target) return 'target-required'
+    const inPool = pool.some((x) =>
+      x.kind === 'hero'
+        ? target.kind === 'hero' && target.player === x.player
+        : target.kind === 'general' && target.iid === x.iid,
+    )
+    if (!inPool) return 'invalid-target'
+    chosen = target
+  }
+
+  p.mana.current -= power.cost
+  p.heroPowerUsed = true
+  events.push({
+    type: 'HeroPowerUsed',
+    player,
+    heroId: p.heroId,
+    powerId: power.id,
+    cost: power.cost,
+  })
+  events.push({
+    type: 'EffectTriggered',
+    player,
+    sourceDefId: p.heroId,
+    kind: 'heroPower',
+  })
+  runScript(state, events, lib, power.script, {
+    player,
+    sourceDefId: p.heroId,
+    chosen,
+    kind: 'heroPower',
+  })
+  processDeaths(state, events, lib)
+  return null
 }
 
 function playCard(
@@ -131,11 +196,14 @@ function playCard(
         ? t.kind === 'hero' && t.player === x.player
         : t.kind === 'general' && t.iid === x.iid,
     )
+  const duelTarget =
+    target?.kind === 'general' ? findGeneral(state, target.iid) : undefined
   const canDuel =
     def.type === 'general' &&
-    hasKeyword(inst, 'duel') &&
-    target?.kind === 'general' &&
-    findGeneral(state, target.iid)?.player === other(player)
+    def.keywords.includes('duel') &&
+    duelTarget !== undefined &&
+    duelTarget.player === other(player) &&
+    !hasKeyword(duelTarget.inst, 'stealth')
   let chosenForScript: TargetRef | undefined
   if (def.type === 'general') {
     if (p.board.length >= BOARD_LIMIT) return 'board-full'
@@ -177,6 +245,8 @@ function playCard(
       attack: inst.attack,
       health: inst.health,
     })
+    // 光环可能在入场瞬间改变全场身材
+    processDeaths(state, events, lib)
     if (def.battlecry) {
       events.push({
         type: 'EffectTriggered',
@@ -185,7 +255,13 @@ function playCard(
         sourceDefId: inst.defId,
         kind: 'battlecry',
       })
-      runScript(state, events, lib, player, inst.defId, inst.iid, def.battlecry, chosenForScript, false)
+      runScript(state, events, lib, def.battlecry, {
+        player,
+        sourceDefId: inst.defId,
+        sourceIid: inst.iid,
+        chosen: chosenForScript,
+        kind: 'battlecry',
+      })
     }
     // 单挑:战吼结算后,若单挑者仍在场且目标仍在场
     if (canDuel && target?.kind === 'general' && findGeneral(state, inst.iid)) {
@@ -194,30 +270,21 @@ function playCard(
       }
     }
   } else if (def.type === 'equipment') {
-    // 装备:加成攻血 + 授予关键词,随后入墓
+    // 装备:作为一条附魔挂上(因此可被沉默清除),随后入墓
     const loc = target?.kind === 'general' ? findGeneral(state, target.iid) : undefined
     if (loc) {
       events.push({ type: 'EquipmentAttached', player, targetIid: loc.inst.iid, defId: inst.defId })
-      const atk = def.attack ?? 0
-      const hp = def.health ?? 0
-      if (atk !== 0 || hp !== 0) {
-        loc.inst.attack = Math.max(0, loc.inst.attack + atk)
-        loc.inst.health += hp
-        if (hp > 0) loc.inst.maxHealth += hp
-        events.push({
-          type: 'GeneralBuffed',
-          player,
-          iid: loc.inst.iid,
-          attack: atk,
-          health: hp,
-        })
-      }
-      for (const kw of def.keywords) {
-        if (!loc.inst.keywords.includes(kw)) {
-          loc.inst.keywords.push(kw)
-          events.push({ type: 'KeywordGranted', player, iid: loc.inst.iid, keyword: kw })
-        }
-      }
+      addEnchant(
+        loc.inst,
+        lib,
+        {
+          attack: def.attack ?? 0,
+          health: def.health ?? 0,
+          keywords: def.keywords.length > 0 ? def.keywords.slice() : undefined,
+        },
+        events,
+        loc.player,
+      )
     }
     p.graveyard.push(inst.defId)
   } else {
@@ -227,12 +294,60 @@ function playCard(
       sourceDefId: inst.defId,
       kind: 'spell',
     })
-    runScript(state, events, lib, player, inst.defId, undefined, def.spell!, chosenForScript, false)
+    runScript(state, events, lib, def.spell!, {
+      player,
+      sourceDefId: inst.defId,
+      chosen: chosenForScript,
+      kind: 'spell',
+    })
     p.graveyard.push(inst.defId)
   }
 
   processDeaths(state, events, lib)
   return null
+}
+
+// 回合结束:先跑「回合结束时」触发器,再撤销本回合临时增益,最后解冻自己的单位。
+// 解冻放在回合末而不是回合初 —— 否则在对手回合冻结他的单位,他一开局就化了,等于没冻。
+// 返回 true 表示对局在回合结束阶段就已经分出胜负。
+function endTurn(
+  state: GameState,
+  events: GameEvent[],
+  lib: CardLibrary,
+  player: PlayerIdx,
+): boolean {
+  for (const unit of state.players[player].board.slice()) {
+    if (unit.silenced) continue
+    const def = lib[unit.defId]
+    if (!def?.endOfTurn) continue
+    if (!findGeneral(state, unit.iid)) continue
+    events.push({
+      type: 'EffectTriggered',
+      player,
+      sourceIid: unit.iid,
+      sourceDefId: unit.defId,
+      kind: 'endOfTurn',
+    })
+    runScript(state, events, lib, def.endOfTurn, {
+      player,
+      sourceDefId: unit.defId,
+      sourceIid: unit.iid,
+      degradeChosen: true,
+      kind: 'endOfTurn',
+    })
+  }
+  expireTemporaryEnchants(state, lib, events)
+  for (const unit of state.players[player].board) {
+    if (unit.frozen) {
+      unit.frozen = false
+      events.push({ type: 'GeneralUnfrozen', player, iid: unit.iid })
+    }
+  }
+  processDeaths(state, events, lib)
+  checkGameEnd(state, events)
+  if (state.phase === 'ended') return true
+  events.push({ type: 'TurnEnded', player, turn: state.turn })
+  return false
 }
 
 function beginTurn(state: GameState, events: GameEvent[], lib: CardLibrary): void {
@@ -241,20 +356,42 @@ function beginTurn(state: GameState, events: GameEvent[], lib: CardLibrary): voi
     endGame(state, events, 'draw')
     return
   }
-  const p = state.players[state.activePlayer]
+  const active = state.activePlayer
+  const p = state.players[active]
   p.mana.max = Math.min(MANA_CAP, p.mana.max + 1)
   p.mana.current = p.mana.max
+  p.heroPowerUsed = false
   for (const unit of p.board) {
     unit.exhausted = false
     unit.attacksUsed = 0
   }
   events.push({
     type: 'TurnStarted',
-    player: state.activePlayer,
+    player: active,
     turn: state.turn,
     mana: p.mana.max,
   })
-  drawCards(state, state.activePlayer, 1, events)
+  for (const unit of p.board.slice()) {
+    if (unit.silenced) continue
+    const def = lib[unit.defId]
+    if (!def?.startOfTurn) continue
+    if (!findGeneral(state, unit.iid)) continue
+    events.push({
+      type: 'EffectTriggered',
+      player: active,
+      sourceIid: unit.iid,
+      sourceDefId: unit.defId,
+      kind: 'startOfTurn',
+    })
+    runScript(state, events, lib, def.startOfTurn, {
+      player: active,
+      sourceDefId: unit.defId,
+      sourceIid: unit.iid,
+      degradeChosen: true,
+      kind: 'startOfTurn',
+    })
+  }
+  drawCards(state, active, 1, events)
   processDeaths(state, events, lib)
   checkGameEnd(state, events)
 }

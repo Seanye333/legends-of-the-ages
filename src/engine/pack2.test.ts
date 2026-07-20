@@ -2,6 +2,8 @@
 import { describe, expect, it } from 'vitest'
 import { applyCommand } from './reducer'
 import { legalCommands } from './legal'
+import { createInstance } from './init'
+import { refreshInstance } from './resolve'
 import { HAND_LIMIT } from './types'
 import type {
   CardDef,
@@ -70,26 +72,31 @@ const LIB: CardLibrary = Object.fromEntries(
   ].map((d) => [d.id, d]),
 )
 
+// 同 battle.test.ts:身材是派生字段,测试给的数值换算成一条附魔
 function inst(defId: string, over: Partial<CardInstance> = {}): CardInstance {
-  const d = LIB[defId]
-  return {
-    iid: nextIid++,
-    defId,
-    attack: d.attack ?? 0,
-    health: d.health ?? 0,
-    maxHealth: d.health ?? 0,
-    keywords: d.keywords.slice(),
-    exhausted: false,
-    attacksUsed: 0,
-    enchants: [],
-    ...over,
+  const base = createInstance(defId, nextIid++, LIB)
+  const { attack, health, maxHealth, keywords, ...rest } = over
+  const merged: CardInstance = { ...base, ...rest }
+  const targetAtk = attack ?? base.attack
+  const targetHp = maxHealth ?? health ?? base.maxHealth
+  if (targetAtk !== base.attack || targetHp !== base.maxHealth || keywords) {
+    merged.enchants = [
+      { attack: targetAtk - base.attack, health: targetHp - base.maxHealth, keywords },
+    ]
   }
+  refreshInstance(merged, LIB)
+  if (health !== undefined && maxHealth !== undefined && health < maxHealth) {
+    merged.damage = maxHealth - health
+    refreshInstance(merged, LIB)
+  }
+  return merged
 }
 
 function player(over: Partial<PlayerState> = {}): PlayerState {
   return {
     heroId: 'hero',
     heroHp: 30,
+    heroMaxHp: 30,
     armor: 0,
     fatigue: 0,
     mana: { current: 10, max: 10 },
@@ -98,6 +105,7 @@ function player(over: Partial<PlayerState> = {}): PlayerState {
     board: [],
     graveyard: [],
     mulliganDone: true,
+    heroPowerUsed: false,
     ...over,
   }
 }

@@ -20,6 +20,8 @@ export const KEYWORD_BADGE: Record<Keyword, LocalizedText> = {
   duel: { zh: '单', en: 'D' },
   lifesteal: { zh: '吸', en: 'L' },
   poison: { zh: '毒', en: 'P' },
+  divineShield: { zh: '壁', en: 'S' },
+  stealth: { zh: '潜', en: 'H' },
 }
 
 export const KEYWORD_NAME: Record<Keyword, LocalizedText> = {
@@ -30,6 +32,8 @@ export const KEYWORD_NAME: Record<Keyword, LocalizedText> = {
   duel: { zh: '单挑', en: 'Duel' },
   lifesteal: { zh: '吸血', en: 'Lifesteal' },
   poison: { zh: '剧毒', en: 'Poison' },
+  divineShield: { zh: '铁壁', en: 'Divine Shield' },
+  stealth: { zh: '潜行', en: 'Stealth' },
 }
 
 // 关键词规则图例(卡牌详情页)
@@ -53,6 +57,14 @@ export const KEYWORD_RULE: Record<Keyword, LocalizedText> = {
     en: 'Damage dealt in combat heals your hero for the same amount',
   },
   poison: { zh: '战斗中伤害到的武将立即死亡', en: 'Any general it damages in combat dies at once' },
+  divineShield: {
+    zh: '抵消下一次受到的伤害,不论多少;被沉默会一并失去',
+    en: 'Ignores the next damage it takes, however large. Lost when silenced.',
+  },
+  stealth: {
+    zh: '不能被敌方选为目标,也不能用守护逼迫对手;自身发起攻击后解除',
+    en: 'Cannot be targeted by the enemy and does not force attacks with Guard. Lost when it attacks.',
+  },
 }
 
 export const DOCTRINE_NAME: Record<CardDef['doctrine'], LocalizedText> = {

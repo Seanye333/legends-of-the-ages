@@ -8,20 +8,28 @@ import type {
 } from './types'
 import { DECK_SIZE, OPENING_HAND, START_HP } from './types'
 import { rngShuffle, seedRng } from './rng'
+import { refreshInstance } from './resolve'
 
-function makeInstance(defId: string, iid: number, lib: CardLibrary): CardInstance {
-  const def = lib[defId]
-  return {
+// 卡牌实例工厂。派生字段一律由 refreshInstance 算,调用方不要手写 attack/health。
+export function createInstance(defId: string, iid: number, lib: CardLibrary): CardInstance {
+  const inst: CardInstance = {
     iid,
     defId,
-    attack: def.attack ?? 0,
-    health: def.health ?? 0,
-    maxHealth: def.health ?? 0,
-    keywords: def.keywords.slice(),
+    attack: 0,
+    health: 0,
+    maxHealth: 0,
+    keywords: [],
     exhausted: false,
     attacksUsed: 0,
     enchants: [],
+    damage: 0,
+    silenced: false,
+    frozen: false,
+    shieldUsed: false,
+    stealthBroken: false,
   }
+  refreshInstance(inst, lib)
+  return inst
 }
 
 export function createGame(cfg: GameConfig, lib: CardLibrary): GameState {
@@ -39,7 +47,7 @@ export function createGame(cfg: GameConfig, lib: CardLibrary): GameState {
   let nextIid = 1
 
   const players = ([0, 1] as const).map((side: PlayerIdx): PlayerState => {
-    const instances = cfg.deckIds[side].map((defId) => makeInstance(defId, nextIid++, lib))
+    const instances = cfg.deckIds[side].map((defId) => createInstance(defId, nextIid++, lib))
     const shuffledDeck = rngShuffle(rng, instances)
     rng = shuffledDeck.next
     const deck = shuffledDeck.result
@@ -47,9 +55,11 @@ export function createGame(cfg: GameConfig, lib: CardLibrary): GameState {
     const handSize = side === cfg.first ? OPENING_HAND[0] : OPENING_HAND[1]
     // 数组末尾为牌库顶
     const hand = deck.splice(deck.length - handSize, handSize)
+    const maxHp = cfg.heroHps?.[side] ?? START_HP
     return {
       heroId: cfg.heroIds[side],
-      heroHp: START_HP,
+      heroHp: maxHp,
+      heroMaxHp: maxHp,
       armor: 0,
       fatigue: 0,
       mana: { current: 0, max: 0 },
@@ -58,6 +68,8 @@ export function createGame(cfg: GameConfig, lib: CardLibrary): GameState {
       board: [],
       graveyard: [],
       mulliganDone: false,
+      heroPowerUsed: false,
+      heroPower: cfg.heroPowers?.[side],
     }
   }) as [PlayerState, PlayerState]
 

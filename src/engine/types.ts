@@ -36,8 +36,18 @@ export type DynastyTag =
 // 武将牌/锦囊牌/装备牌(装备:打给一名友方武将,加成攻血并授予关键词)
 export type CardType = 'general' | 'stratagem' | 'equipment'
 export type Rarity = 'common' | 'rare' | 'epic' | 'legendary'
-// 冲锋/突袭/守护/连击/单挑/吸血/剧毒(第二卡包新增后两个)
-export type Keyword = 'charge' | 'rush' | 'guard' | 'windfury' | 'duel' | 'lifesteal' | 'poison'
+// 冲锋/突袭/守护/连击/单挑/吸血/剧毒(第二卡包)/铁壁(圣盾)/潜行(第三卡包)
+export type Keyword =
+  | 'charge'
+  | 'rush'
+  | 'guard'
+  | 'windfury'
+  | 'duel'
+  | 'lifesteal'
+  | 'poison'
+  // ---- 第三卡包「附魔与谋略」 ----
+  | 'divineShield' // 铁壁:抵消下一次伤害
+  | 'stealth' // 潜行:不能被敌方选为目标,自身攻击后解除
 export type Archetype = 'warrior' | 'strategist'
 
 export interface LocalizedText {
@@ -56,24 +66,48 @@ export type EffectTarget =
   | 'friendlyDynastyGenerals'
   | 'enemyHero'
   | 'friendlyHero'
+  // ---- 第三卡包 ----
+  | 'allFriendlyGenerals'
+  | 'allFriendlyOthers' // 除自己外的友方武将(号令类战吼)
+  | 'randomFriendlyGeneral'
+  | 'allGenerals'
+  | 'chosenFriendly' // 指定友方角色(含主公)
+  | 'chosenFriendlyGeneral' // 指定友方武将
 
 export interface EffectCondition {
   ifDynastyCount?: { dynasty: DynastyTag; atLeast: number }
+  // ---- 第三卡包 ----
+  ifBoardCount?: { side: 'friendly' | 'enemy'; atLeast: number }
+  ifHeroHpBelow?: number // 我方主公血量低于此值
+  ifHandCount?: { atLeast: number }
 }
 
 export type EffectOp =
   | { op: 'damage'; amount: number; target: EffectTarget }
   | { op: 'heal'; amount: number; target: EffectTarget }
   | { op: 'draw'; count: number }
-  | { op: 'buffStats'; attack: number; health: number; target: EffectTarget }
+  // duration: 'endOfTurn' → 本回合结束时失效(通过附魔层撤销)
+  | {
+      op: 'buffStats'
+      attack: number
+      health: number
+      target: EffectTarget
+      duration?: 'endOfTurn'
+    }
   | { op: 'summon'; defId: string; count: number }
   | { op: 'aoeDamage'; amount: number }
   | { op: 'destroy'; target: EffectTarget }
-  | { op: 'grantKeyword'; keyword: Keyword; target: EffectTarget }
+  | { op: 'grantKeyword'; keyword: Keyword; target: EffectTarget; duration?: 'endOfTurn' }
   // ---- 第二卡包 ----
   | { op: 'gainArmor'; amount: number } // 我方主公获得护甲
   | { op: 'returnToHand'; target: EffectTarget } // 武将弹回持有者手牌(重置至卡面原值;手满则烧毁)
   | { op: 'discardRandom'; count: number } // 对手随机弃牌
+  // ---- 第三卡包 ----
+  | { op: 'silence'; target: EffectTarget } // 沉默:清空附魔与关键词,封印亡语
+  | { op: 'freeze'; target: EffectTarget } // 冻结:跳过下一次行动
+  | { op: 'gainMana'; amount: number; temporary: boolean } // 增益法力(temporary 只补本回合)
+  | { op: 'damageAll'; amount: number } // 双方全场武将
+  | { op: 'summonForEnemy'; defId: string; count: number } // 为对手召唤(负面锦囊/亡语用)
 
 export interface EffectScript {
   ops: EffectOp[]
@@ -81,6 +115,15 @@ export interface EffectScript {
 }
 
 // ---------- 卡牌定义 ----------
+
+// 光环:只要来源在场,持续作用于范围内武将。实现为「来源标记的附魔」,
+// 每次场面变动重算(refreshAuras),来源离场即自动撤销。
+export interface AuraDef {
+  scope: 'friendlyOthers' | 'friendlyAll'
+  attack: number
+  health: number
+  keywords?: Keyword[]
+}
 
 export interface CardDef {
   id: string
@@ -100,6 +143,22 @@ export interface CardDef {
   deathrattle?: EffectScript
   spell?: EffectScript
   text?: LocalizedText
+  token?: boolean // 衍生物:只能被召唤,不进卡包、不可构筑
+  // ---- 第三卡包:触发器与光环 ----
+  aura?: AuraDef
+  endOfTurn?: EffectScript // 我方回合结束时
+  startOfTurn?: EffectScript // 我方回合开始时
+  onDamaged?: EffectScript // 自身受伤后(有递归深度上限)
+  spellDamage?: number // 法术伤害加成(在场时为友方锦囊加伤)
+}
+
+// 主公技:每回合一次的主动技能,六主义各一。
+export interface HeroPowerDef {
+  id: string
+  name: LocalizedText
+  text: LocalizedText
+  cost: number
+  script: EffectScript
 }
 
 export interface HeroDef {
@@ -107,17 +166,26 @@ export interface HeroDef {
   name: LocalizedText
   doctrine: Doctrine
   hp: number
+  power: HeroPowerDef
 }
 
 export type CardLibrary = Readonly<Record<string, CardDef>>
 
 // ---------- 对局状态 ----------
 
+// 附魔:一切对卡面数值的修改都记在这里,而不是直接改 attack/health。
+// 这样沉默(清空附魔)、临时增益(到期撤销)、光环(来源离场撤销)才有统一的撤销路径。
 export interface Enchant {
   attack: number
   health: number
+  keywords?: Keyword[]
+  duration?: 'endOfTurn'
+  auraFrom?: number // 光环来源 iid;由 refreshAuras 全权管理
 }
 
+// attack / health / maxHealth / keywords 是**派生字段**:
+// 由 refreshInstance() 从卡面基础值 ⊕ enchants ⊖ silenced 算出。
+// 保留在实例上是为了 UI / AI / 服务器读取时零成本,写入一律走附魔层。
 export interface CardInstance {
   iid: number
   defId: string
@@ -128,11 +196,17 @@ export interface CardInstance {
   exhausted: boolean
   attacksUsed: number
   enchants: Enchant[]
+  damage: number // 已承受伤害;health = maxHealth - damage
+  silenced: boolean
+  frozen: boolean
+  shieldUsed: boolean // 铁壁已消耗(防止 refresh 从卡面把圣盾加回来)
+  stealthBroken: boolean // 潜行已解除(同上,压制卡面自带的潜行)
 }
 
 export interface PlayerState {
   heroId: string
   heroHp: number
+  heroMaxHp: number
   armor: number
   fatigue: number
   mana: { current: number; max: number }
@@ -141,6 +215,9 @@ export interface PlayerState {
   board: CardInstance[]
   graveyard: string[]
   mulliganDone: boolean
+  heroPowerUsed: boolean
+  // 主公技随状态走(而不是查 HeroDef 表),这样引擎依旧零外部依赖、状态自足可序列化。
+  heroPower?: HeroPowerDef
 }
 
 export type GamePhase = 'mulligan' | 'main' | 'ended'
@@ -167,6 +244,7 @@ export type Command =
   | { type: 'Mulligan'; keepIids: number[] }
   | { type: 'PlayCard'; iid: number; boardPos?: number; target?: TargetRef }
   | { type: 'Attack'; attackerIid: number; target: TargetRef }
+  | { type: 'UseHeroPower'; target?: TargetRef }
   | { type: 'EndTurn' }
   | { type: 'Concede' }
 
@@ -196,7 +274,7 @@ export type GameEvent =
       player: PlayerIdx
       sourceIid?: number
       sourceDefId: string
-      kind: 'battlecry' | 'deathrattle' | 'spell'
+      kind: 'battlecry' | 'deathrattle' | 'spell' | 'endOfTurn' | 'startOfTurn' | 'onDamaged' | 'heroPower'
     }
   | { type: 'GeneralDamaged'; player: PlayerIdx; iid: number; amount: number; healthAfter: number }
   | { type: 'GeneralHealed'; player: PlayerIdx; iid: number; amount: number; healthAfter: number }
@@ -231,6 +309,20 @@ export type GameEvent =
   | { type: 'ArmorGained'; player: PlayerIdx; amount: number; armorAfter: number }
   | { type: 'GeneralReturned'; player: PlayerIdx; iid: number; defId: string }
   | { type: 'CardDiscarded'; player: PlayerIdx; iid: number; defId: string }
+  // ---- 第三卡包 ----
+  | { type: 'DivineShieldPopped'; player: PlayerIdx; iid: number }
+  | { type: 'GeneralSilenced'; player: PlayerIdx; iid: number }
+  | { type: 'GeneralFrozen'; player: PlayerIdx; iid: number }
+  | { type: 'GeneralUnfrozen'; player: PlayerIdx; iid: number }
+  | { type: 'StealthBroken'; player: PlayerIdx; iid: number }
+  | { type: 'ManaGained'; player: PlayerIdx; amount: number; temporary: boolean }
+  | {
+      type: 'HeroPowerUsed'
+      player: PlayerIdx
+      heroId: string
+      powerId: string
+      cost: number
+    }
   | { type: 'GameEnded'; winner: Winner }
 
 // ---------- 对局配置与 API 结果 ----------
@@ -240,6 +332,9 @@ export interface GameConfig {
   heroIds: [string, string]
   deckIds: [string[], string[]]
   first: PlayerIdx
+  // 可选:不给则无主公技、血量按 START_HP(旧测试与教学局走这条路)
+  heroPowers?: [HeroPowerDef | undefined, HeroPowerDef | undefined]
+  heroHps?: [number, number]
 }
 
 export type ApplyResult =

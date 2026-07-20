@@ -41,6 +41,10 @@ const KIND_NAME = {
   battlecry: { zh: '战吼', en: 'Battlecry' },
   deathrattle: { zh: '亡语', en: 'Deathrattle' },
   spell: { zh: '锦囊', en: 'Stratagem' },
+  endOfTurn: { zh: '回合结束', en: 'End of Turn' },
+  startOfTurn: { zh: '回合开始', en: 'Start of Turn' },
+  onDamaged: { zh: '受创', en: 'On Damaged' },
+  heroPower: { zh: '主公技', en: 'Hero Power' },
 } as const
 
 // 每种 GameEvent 一条战报,中英各出一份(英文用战报口吻的一般过去时)。
@@ -121,10 +125,19 @@ function line(ev: GameEvent, ctx: EventTextCtx, l: Lang): string {
       return zh
         ? `${n(ev.iid)}恢复 ${ev.amount} 点(至 ${ev.healthAfter})`
         : `${n(ev.iid)} recovered ${ev.amount} (up to ${ev.healthAfter})`
-    case 'GeneralBuffed':
+    case 'GeneralBuffed': {
+      // 临时增益到期与光环撤销走同一个事件,数值为负 —— 文案要跟着换措辞
+      const fading = ev.attack < 0 || ev.health < 0
+      const fmt = (v: number) => (v >= 0 ? `+${v}` : `${v}`)
+      if (fading) {
+        return zh
+          ? `${n(ev.iid)}的增益消退(${fmt(ev.attack)}/${fmt(ev.health)})`
+          : `${n(ev.iid)} lost a buff (${fmt(ev.attack)}/${fmt(ev.health)})`
+      }
       return zh
         ? `${n(ev.iid)}获得 +${ev.attack}/+${ev.health}`
         : `${n(ev.iid)} gained +${ev.attack}/+${ev.health}`
+    }
     case 'KeywordGranted':
       return zh
         ? `${n(ev.iid)}获得【${KEYWORD_NAME[ev.keyword].zh}】`
@@ -170,6 +183,28 @@ function line(ev: GameEvent, ctx: EventTextCtx, l: Lang): string {
       return zh
         ? `${side(ev.player)}弃掉${dn(ev.defId)}`
         : `${side(ev.player)} discarded ${dn(ev.defId)}`
+    case 'DivineShieldPopped':
+      return zh ? `${n(ev.iid)}的铁壁被击碎` : `${n(ev.iid)}'s Divine Shield shattered`
+    case 'GeneralSilenced':
+      return zh ? `${n(ev.iid)}被沉默` : `${n(ev.iid)} was silenced`
+    case 'GeneralFrozen':
+      return zh ? `${n(ev.iid)}被冻结` : `${n(ev.iid)} was frozen`
+    case 'GeneralUnfrozen':
+      return zh ? `${n(ev.iid)}解除冻结` : `${n(ev.iid)} thawed`
+    case 'StealthBroken':
+      return zh ? `${n(ev.iid)}暴露行踪` : `${n(ev.iid)} broke Stealth`
+    case 'ManaGained':
+      return zh
+        ? ev.temporary
+          ? `${side(ev.player)}本回合获得 ${ev.amount} 点法力`
+          : `${side(ev.player)}法力上限 +${ev.amount}`
+        : ev.temporary
+          ? `${side(ev.player)} gained ${ev.amount} mana this turn`
+          : `${side(ev.player)} gained ${ev.amount} Mana Crystal`
+    case 'HeroPowerUsed':
+      return zh
+        ? `${hero(ev.player)} 发动主公技(${ev.cost} 费)`
+        : `${hero(ev.player)} used their Hero Power (${ev.cost} mana)`
     case 'GameEnded':
       if (ev.winner === 'draw') return zh ? '对局结束:平局' : 'Battle over — a draw'
       return zh

@@ -31,7 +31,9 @@ export function legalCommands(state: GameState, player: PlayerIdx, lib: CardLibr
       const needsChosen = requiresChosenTarget(script)
       const pool = needsChosen ? chosenTargetPool(state, player, script) : []
       const duelTargets: TargetRef[] = hasKeyword(card, 'duel')
-        ? state.players[other(player)].board.map((c) => ({ kind: 'general', iid: c.iid }))
+        ? state.players[other(player)].board
+            .filter((c) => !hasKeyword(c, 'stealth'))
+            .map((c) => ({ kind: 'general', iid: c.iid }))
         : []
       if (needsChosen && pool.length > 0) {
         for (const target of pool) commands.push({ type: 'PlayCard', iid: card.iid, target })
@@ -55,6 +57,17 @@ export function legalCommands(state: GameState, player: PlayerIdx, lib: CardLibr
       } else {
         commands.push({ type: 'PlayCard', iid: card.iid })
       }
+    }
+  }
+
+  // 主公技(每回合一次)
+  if (p.heroPower && !p.heroPowerUsed && p.heroPower.cost <= p.mana.current) {
+    if (requiresChosenTarget(p.heroPower.script)) {
+      for (const target of chosenTargetPool(state, player, p.heroPower.script)) {
+        commands.push({ type: 'UseHeroPower', target })
+      }
+    } else {
+      commands.push({ type: 'UseHeroPower' })
     }
   }
 

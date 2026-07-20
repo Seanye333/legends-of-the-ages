@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { applyCommand } from './reducer'
 import { legalCommands } from './legal'
 import { legalAttackTargets } from './combat'
+import { createInstance } from './init'
+import { refreshInstance } from './resolve'
 import type {
   CardDef,
   CardInstance,
@@ -80,26 +82,33 @@ const LIB: CardLibrary = Object.fromEntries(
   ].map((d) => [d.id, d]),
 )
 
+// attack/health/keywords 现在是派生字段(见 resolve.ts 附魔层),不能直接赋值 ——
+// 测试里指定的身材换算成一条附魔,再让 refreshInstance 算出派生值。
 function inst(defId: string, over: Partial<CardInstance> = {}): CardInstance {
-  const d = LIB[defId]
-  return {
-    iid: nextIid++,
-    defId,
-    attack: d.attack ?? 0,
-    health: d.health ?? 0,
-    maxHealth: d.health ?? 0,
-    keywords: d.keywords.slice(),
-    exhausted: false,
-    attacksUsed: 0,
-    enchants: [],
-    ...over,
+  const base = createInstance(defId, nextIid++, LIB)
+  const { attack, health, maxHealth, keywords, ...rest } = over
+  const merged: CardInstance = { ...base, ...rest }
+  const targetAtk = attack ?? base.attack
+  const targetHp = maxHealth ?? health ?? base.maxHealth
+  if (targetAtk !== base.attack || targetHp !== base.maxHealth || keywords) {
+    merged.enchants = [
+      { attack: targetAtk - base.attack, health: targetHp - base.maxHealth, keywords },
+    ]
   }
+  refreshInstance(merged, LIB)
+  // 同时给了 health 与 maxHealth 且前者更低 → 视为已受伤
+  if (health !== undefined && maxHealth !== undefined && health < maxHealth) {
+    merged.damage = maxHealth - health
+    refreshInstance(merged, LIB)
+  }
+  return merged
 }
 
 function player(over: Partial<PlayerState> = {}): PlayerState {
   return {
     heroId: 'hero',
     heroHp: 30,
+    heroMaxHp: 30,
     armor: 0,
     fatigue: 0,
     mana: { current: 10, max: 10 },
@@ -108,6 +117,7 @@ function player(over: Partial<PlayerState> = {}): PlayerState {
     board: [],
     graveyard: [],
     mulliganDone: true,
+    heroPowerUsed: false,
     ...over,
   }
 }

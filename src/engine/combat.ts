@@ -8,6 +8,7 @@ import type {
   TargetRef,
 } from './types'
 import {
+  breakStealth,
   damageGeneral,
   damageHero,
   findGeneral,
@@ -21,19 +22,23 @@ export function hasKeyword(inst: CardInstance, kw: CardInstance['keywords'][numb
   return inst.keywords.includes(kw)
 }
 
-// 武将对武将的战斗打击:吸血为持有者回血,剧毒补足致死
+// 武将对武将的战斗打击:吸血为持有者回血,剧毒补足致死。
+// 剧毒不穿铁壁 —— 铁壁吃掉整次打击时,剧毒也一并被挡下。
 function strike(
   state: GameState,
   events: GameEvent[],
+  lib: CardLibrary,
   src: GeneralLoc,
   dst: GeneralLoc,
   amount: number,
 ): void {
   if (amount <= 0) return
-  damageGeneral(state, dst, amount, events)
+  const hadShield = hasKeyword(dst.inst, 'divineShield')
+  damageGeneral(state, dst, amount, events, lib)
+  if (hadShield) return
   if (hasKeyword(src.inst, 'lifesteal')) healHero(state, src.player, amount, events)
   if (hasKeyword(src.inst, 'poison') && dst.inst.health > 0) {
-    damageGeneral(state, dst, dst.inst.health, events)
+    damageGeneral(state, dst, dst.inst.health, events, lib)
   }
 }
 
@@ -43,6 +48,7 @@ export function maxAttacksOf(inst: CardInstance): number {
 
 // 本回合还能不能发起攻击(不考虑目标)
 export function canAttackNow(inst: CardInstance): boolean {
+  if (inst.frozen) return false
   if (inst.attack <= 0) return false
   if (inst.attacksUsed >= maxAttacksOf(inst)) return false
   // 上场当回合(exhausted):冲锋可攻任意,突袭仅武将,否则不能动
@@ -50,7 +56,7 @@ export function canAttackNow(inst: CardInstance): boolean {
   return true
 }
 
-// 攻击者的合法目标(守护强制、突袭限制)
+// 攻击者的合法目标(守护强制、突袭限制、潜行不可选)
 export function legalAttackTargets(
   state: GameState,
   player: PlayerIdx,
@@ -58,9 +64,10 @@ export function legalAttackTargets(
 ): TargetRef[] {
   if (!canAttackNow(inst)) return []
   const enemy = other(player)
-  const enemyBoard = state.players[enemy].board
-  const guards = enemyBoard.filter((c) => hasKeyword(c, 'guard'))
-  const pool = guards.length > 0 ? guards : enemyBoard
+  // 潜行单位既不能被选中,也不能用自己的守护逼迫对手
+  const visible = state.players[enemy].board.filter((c) => !hasKeyword(c, 'stealth'))
+  const guards = visible.filter((c) => hasKeyword(c, 'guard'))
+  const pool = guards.length > 0 ? guards : visible
   const targets: TargetRef[] = pool.map((c) => ({ kind: 'general', iid: c.iid }))
   const rushOnly = inst.exhausted && !hasKeyword(inst, 'charge')
   if (guards.length === 0 && !rushOnly) {
@@ -90,6 +97,8 @@ export function performAttack(
   if (!match) return 'illegal-attack-target'
 
   attacker.attacksUsed += 1
+  // 出手即暴露
+  breakStealth(loc, lib, events)
   if (target.kind === 'hero') {
     events.push({
       type: 'AttackResolved',
@@ -114,8 +123,8 @@ export function performAttack(
       damageToAttacker: defender.attack,
     })
     // 同时互击
-    strike(state, events, loc, defLoc, attacker.attack)
-    strike(state, events, defLoc, loc, defender.attack)
+    strike(state, events, lib, loc, defLoc, attacker.attack)
+    strike(state, events, lib, defLoc, loc, defender.attack)
   }
   processDeaths(state, events, lib)
   return null
@@ -144,14 +153,14 @@ export function performDuel(
 
   if (firstStrikeIid === undefined) {
     // 同攻:同时互击
-    strike(state, events, chLoc, defLoc, ch.attack)
-    strike(state, events, defLoc, chLoc, def.attack)
+    strike(state, events, lib, chLoc, defLoc, ch.attack)
+    strike(state, events, lib, defLoc, chLoc, def.attack)
   } else if (firstStrikeIid === ch.iid) {
-    strike(state, events, chLoc, defLoc, ch.attack)
-    if (def.health > 0) strike(state, events, defLoc, chLoc, def.attack)
+    strike(state, events, lib, chLoc, defLoc, ch.attack)
+    if (def.health > 0) strike(state, events, lib, defLoc, chLoc, def.attack)
   } else {
-    strike(state, events, defLoc, chLoc, def.attack)
-    if (ch.health > 0) strike(state, events, chLoc, defLoc, ch.attack)
+    strike(state, events, lib, defLoc, chLoc, def.attack)
+    if (ch.health > 0) strike(state, events, lib, chLoc, defLoc, ch.attack)
   }
 
   events.push({

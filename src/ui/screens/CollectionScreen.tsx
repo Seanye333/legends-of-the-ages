@@ -36,6 +36,11 @@ export function fakeInstance(def: CardDef): CardInstance {
     exhausted: false,
     attacksUsed: 0,
     enchants: [],
+    damage: 0,
+    silenced: false,
+    frozen: false,
+    shieldUsed: false,
+    stealthBroken: false,
   }
 }
 
