@@ -1,16 +1,25 @@
 import type { Winner } from '../../engine/types'
+import type { RatingResult } from '../../app/matchStore'
+import { rankOf } from '../../app/protocol'
 import { useT } from '../i18n'
 import styles from './ResultOverlay.module.css'
 
 interface ResultOverlayProps {
   winner: Winner | undefined
   canRematch?: boolean // 联机对局无法原地重开
+  ratingResult?: RatingResult | null // 天梯局:结算后的分数变化
   onRematch: () => void
   onExit: () => void
 }
 
 // 终局结算:胜/败战场画卷 + 书法大字 + 再来一局/返回标题。
-export function ResultOverlay({ winner, canRematch = true, onRematch, onExit }: ResultOverlayProps) {
+export function ResultOverlay({
+  winner,
+  canRematch = true,
+  ratingResult = null,
+  onRematch,
+  onExit,
+}: ResultOverlayProps) {
   const t = useT()
   const [glyph, word, verdictCls, bgCls] =
     winner === 0
@@ -24,6 +33,14 @@ export function ResultOverlay({ winner, canRematch = true, onRematch, onExit }: 
       <div className={`${styles.glyph} ${verdictCls}`}>{glyph}</div>
       <div className={`${styles.word} ${verdictCls}`}>{word}</div>
       {winner === 0 && <div className={styles.loot}>{t('战利:卡包 ×1', 'Spoils: 1 card pack')}</div>}
+      {ratingResult && (
+        <div className={styles.loot}>
+          {t(
+            `天梯:${rankOf(ratingResult.rating).zh} ${ratingResult.rating} 分(${ratingResult.delta >= 0 ? '+' : ''}${ratingResult.delta})`,
+            `Ladder: ${rankOf(ratingResult.rating).en} ${ratingResult.rating} (${ratingResult.delta >= 0 ? '+' : ''}${ratingResult.delta})`,
+          )}
+        </div>
+      )}
       <div className={styles.buttons}>
         {canRematch && (
           <button className={styles.primary} onClick={onRematch}>

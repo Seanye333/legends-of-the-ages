@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
-import { useT } from '../i18n'
+import type { LocalizedText } from '../../engine/types'
+import { useLang, useT } from '../i18n'
 import styles from './BattleLog.module.css'
 
 interface BattleLogProps {
-  entries: string[]
+  entries: LocalizedText[]
 }
 
-// 右侧可折叠战报面板。
+// 右侧可折叠战报面板。双语模式下中文在上、英文小一号在下,避免长句挤成一坨。
 export function BattleLog({ entries }: BattleLogProps) {
   const t = useT()
+  const lang = useLang()
   const [open, setOpen] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
 
@@ -35,7 +37,8 @@ export function BattleLog({ entries }: BattleLogProps) {
           ) : (
             entries.map((line, i) => (
               <div key={i} className={styles.line}>
-                {line}
+                {lang === 'en' ? line.en : line.zh}
+                {lang === 'both' && <span className={styles.sub}>{line.en}</span>}
               </div>
             ))
           )}

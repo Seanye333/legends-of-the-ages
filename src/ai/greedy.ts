@@ -14,6 +14,14 @@ export interface AiConfig {
 export const AI_NORMAL: AiConfig = { blunderChance: 0 }
 export const AI_EASY: AiConfig = { blunderChance: 0.25 }
 
+// 三档难度(UI 用兵法称谓:新兵/宿将/名将)。
+// 「名将」= 零失误的完全贪心;越往下失误概率越高,给新玩家喘息空间。
+export const AI_LEVELS = {
+  recruit: { blunderChance: 0.35 },
+  veteran: { blunderChance: 0.12 },
+  general: { blunderChance: 0 },
+} as const satisfies Record<string, AiConfig>
+
 export function evaluate(state: GameState, player: PlayerIdx, lib: CardLibrary): number {
   if (state.phase === 'ended') {
     if (state.winner === player) return 1e9

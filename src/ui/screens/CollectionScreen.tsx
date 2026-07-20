@@ -6,6 +6,7 @@ import { useCollection } from '../../app/collectionStore'
 import { DOCTRINE_COLORS } from '../doctrineColors'
 import { CardFace } from '../components/CardFace'
 import { CardInspect } from '../components/CardInspect'
+import { FoilLayer } from '../components/FoilLayer'
 import { useT, usePickText } from '../i18n'
 import { playSfx } from '../sound'
 import styles from './CollectionScreen.module.css'
@@ -139,7 +140,11 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
           const n = owned[def.id] ?? 0
           return (
             <div key={def.id} className={`${styles.cell} ${n === 0 ? styles.unowned : ''}`}>
-              <CardFace inst={fakeInstance(def)} onClick={() => setInspect(def)} />
+              <div className={styles.cardWrap}>
+                <CardFace inst={fakeInstance(def)} onClick={() => setInspect(def)} />
+                {/* 闪卡层:只给已拥有的 epic/legendary 挂载(FoilLayer 对低稀有返回 null) */}
+                {n > 0 && <FoilLayer rarity={def.rarity} />}
+              </div>
               {n > 0 && <span className={styles.ownedBadge}>×{n}</span>}
             </div>
           )

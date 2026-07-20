@@ -318,6 +318,37 @@
   }
 }
 
+/* 联机连接横幅:置于战场上缘,金框呼吸提示不遮挡操作 */
+.linkBanner {
+  position: absolute;
+  top: clamp(34px, 7vh, 56px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 55;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(180deg, rgba(46, 36, 16, 0.96), rgba(28, 21, 9, 0.96));
+  border: 1px solid var(--gold-deep, #9a7b3a);
+  color: var(--gold-bright, #f0d090);
+  border-radius: 9px;
+  padding: 6px 18px;
+  font-size: clamp(11px, 2vh, 14px);
+  letter-spacing: 0.06em;
+  animation: linkPulse 1.6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes linkPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(240, 208, 144, 0);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(240, 208, 144, 0.35);
+  }
+}
+
 .noMatch {
   flex: 1;
   display: flex;

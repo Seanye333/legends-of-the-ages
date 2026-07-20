@@ -3,8 +3,9 @@ import type { CSSProperties } from 'react'
 import { CARDS_BY_ID } from '../../content/cards'
 import { useCollection, type PackResult } from '../../app/collectionStore'
 import { DOCTRINE_COLORS } from '../doctrineColors'
+import { FoilLayer } from './FoilLayer'
 import { Portrait } from './Portrait'
-import { useT } from '../i18n'
+import { usePickCompact, useT } from '../i18n'
 import { playSfx } from '../sound'
 import styles from './PackOpening.module.css'
 
@@ -15,6 +16,7 @@ interface PackOpeningProps {
 // 开包典礼:点封泥启封 → 五张依次翻面 → 稀有度辉光 + NEW 标记。
 export function PackOpening({ onClose }: PackOpeningProps) {
   const t = useT()
+  const pickCompact = usePickCompact()
   const packs = useCollection((s) => s.packs)
   const openPack = useCollection((s) => s.openPack)
   const [result, setResult] = useState<PackResult | null>(null)
@@ -58,10 +60,16 @@ export function PackOpening({ onClose }: PackOpeningProps) {
             const def = CARDS_BY_ID[id]
             const isNew = result.newCardIds.includes(id)
             const shown = i < revealed
+            const burst =
+              def?.rarity === 'legendary'
+                ? styles.slotLegendary
+                : def?.rarity === 'epic'
+                  ? styles.slotEpic
+                  : ''
             return (
               <div
                 key={`${id}-${i}`}
-                className={`${styles.slot} ${shown ? styles.shown : ''} ${i === revealed ? styles.next : ''}`}
+                className={`${styles.slot} ${burst} ${shown ? styles.shown : ''} ${i === revealed ? styles.next : ''}`}
                 style={{ '--doctrine': DOCTRINE_COLORS[def?.doctrine ?? 'neutral'] } as CSSProperties}
                 onClick={() => onReveal(i)}
               >
@@ -76,7 +84,10 @@ export function PackOpening({ onClose }: PackOpeningProps) {
                       doctrine={def?.doctrine ?? 'neutral'}
                     />
                   </div>
-                  <div className={styles.cardName}>{def?.name.zh ?? id}</div>
+                  <div className={styles.cardName}>
+                    {def ? pickCompact(def.name) : id}
+                  </div>
+                  {shown && def && <FoilLayer rarity={def.rarity} intense />}
                   {shown && isNew && <span className={styles.newTag}>NEW</span>}
                 </div>
               </div>

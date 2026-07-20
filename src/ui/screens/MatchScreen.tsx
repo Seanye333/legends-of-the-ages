@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { Command, GameEvent, TargetRef } from '../../engine/types'
+import type { Command, GameEvent, LocalizedText, TargetRef } from '../../engine/types'
 import { legalCommands } from '../../engine/legal'
 import { CARDS_BY_ID } from '../../content/cards'
-import { HEROES_BY_ID } from '../../content/overrides/heroes'
 import { useMatch } from '../../app/matchStore'
-import { useT } from '../i18n'
+import { usePickCompact, useT } from '../i18n'
 import { rematch } from '../matchSetup'
 import { HeroPlate } from '../components/HeroPlate'
 import { GeneralToken } from '../components/GeneralToken'
@@ -12,10 +11,11 @@ import { HandFan } from '../components/HandFan'
 import { MulliganOverlay } from '../components/MulliganOverlay'
 import { ResultOverlay } from '../components/ResultOverlay'
 import { BattleLog } from '../components/BattleLog'
-import { formatEvent } from '../components/eventText'
+import { cardName, formatEvent, heroName } from '../components/eventText'
 import { targetFloatKey } from '../components/floats'
 import { Portrait } from '../components/Portrait'
 import { CardInspect } from '../components/CardInspect'
+import { TutorialCoach } from '../components/TutorialCoach'
 import type { CardDef } from '../../engine/types'
 import { useEventAnimations } from '../useEventAnimations'
 import { initSound, playSfx } from '../sound'
@@ -34,10 +34,12 @@ interface MatchScreenProps {
 // 对战主画面:横屏炉石式布局。人类恒为 0 号玩家。
 export function MatchScreen({ onExit }: MatchScreenProps) {
   const t = useT()
-  const { state, lastEvents, error, send, reset, mode } = useMatch()
+  const pickCompact = usePickCompact()
+  const { state, lastEvents, error, send, reset, mode, tutorial, remoteStatus, ratingResult } =
+    useMatch()
   const { soundEnabled, setSoundEnabled } = useSettings()
   const [selection, setSelection] = useState<Selection>(null)
-  const [log, setLog] = useState<string[]>([])
+  const [log, setLog] = useState<LocalizedText[]>([])
   const [toast, setToast] = useState<string | null>(null)
   const [inspect, setInspect] = useState<CardDef | null>(null)
 
@@ -111,15 +113,11 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
         for (const c of zone) names.set(c.iid, c.defId)
       }
     }
+    // 卡名/主帅名照双语存档,渲染时再按当前语言取,切语言旧战报也跟着变
     const ctx = {
-      name: (iid: number) => {
-        const defId = names.get(iid)
-        // 联机时对手抽牌 defId 被裁剪为空:显示「一张牌」
-        return defId ? (CARDS_BY_ID[defId]?.name.zh ?? defId) : '一张牌'
-      },
-      defName: (defId: string) => (defId ? (CARDS_BY_ID[defId]?.name.zh ?? defId) : '一张牌'),
-      heroName: (p: 0 | 1) =>
-        HEROES_BY_ID[state.players[p].heroId]?.name.zh ?? state.players[p].heroId,
+      name: (iid: number) => cardName(names.get(iid)),
+      defName: (defId: string) => cardName(defId),
+      heroName: (p: 0 | 1) => heroName(state.players[p].heroId),
     }
     const entries = lastEvents.map((ev) => formatEvent(ev, ctx))
     if (entries.length > 0) setLog((prev) => [...prev, ...entries].slice(-300))
@@ -144,6 +142,14 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
     const timer = window.setTimeout(() => setToast(null), 2500)
     return () => window.clearTimeout(timer)
   }, [error])
+
+  // 对手回归 → 短暂 toast
+  useEffect(() => {
+    if (remoteStatus !== 'opponent-back') return
+    setToast(t('对手已回到对局', 'Opponent reconnected'))
+    const timer = window.setTimeout(() => setToast(null), 2500)
+    return () => window.clearTimeout(timer)
+  }, [remoteStatus, t])
 
   if (!state) {
     return (
@@ -365,6 +371,19 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
 
       <BattleLog entries={log} />
 
+      {/* 联机连接横幅:自己重连中 / 对手掉线等待 */}
+      {mode === 'remote' && remoteStatus === 'reconnecting' && (
+        <div className={styles.linkBanner}>{t('连接中断,重连中…', 'Connection lost, reconnecting…')}</div>
+      )}
+      {mode === 'remote' && remoteStatus === 'opponent-left' && state.phase !== 'ended' && (
+        <div className={styles.linkBanner}>{t('对手掉线,等待重连…', 'Opponent disconnected, waiting…')}</div>
+      )}
+      {mode === 'remote' && remoteStatus === 'closed' && state.phase !== 'ended' && (
+        <div className={styles.linkBanner}>{t('连接已断开,可回标题页稍后续局', 'Disconnected — rejoin later from title')}</div>
+      )}
+
+      {tutorial && <TutorialCoach state={state} events={lastEvents} onQuit={handleExit} />}
+
       {inspect && <CardInspect def={inspect} onClose={() => setInspect(null)} />}
 
       {toast && <div className={styles.toast}>{toast}</div>}
@@ -394,7 +413,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
             <div className={styles.castPortrait}>
               <Portrait id={castDef.id} nameZh={castDef.name.zh} doctrine={castDef.doctrine} />
             </div>
-            <div className={styles.castName}>{castDef.name.zh}</div>
+            <div className={styles.castName}>{pickCompact(castDef.name)}</div>
           </div>
         </div>
       )}
@@ -417,6 +436,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
         <ResultOverlay
           winner={state.winner}
           canRematch={mode === 'local'}
+          ratingResult={mode === 'remote' ? ratingResult : null}
           onRematch={handleRematch}
           onExit={handleExit}
         />

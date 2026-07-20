@@ -7,6 +7,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { GameEvent, GameState } from '../engine/types'
 import { CARDS_BY_ID } from '../content/cards'
 import { extractFloats, targetFloatKey, type FloatItem } from './components/floats'
+import { useLang } from './i18n'
 import { playSfx, type SfxName } from './sound'
 
 // ---------- 对外状态 ----------
@@ -135,9 +136,9 @@ function buildTimeline(events: GameEvent[], rects: ReadonlyMap<string, DOMRect>)
 
       case 'CardPlayed': {
         const def = CARDS_BY_ID[ev.defId]
-        if (def?.type === 'stratagem') {
+        if (def?.type === 'stratagem' || def?.type === 'equipment') {
           push(520, { cast: { defId: ev.defId, fromEnemy: ev.player === 1 }, sfx: ['stratagemCast'] })
-          cur = null // 锦囊的效果飘字落在闪光之后
+          cur = null // 锦囊/装备的效果飘字落在闪光之后
         } else {
           push(220, { sfx: ['cardPlay'] })
         }
@@ -281,6 +282,9 @@ export function useEventAnimations(
   lastEvents: GameEvent[],
 ): EventAnimState {
   const [anim, setAnim] = useState<EventAnimState>(EMPTY)
+  const lang = useLang()
+  const langRef = useRef(lang)
+  langRef.current = lang
   const doneRef = useRef<GameEvent[] | null>(null)
   const idRef = useRef(0)
   const rectsRef = useRef(new Map<string, DOMRect>())
@@ -315,7 +319,7 @@ export function useEventAnimations(
 
   const execEntry = (e: Entry) => {
     const batchId = ++idRef.current
-    const floats = extractFloats(e.events, batchId)
+    const floats = extractFloats(e.events, batchId, langRef.current)
     const motions = e.motions.map((m) => ({ key: m.key, fx: resolveMotion(m) }))
     const flashes = e.flashes.map((f) => ({ key: f.key, fx: { id: ++idRef.current, kind: f.kind } }))
     const ghosts: GhostFx[] = []

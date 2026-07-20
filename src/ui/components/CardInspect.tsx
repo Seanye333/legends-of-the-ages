@@ -1,28 +1,21 @@
+import { useEffect, useState } from 'react'
 import type { CardDef } from '../../engine/types'
-import { DOCTRINE_COLORS, DOCTRINE_ZH, KEYWORD_ZH } from '../doctrineColors'
+import { useSettings } from '../../app/settingsStore'
+import {
+  CARD_TYPE_NAME,
+  DOCTRINE_COLORS,
+  DOCTRINE_NAME,
+  KEYWORD_NAME,
+  KEYWORD_RULE,
+  RARITY_NAME,
+  dynastyName,
+} from '../doctrineColors'
+import { exportCardImage, probeCardArt } from '../cardExport'
+import { LORE } from '../../content/generated/lore.gen'
 import { Portrait } from './Portrait'
-import { usePickText } from '../i18n'
+import { usePickCompact, usePickText, useT } from '../i18n'
+import { playSfx } from '../sound'
 import styles from './CardInspect.module.css'
-
-// 关键词规则图例
-const KEYWORD_RULES: Record<string, string> = {
-  charge: '上场当回合即可攻击任意目标',
-  rush: '上场当回合即可攻击武将(不能打主公)',
-  guard: '敌方必须先攻击带守护的武将',
-  windfury: '每回合可攻击两次',
-  duel: '上场时可指定一名敌将单挑:双方互击,攻高者先手,先手击杀则不受反击',
-}
-
-const DYNASTY_ZH: Record<string, string> = {
-  wei: '魏', shu: '蜀', wu: '吴', qun: '群',
-  'spring-autumn': '春秋', 'warring-states': '战国', qin: '秦', 'chu-han': '楚汉',
-  'western-han': '西汉', jin: '两晋', 'southern-northern': '南北朝', sui: '隋',
-  tang: '唐', 'five-dynasties': '五代', song: '宋', yuan: '元', ming: '明', qing: '清',
-}
-
-const RARITY_ZH: Record<string, string> = {
-  common: '普通', rare: '稀有', epic: '史诗', legendary: '传奇',
-}
 
 interface CardInspectProps {
   def: CardDef
@@ -32,6 +25,34 @@ interface CardInspectProps {
 // 卡牌详情:长按/点选打开 —— 全身立绘 + 数值 + 效果文本 + 关键词图例。
 export function CardInspect({ def, onClose }: CardInspectProps) {
   const pick = usePickText()
+  const pickCompact = usePickCompact()
+  const t = useT()
+  const lang = useSettings((s) => s.language)
+  // 只有真正带立绘的签名卡才展示「保存卡面」(探测图片加载成功)
+  const [hasArt, setHasArt] = useState(false)
+  const [busy, setBusy] = useState(false)
+  useEffect(() => {
+    setHasArt(false)
+    let live = true
+    probeCardArt(def.id).then((img) => {
+      if (live) setHasArt(img !== null)
+    })
+    return () => {
+      live = false
+    }
+  }, [def.id])
+
+  const onSave = async () => {
+    if (busy) return
+    playSfx('buttonTap')
+    setBusy(true)
+    try {
+      await exportCardImage(def, lang)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <div className={styles.overlay} onClick={onClose}>
       <div
@@ -50,24 +71,60 @@ export function CardInspect({ def, onClose }: CardInspectProps) {
           )}
         </div>
         <div className={styles.info}>
-          <div className={styles.name}>{pick(def.name)}</div>
+          <div className={styles.name}>
+            {pick(def.name)}
+            {LORE[def.id]?.era && <span className={styles.eraBadge}>{pick(LORE[def.id].era!)}</span>}
+          </div>
           <div className={styles.metaLine}>
-            <span className={`${styles.rarity} ${styles[def.rarity]}`}>{RARITY_ZH[def.rarity]}</span>
-            <span style={{ color: DOCTRINE_COLORS[def.doctrine] }}>{DOCTRINE_ZH[def.doctrine]}</span>
-            <span>{DYNASTY_ZH[def.dynasty] ?? def.dynasty}势力</span>
-            <span>{def.type === 'stratagem' ? '锦囊' : def.archetype === 'strategist' ? '谋士' : '武将'}</span>
+            <span className={`${styles.rarity} ${styles[def.rarity]}`}>
+              {pickCompact(RARITY_NAME[def.rarity])}
+            </span>
+            <span style={{ color: DOCTRINE_COLORS[def.doctrine] }}>
+              {pickCompact(DOCTRINE_NAME[def.doctrine])}
+            </span>
+            <span>
+              {pickCompact({
+                zh: `${dynastyName(def.dynasty).zh}势力`,
+                en: dynastyName(def.dynasty).en,
+              })}
+            </span>
+            <span>
+              {pickCompact(
+                CARD_TYPE_NAME[
+                  def.type === 'general' && def.archetype === 'strategist' ? 'strategist' : def.type
+                ],
+              )}
+            </span>
             <span className={styles.collector}>№{def.collectorNo}</span>
           </div>
-          {def.text && <p className={styles.text}>{def.text.zh}</p>}
+          {def.text && <p className={styles.text}>{pick(def.text)}</p>}
           {def.keywords.length > 0 && (
             <div className={styles.keywords}>
               {def.keywords.map((k) => (
                 <div key={k} className={styles.keywordRow}>
-                  <span className={styles.keywordName}>{KEYWORD_ZH[k]}</span>
-                  <span className={styles.keywordRule}>{KEYWORD_RULES[k]}</span>
+                  <span className={styles.keywordName}>{pickCompact(KEYWORD_NAME[k])}</span>
+                  <span className={styles.keywordRule}>{pick(KEYWORD_RULE[k])}</span>
                 </div>
               ))}
             </div>
+          )}
+          {LORE[def.id] && (
+            <div className={styles.lore}>
+              {LORE[def.id].quote && (
+                <blockquote className={styles.loreQuote}>「{pick(LORE[def.id].quote!)}」</blockquote>
+              )}
+              <p className={styles.loreBio}>{pick(LORE[def.id].bio)}</p>
+              {LORE[def.id].line && (
+                <p className={styles.loreLine}>
+                  {t('单挑', 'Duel')} · {pick(LORE[def.id].line!)}
+                </p>
+              )}
+            </div>
+          )}
+          {hasArt && (
+            <button className={styles.saveBtn} disabled={busy} onClick={onSave}>
+              {busy ? t('生成中…', 'Rendering…') : t('保存卡面', 'Save Card Image')}
+            </button>
           )}
         </div>
       </div>

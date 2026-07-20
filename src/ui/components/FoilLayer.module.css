@@ -1,0 +1,176 @@
+/* 闪卡层 —— 绝对覆盖在卡面上,pointer-events 穿透。
+   性能约定:所有动画只碰 transform / opacity,层做 GPU 合成;
+   移动端大列表由调用方限制挂载数量(仅已拥有的 epic/legendary)。 */
+
+.foil {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* 静态虹彩底色:给卡面一层"油膜"质感,不参与动画 */
+.tint {
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: screen;
+}
+
+.epic .tint {
+  background: linear-gradient(
+    128deg,
+    rgba(150, 110, 235, 0.14),
+    transparent 34%,
+    rgba(96, 160, 235, 0.1) 58%,
+    rgba(190, 120, 235, 0.14)
+  );
+}
+
+.legendary .tint {
+  background: linear-gradient(
+    128deg,
+    rgba(255, 150, 110, 0.12),
+    rgba(255, 220, 120, 0.09) 26%,
+    transparent 44%,
+    rgba(110, 200, 255, 0.1) 66%,
+    rgba(225, 130, 255, 0.13)
+  );
+}
+
+/* 扫光:一道斜向高光周期掠过 */
+.sheen {
+  position: absolute;
+  inset: -25%;
+  mix-blend-mode: screen;
+  transform: translateX(-72%);
+  animation: foilSweep 4.6s ease-in-out infinite;
+  will-change: transform;
+}
+
+.epic .sheen {
+  background: linear-gradient(
+    115deg,
+    transparent 40%,
+    rgba(216, 190, 255, 0.05) 46%,
+    rgba(232, 214, 255, 0.28) 50%,
+    rgba(216, 190, 255, 0.05) 54%,
+    transparent 60%
+  );
+}
+
+.legendary .sheen {
+  background: linear-gradient(
+    115deg,
+    transparent 38%,
+    rgba(255, 236, 190, 0.08) 45%,
+    rgba(255, 250, 225, 0.42) 50%,
+    rgba(255, 236, 190, 0.08) 55%,
+    transparent 62%
+  );
+  animation-duration: 3.6s;
+}
+
+@keyframes foilSweep {
+  0% {
+    transform: translateX(-72%);
+  }
+  52% {
+    transform: translateX(72%);
+  }
+  100% {
+    transform: translateX(72%);
+  }
+}
+
+/* 彩虹流光(仅 legendary):超出边界的大渐变缓慢漂移 */
+.rainbow {
+  position: absolute;
+  inset: -45% -65%;
+  mix-blend-mode: screen;
+  opacity: 0.66;
+  background: linear-gradient(
+    115deg,
+    rgba(255, 96, 96, 0.24),
+    rgba(255, 204, 88, 0.22) 18%,
+    rgba(128, 245, 150, 0.18) 36%,
+    rgba(96, 196, 255, 0.22) 54%,
+    rgba(198, 122, 255, 0.24) 72%,
+    rgba(255, 96, 158, 0.22) 90%
+  );
+  animation: rainbowDrift 7.5s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes rainbowDrift {
+  from {
+    transform: translate3d(-11%, -5%, 0);
+  }
+  to {
+    transform: translate3d(11%, 5%, 0);
+  }
+}
+
+/* 星屑(仅 legendary):固定位置的小亮点做明暗呼吸 */
+.sparkles {
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: screen;
+  background:
+    radial-gradient(2.5px 2.5px at 22% 18%, rgba(255, 255, 255, 0.95), transparent 70%),
+    radial-gradient(1.8px 1.8px at 72% 12%, rgba(255, 244, 210, 0.9), transparent 70%),
+    radial-gradient(2px 2px at 86% 42%, rgba(255, 255, 255, 0.85), transparent 70%),
+    radial-gradient(1.6px 1.6px at 12% 56%, rgba(255, 244, 210, 0.8), transparent 70%),
+    radial-gradient(2.2px 2.2px at 56% 72%, rgba(255, 255, 255, 0.9), transparent 70%),
+    radial-gradient(1.6px 1.6px at 34% 88%, rgba(255, 244, 210, 0.8), transparent 70%);
+  animation: sparkleTwinkle 2.2s ease-in-out infinite alternate;
+}
+
+@keyframes sparkleTwinkle {
+  from {
+    opacity: 0.22;
+  }
+  to {
+    opacity: 0.95;
+  }
+}
+
+/* 开包演出:更亮、更快 */
+.intense .sheen {
+  animation-duration: 2.8s;
+}
+
+.intense.legendary .sheen {
+  animation-duration: 2.4s;
+}
+
+.intense .rainbow {
+  opacity: 0.92;
+  animation-duration: 5.5s;
+}
+
+.intense.epic .tint {
+  background: linear-gradient(
+    128deg,
+    rgba(168, 124, 255, 0.2),
+    transparent 34%,
+    rgba(110, 172, 245, 0.14) 58%,
+    rgba(205, 132, 250, 0.2)
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheen,
+  .rainbow,
+  .sparkles {
+    animation: none;
+  }
+  .sheen {
+    transform: translateX(0);
+    opacity: 0.2;
+  }
+  .sparkles {
+    opacity: 0.5;
+  }
+}

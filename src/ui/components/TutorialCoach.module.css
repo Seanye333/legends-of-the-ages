@@ -1,0 +1,116 @@
+/* 教鞭浮层:背板透传点击,只有卡片本身可交互 */
+.layer {
+  position: fixed;
+  left: 50%;
+  bottom: clamp(96px, 22vh, 190px);
+  transform: translateX(-50%);
+  z-index: 65;
+  pointer-events: none;
+  width: min(94vw, 460px);
+  display: flex;
+  justify-content: center;
+}
+
+/* 调度阶段:让开下半屏的调度浮层 */
+.layerTop {
+  bottom: auto;
+  top: max(10px, env(safe-area-inset-top));
+}
+
+.card {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--gold-deep, #9a7b3a);
+  background: linear-gradient(180deg, rgba(42, 33, 17, 0.97), rgba(22, 17, 9, 0.97));
+  box-shadow:
+    inset 0 0 0 2px rgba(24, 16, 5, 0.8),
+    0 8px 30px rgba(0, 0, 0, 0.65);
+  animation: coachIn 0.28s ease;
+}
+
+@keyframes coachIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.step {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--parchment-faint);
+  letter-spacing: 0.08em;
+}
+
+.title {
+  flex: 1;
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: 0.14em;
+  color: var(--gold-bright);
+}
+
+.skip {
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 5px;
+  border: 1px solid rgba(122, 100, 58, 0.5);
+  background: transparent;
+  color: var(--parchment-faint);
+  cursor: pointer;
+}
+
+.body {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.75;
+  color: var(--parchment);
+  text-align: justify;
+}
+
+.hint {
+  align-self: flex-end;
+  font-size: 12px;
+  color: var(--gold);
+  letter-spacing: 0.08em;
+  animation: hintPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes hintPulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.next {
+  align-self: flex-end;
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.16em;
+  text-indent: 0.16em;
+  padding: 7px 20px;
+  border-radius: 6px;
+  border: 1px solid #f0d090;
+  background: linear-gradient(180deg, #6a4d1e, #46310f 55%, #2e1f08);
+  color: var(--gold-bright);
+  cursor: pointer;
+}

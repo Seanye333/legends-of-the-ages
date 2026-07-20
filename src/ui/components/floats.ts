@@ -1,4 +1,6 @@
 import type { GameEvent } from '../../engine/types'
+import type { Language } from '../i18n'
+import { pickCompact } from '../i18n'
 
 // 飘字:伤害/治疗/增益数字,叠在受影响单位上方。
 export interface FloatItem {
@@ -13,7 +15,7 @@ export function targetFloatKey(t: { kind: 'hero'; player: 0 | 1 } | { kind: 'gen
   return t.kind === 'hero' ? `hero-${t.player}` : `gen-${t.iid}`
 }
 
-export function extractFloats(events: GameEvent[], batch: number): FloatItem[] {
+export function extractFloats(events: GameEvent[], batch: number, lang: Language = 'zh'): FloatItem[] {
   const out: FloatItem[] = []
   const perTarget = new Map<string, number>()
   const push = (targetKey: string, text: string, kind: FloatItem['kind']) => {
@@ -37,6 +39,9 @@ export function extractFloats(events: GameEvent[], batch: number): FloatItem[] {
         break
       case 'GeneralBuffed':
         push(`gen-${ev.iid}`, `+${ev.attack}/+${ev.health}`, 'buff')
+        break
+      case 'ArmorGained':
+        push(`hero-${ev.player}`, `+${ev.amount}${pickCompact({ zh: '甲', en: ' ARM' }, lang)}`, 'buff')
         break
       default:
         break

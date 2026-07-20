@@ -82,6 +82,16 @@
   background: rgba(184, 134, 59, 0.55);
 }
 
+/* 双语模式:英文小一号跟在中文下方 */
+.sub {
+  display: block;
+  margin-top: 1px;
+  font-size: 0.88em;
+  line-height: 1.4;
+  color: rgba(200, 176, 112, 0.62);
+  font-style: italic;
+}
+
 .line:last-child {
   border-bottom: none;
   color: var(--parchment);

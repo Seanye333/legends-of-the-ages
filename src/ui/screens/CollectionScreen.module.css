@@ -119,6 +119,13 @@
   position: relative;
 }
 
+/* 闪卡层锚点:尺寸贴合 CardFace,圆角与卡框一致供闪层继承 */
+.cardWrap {
+  position: relative;
+  width: fit-content;
+  border-radius: 10px;
+}
+
 .unowned {
   filter: grayscale(0.85) brightness(0.62);
 }

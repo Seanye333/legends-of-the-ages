@@ -80,7 +80,9 @@ export function CardFace({ inst, playable, selected, large, onClick, onInspect }
           <span className={styles.hp}>{inst.health}</span>
         </>
       ) : (
-        <span className={styles.spellMark}>锦囊</span>
+        <span className={styles.spellMark}>
+          {lang === 'en' ? (def.type === 'equipment' ? 'GEAR' : 'PLOT') : '锦囊'}
+        </span>
       )}
     </div>
   )

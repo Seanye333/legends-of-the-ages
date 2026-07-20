@@ -1,16 +1,16 @@
 import { useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
-import type { CardDef, HeroDef } from '../../engine/types'
+import type { CardDef, HeroDef, LocalizedText } from '../../engine/types'
 import { DECK_SIZE } from '../../engine/types'
 import { CARDS, CARDS_BY_ID } from '../../content/cards'
 import { HEROES } from '../../content/overrides/heroes'
 import { useCollection, copyLimit } from '../../app/collectionStore'
-import { DOCTRINE_COLORS, DOCTRINE_ZH } from '../doctrineColors'
+import { DOCTRINE_COLORS, DOCTRINE_NAME } from '../doctrineColors'
 import { CardFace } from '../components/CardFace'
 import { CardInspect } from '../components/CardInspect'
 import { Portrait } from '../components/Portrait'
 import { fakeInstance } from './CollectionScreen'
-import { useT } from '../i18n'
+import { usePickCompact, usePickText, useT } from '../i18n'
 import { playSfx } from '../sound'
 import styles from './DeckBuilderScreen.module.css'
 
@@ -21,6 +21,8 @@ interface DeckBuilderScreenProps {
 // 卡组构筑:选主公定主义 → 本主义 + 中立卡池(仅已拥有)→ 凑满 30 张保存。
 export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
   const t = useT()
+  const pick = usePickText()
+  const pickCompact = usePickCompact()
   const owned = useCollection((s) => s.owned)
   const customDecks = useCollection((s) => s.customDecks)
   const saveDeck = useCollection((s) => s.saveDeck)
@@ -29,7 +31,7 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
   const [hero, setHero] = useState<HeroDef | null>(null)
   const [deckName, setDeckName] = useState('')
   const [counts, setCounts] = useState<Record<string, number>>({})
-  const [errors, setErrors] = useState<string[]>([])
+  const [errors, setErrors] = useState<LocalizedText[]>([])
   const [savedMsg, setSavedMsg] = useState(false)
   const [inspect, setInspect] = useState<CardDef | null>(null)
 
@@ -124,8 +126,8 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
               <div className={styles.heroPortrait}>
                 <Portrait id={h.id} nameZh={h.name.zh} doctrine={h.doctrine} />
               </div>
-              <div className={styles.heroName}>{h.name.zh}</div>
-              <div className={styles.heroDoctrine}>{DOCTRINE_ZH[h.doctrine]}</div>
+              <div className={styles.heroName}>{pickCompact(h.name)}</div>
+              <div className={styles.heroDoctrine}>{pickCompact(DOCTRINE_NAME[h.doctrine])}</div>
             </button>
           ))}
         </div>
@@ -138,7 +140,7 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
                   {d.name.zh}
                 </button>
                 <span className={styles.savedHero}>
-                  {HEROES.find((h) => h.id === d.heroId)?.name.zh ?? d.heroId}
+                  {pickCompact(HEROES.find((h) => h.id === d.heroId)?.name ?? { zh: d.heroId, en: d.heroId })}
                 </span>
                 <button
                   className={styles.deleteBtn}
@@ -168,7 +170,7 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
           className={styles.heroChip}
           style={{ '--doctrine': DOCTRINE_COLORS[hero.doctrine] } as CSSProperties}
         >
-          {hero.name.zh} · {DOCTRINE_ZH[hero.doctrine]}
+          {pickCompact(hero.name)} · {pickCompact(DOCTRINE_NAME[hero.doctrine])}
         </div>
         <span className={styles.deckCount}>
           {total}/{DECK_SIZE}
@@ -207,7 +209,7 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
           />
           <div className={styles.curve}>
             {curve.map((n, cost) => (
-              <div key={cost} className={styles.curveCol} title={`${cost}${cost === 7 ? '+' : ''}费 ×${n}`}>
+              <div key={cost} className={styles.curveCol} title={t(`${cost}${cost === 7 ? '+' : ''}费 ×${n}`, `${cost}${cost === 7 ? '+' : ''} mana ×${n}`)}>
                 <div className={styles.curveBar} style={{ height: `${(n / curveMax) * 100}%` }} />
                 <span className={styles.curveLabel}>{cost === 7 ? '7+' : cost}</span>
               </div>
@@ -231,7 +233,9 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
                     title={t('点击移除一张', 'Click to remove one')}
                   >
                     <span className={styles.rowCost}>{def?.cost ?? '?'}</span>
-                    <span className={styles.rowName}>{def?.name.zh ?? id}</span>
+                    <span className={styles.rowName}>
+                      {pickCompact(def?.name ?? { zh: id, en: id })}
+                    </span>
                     <span className={styles.rowCount}>×{n}</span>
                   </button>
                 )
@@ -241,7 +245,7 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
           {errors.length > 0 && (
             <div className={styles.errors}>
               {errors.map((e, i) => (
-                <div key={i}>{e}</div>
+                <div key={i}>{pick(e)}</div>
               ))}
             </div>
           )}

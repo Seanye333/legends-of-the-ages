@@ -91,12 +91,14 @@
   background: radial-gradient(circle at 35% 30%, #e06048, #8a2014);
 }
 
+/* 唯一滚动容器:列传再长也在这里滚,不与内层再嵌一层滚动 */
 .info {
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding: 12px 16px 16px;
   overflow-y: auto;
+  min-height: 0;
 }
 
 .name {
@@ -166,4 +168,83 @@
   font-size: 12.5px;
   line-height: 1.5;
   color: var(--parchment-dim);
+}
+
+/* 保存卡面(仅签名卡显示):粘在滚动区底部,列传再长也够得着 */
+.saveBtn {
+  position: sticky;
+  bottom: -16px;
+  z-index: 2;
+  margin-top: 6px;
+  align-self: center;
+  font-family: var(--font-display);
+  font-size: 14px;
+  letter-spacing: 0.18em;
+  text-indent: 0.18em;
+  padding: 9px 26px;
+  border-radius: 6px;
+  border: 1px solid #f0d090;
+  background: linear-gradient(180deg, #6a4d1e, #46310f 55%, #2e1f08);
+  color: var(--gold-bright);
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.saveBtn:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 14px rgba(212, 168, 74, 0.35);
+}
+
+.saveBtn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* 列传/名言/台词(签名卡专属) */
+.eraBadge {
+  margin-left: 10px;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  color: var(--gold);
+  border: 1px solid rgba(212, 168, 74, 0.45);
+  border-radius: 4px;
+  padding: 1px 7px;
+  vertical-align: 3px;
+  white-space: nowrap;
+}
+
+.lore {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 2px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(122, 100, 58, 0.35);
+}
+
+.loreQuote {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--gold-bright);
+  letter-spacing: 0.04em;
+}
+
+.loreBio {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--parchment-dim);
+  text-align: justify;
+}
+
+.loreLine {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--parchment-faint);
+  font-style: normal;
 }

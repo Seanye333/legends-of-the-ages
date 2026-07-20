@@ -118,3 +118,164 @@
   background: rgba(20, 16, 10, 0.72);
   color: var(--parchment-dim);
 }
+
+.goldBtn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.ratingLine {
+  margin: 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--gold);
+  letter-spacing: 0.08em;
+}
+
+.resumeBtn {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #f0d090;
+  background: linear-gradient(180deg, #7a5a20, #503810);
+  color: var(--gold-bright);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  animation: resumePulse 1.6s ease-in-out infinite;
+}
+
+@keyframes resumePulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(240, 208, 144, 0);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(240, 208, 144, 0.4);
+  }
+}
+
+.tabs {
+  display: flex;
+  gap: 6px;
+}
+
+.tab,
+.tabActive {
+  flex: 1;
+  padding: 8px 0;
+  border-radius: 6px;
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+}
+
+.tab {
+  border: 1px solid rgba(122, 100, 58, 0.4);
+  background: rgba(16, 13, 8, 0.6);
+  color: var(--parchment-faint);
+}
+
+.tabActive {
+  border: 1px solid var(--gold-deep);
+  background: rgba(58, 42, 16, 0.8);
+  color: var(--gold-bright);
+}
+
+.joinRow {
+  display: flex;
+  gap: 8px;
+}
+
+.codeInput {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(122, 100, 58, 0.55);
+  background: rgba(12, 10, 7, 0.8);
+  color: var(--gold-bright);
+  font-size: 18px;
+  letter-spacing: 0.4em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.roomCodeBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px dashed var(--gold-deep);
+  background: rgba(30, 22, 10, 0.7);
+}
+
+.roomCodeLabel {
+  font-size: 12px;
+  color: var(--parchment-faint);
+}
+
+.roomCode {
+  font-family: var(--font-display);
+  font-size: 34px;
+  letter-spacing: 0.5em;
+  padding-left: 0.5em;
+  color: var(--gold-bright);
+  text-shadow: 0 0 14px rgba(240, 208, 144, 0.5);
+}
+
+.roomCodeHint {
+  font-size: 11px;
+  color: var(--parchment-faint);
+}
+
+.ladderBox {
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(122, 100, 58, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.ladderTitle {
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  color: var(--parchment-faint);
+  text-align: center;
+  margin-bottom: 2px;
+}
+
+.ladderRow {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.ladderNo {
+  width: 16px;
+  text-align: right;
+  color: var(--parchment-faint);
+  font-size: 12px;
+}
+
+.ladderName {
+  flex: 1;
+  color: var(--parchment);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ladderRank {
+  color: var(--parchment-dim);
+  font-size: 12px;
+}
+
+.ladderScore {
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}

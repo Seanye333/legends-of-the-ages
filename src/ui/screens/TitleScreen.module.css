@@ -626,3 +626,96 @@
 .remoteButton:hover {
   transform: translateY(-1px);
 }
+
+/* 新手邀请条:首次进入(零战绩)才出现 */
+.tutorialInvite {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 auto clamp(6px, 1.4vh, 14px);
+  padding: 9px 16px;
+  width: fit-content;
+  max-width: 92vw;
+  border-radius: 10px;
+  border: 1px dashed rgba(212, 168, 74, 0.6);
+  background: rgba(30, 23, 11, 0.72);
+  animation: inviteGlow 2.4s ease-in-out infinite;
+}
+
+@keyframes inviteGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(240, 208, 144, 0);
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(240, 208, 144, 0.28);
+  }
+}
+
+.inviteText {
+  font-size: clamp(12px, 3vw, 14px);
+  color: var(--parchment);
+  letter-spacing: 0.04em;
+}
+
+.inviteBtn {
+  font-family: var(--font-display);
+  font-size: clamp(12px, 3vw, 14px);
+  letter-spacing: 0.14em;
+  text-indent: 0.14em;
+  padding: 7px 18px;
+  border-radius: 6px;
+  border: 1px solid #f0d090;
+  background: linear-gradient(180deg, #6a4d1e, #46310f 55%, #2e1f08);
+  color: var(--gold-bright);
+  cursor: pointer;
+}
+
+.inviteDismiss {
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(122, 100, 58, 0.5);
+  background: transparent;
+  color: var(--parchment-faint);
+  cursor: pointer;
+}
+
+/* 单机 AI 难度选择 */
+.difficultyRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0 auto clamp(4px, 1vh, 10px);
+}
+
+.difficultyLabel {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--parchment-faint);
+  margin-right: 2px;
+}
+
+.difficultyBtn,
+.difficultyActive {
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  padding: 4px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.difficultyBtn {
+  border: 1px solid rgba(122, 100, 58, 0.4);
+  background: rgba(16, 13, 8, 0.55);
+  color: var(--parchment-faint);
+}
+
+.difficultyActive {
+  border: 1px solid var(--gold-deep);
+  background: rgba(58, 42, 16, 0.8);
+  color: var(--gold-bright);
+}

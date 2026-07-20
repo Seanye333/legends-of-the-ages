@@ -2,6 +2,7 @@ import type { MouseEvent } from 'react'
 import type { PlayerState } from '../../engine/types'
 import { HEROES_BY_ID } from '../../content/overrides/heroes'
 import { useSettings } from '../../app/settingsStore'
+import { useT } from '../i18n'
 import type { FloatItem } from './floats'
 import type { TokenFx } from '../useEventAnimations'
 import { Portrait } from './Portrait'
@@ -22,6 +23,7 @@ interface HeroPlateProps {
 // 主帅面板:头像 + 血量 + 法力水晶;敌方另显示手牌数(牌背)。
 export function HeroPlate({ ps, enemy, targetable, floats, fx, pulse, onClick }: HeroPlateProps) {
   const lang = useSettings((s) => s.language)
+  const t = useT()
   const hero = HEROES_BY_ID[ps.heroId]
   const nameZh = hero?.name.zh ?? ps.heroId
   const name = hero ? (lang === 'en' ? hero.name.en : hero.name.zh) : ps.heroId
@@ -58,7 +60,7 @@ export function HeroPlate({ ps, enemy, targetable, floats, fx, pulse, onClick }:
       </div>
       <div className={styles.info}>
         <div className={styles.name}>{name}</div>
-        <div className={styles.mana} title={`法力 ${ps.mana.current}/${ps.mana.max}`}>
+        <div className={styles.mana} title={t(`法力 ${ps.mana.current}/${ps.mana.max}`, `Mana ${ps.mana.current}/${ps.mana.max}`)}>
           {Array.from({ length: ps.mana.max }, (_, i) => (
             <span key={i} className={i < ps.mana.current ? styles.gemFull : styles.gemEmpty}>
               ◆
@@ -69,7 +71,7 @@ export function HeroPlate({ ps, enemy, targetable, floats, fx, pulse, onClick }:
           </span>
         </div>
         {enemy && (
-          <div className={styles.backs} title={`对方手牌 ${ps.hand.length} 张`}>
+          <div className={styles.backs} title={t(`对方手牌 ${ps.hand.length} 张`, `Opponent hand: ${ps.hand.length}`)}>
             {Array.from({ length: Math.min(ps.hand.length, 10) }, (_, i) => (
               <span key={i} className={styles.back} />
             ))}

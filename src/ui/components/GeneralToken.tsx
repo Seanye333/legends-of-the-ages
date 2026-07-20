@@ -1,11 +1,12 @@
 import type { CSSProperties, MouseEvent } from 'react'
 import type { CardInstance } from '../../engine/types'
 import { CARDS_BY_ID } from '../../content/cards'
-import { DOCTRINE_COLORS, KEYWORD_BADGE, KEYWORD_ZH } from '../doctrineColors'
+import { DOCTRINE_COLORS, KEYWORD_BADGE, KEYWORD_NAME } from '../doctrineColors'
 import { Portrait } from './Portrait'
 import type { FloatItem } from './floats'
 import type { TokenFx } from '../useEventAnimations'
 import { useLongPress } from '../useLongPress'
+import { usePickCompact } from '../i18n'
 import styles from './GeneralToken.module.css'
 
 const MOTION_CLASS = { lunge: 'fx-lunge', shake: 'fx-shake', shakeHard: 'fx-shake-hard' } as const
@@ -24,8 +25,10 @@ interface GeneralTokenProps {
 // 战场上的武将勋章令牌:鎏金外环 + 主义色内圈。
 export function GeneralToken({ inst, ready, selected, targetable, floats, fx, onClick, onInspect }: GeneralTokenProps) {
   const longPress = useLongPress(() => onInspect?.())
+  const pickCompact = usePickCompact()
   const def = CARDS_BY_ID[inst.defId]
   const nameZh = def?.name.zh ?? inst.defId
+  const name = def ? pickCompact(def.name) : inst.defId
   const doctrine = def?.doctrine ?? 'neutral'
   const hasGuard = inst.keywords.includes('guard')
 
@@ -62,7 +65,7 @@ export function GeneralToken({ inst, ready, selected, targetable, floats, fx, on
         }
         onClick?.(e)
       }}
-      title={nameZh}
+      title={name}
     >
       {fx?.flash && (
         <span
@@ -73,7 +76,9 @@ export function GeneralToken({ inst, ready, selected, targetable, floats, fx, on
       <div className={styles.circle}>
         <Portrait id={inst.defId} nameZh={nameZh} doctrine={doctrine} />
       </div>
-      {hasGuard && <span className={styles.guardMark}>盾</span>}
+      {hasGuard && (
+        <span className={styles.guardMark}>{pickCompact({ zh: '盾', en: 'G' })}</span>
+      )}
       <span className={styles.atk}>{inst.attack}</span>
       <span className={`${styles.hp} ${inst.health < inst.maxHealth ? styles.hurt : ''}`}>
         {inst.health}
@@ -81,8 +86,8 @@ export function GeneralToken({ inst, ready, selected, targetable, floats, fx, on
       {inst.keywords.length > 0 && (
         <div className={styles.badges}>
           {inst.keywords.map((k) => (
-            <span key={k} className={styles.badge} title={KEYWORD_ZH[k]}>
-              {KEYWORD_BADGE[k]}
+            <span key={k} className={styles.badge} title={pickCompact(KEYWORD_NAME[k])}>
+              {pickCompact(KEYWORD_BADGE[k])}
             </span>
           ))}
         </div>

@@ -187,10 +187,118 @@
   box-shadow: 0 0 26px rgba(232, 147, 58, 0.75);
 }
 
+/* —— 高稀有开包爆点:翻面瞬间的辉光爆发(挂在卡后面,z-index -1) ——
+   perspective 使 .slot 成为堆叠上下文,负 z-index 稳定落在卡背后。 */
+.slotEpic.shown::after,
+.slotLegendary.shown::after {
+  content: '';
+  position: absolute;
+  inset: -38%;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: 50%;
+  animation: burstPop 0.9s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+.slotEpic.shown::after {
+  background: radial-gradient(
+    circle,
+    rgba(206, 140, 255, 0.5),
+    rgba(164, 90, 208, 0.16) 46%,
+    transparent 72%
+  );
+}
+
+.slotLegendary.shown::after {
+  background: radial-gradient(
+    circle,
+    rgba(255, 222, 130, 0.62),
+    rgba(240, 168, 80, 0.22) 46%,
+    transparent 72%
+  );
+}
+
+@keyframes burstPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+  100% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+}
+
+/* 传奇再加一圈缓转的金色光芒 */
+.slotLegendary.shown::before {
+  content: '';
+  position: absolute;
+  inset: -46%;
+  z-index: -1;
+  pointer-events: none;
+  background: repeating-conic-gradient(
+    from 8deg,
+    rgba(255, 224, 150, 0.22) 0deg 7deg,
+    rgba(255, 224, 150, 0) 7deg 22.5deg
+  );
+  -webkit-mask-image: radial-gradient(circle, #000 26%, transparent 68%);
+  mask-image: radial-gradient(circle, #000 26%, transparent 68%);
+  animation:
+    raysIn 0.9s ease-out both,
+    raySpin 18s linear infinite;
+}
+
+@keyframes raysIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes raySpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 传奇:翻面落定后再弹一下(延迟到翻面动画结束才接管 transform) */
+.slotLegendary.shown .front {
+  animation: cardPunch 0.42s cubic-bezier(0.2, 0.8, 0.3, 1.2) 0.5s;
+}
+
+@keyframes cardPunch {
+  0%,
+  100% {
+    transform: rotateY(0deg) scale(1);
+  }
+  45% {
+    transform: rotateY(0deg) scale(1.09);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slotLegendary.shown::before {
+    animation: raysIn 0.4s ease-out both;
+  }
+  .slotLegendary.shown .front {
+    animation: none;
+  }
+}
+
 .newTag {
   position: absolute;
   top: 6px;
   right: 6px;
+  z-index: 8; /* 盖在闪卡层之上 */
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.08em;

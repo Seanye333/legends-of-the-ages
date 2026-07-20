@@ -1,5 +1,4 @@
 import { useRef } from 'react'
-import type { PointerEvent } from 'react'
 
 // 长按识别:按住 ≥350ms 触发 onLongPress(炉石式按住看牌),
 // 快速点击仍走 onClick。移动/离开取消,避免拖动误触。
@@ -17,7 +16,7 @@ export function useLongPress(onLongPress: () => void, delayMs = 350) {
   return {
     // 结合到元素:{...longPress.handlers};onClick 里先问 longPress.consumed()
     handlers: {
-      onPointerDown: (_e: PointerEvent) => {
+      onPointerDown: () => {
         firedRef.current = false
         clear()
         timerRef.current = window.setTimeout(() => {
