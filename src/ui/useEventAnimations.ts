@@ -469,14 +469,22 @@ export function useEventAnimations(
     }
   }, [state, lastEvents])
 
-  // 每次渲染后快照所有可动效元素的位置(供残影/突进换算)
-  useEffect(() => {
+  // 快照所有可动效元素的位置(供残影/突进换算)。
+  //
+  // 这里原来**没有依赖数组** —— 每次渲染都跑一遍 querySelectorAll +
+  // getBoundingClientRect,而动效期间每个条目会触发约十次 setAnim,
+  // 于是一次攻击就强制同步布局几十次,场面越宽越明显。
+  //
+  // 改成只跟 state 走:元素位置只在对局状态变化(有人上场/阵亡/换边)时才变;
+  // 动效本身是 CSS transform,不改布局位置。这不只是更快,也更正确 ——
+  // 原来在 transform 生效期间取到的 rect 是位移后的坐标,拿它换算突进向量是错的。
+  useLayoutEffect(() => {
     const m = rectsRef.current
     document.querySelectorAll<HTMLElement>('[data-fxkey]').forEach((el) => {
       const key = el.dataset.fxkey
       if (key) m.set(key, el.getBoundingClientRect())
     })
-  })
+  }, [state])
 
   // 对局重置:清场
   useEffect(() => {

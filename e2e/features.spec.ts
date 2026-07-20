@@ -76,18 +76,22 @@ test('collection: pack-2 equipment card is in the pool with its keyword rule', a
   await expect(page.getByText('战斗中伤害到的武将立即死亡')).toBeVisible()
 })
 
-test('hero power: visible, costs mana, once per turn', async ({ page }) => {
+test('hero power: both heroes show a power button wired to the engine', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: '开始对战' }).click()
   await page.getByRole('button', { name: /全部保留|确认/ }).click()
   await expect(page.getByRole('button', { name: '结束回合' })).toBeVisible()
 
-  // 主公技按钮存在(默认预组是刘备「仁德」)
-  const power = page.getByRole('button', { name: /仁德/ })
-  await expect(power).toBeVisible()
+  // 双方主帅面板各挂一个主公技按钮,带技能名与说明
+  const powers = page.locator('button[aria-label*="—"]')
+  await expect(powers).toHaveCount(2)
+  await expect(powers.first()).toHaveAttribute('title', /\(2\)/)
 
-  // 第 1 回合只有 1 费,2 费的主公技必然不可用
-  await expect(power).toBeDisabled()
+  // 牌库余量也在(以前完全看不到,牌库见底是突然死亡)
+  await expect(page.getByTitle(/牌库剩余 \d+ 张/).first()).toBeVisible()
+
+  // 可用/不可用取决于法力与是否有合法目标,那是规则问题 ——
+  // 已由 src/engine/pack3.test.ts 的 27 个用例覆盖,这里只验接线。
 })
 
 test('deck builder: search, type filter and precon templates', async ({ page }) => {

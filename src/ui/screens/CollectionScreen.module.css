@@ -117,6 +117,12 @@
 
 .cell {
   position: relative;
+  /* 图鉴是「加载更多」式的无限增长列表(没有虚拟滚动),两千多张卡全展开时
+     会挂上千个 CardFace + Portrait。content-visibility 让浏览器跳过屏幕外
+     单元格的渲染与布局,拿到接近虚拟滚动的效果而不用改结构。
+     contain-intrinsic-size 必须给,否则滚动条会随滚动跳动。 */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 190px;
 }
 
 /* 闪卡层锚点:尺寸贴合 CardFace,圆角与卡框一致供闪层继承 */
