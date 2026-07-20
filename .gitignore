@@ -6,3 +6,9 @@ dist
 src-tauri/target
 test-results
 playwright-report
+# 立绘 CDN 产物(npm run export-portraits,400MB+ —— 绝不入 git)
+portraits-cdn
+dev-dist
+
+# wrangler 本地开发状态(SQLite + 缓存,每次 wrangler dev 都变)
+server/.wrangler
