@@ -10,6 +10,8 @@
 const KV_URL = process.env.KV_REST_API_URL;
 const KV_TOKEN = process.env.KV_REST_API_TOKEN;
 const CONFIGURED = !!(KV_URL && KV_TOKEN);
+// 一天的胜场物理上限(一局最快也要几十秒)
+const MAX_DAILY_WINS = 500;
 const MAX_ROWS = 50;
 
 async function kv(command) {
@@ -31,7 +33,12 @@ async function topRows(date) {
   const flat = await kv(['ZRANGE', `wins:${date}`, '0', String(MAX_ROWS - 1), 'REV', 'WITHSCORES']);
   const rows = [];
   for (let i = 0; i < (flat?.length ?? 0); i += 2) {
-    rows.push({ name: flat[i], wins: Number(flat[i + 1]) });
+    // 成员格式为 `<playerId>|<显示名>`;老数据没有竖线,退化成只有名字
+    const raw = String(flat[i] ?? '');
+    const bar = raw.indexOf('|');
+    const id = bar > 0 ? raw.slice(0, bar) : '';
+    const name = bar > 0 ? raw.slice(bar + 1) : raw;
+    rows.push({ id, name, wins: Number(flat[i + 1]) });
   }
   return rows;
 }
@@ -58,14 +65,27 @@ export default async function handler(req, res) {
       const date = safeDate(body.date);
       const wins = Number(body.wins);
       const name = String(body.name ?? '').trim().slice(0, 16) || '无名氏';
+      const playerId = String(body.playerId ?? '').trim();
       if (!date || !Number.isFinite(wins) || wins <= 0 || wins > 10000) {
         return res.status(400).json({ error: 'bad submission' });
       }
-      // 只保留每名字的最高胜场(GT:仅更大时写入)
-      await kv(['ZADD', `wins:${date}`, 'GT', String(wins), name]);
+      // 每日胜场有物理上限:一局最快也要几十秒,一天刷不出几百胜。
+      // 这一条挡不住决心作弊的人(这个榜本来就没有鉴权),
+      // 但能把「随手 POST 9999」挡在门外。
+      if (wins > MAX_DAILY_WINS) {
+        return res.status(400).json({ error: 'implausible' });
+      }
+      // 榜位以 playerId 为准、名字只作展示 —— 从前直接以**显示名**为 key,
+      // 于是任何人都能顶着别人的名字往上写,同名玩家还会互相覆盖。
+      if (!/^[A-Za-z0-9-]{8,64}$/.test(playerId)) {
+        return res.status(400).json({ error: 'bad player id' });
+      }
+      const member = `${playerId}|${name}`;
+      // 只保留每人的最高胜场(GT:仅更大时写入)
+      await kv(['ZADD', `wins:${date}`, 'GT', String(wins), member]);
       await kv(['EXPIRE', `wins:${date}`, String(60 * 60 * 24 * 30)]); // 30 天 TTL
       const rows = await topRows(date);
-      const rank = rows.findIndex((r) => r.name === name);
+      const rank = rows.findIndex((r) => r.id === playerId);
       return res.status(200).json({ kvConfigured: true, rows, rank: rank >= 0 ? rank + 1 : null });
     }
 

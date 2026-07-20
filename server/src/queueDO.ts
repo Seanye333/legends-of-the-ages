@@ -3,6 +3,7 @@
 // 用 WebSocket Hibernation:排队等待期(可能几分钟)DO 不常驻计费。
 // 等待者名单不放内存,直接由 ctx.getWebSockets() + attachment 推导 ——
 // 唤醒后内存必然是空的,socket 才是唯一可靠的真相来源。
+import { signMatchId } from './matchId'
 import type { QueueClientMsg, QueueServerMsg } from '../../src/app/protocol'
 import { DEFAULT_RATING } from '../../src/app/protocol'
 
@@ -17,6 +18,7 @@ interface QueueAttachment {
 
 interface Env {
   RATINGS: DurableObjectNamespace
+  MATCH_SECRET?: string
 }
 
 const BAND = 300
@@ -84,7 +86,9 @@ export class QueueDO {
 
     best.ws.serializeAttachment({ ...best.att, matched: true })
     ws.serializeAttachment({ ...me, matched: true })
-    const matchId = crypto.randomUUID()
+    // 天梯对局 id 必须由这里签发:MatchDO 结算 ELO 前会验签,
+    // 否则任何人自选一个 id 连上去、一方秒投就能刷分(见 matchId.ts)。
+    const matchId = await signMatchId(crypto.randomUUID(), this.env.MATCH_SECRET)
     send(best.ws, { type: 'matched', matchId, seat: 0 })
     send(ws, { type: 'matched', matchId, seat: 1 })
     close(best.ws)

@@ -28,6 +28,7 @@ export function getPlayerId(): string {
 }
 
 export interface LeaderboardRow {
+  id?: string // 榜位主键(旧数据可能没有)
   name: string
   wins: number
 }
@@ -79,7 +80,9 @@ export function reportWin(): void {
   void fetch('/api/leaderboard', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ date: todayStr(), name, wins }),
+    // 带上 playerId:服务端以它为榜位主键,名字只作展示。
+    // 从前直接以显示名为 key,任何人都能顶着别人的名字往上写。
+    body: JSON.stringify({ date: todayStr(), name, wins, playerId: getPlayerId() }),
   }).catch(() => undefined)
 }
 

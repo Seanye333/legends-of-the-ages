@@ -88,7 +88,14 @@ export function rankOf(rating: number): { zh: string; en: string } {
   return { zh: '兵卒', en: 'Recruit' }
 }
 
-export const DEFAULT_SERVER = 'localhost:8787'
+// 联机服务器默认地址。
+// 从前这里写死 'localhost:8787' —— 意味着任何一个真实玩家点开「联机对战」
+// 看到的都是一个连不上的地址,必须自己手打服务器域名。等于联机功能没上线。
+// 现在优先读构建期注入的 VITE_MATCH_SERVER;没配才回落到本地开发地址。
+// 注:这里不能直接写 import.meta.env —— protocol.ts 同时被 app、测试与
+// Cloudflare Worker 三套 tsconfig 编译,只有 app 那套带 vite/client 类型。
+const viteEnv = (import.meta as unknown as { env?: Record<string, string | undefined> }).env
+export const DEFAULT_SERVER = viteEnv?.VITE_MATCH_SERVER || 'localhost:8787'
 
 // ws(s):// 地址 → http(s):// REST 根(天梯查询用)
 // 用户只填主机名(不带 scheme)时该用加密还是明文。

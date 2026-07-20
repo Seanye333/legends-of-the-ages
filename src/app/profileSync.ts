@@ -119,9 +119,33 @@ function adopt(data: ProfileData): void {
   }
 }
 
+// 存档归属密钥:首次同步时随机生成并留在本地,之后每次读写都带上。
+// 服务端首次写入时认主(TOFU),此后拒绝任何不带对密钥的请求 ——
+// 从前只要知道别人的 playerId(它会随排行榜、房间码、截图泄漏)就能覆写他的存档。
+const SECRET_KEY = 'qiangu-profile-secret'
+
+function profileSecret(): string {
+  try {
+    let s = localStorage.getItem(SECRET_KEY)
+    if (!s) {
+      s = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '')
+      localStorage.setItem(SECRET_KEY, s)
+    }
+    return s
+  } catch {
+    return ''
+  }
+}
+
+function authHeaders(extra?: Record<string, string>): Record<string, string> {
+  const secret = profileSecret()
+  return secret ? { ...extra, 'X-Profile-Secret': secret } : { ...extra }
+}
+
 async function pull(): Promise<void> {
   const res = await fetch(
     `${serverBase()}/profile?playerId=${encodeURIComponent(getPlayerId())}`,
+    { headers: authHeaders() },
   )
   if (!res.ok) throw new Error(`pull ${res.status}`)
   const env = (await res.json()) as Envelope
@@ -140,7 +164,7 @@ async function push(): Promise<void> {
     `${serverBase()}/profile?playerId=${encodeURIComponent(getPlayerId())}`,
     {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ version, data: snapshot() }),
     },
   )
@@ -194,8 +218,11 @@ export function startProfileSync(): void {
     pushTimer = null
     const body = JSON.stringify({ version: localVersion() + 1, data: snapshot() })
     try {
+      // sendBeacon 只能发 POST 且不能设请求头 —— 密钥只好走查询串,
+      // 服务端两种取法都认(见 profileDO.guard)。
       g.navigator?.sendBeacon?.(
-        `${serverBase()}/profile?playerId=${encodeURIComponent(getPlayerId())}`,
+        `${serverBase()}/profile?playerId=${encodeURIComponent(getPlayerId())}` +
+          `&secret=${encodeURIComponent(profileSecret())}`,
         new Blob([body], { type: 'application/json' }),
       )
     } catch {

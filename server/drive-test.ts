@@ -4,7 +4,7 @@
 // 2. 好友房间:创建房间拿码 → 凭码加入 → 开局 → 认输速结 → 不计天梯
 // 运行:npx wrangler dev 起服后 node --import tsx server/drive-test.ts
 import { RemoteMatch } from '../src/app/remoteMatch'
-import { httpBase, DEFAULT_RATING } from '../src/app/protocol'
+import { httpBase, wsScheme, DEFAULT_RATING } from '../src/app/protocol'
 import { PRECON_DECKS } from '../src/content/decks'
 import { CARDS_BY_ID } from '../src/content/cards'
 import { aiStep, AI_NORMAL } from '../src/ai/greedy'
@@ -219,6 +219,137 @@ async function fetchRating(playerId: string): Promise<number> {
   return json.rating
 }
 
+// 存档归属(TOFU):带密钥首写认主 → 之后不带密钥读写一律被拒。
+// 从前这里完全没有鉴权,知道别人的 playerId 就能覆写他的整个存档。
+async function checkProfileOwnership(): Promise<boolean> {
+  const base = httpBase(SERVER)
+  const pid = crypto.randomUUID()
+  const secret = crypto.randomUUID()
+  const url = `${base}/profile?playerId=${encodeURIComponent(pid)}`
+  const body = (version: number) =>
+    JSON.stringify({ version, data: { owned: {}, packs: 1, wins: 0, losses: 0, customDecks: [], questDate: '', quests: [] } })
+
+  // 带密钥首写 → 认主
+  const claim = await fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'X-Profile-Secret': secret },
+    body: body(1),
+  })
+  if (!claim.ok) {
+    console.log('✗ 带密钥的首次写入应成功', claim.status)
+    return false
+  }
+
+  // 冒名者不带密钥 → 401
+  const anon = await fetch(url)
+  if (anon.status !== 401) {
+    console.log(`✗ 认主后不带密钥读取应 401(收到 ${anon.status})`)
+    return false
+  }
+
+  // 冒名者带错密钥 → 403
+  const wrong = await fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'X-Profile-Secret': 'not-the-secret' },
+    body: body(2),
+  })
+  if (wrong.status !== 403) {
+    console.log(`✗ 错密钥写入应 403(收到 ${wrong.status})`)
+    return false
+  }
+
+  // 主人自己仍然可读
+  const mine = await fetch(url, { headers: { 'X-Profile-Secret': secret } })
+  if (!mine.ok) {
+    console.log('✗ 主人自己应能读回存档', mine.status)
+    return false
+  }
+
+  // sendBeacon 路径:POST + 查询串密钥(它不能设请求头)
+  const beacon = await fetch(`${url}&secret=${encodeURIComponent(secret)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: body(2),
+  })
+  if (!beacon.ok) {
+    console.log('✗ sendBeacon 式 POST + 查询串密钥应被接受', beacon.status)
+    return false
+  }
+
+  console.log('✓ 存档归属:首写认主 / 无密钥 401 / 错密钥 403 / beacon POST 可写')
+  return true
+}
+
+// 自选(未签名)的 matchId 不得计入天梯 —— 否则两个串通的客户端可以随意刷分。
+async function checkUnsignedMatchIdIsUnrated(): Promise<boolean> {
+  const pid1 = crypto.randomUUID()
+  const pid2 = crypto.randomUUID()
+  const before = await fetchRating(pid1)
+  // 自己编一个合法格式但没有签名的 id
+  const forged = `forged-${crypto.randomUUID()}`
+  const ok = await playForgedMatch(forged, pid1, pid2)
+  if (!ok) {
+    console.log('✗ 伪造 id 的对局本身应能正常进行(只是不计分)')
+    return false
+  }
+  const after = await fetchRating(pid1)
+  if (after !== before) {
+    console.log(`✗ 未签名的对局不该改变天梯分(${before} → ${after})`)
+    return false
+  }
+  console.log('✓ 天梯 id 验签:自选 matchId 的对局不计分')
+  return true
+}
+
+// 用自选 id 开一局并立刻投降,只为验证「不计分」
+async function playForgedMatch(matchId: string, pidA: string, pidB: string): Promise<boolean> {
+  const mk = (seat: 0 | 1) =>
+    new WebSocket(
+      `${wsScheme(SERVER)}${SERVER}/match/${matchId}?seat=${seat}&token=${crypto.randomUUID()}`,
+    )
+  const a = mk(0)
+  const b = mk(1)
+  const ready = (ws: WebSocket) =>
+    new Promise<void>((res, rej) => {
+      const timer = setTimeout(() => rej(new Error('forged: open timeout')), TIMEOUT_MS)
+      ws.addEventListener('open', () => {
+        clearTimeout(timer)
+        res()
+      })
+      ws.addEventListener('error', () => {
+        clearTimeout(timer)
+        rej(new Error('forged: socket error'))
+      })
+    })
+  try {
+    await Promise.all([ready(a), ready(b)])
+    const deck = PRECON_DECKS[0]
+    const join = (pid: string) =>
+      JSON.stringify({
+        type: 'join',
+        heroId: deck.heroId,
+        deckIds: deck.cardIds,
+        name: 'forged',
+        playerId: pid,
+      })
+    a.send(join(pidA))
+    b.send(join(pidB))
+    await new Promise((r) => setTimeout(r, 600))
+    a.send(JSON.stringify({ type: 'cmd', cmd: { type: 'Concede' } }))
+    await new Promise((r) => setTimeout(r, 600))
+    return true
+  } catch {
+    return false
+  } finally {
+    try {
+      a.close()
+      b.close()
+    } catch {
+      /* 忽略 */
+    }
+  }
+}
+
 // 存档同步:空档拉取 → 推送 → 拉回一致 → 旧版本被拒(409 并回传服务器版)
 async function checkProfileSync(): Promise<boolean> {
   const base = httpBase(SERVER)
@@ -311,6 +442,11 @@ const roomUnrated = ratingA2 === ratingA
 console.log('\n=== 存档同步 ===')
 const profileOk = await checkProfileSync()
 
+// ---- 4. 加固项:存档归属 + 天梯 id 验签 ----
+console.log('\n=== 安全加固 ===')
+const guardOk = await checkProfileOwnership()
+const matchIdOk = await checkUnsignedMatchIdIsUnrated()
+
 const pass =
   a.ended !== null &&
   b.ended !== null &&
@@ -323,11 +459,13 @@ const pass =
   ratingsMoved &&
   ratedMsgOk &&
   roomOk &&
-  roomUnrated
+  roomUnrated &&
+  guardOk &&
+  matchIdOk
 
 if (pass) {
   console.log(
-    '\n✓ 联机端到端验证通过:天梯匹配全流程(含重连/非法命令拒绝/ELO 结算)+ 好友房间流 + 存档同步',
+    '\n✓ 联机端到端验证通过:天梯匹配全流程(含重连/非法命令拒绝/ELO 结算)+ 好友房间流 + 存档同步 + 存档归属 + 天梯 id 验签',
   )
   process.exit(0)
 } else {
@@ -341,6 +479,8 @@ if (pass) {
     roomOk,
     roomUnrated,
     profileOk,
+    guardOk,
+    matchIdOk,
   })
   process.exit(1)
 }

@@ -83,7 +83,8 @@ export default {
       return env.PROFILE.get(id).fetch(request)
     }
 
-    const matchRoute = url.pathname.match(/^\/match\/([A-Za-z0-9-]{8,64})$/)
+    // 天梯 id 形如 `<uuid>~<sig>`(见 matchId.ts),波浪号要放行
+    const matchRoute = url.pathname.match(/^\/match\/([A-Za-z0-9~_-]{8,96})$/)
     if (matchRoute) {
       const id = env.MATCH.idFromName(matchRoute[1])
       return env.MATCH.get(id).fetch(request)
@@ -98,8 +99,8 @@ function corsPreflight(): Response {
     status: 204,
     headers: {
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET,PUT,OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Methods': 'GET,PUT,POST,OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type,X-Profile-Secret',
       'Access-Control-Max-Age': '86400',
     },
   })
