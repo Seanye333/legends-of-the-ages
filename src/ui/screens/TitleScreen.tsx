@@ -11,7 +11,7 @@ import { useSettings } from '../../app/settingsStore'
 import { DOCTRINE_COLORS } from '../doctrineColors'
 import { portraitCandidates } from '../portraitSource'
 import { launchMatch } from '../matchSetup'
-import { initSound, playSfx } from '../sound'
+import { initSound, playSfx, startMusic, stopMusic } from '../sound'
 import { useCollection } from '../../app/collectionStore'
 import { useArena } from '../../app/arenaStore'
 import { useCampaign } from '../../app/campaignStore'
@@ -126,7 +126,13 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
   )
   const hasPrecons = selectableDecks.length >= 2
 
-  useEffect(() => initSound(), [])
+  useEffect(() => {
+    initSound()
+    // 音乐要等一次用户手势才能真正出声(iOS 的 AudioContext 规则)——
+    // startMusic 内部会 resume,首次点击任意按钮时自然就响了。
+    startMusic('title')
+    return () => stopMusic()
+  }, [])
 
   const onPlay = () => {
     playSfx('buttonTap')

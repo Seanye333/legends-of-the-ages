@@ -5,7 +5,7 @@ import { getSyncStatus, onSyncStatus, syncNow, type SyncStatus } from '../../app
 import { getPlayerId } from '../../app/leaderboard'
 import { COLLECTIBLE_CARDS } from '../../content/cards'
 import { useT, usePickText } from '../i18n'
-import { playSfx, setMasterVolume } from '../sound'
+import { playSfx, setMasterVolume, setMusicVolume, startMusic, stopMusic } from '../sound'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import styles from './SettingsScreen.module.css'
 
@@ -109,7 +109,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
         </label>
         <label className={styles.sliderRow}>
           <span>
-            {t('音量', 'Volume')} · {Math.round(s.volume * 100)}%
+            {t('音效音量', 'SFX volume')} · {Math.round(s.volume * 100)}%
           </span>
           <input
             type="range"
@@ -123,6 +123,40 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
               setMasterVolume(v)
             }}
             onPointerUp={() => playSfx('buttonTap')}
+          />
+        </label>
+        <label className={styles.toggleRow}>
+          <span>
+            {t('背景音乐', 'Music')}
+            <small className={styles.hint}>
+              {t('五声音阶实时合成,不循环固定旋律', 'Pentatonic, synthesised live — never loops')}
+            </small>
+          </span>
+          <input
+            type="checkbox"
+            checked={s.musicEnabled}
+            onChange={(e) => {
+              s.setMusicEnabled(e.target.checked)
+              if (e.target.checked) startMusic('title')
+              else stopMusic()
+            }}
+          />
+        </label>
+        <label className={styles.sliderRow}>
+          <span>
+            {t('音乐音量', 'Music volume')} · {Math.round(s.musicVolume * 100)}%
+          </span>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={Math.round(s.musicVolume * 100)}
+            disabled={!s.musicEnabled || !s.soundEnabled}
+            onChange={(e) => {
+              const v = Number(e.target.value) / 100
+              s.setMusicVolume(v)
+              setMusicVolume(v)
+            }}
           />
         </label>
       </section>

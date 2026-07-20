@@ -265,3 +265,166 @@ export function playSfx(name: SfxName): void {
     // 合成失败静默忽略,绝不影响游戏
   }
 }
+
+// ============================================================
+// 背景音乐
+// ============================================================
+//
+// 此前全作**没有任何音乐** —— 只有 12 个音效。
+// 这里同样是纯合成、零音频文件,与音效共用同一个 AudioContext:
+// 打包体积不增加一个字节,也不用管音频资源的加载与缓存。
+//
+// 音乐性上的三个决定:
+// 1. **五声音阶(宫商角徵羽 = C D E G A)**,不用半音 —— 五声里任意两个音同时响
+//    都不会难听,所以随机化的旋律永远不会跑出调外,不需要写和声规则。
+// 2. **不循环固定旋律。** 每小节现掷骰子选音,只约束「大跳之后回落」。
+//    固定循环听二十分钟会烦,而随机游走不会 —— 玩家记不住它,也就不会腻。
+// 3. **音色是拨弦(古琴/筝)**:极短的起音 + 长指数衰减 + 轻微失谐的两层叠加。
+//    战斗场景另加一条低音持续音(弓弦),把节奏感压住。
+//
+// 调度用「预排」而不是 setTimeout 直接发声:每 250ms 醒一次,把未来 1 秒内的音符
+// 按 AudioContext 的时间轴排好。setTimeout 的抖动在音乐上是能听出来的,
+// 而 AudioContext 的时钟是采样精确的。
+
+export type MusicScene = 'title' | 'match'
+
+let musicGain: GainNode | null = null
+let musicTimer: number | null = null
+let musicScene: MusicScene | null = null
+let nextNoteAt = 0
+let step = 0
+let lastDegree = 0
+
+const PENTATONIC = [0, 2, 4, 7, 9] // 宫商角徵羽(半音数)
+const SCHEDULE_AHEAD = 1.0 // 排到未来多少秒
+const TICK_MS = 250
+
+function midiToFreq(semitonesFromC4: number): number {
+  return 261.63 * Math.pow(2, semitonesFromC4 / 12)
+}
+
+// 五声音阶上的随机游走:多数时候走相邻音,偶尔跳,大跳之后必回落。
+function nextDegree(): number {
+  const jump = Math.random()
+  let d = lastDegree
+  if (jump < 0.55) d += Math.random() < 0.5 ? 1 : -1
+  else if (jump < 0.8) d += Math.random() < 0.5 ? 2 : -2
+  else if (jump < 0.92) d += Math.random() < 0.5 ? 4 : -4
+  // 大跳之后往中心收，避免旋律一路飘走
+  if (Math.abs(d) > 7) d = Math.round(d / 2)
+  lastDegree = d
+  return d
+}
+
+function degreeToFreq(d: number): number {
+  const octave = Math.floor(d / PENTATONIC.length)
+  const idx = ((d % PENTATONIC.length) + PENTATONIC.length) % PENTATONIC.length
+  return midiToFreq(PENTATONIC[idx] + octave * 12)
+}
+
+// 拨弦:两层轻微失谐的正弦 + 极短起音 + 长指数衰减
+function pluck(c: AudioContext, at: number, freq: number, gain: number, dur: number): void {
+  if (!musicGain) return
+  for (const [mult, g, detune] of [
+    [1, gain, 0],
+    [2.01, gain * 0.28, 6],
+  ] as const) {
+    const osc = c.createOscillator()
+    const env = c.createGain()
+    osc.type = 'sine'
+    osc.frequency.value = freq * mult
+    osc.detune.value = detune
+    env.gain.setValueAtTime(0, at)
+    env.gain.linearRampToValueAtTime(g, at + 0.012)
+    env.gain.exponentialRampToValueAtTime(0.0001, at + dur)
+    osc.connect(env)
+    env.connect(musicGain)
+    osc.start(at)
+    osc.stop(at + dur + 0.05)
+  }
+}
+
+// 低音持续音:战斗场景用,把节奏压住
+function drone(c: AudioContext, at: number, freq: number, dur: number): void {
+  if (!musicGain) return
+  const osc = c.createOscillator()
+  const env = c.createGain()
+  const lp = c.createBiquadFilter()
+  osc.type = 'sawtooth'
+  osc.frequency.value = freq
+  lp.type = 'lowpass'
+  lp.frequency.value = 320
+  env.gain.setValueAtTime(0, at)
+  env.gain.linearRampToValueAtTime(0.05, at + dur * 0.35)
+  env.gain.linearRampToValueAtTime(0, at + dur)
+  osc.connect(lp)
+  lp.connect(env)
+  env.connect(musicGain)
+  osc.start(at)
+  osc.stop(at + dur + 0.05)
+}
+
+function scheduleMusic(): void {
+  const c = getCtx()
+  if (!c || !musicGain || !musicScene) return
+  // 标题页疏朗、对战页略密
+  const beat = musicScene === 'title' ? 1.1 : 0.85
+  while (nextNoteAt < c.currentTime + SCHEDULE_AHEAD) {
+    const at = Math.max(nextNoteAt, c.currentTime + 0.02)
+    // 每 8 拍一个低音;其余为拨弦,偶尔留白(留白比音符更重要)
+    if (step % 8 === 0) {
+      if (musicScene === 'match') drone(c, at, degreeToFreq(lastDegree) / 4, beat * 8)
+      pluck(c, at, degreeToFreq(0) / 2, 0.1, 3.2)
+    } else if (Math.random() > 0.28) {
+      const d = nextDegree()
+      pluck(c, at, degreeToFreq(d), 0.075, 2.4)
+      // 偶尔叠一个五度,像古琴的按音
+      if (Math.random() < 0.18) pluck(c, at + 0.06, degreeToFreq(d + 3), 0.04, 1.8)
+    }
+    nextNoteAt = at + beat
+    step++
+  }
+}
+
+export function startMusic(scene: MusicScene): void {
+  const s = useSettings.getState()
+  if (!s.musicEnabled || !s.soundEnabled) return
+  if (musicScene === scene && musicTimer !== null) return
+  stopMusic()
+  const c = getCtx()
+  if (!c || !master) return
+  if (c.state === 'suspended') c.resume().catch(() => undefined)
+  musicGain = c.createGain()
+  // 音乐比音效低得多:它是背景,不该盖住出牌与攻击
+  musicGain.gain.value = s.musicVolume * 0.5
+  musicGain.connect(master)
+  musicScene = scene
+  nextNoteAt = c.currentTime + 0.1
+  step = 0
+  lastDegree = 0
+  scheduleMusic()
+  musicTimer = window.setInterval(scheduleMusic, TICK_MS)
+}
+
+export function stopMusic(): void {
+  if (musicTimer !== null) {
+    window.clearInterval(musicTimer)
+    musicTimer = null
+  }
+  musicScene = null
+  if (musicGain && ctx) {
+    // 淡出而不是硬切,否则会有「啪」的一声
+    const g = musicGain
+    try {
+      g.gain.setTargetAtTime(0, ctx.currentTime, 0.25)
+      window.setTimeout(() => g.disconnect(), 1200)
+    } catch {
+      g.disconnect()
+    }
+  }
+  musicGain = null
+}
+
+export function setMusicVolume(v: number): void {
+  if (musicGain) musicGain.gain.value = Math.max(0, Math.min(1, v)) * 0.5
+}

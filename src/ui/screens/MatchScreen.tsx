@@ -19,10 +19,11 @@ import { CardInspect } from '../components/CardInspect'
 import { TutorialCoach } from '../components/TutorialCoach'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { TurnRope } from '../components/TurnRope'
+import { GraveyardPanel } from '../components/GraveyardPanel'
 import { EmoteWheel } from '../components/EmoteWheel'
 import type { CardDef } from '../../engine/types'
 import { useEventAnimations } from '../useEventAnimations'
-import { initSound, playSfx } from '../sound'
+import { initSound, playSfx, startMusic, stopMusic } from '../sound'
 import { useSettings } from '../../app/settingsStore'
 import styles from './MatchScreen.module.css'
 
@@ -70,6 +71,10 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
   // 认输确认原来用的是 window.confirm —— 在一个全自绘的界面里弹系统框太出戏,
   // 而且 iOS 上的样式完全不受控。
   const [confirmConcede, setConfirmConcede] = useState(false)
+  const [graveOpen, setGraveOpen] = useState(false)
+  // 「轮到你了」横幅:此前只有主帅面板的一次金光脉动,很容易错过 ——
+  // 尤其是联机局隔了对手一整个回合之后。
+  const [turnBanner, setTurnBanner] = useState(0)
 
   // 事件时间轴:动效 + 音效 + 飘字都由它按节拍产出
   const anim = useEventAnimations(state, lastEvents)
@@ -77,7 +82,11 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
   const namesRef = useRef(new Map<number, string>())
   const processedRef = useRef<GameEvent[] | null>(null)
 
-  useEffect(() => initSound(), [])
+  useEffect(() => {
+    initSound()
+    startMusic('match')
+    return () => stopMusic()
+  }, [])
 
   // 唯一规则来源:legalCommands。UI 只做筛选,不重演规则。
   const legal = useMemo(
@@ -161,6 +170,15 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
 
   // 状态一变,清空选择(出牌/攻击/对手行动后都不残留)
   useEffect(() => setSelection(null), [state])
+
+  // 轮到我方 → 横幅闪一下。用回合号做依赖,同一回合内的多次状态更新不会重复触发。
+  const myTurnNo = state?.phase === 'main' && state.activePlayer === 0 ? state.turn : null
+  useEffect(() => {
+    if (myTurnNo === null) return
+    setTurnBanner((n) => n + 1)
+    const timer = window.setTimeout(() => setTurnBanner(0), 1400)
+    return () => window.clearTimeout(timer)
+  }, [myTurnNo])
 
   // Esc 取消选择
   useEffect(() => {
@@ -312,6 +330,17 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
             className={styles.plainBtn}
             onClick={(e) => {
               e.stopPropagation()
+              playSfx('buttonTap')
+              setGraveOpen(true)
+            }}
+            title={t('查看双方墓地', 'View both graveyards')}
+          >
+            {t('墓地', 'Graves')}
+          </button>
+          <button
+            className={styles.plainBtn}
+            onClick={(e) => {
+              e.stopPropagation()
               onConcede()
             }}
           >
@@ -432,6 +461,12 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
         </div>
       )}
 
+      {turnBanner > 0 && myTurn && (
+        <div key={turnBanner} className={styles.turnBanner} role="status" aria-live="polite">
+          {t('轮到你了', 'Your Turn')}
+        </div>
+      )}
+
       {/* 竖屏提示:牌桌是按横屏设计的,窄屏竖着会被压扁(纯 CSS 控制显隐) */}
       <div className={styles.rotateHint}>
         <span className={styles.rotateGlyph} aria-hidden="true">
@@ -470,6 +505,15 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
       {tutorial && <TutorialCoach state={state} events={lastEvents} onQuit={handleExit} />}
 
       {inspect && <CardInspect def={inspect} onClose={() => setInspect(null)} />}
+
+      {graveOpen && (
+        <GraveyardPanel
+          mine={me.graveyard}
+          theirs={foe.graveyard}
+          onInspect={(def) => setInspect(def)}
+          onClose={() => setGraveOpen(false)}
+        />
+      )}
 
       {confirmConcede && (
         <ConfirmDialog

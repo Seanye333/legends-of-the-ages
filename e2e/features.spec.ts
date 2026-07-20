@@ -129,8 +129,8 @@ test('settings screen: record, volume, sync and reset are all reachable', async 
   await expect(page.getByText('胜率')).toBeVisible()
   await expect(page.getByText('功勋')).toBeVisible()
 
-  // 音量滑块(以前只有开/关)
-  await expect(page.getByRole('slider')).toBeVisible()
+  // 音量滑块(以前只有开/关);现在音效与音乐各一个
+  await expect(page.getByRole('slider').first()).toBeVisible()
 
   // syncNow() 早就写好了,这里是它第一个调用方
   await expect(page.getByRole('button', { name: '立即同步' })).toBeVisible()
@@ -251,4 +251,34 @@ test('campaign: stages unlock in order, brief shows the asymmetry, fight starts'
 
   await brief.getByRole('button', { name: '出战' }).click()
   await expect(page.getByRole('button', { name: /全部保留|确认/ })).toBeVisible()
+})
+
+test('match extras: your-turn banner, graveyard viewer, music toggle', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: '开始对战' }).click()
+  await page.getByRole('button', { name: /全部保留|确认/ }).click()
+  await expect(page.getByRole('button', { name: '结束回合' })).toBeVisible()
+
+  // 墓地面板:此前完全看不到已打出/阵亡的牌
+  await page.getByRole('button', { name: '墓地' }).click()
+  const grave = page.getByRole('dialog', { name: '墓地' })
+  await expect(grave).toBeVisible()
+  await expect(grave.getByText('我方墓地')).toBeVisible()
+  await expect(grave.getByText('对方墓地')).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(grave).toHaveCount(0)
+
+  // 结束回合后轮回我方 → 横幅
+  await page.getByRole('button', { name: '结束回合' }).click()
+  await expect(page.getByText('轮到你了')).toBeVisible({ timeout: 8000 })
+})
+
+test('settings: music can be turned off independently of sfx', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: '设置', exact: true }).click()
+  await expect(page.getByText('背景音乐')).toBeVisible()
+  await expect(page.getByText(/音乐音量/)).toBeVisible()
+  await expect(page.getByText(/音效音量/)).toBeVisible()
+  // 音乐与音效是两个独立开关
+  await expect(page.getByRole('slider')).toHaveCount(2)
 })

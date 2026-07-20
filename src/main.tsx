@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import App from './App'
 import { ErrorBoundary } from './ui/components/ErrorBoundary'
 import { startProfileSync } from './app/profileSync'
-import { initSound, setMasterVolume } from './ui/sound'
+import { initSound, setMasterVolume, setMusicVolume, stopMusic } from './ui/sound'
 import { useSettings } from './app/settingsStore'
 import './index.css'
 
@@ -16,8 +16,17 @@ initSound()
 
 // 设置落到全局:音量喂给音频母线,减少动效落成 <html data-reduced-motion>,
 // 让 CSS 能把战斗特效整体关掉(战斗特效在 index.css 里,原来完全不理会这个偏好)。
-function applySettings(s: { volume: number; reducedMotion: boolean }): void {
+function applySettings(s: {
+  volume: number
+  reducedMotion: boolean
+  soundEnabled: boolean
+  musicEnabled: boolean
+  musicVolume: number
+}): void {
   setMasterVolume(s.volume)
+  setMusicVolume(s.musicVolume)
+  // 总音效开关关掉时,音乐也必须停 —— 玩家关音效多半是在安静场合
+  if (!s.soundEnabled || !s.musicEnabled) stopMusic()
   const prefersLess =
     typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
   document.documentElement.dataset.reducedMotion = String(s.reducedMotion || prefersLess)
