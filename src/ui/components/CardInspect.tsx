@@ -139,53 +139,57 @@ export function CardInspect({ def, onClose, forge = false }: CardInspectProps) {
               )}
             </div>
           )}
+          {/* 底部动作区整体 sticky —— 保存卡面原来单独 position:sticky,
+              会把锻造块盖住(合成/分解按钮整个看不见) */}
+          <div className={styles.footer}>
+            {hasArt && (
+              <button className={styles.saveBtn} disabled={busy} onClick={onSave}>
+                {busy ? t('生成中…', 'Rendering…') : t('保存卡面', 'Save Card Image')}
+              </button>
+            )}
           {forge && !def.token && (
-            <div className={styles.forge}>
-              <div className={styles.forgeOwned}>
-                {t(`持有 ${have} / ${limit}`, `Owned ${have} / ${limit}`)}
-                <span className={styles.forgeMerit}>
-                  {t(`功勋 ${merit}`, `${merit} Merit`)}
-                </span>
+              <div className={styles.forge}>
+                <div className={styles.forgeOwned}>
+                  {t(`持有 ${have} / ${limit}`, `Owned ${have} / ${limit}`)}
+                  <span className={styles.forgeMerit}>
+                    {t(`功勋 ${merit}`, `${merit} Merit`)}
+                  </span>
+                </div>
+                <div className={styles.forgeRow}>
+                  <button
+                    className={styles.craftBtn}
+                    disabled={!canCraft}
+                    title={t(`合成需 ${cost} 功勋`, `Craft for ${cost} merit`)}
+                    onClick={() => {
+                      playSfx('stratagemCast')
+                      craft(def.id)
+                    }}
+                  >
+                    {t(`合成 · ${cost}`, `Craft · ${cost}`)}
+                  </button>
+                  <button
+                    className={styles.dustBtn}
+                    disabled={!canDust}
+                    title={t(`分解得 ${dust} 功勋`, `Disenchant for ${dust} merit`)}
+                    onClick={() => {
+                      playSfx('cardPlay')
+                      disenchant(def.id)
+                    }}
+                  >
+                    {t(`分解 · +${dust}`, `Disenchant · +${dust}`)}
+                  </button>
+                </div>
+                {!canCraft && have >= limit && (
+                  <p className={styles.forgeHint}>{t('已达持有上限', 'At copy limit')}</p>
+                )}
+                {!canCraft && have < limit && merit < cost && (
+                  <p className={styles.forgeHint}>
+                    {t(`还差 ${cost - merit} 功勋`, `${cost - merit} more merit needed`)}
+                  </p>
+                )}
               </div>
-              <div className={styles.forgeRow}>
-                <button
-                  className={styles.craftBtn}
-                  disabled={!canCraft}
-                  title={t(`合成需 ${cost} 功勋`, `Craft for ${cost} merit`)}
-                  onClick={() => {
-                    playSfx('stratagemCast')
-                    craft(def.id)
-                  }}
-                >
-                  {t(`合成 · ${cost}`, `Craft · ${cost}`)}
-                </button>
-                <button
-                  className={styles.dustBtn}
-                  disabled={!canDust}
-                  title={t(`分解得 ${dust} 功勋`, `Disenchant for ${dust} merit`)}
-                  onClick={() => {
-                    playSfx('cardPlay')
-                    disenchant(def.id)
-                  }}
-                >
-                  {t(`分解 · +${dust}`, `Disenchant · +${dust}`)}
-                </button>
-              </div>
-              {!canCraft && have >= limit && (
-                <p className={styles.forgeHint}>{t('已达持有上限', 'At copy limit')}</p>
-              )}
-              {!canCraft && have < limit && merit < cost && (
-                <p className={styles.forgeHint}>
-                  {t(`还差 ${cost - merit} 功勋`, `${cost - merit} more merit needed`)}
-                </p>
-              )}
-            </div>
-          )}
-          {hasArt && (
-            <button className={styles.saveBtn} disabled={busy} onClick={onSave}>
-              {busy ? t('生成中…', 'Rendering…') : t('保存卡面', 'Save Card Image')}
-            </button>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>

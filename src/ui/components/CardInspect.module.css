@@ -171,11 +171,20 @@
 }
 
 /* 保存卡面(仅签名卡显示):粘在滚动区底部,列传再长也够得着 */
-.saveBtn {
+.footer {
   position: sticky;
   bottom: -16px;
   z-index: 2;
   margin-top: 6px;
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  /* 固定 16px 的渐隐带后立刻转实底 —— 用百分比的话按钮上半截会被列传文字透出来 */
+  background: linear-gradient(180deg, rgba(20, 16, 10, 0) 0, rgba(20, 16, 10, 0.97) 16px);
+}
+
+.saveBtn {
   align-self: center;
   font-family: var(--font-display);
   font-size: 14px;
@@ -251,8 +260,7 @@
 
 /* ---- 功勋锻造(图鉴入口) ---- */
 .forge {
-  margin-top: 14px;
-  padding-top: 12px;
+  padding-top: 10px;
   border-top: 1px solid rgba(212, 168, 74, 0.22);
 }
 

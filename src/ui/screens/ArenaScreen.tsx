@@ -198,6 +198,10 @@ export function ArenaScreen({ onBack, onEnterMatch }: ArenaScreenProps) {
                     arena.choose(id)
                   }}
                 />
+                {/* 卡面本身不展示效果文本,但抽牌时看不见效果等于闭眼抽 */}
+                <p className={styles.offerText}>
+                  {def.text ? pick(def.text) : t('无特殊效果', 'No special effect')}
+                </p>
               </div>
             )
           })}

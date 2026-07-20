@@ -286,3 +286,13 @@
     transition: none;
   }
 }
+
+.offerText {
+  width: 168px;
+  margin: 8px auto 0;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--parchment-faint);
+  text-align: center;
+  min-height: 3.2em;
+}
