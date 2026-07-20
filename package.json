@@ -11,7 +11,9 @@
     "e2e": "playwright test",
     "lint": "eslint .",
     "import-content": "node --import tsx scripts/import-content.ts",
+    "export-portraits": "node --import tsx scripts/export-portraits.ts",
     "sim-balance": "node --import tsx scripts/sim-balance.ts",
+    "deck-stats": "node --import tsx scripts/deck-stats.ts",
     "tauri": "tauri"
   },
   "dependencies": {
@@ -33,6 +35,7 @@
     "typescript": "~5.9.0",
     "typescript-eslint": "^8.0.0",
     "vite": "^7.0.0",
+    "vite-plugin-pwa": "^1.3.0",
     "vitest": "^3.0.0",
     "wrangler": "^4.112.0"
   }

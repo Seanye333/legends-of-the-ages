@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!--
+    千古名将 · Legends of the Ages — app mark
+
+    构成:深褐墨底(呼应 body 的 radial ink 背景)+ 鎏金印边 + 朱砂印面 + 瓷白「將」。
+    色值直接取自 src/index.css 的调色盘(--gold* / --cinnabar* / --ink* / --parchment)。
+    字形用系统 Songti SC 渲染并做 stroke 扩边(宋体横画太细,缩到 40px 会断),
+    由 scripts/make-logo.mjs 光栅化后固化进 PNG,运行时不依赖任何字体。
+  -->
+  <defs>
+    <!-- ——— 墨底 ——— -->
+    <linearGradient id="ground" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#3b2614"/>
+      <stop offset="0.5" stop-color="#1c1309"/>
+      <stop offset="1" stop-color="#0b0805"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="0.5" cy="0.47" r="0.72">
+      <stop offset="0.30" stop-color="#e6a95c" stop-opacity="0.34"/>
+      <stop offset="0.52" stop-color="#c8853a" stop-opacity="0.26"/>
+      <stop offset="0.74" stop-color="#a86a2e" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#b8863b" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vignette" cx="0.5" cy="0.47" r="0.72">
+      <stop offset="0.5" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.7"/>
+    </radialGradient>
+    <!-- 织锦斜纹 -->
+    <pattern id="silk" width="18" height="18" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="18" height="18" fill="none"/>
+      <rect width="2" height="18" fill="#e8c878" fill-opacity="0.5"/>
+    </pattern>
+
+    <!-- ——— 鎏金 ——— -->
+    <linearGradient id="gold" x1="0.08" y1="0" x2="0.9" y2="1">
+      <stop offset="0" stop-color="#fff7dd"/>
+      <stop offset="0.13" stop-color="#f3d798"/>
+      <stop offset="0.33" stop-color="#c99845"/>
+      <stop offset="0.48" stop-color="#7f571c"/>
+      <stop offset="0.6" stop-color="#b98d3c"/>
+      <stop offset="0.78" stop-color="#f8e3ac"/>
+      <stop offset="0.91" stop-color="#c2913f"/>
+      <stop offset="1" stop-color="#8a6021"/>
+    </linearGradient>
+
+    <!-- ——— 朱砂 ——— -->
+    <linearGradient id="cinnabar" x1="0.12" y1="0" x2="0.82" y2="1">
+      <stop offset="0" stop-color="#dc5236"/>
+      <stop offset="0.42" stop-color="#be3320"/>
+      <stop offset="1" stop-color="#8d2314"/>
+    </linearGradient>
+
+    <!-- ——— 字面:暖白瓷 ——— -->
+    <linearGradient id="cream" x1="0" y1="0" x2="0.2" y2="1">
+      <stop offset="0" stop-color="#fffdf7"/>
+      <stop offset="0.5" stop-color="#fff0dc"/>
+      <stop offset="1" stop-color="#f4d9b6"/>
+    </linearGradient>
+
+    <!-- ——— 肌理 / 阴影 ——— -->
+    <filter id="grain" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" seed="11"/>
+      <feColorMatrix type="saturate" values="0"/>
+    </filter>
+    <filter id="mottle" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.009" numOctaves="4" seed="5"/>
+      <feColorMatrix type="saturate" values="0"/>
+    </filter>
+    <filter id="plateShadow" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#000000" flood-opacity="0.55"/>
+      <feDropShadow dx="0" dy="30" stdDeviation="34" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+    <filter id="glyphShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="#541006" flood-opacity="0.78"/>
+    </filter>
+
+    <clipPath id="sealClip">
+      <rect x="158" y="150" width="708" height="708" rx="48"/>
+    </clipPath>
+  </defs>
+
+  <!-- ——— 底 ——— -->
+  <rect width="1024" height="1024" fill="url(#ground)"/>
+  <rect width="1024" height="1024" fill="url(#silk)" opacity="0.035"/>
+  <rect width="1024" height="1024" fill="url(#halo)"/>
+  <rect width="1024" height="1024" fill="url(#vignette)"/>
+
+  <!-- ——— 印 ——— -->
+  <g filter="url(#plateShadow)">
+    <rect x="138" y="130" width="748" height="748" rx="68" fill="url(#gold)"/>
+  </g>
+  <!-- 金边内侧压深,拉出厚度 -->
+  <rect x="154" y="146" width="716" height="716" rx="52" fill="none"
+        stroke="#3d2a08" stroke-opacity="0.85" stroke-width="8"/>
+  <rect x="158" y="150" width="708" height="708" rx="48" fill="url(#cinnabar)"/>
+
+  <g clip-path="url(#sealClip)">
+    <!-- 印泥斑驳 -->
+    <rect x="158" y="150" width="708" height="708" filter="url(#mottle)" opacity="0.11"
+          style="mix-blend-mode:overlay"/>
+    <!-- 内缘暗角:钤印的凹陷 -->
+    <rect x="158" y="150" width="708" height="708" rx="48" fill="none"
+          stroke="#5f1207" stroke-opacity="0.42" stroke-width="34"/>
+    <!-- 左上受光 -->
+    <rect x="158" y="150" width="708" height="708" rx="48" fill="none"
+          stroke="#ff8a63" stroke-opacity="0.22" stroke-width="5"/>
+  </g>
+
+  <!-- 瓷白细线框 -->
+  <rect x="202" y="194" width="620" height="620" rx="32" fill="none"
+        stroke="#ffe9d6" stroke-opacity="0.58" stroke-width="4"/>
+
+  <!-- 四角金菱(呼应标题屏的饰线菱形) -->
+  <g fill="#f6dda4" opacity="0.92">
+    <rect x="192" y="184" width="20" height="20" transform="rotate(45 202 194)"/>
+    <rect x="812" y="184" width="20" height="20" transform="rotate(45 822 194)"/>
+    <rect x="192" y="804" width="20" height="20" transform="rotate(45 202 814)"/>
+    <rect x="812" y="804" width="20" height="20" transform="rotate(45 822 814)"/>
+  </g>
+
+  <!-- ——— 「將」 ——— -->
+  <g filter="url(#glyphShadow)">
+    <!-- y 为 alphabetic 基线:字形墨迹盒经测量在基线上方 133px 处居中(见 make-logo 说明) -->
+    <text x="513" y="633" text-anchor="middle"
+          font-family="Songti SC, STSong, Songti TC, serif" font-weight="700"
+          font-size="440" fill="url(#cream)" stroke="url(#cream)" stroke-width="12"
+          stroke-linejoin="round" paint-order="stroke">將</text>
+  </g>
+
+  <!-- ——— 整体颗粒 ——— -->
+  <rect width="1024" height="1024" filter="url(#grain)" opacity="0.06" style="mix-blend-mode:overlay"/>
+</svg>
