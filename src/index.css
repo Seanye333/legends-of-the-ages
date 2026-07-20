@@ -138,3 +138,30 @@ button {
     opacity: 0;
   }
 }
+
+/* ---- 减少动效 ----
+   战斗特效(冲锋位移/震屏/受击闪光/斩杀白闪)是全站动效最猛的部分,
+   之前完全不理会 prefers-reduced-motion —— 只有立绘、闪卡、开包尊重它。
+   这里同时接住系统偏好与设置页的手动开关(main.tsx 写入 data-reduced-motion)。 */
+:root[data-reduced-motion='true'] .fx-lunge,
+:root[data-reduced-motion='true'] .fx-shake,
+:root[data-reduced-motion='true'] .fx-shake-hard {
+  animation: none !important;
+  transform: none !important;
+}
+
+:root[data-reduced-motion='true'] .fx-flash,
+:root[data-reduced-motion='true'] .fx-flash-hit,
+:root[data-reduced-motion='true'] .fx-flash-clash {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-lunge,
+  .fx-shake,
+  .fx-shake-hard {
+    animation: none !important;
+    transform: none !important;
+  }
+}

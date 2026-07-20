@@ -23,6 +23,13 @@ let ctx: AudioContext | null = null
 let master: GainNode | null = null
 let noiseBuf: AudioBuffer | null = null
 let unlockHooked = false
+// 母线音量。设置页的滑块改这里;context 还没建时先记下来,建的时候直接用。
+let masterVolume = 0.85
+
+export function setMasterVolume(v: number): void {
+  masterVolume = Math.max(0, Math.min(1, v))
+  if (master) master.gain.value = masterVolume
+}
 
 function getCtx(): AudioContext | null {
   if (typeof window === 'undefined') return null
@@ -42,7 +49,7 @@ function getCtx(): AudioContext | null {
     comp.release.value = 0.12
     comp.connect(ctx.destination)
     master = ctx.createGain()
-    master.gain.value = 0.85
+    master.gain.value = masterVolume
     master.connect(comp)
   } catch {
     ctx = null

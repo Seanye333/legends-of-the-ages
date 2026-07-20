@@ -115,3 +115,26 @@ test('collection: merit badge and craft/disenchant controls', async ({ page }) =
   await expect(page.getByRole('button', { name: /合成 · \d+/ })).toBeVisible()
   await expect(page.getByRole('button', { name: /分解 · \+\d+/ })).toBeVisible()
 })
+
+test('settings screen: record, volume, sync and reset are all reachable', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: '设置', exact: true }).click()
+  await expect(page.getByRole('heading', { name: '设置' })).toBeVisible()
+
+  // 战绩一直在记录与同步,但以前界面上从来不显示
+  await expect(page.getByText('胜率')).toBeVisible()
+  await expect(page.getByText('功勋')).toBeVisible()
+
+  // 音量滑块(以前只有开/关)
+  await expect(page.getByRole('slider')).toBeVisible()
+
+  // syncNow() 早就写好了,这里是它第一个调用方
+  await expect(page.getByRole('button', { name: '立即同步' })).toBeVisible()
+  await expect(page.getByText('设备 ID', { exact: true })).toBeVisible()
+
+  // 清空进度走自绘确认框,默认焦点在取消上
+  await page.getByRole('button', { name: '清空本地进度' }).click()
+  await expect(page.getByRole('dialog')).toBeVisible()
+  await page.getByRole('button', { name: '取消' }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+})

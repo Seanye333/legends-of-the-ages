@@ -1,0 +1,94 @@
+name: CI
+
+# 之前这个仓库完全没有 CI:lint / test / e2e / 平衡闸门一个都不自动跑,
+# 全靠手动。sim-balance 明明会 exit 1,却没有任何东西去执行它 —— 闸门等于不存在。
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# 同一分支的旧任务在新推送时直接取消,不浪费额度
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Lint（含引擎纯度围栏）
+        run: npm run lint
+
+      - name: 类型检查 + 构建
+        run: npm run build
+
+      - name: 单元测试
+        run: npm test
+
+      - name: 端到端(Playwright)
+        run: |
+          npx playwright install --with-deps chromium
+          npx playwright test
+
+      - name: 失败时保留 Playwright 报告
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+  balance:
+    # 平衡模拟要一分多钟,与主检查并行跑,不拖慢反馈
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      # 两道闸门:每套预组总胜率 40-60%,且任一对位 30-70%。
+      # 脚本自己 exit 1,这里不用额外判断。
+      # 局数固定 100 —— 40 局的噪声有 ±8 个百分点,拿来当闸门只会制造误报。
+      - name: 预组平衡闸门
+        run: npm run sim-balance
+        env:
+          GAMES: 100
+
+      - name: 预组结构体检
+        run: npm run deck-stats
+
+  content:
+    # 内容生成必须幂等:cards.gen.ts 入 git,重跑一次不能有 diff。
+    # 需要姊妹仓库,CI 上没有 —— 所以这里只验证「已入库的产物与源码自洽」。
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: 生成物不能被手改
+        run: |
+          if git diff --quiet -- src/content/generated; then
+            echo "generated content clean"
+          else
+            echo "::error::src/content/generated 有未提交的改动"
+            git diff --stat -- src/content/generated
+            exit 1
+          fi

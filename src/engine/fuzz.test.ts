@@ -158,11 +158,16 @@ function runFuzzGame(seed: number): { state: GameState; record: MatchRecord; ste
 }
 
 describe('fuzz: random legal games', () => {
-  it('100 seeded games terminate with all invariants held', () => {
-    for (let seed = 1; seed <= 100; seed++) {
-      runFuzzGame(seed)
-    }
-  })
+  // 显式放宽超时:卡池播种机制后单局分支变多,冷启动那一轮偶尔会顶到默认的 5s。
+  it(
+    '100 seeded games terminate with all invariants held',
+    () => {
+      for (let seed = 1; seed <= 100; seed++) {
+        runFuzzGame(seed)
+      }
+    },
+    20_000,
+  )
 
   it('replays reproduce the exact final state', () => {
     for (let seed = 1; seed <= 10; seed++) {

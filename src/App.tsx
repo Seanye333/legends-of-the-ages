@@ -14,8 +14,11 @@ const DeckBuilderScreen = lazy(() =>
 const ReplayScreen = lazy(() =>
   import('./ui/screens/ReplayScreen').then((m) => ({ default: m.ReplayScreen })),
 )
+const SettingsScreen = lazy(() =>
+  import('./ui/screens/SettingsScreen').then((m) => ({ default: m.SettingsScreen })),
+)
 
-export type Screen = 'title' | 'match' | 'collection' | 'deckbuilder' | 'replays'
+export type Screen = 'title' | 'match' | 'collection' | 'deckbuilder' | 'replays' | 'settings'
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('title')
@@ -40,6 +43,12 @@ export default function App() {
       return (
         <Suspense fallback={<ScreenFallback />}>
           <ReplayScreen onBack={back} />
+        </Suspense>
+      )
+    case 'settings':
+      return (
+        <Suspense fallback={<ScreenFallback />}>
+          <SettingsScreen onBack={back} />
         </Suspense>
       )
     default:

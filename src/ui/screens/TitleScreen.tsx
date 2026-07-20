@@ -81,7 +81,7 @@ const DIFFICULTIES: { key: Difficulty; name: LocalizedText }[] = [
 
 interface TitleScreenProps {
   onStart?: () => void
-  onNavigate?: (screen: 'collection' | 'deckbuilder' | 'replays') => void
+  onNavigate?: (screen: 'collection' | 'deckbuilder' | 'replays' | 'settings') => void
 }
 
 export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
@@ -274,6 +274,15 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
           }}
         >
           {claimable > 0 ? t(`军令 ●${claimable}`, `Orders ●${claimable}`) : t('每日军令', 'Daily Orders')}
+        </button>
+        <button
+          className={styles.navBtn}
+          onClick={() => {
+            playSfx('buttonTap')
+            onNavigate?.('settings')
+          }}
+        >
+          {t('设置', 'Settings')}
         </button>
       </div>
       {startError && (
