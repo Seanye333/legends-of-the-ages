@@ -60,7 +60,13 @@ export interface MatchEmoteMsg {
   emote: EmoteId
 }
 
-export type MatchClientMsg = MatchJoinMsg | MatchCmdMsg | MatchEmoteMsg
+// 再战:双方都点了才重开。此前联机局打完只能各回各家 ——
+// 本地局有「再战」,联机局没有,而联机恰恰是最想立刻打第二把的场景。
+export interface MatchRematchMsg {
+  type: 'rematch'
+}
+
+export type MatchClientMsg = MatchJoinMsg | MatchCmdMsg | MatchEmoteMsg | MatchRematchMsg
 
 export interface MatchUpdateMsg {
   type: 'start' | 'update'
@@ -79,6 +85,9 @@ export type MatchServerMsg =
   | { type: 'opponent-back' }
   | { type: 'rated'; rating: number; delta: number }
   | { type: 'emote'; emote: EmoteId; from: 'opponent' }
+  // 对手已请求再战(等你点);双方都点后服务器直接推新的 start
+  | { type: 'rematch-offered' }
+  | { type: 'rematch-declined' }
 
 // ---- 天梯 ----
 

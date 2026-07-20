@@ -16,6 +16,14 @@ export class RoomDO {
   constructor(private ctx: DurableObjectState) {}
 
   async fetch(request: Request): Promise<Response> {
+    // 观战查询:凭房间码换 matchId(唯一一个非 WebSocket 入口)
+    if (new URL(request.url).searchParams.get('mode') === 'watch') {
+      const matchId = await this.ctx.storage.get<string>('matchId')
+      return new Response(JSON.stringify(matchId ? { matchId } : { error: 'no-match' }), {
+        status: matchId ? 200 : 404,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      })
+    }
     if (request.headers.get('Upgrade') !== 'websocket') {
       return new Response('expected websocket', { status: 426 })
     }
@@ -52,6 +60,9 @@ export class RoomDO {
       return new Response(null, { status: 101, webSocket: client })
     }
     const matchId = `room-${crypto.randomUUID()}`
+    // 落盘 matchId,让观战能凭房间码找到这一局(见 index.ts 的 /room/watch)。
+    // 与房间本身同寿命:房间 TTL 到点 deleteAll 时一起清掉。
+    await this.ctx.storage.put('matchId', matchId)
     // 先摘掉房主身份,避免并发 join 撮合到同一个房主
     host.serializeAttachment(null)
     send(host, { type: 'matched', matchId, seat: 0 })

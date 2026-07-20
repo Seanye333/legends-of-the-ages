@@ -22,7 +22,7 @@ import type {
   QueueServerMsg,
   RoomServerMsg,
 } from './protocol'
-import { wsScheme } from './protocol'
+import { httpBase, wsScheme } from './protocol'
 import type { EmoteId } from './protocol'
 import type { DeckList } from '../content/decks'
 import { getPlayerId } from './leaderboard'
@@ -50,6 +50,7 @@ export interface RemoteCallbacks {
   onRoomCode?(code: string): void
   onRated?(rating: number, delta: number): void
   onEmote?(emote: EmoteId): void
+  onRematchOffered?(): void
 }
 
 // ---- 会话持久化(断线/刷新后续局) ----
@@ -213,6 +214,12 @@ export class RemoteMatch {
   private ended = false
   private reconnectTries = 0
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
+  // 观战模式:不发 join、不存会话、不参与再战
+  private spectating = false
+
+  isSpectating(): boolean {
+    return this.spectating
+  }
 
   constructor(
     private readonly server: string,
@@ -246,6 +253,29 @@ export class RemoteMatch {
     this.openLobby(`/room/join/${encodeURIComponent(clean)}?name=${encodeURIComponent(this.playerName)}`, () => {
       this.cb.onStatus('connecting')
     })
+  }
+
+  // 观战:凭房间码换 matchId,再以 seat=2 接入。观战席只收不发,
+  // 服务器给的是抹掉双方手牌牌面的视角(见 redactForSpectator)。
+  async watchRoom(code: string): Promise<void> {
+    this.cb.onStatus('connecting')
+    const clean = code.trim().toUpperCase()
+    try {
+      const res = await fetch(`${httpBase(this.server)}/room/watch/${encodeURIComponent(clean)}`)
+      if (!res.ok) {
+        this.cb.onError('room-not-found')
+        this.cb.onStatus('closed')
+        return
+      }
+      const { matchId } = (await res.json()) as { matchId: string }
+      this.seat = 2 as PlayerIdx // 观战席;UI 侧仍按「我=0」渲染
+      this.matchId = matchId
+      this.spectating = true
+      this.openMatch(matchId)
+    } catch {
+      this.cb.onError('connect-failed')
+      this.cb.onStatus('closed')
+    }
   }
 
   // 恢复此前的对局(刷新/掉线后)
@@ -285,19 +315,24 @@ export class RemoteMatch {
 
   private openMatch(matchId: string): void {
     this.matchId = matchId
-    saveSession({
-      server: this.server,
-      matchId,
-      seat: this.seat,
-      token: this.token,
-      name: this.playerName,
-      deck: this.deck,
-    })
+    // 观战不写会话:标题页的「回到对局」应该只续自己的对局,不该把人拉回别人的战场
+    if (!this.spectating) {
+      saveSession({
+        server: this.server,
+        matchId,
+        seat: this.seat,
+        token: this.token,
+        name: this.playerName,
+        deck: this.deck,
+      })
+    }
     const ws = new WebSocket(
       wsUrl(this.server, `/match/${matchId}?seat=${this.seat}&token=${this.token}`),
     )
     this.matchWs = ws
     ws.onopen = () => {
+      // 观战席没有卡组也没有座位,发 join 只会被服务器丢弃
+      if (this.spectating) return
       // 开局前 join 用于注册卡组;开局后服务器忽略之并直接补发状态
       const join: MatchClientMsg = {
         type: 'join',
@@ -317,6 +352,20 @@ export class RemoteMatch {
         if (state.phase === 'ended') {
           this.ended = true
           clearSession()
+        } else if (this.ended && !this.spectating) {
+          // 再战:服务器用同一个 matchId 重开了一局,把终局标记撤销并把会话写回去,
+          // 否则这一局中途掉线就再也接不回来了。
+          this.ended = false
+          if (this.matchId) {
+            saveSession({
+              server: this.server,
+              matchId: this.matchId,
+              seat: this.seat,
+              token: this.token,
+              name: this.playerName,
+              deck: this.deck,
+            })
+          }
         }
         this.cb.onUpdate(
           state,
@@ -332,6 +381,10 @@ export class RemoteMatch {
       }
       if (msg.type === 'emote') {
         this.cb.onEmote?.(msg.emote)
+        return
+      }
+      if (msg.type === 'rematch-offered') {
+        this.cb.onRematchOffered?.()
         return
       }
       if (msg.type === 'error') {
@@ -395,6 +448,12 @@ export class RemoteMatch {
   sendEmote(emote: EmoteId): void {
     if (!this.matchWs || this.matchWs.readyState !== WebSocket.OPEN) return
     const msg: MatchClientMsg = { type: 'emote', emote }
+    this.matchWs.send(JSON.stringify(msg))
+  }
+
+  sendRematch(): void {
+    if (!this.matchWs || this.matchWs.readyState !== WebSocket.OPEN) return
+    const msg: MatchClientMsg = { type: 'rematch' }
     this.matchWs.send(JSON.stringify(msg))
   }
 

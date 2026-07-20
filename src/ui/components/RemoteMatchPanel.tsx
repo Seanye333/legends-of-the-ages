@@ -78,7 +78,7 @@ export function RemoteMatchPanel({ deck, onStart, onClose }: RemoteMatchPanelPro
     }
   }, [server])
 
-  const begin = (mode: 'queue' | 'create-room' | 'join-room') => {
+  const begin = (mode: 'queue' | 'create-room' | 'join-room' | 'watch-room') => {
     playSfx('buttonTap')
     localStorage.setItem(SERVER_KEY, server.trim())
     setSearching(true)
@@ -206,6 +206,15 @@ export function RemoteMatchPanel({ deck, onStart, onClose }: RemoteMatchPanelPro
                 onClick={() => begin('join-room')}
               >
                 {t('加入', 'Join')}
+              </button>
+              {/* 观战:同一个房间码,以观战席接入。看得到双方场面与手牌数,
+                  但看不到任何一方的手牌牌面(服务端 redactForSpectator 保证) */}
+              <button
+                className={styles.plainBtn}
+                disabled={joinCode.trim().length < 4}
+                onClick={() => begin('watch-room')}
+              >
+                {t('观战', 'Watch')}
               </button>
             </div>
             <div className={styles.buttons}>

@@ -42,7 +42,7 @@ export interface StartRemoteArgs {
   server: string
   deck: DeckList
   playerName: string
-  mode?: 'queue' | 'create-room' | 'join-room'
+  mode?: 'queue' | 'create-room' | 'join-room' | 'watch-room'
   code?: string
 }
 
@@ -53,6 +53,7 @@ export interface RatingResult {
 
 interface MatchStoreState {
   mode: 'local' | 'remote'
+  spectating: boolean
   tutorial: boolean
   arena: boolean
   campaign: boolean
@@ -66,6 +67,8 @@ interface MatchStoreState {
   turnDeadline: number | null
   // 对手最近发来的表情(带序号,好让 UI 分辨「同一个表情又发了一次」)
   incomingEmote: { emote: EmoteId; seq: number } | null
+  // 联机再战:'none' 无人请求 / 'offered' 对手已请求 / 'sent' 我已请求等对手
+  rematchState: 'none' | 'offered' | 'sent'
   state: GameState | null
   lastEvents: GameEvent[]
   error: string | null
@@ -74,6 +77,7 @@ interface MatchStoreState {
   resumeRemoteMatch(): boolean
   send(cmd: Command): void
   sendEmote(emote: EmoteId): void
+  requestRematch(): void
   reset(): void
 }
 
@@ -129,18 +133,22 @@ function remoteCallbacks(set: SetState) {
         opponentName: opponentName ?? null,
         turnDeadline: turnDeadline ?? null,
         error: null,
+        // 新一局开始 → 清掉上一局残留的再战状态。
+        // 用条件展开而不是三元给 undefined:传 undefined 会真的把字段覆盖掉。
+        ...(state.phase === 'ended' ? {} : { rematchState: 'none' as const }),
       })
     },
     onError: (error: string) => set({ error }),
     onRoomCode: (roomCode: string) => set({ roomCode }),
     onRated: (rating: number, delta: number) => set({ ratingResult: { rating, delta } }),
-    onEmote: (emote: EmoteId) =>
-      set({ incomingEmote: { emote, seq: emoteSeq++ } }),
+    onEmote: (emote: EmoteId) => set({ incomingEmote: { emote, seq: emoteSeq++ } }),
+    onRematchOffered: () => set({ rematchState: 'offered' }),
   }
 }
 
 export const useMatch = create<MatchStoreState>()((set, get) => ({
   mode: 'local',
+  spectating: false,
   tutorial: false,
   arena: false,
   campaign: false,
@@ -152,6 +160,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
   ratingResult: null,
   turnDeadline: null,
   incomingEmote: null,
+  rematchState: 'none',
   state: null,
   lastEvents: [],
   error: null,
@@ -202,9 +211,18 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
   startRemoteMatch(args) {
     get().reset()
     const remote = new RemoteMatch(args.server, args.deck, args.playerName, remoteCallbacks(set))
-    set({ mode: 'remote', remote, remoteStatus: 'connecting', state: null, lastEvents: [], error: null })
+    set({
+      mode: 'remote',
+      spectating: args.mode === 'watch-room',
+      remote,
+      remoteStatus: 'connecting',
+      state: null,
+      lastEvents: [],
+      error: null,
+    })
     if (args.mode === 'create-room') remote.createRoom()
     else if (args.mode === 'join-room') remote.joinRoom(args.code ?? '')
+    else if (args.mode === 'watch-room') void remote.watchRoom(args.code ?? '')
     else remote.start()
   },
 
@@ -243,11 +261,19 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
     get().remote?.sendEmote(emote)
   },
 
+  requestRematch() {
+    const { remote, rematchState } = get()
+    if (!remote || rematchState === 'sent') return
+    remote.sendRematch()
+    set({ rematchState: 'sent' })
+  },
+
   reset() {
     get().remote?.close()
     discardReplayRecording() // 未打完的对局不留战报
     set({
       mode: 'local',
+      spectating: false,
       tutorial: false,
       arena: false,
       campaign: false,
@@ -259,6 +285,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       ratingResult: null,
       turnDeadline: null,
       incomingEmote: null,
+      rematchState: 'none',
       state: null,
       lastEvents: [],
       error: null,

@@ -10,7 +10,12 @@
 // 否则两人 join 之间发生驱逐就丢了)。
 import { createGame } from '../../src/engine/init'
 import { applyCommand } from '../../src/engine/reducer'
-import { redactEvent, redactState } from '../../src/engine/redact'
+import {
+  redactEvent,
+  redactEventForSpectator,
+  redactForSpectator,
+  redactState,
+} from '../../src/engine/redact'
 import type { GameConfig, GameEvent, GameState, PlayerIdx } from '../../src/engine/types'
 import { START_HP } from '../../src/engine/types'
 import { CARDS_BY_ID } from '../../src/content/cards'
@@ -37,11 +42,16 @@ interface Persisted {
 
 // socket.serializeAttachment 存的东西:hibernation 唤醒后靠它认座位。
 // 限流计数也放这里 —— hibernation 下没有常驻内存,只有 attachment 活得够久。
+// seat 为 2 表示观战席(只收不发,且拿到的是抹掉双方手牌的视角)
+type Seat = PlayerIdx | 2
+
 interface SocketAttachment {
-  seat: PlayerIdx
+  seat: Seat
   windowStart: number
   msgCount: number
 }
+
+const SPECTATOR = 2 as const
 
 interface Env {
   RATINGS: DurableObjectNamespace
@@ -63,6 +73,9 @@ const TURN_MS = 90 * 1000
 // 眼看要输就把网断掉,对局挂到弃坑闹钟自毁,双方都不结算 ELO。
 const FORFEIT_MS = 90 * 1000
 
+// 终局后保留 DO 的时长,供双方决定要不要再战。到点仍走弃坑清理。
+const REMATCH_WINDOW_MS = 3 * 60 * 1000
+
 // 单连接消息速率上限(滑动窗口)。此前服务端任何地方都没有限流。
 const RATE_WINDOW_MS = 10 * 1000
 const RATE_MAX_MSGS = 120
@@ -82,6 +95,8 @@ export class MatchDO {
   private deadlines: Deadlines = { abandon: 0, turn: null, forfeit: null }
   // 表情限速只需活在内存里:hibernation 把它清掉最多是让对手多收一个表情,无所谓
   private lastEmoteAt: [number, number] = [0, 0]
+  // 再战意向。只活在内存里:被驱逐意味着窗口期已过,重新点一次即可。
+  private rematchWanted: [boolean, boolean] = [false, false]
   private loaded = false
 
   constructor(
@@ -136,15 +151,22 @@ export class MatchDO {
       return new Response('expected websocket', { status: 426 })
     }
     const url = new URL(request.url)
-    const seatIdx = Number(url.searchParams.get('seat'))
-    if (seatIdx !== 0 && seatIdx !== 1) return new Response('bad seat', { status: 400 })
+    const seatIdx = Number(url.searchParams.get('seat')) as Seat
+    if (seatIdx !== 0 && seatIdx !== 1 && seatIdx !== SPECTATOR) {
+      return new Response('bad seat', { status: 400 })
+    }
     const token = url.searchParams.get('token') ?? ''
     if (!token) return new Response('missing token', { status: 400 })
 
-    const seat = this.seats[seatIdx]
-    // 座位令牌:首连认领;之后持不同令牌者一律拒绝(防旁人抢座/看牌)
-    if (seat.token && seat.token !== token) {
-      return new Response('seat taken', { status: 403 })
+    // 观战席不占座、不需要令牌校验,只在对局已经开始后才允许接入
+    if (seatIdx === SPECTATOR) {
+      if (!this.state) return new Response('match not started', { status: 409 })
+    } else {
+      const seat = this.seats[seatIdx]
+      // 座位令牌:首连认领;之后持不同令牌者一律拒绝(防旁人抢座/看牌)
+      if (seat.token && seat.token !== token) {
+        return new Response('seat taken', { status: 403 })
+      }
     }
 
     const pair = new WebSocketPair()
@@ -158,8 +180,8 @@ export class MatchDO {
       msgCount: 0,
     } satisfies SocketAttachment)
 
-    if (seat.token !== token) {
-      seat.token = token
+    if (seatIdx !== SPECTATOR && this.seats[seatIdx].token !== token) {
+      this.seats[seatIdx].token = token
       await this.persistSeats()
     }
     // 这一座回来了 → 撤销掉线判负的倒计时
@@ -167,6 +189,19 @@ export class MatchDO {
     this.deadlines.abandon = Date.now() + ABANDON_MS
     this.touchTurnDeadline()
     await this.armAlarm()
+
+    if (seatIdx === SPECTATOR) {
+      if (this.state) {
+        this.sendToSocket(server, {
+          type: 'start',
+          state: redactForSpectator(this.state),
+          events: [],
+          opponentName: this.seats[1].name,
+          turnDeadline: this.deadlines.turn?.at,
+        })
+      }
+      return new Response(null, { status: 101, webSocket: client })
+    }
 
     const me = seatIdx as PlayerIdx
     // 重连:对局已在进行,直接补发当前视角状态,并告知对手已回归
@@ -206,13 +241,15 @@ export class MatchDO {
       }
       return
     }
+    // 观战席只收不发 —— 它连座位令牌都没有,任何指令一律丢弃
+    if (att.seat === SPECTATOR) return
     await this.onMessage(att.seat, typeof message === 'string' ? message : '')
   }
 
   async webSocketClose(ws: WebSocket): Promise<void> {
     await this.load()
     const att = ws.deserializeAttachment() as SocketAttachment | null
-    if (!att) return
+    if (!att || att.seat === SPECTATOR) return
     if (!this.state || this.state.phase === 'ended') return
     // 同一座位可能还有别的连接活着(重连竞态),那就不算掉线
     if (this.socketsFor(att.seat).length > 0) return
@@ -335,6 +372,21 @@ export class MatchDO {
       return
     }
 
+    if (msg.type === 'rematch') {
+      // 只在终局后的窗口期内有效
+      if (!this.state || this.state.phase !== 'ended') return
+      this.rematchWanted[seatIdx] = true
+      if (!this.rematchWanted[other(seatIdx)]) {
+        this.sendTo(other(seatIdx), { type: 'rematch-offered' })
+        return
+      }
+      // 双方都点了 → 用同一副牌、同样的座位重开一局
+      this.rematchWanted = [false, false]
+      this.isRematch = true
+      await this.startGame()
+      return
+    }
+
     if (msg.type === 'cmd') {
       if (!this.state) {
         this.sendTo(seatIdx, { type: 'error', error: 'match-not-started' })
@@ -357,13 +409,24 @@ export class MatchDO {
     this.broadcast('update', events)
     if (this.state.phase === 'ended') {
       await this.reportRatings()
-      await this.ctx.storage.deleteAll()
+      // 终局后不立刻销毁:留一个再战窗口。
+      // 从前这里直接 deleteAll(),所以「联机再战」在服务端是没有落点的。
+      this.deadlines.abandon = Date.now() + REMATCH_WINDOW_MS
+      this.deadlines.turn = null
+      this.deadlines.forfeit = null
+      this.rematchWanted = [false, false]
+      await this.persist()
+      await this.armAlarm()
       return
     }
     this.deadlines.abandon = Date.now() + ABANDON_MS
     this.touchTurnDeadline()
     await this.armAlarm()
   }
+
+  // 再战局不计天梯分。同一对玩家反复再战是经典的刷分路径,
+  // 而排队撮合的那一局已经计过分了。
+  private isRematch = false
 
   private async startGame(): Promise<void> {
     // 种子在引擎之外生成(服务器层允许非确定性);引擎内只吃种子
@@ -396,6 +459,7 @@ export class MatchDO {
     if (!this.state || this.state.phase !== 'ended') return
     const matchName = this.ctx.id.name ?? ''
     if (matchName.startsWith('room-')) return
+    if (this.isRematch) return
     if (!(await verifyMatchId(matchName, this.env.MATCH_SECRET))) return
     const [a, b] = this.seats
     if (!a.playerId || !b.playerId || a.playerId === b.playerId) return
@@ -439,6 +503,39 @@ export class MatchDO {
         turnDeadline: this.deadlines.turn?.at,
       })
     }
+    // 观战席拿抹掉双方手牌的视角
+    const spectators = this.socketsForSeat(SPECTATOR)
+    if (spectators.length > 0) {
+      const payload = JSON.stringify({
+        type,
+        state: redactForSpectator(this.state),
+        events: events.map(redactEventForSpectator),
+        opponentName: this.seats[1].name,
+        turnDeadline: this.deadlines.turn?.at,
+      } satisfies MatchServerMsg)
+      for (const ws of spectators) {
+        try {
+          ws.send(payload)
+        } catch {
+          /* 掉线由 webSocketClose 处理 */
+        }
+      }
+    }
+  }
+
+  private sendToSocket(ws: WebSocket, msg: MatchServerMsg): void {
+    try {
+      ws.send(JSON.stringify(msg))
+    } catch {
+      /* 刚建立就断开 —— 忽略 */
+    }
+  }
+
+  private socketsForSeat(seat: Seat): WebSocket[] {
+    return this.ctx.getWebSockets().filter((ws) => {
+      const att = ws.deserializeAttachment() as SocketAttachment | null
+      return att?.seat === seat
+    })
   }
 
   // 某一座位当前还活着的连接。判断「真的掉线了」而不是「重连竞态里旧连接先关」要靠它。

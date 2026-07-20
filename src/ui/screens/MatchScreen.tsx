@@ -58,6 +58,9 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
     turnDeadline,
     incomingEmote,
     sendEmote,
+    rematchState,
+    requestRematch,
+    spectating,
   } = useMatch()
   const { soundEnabled, setSoundEnabled } = useSettings()
   const [selection, setSelection] = useState<Selection>(null)
@@ -200,8 +203,10 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
 
   const me = state.players[0]
   const foe = state.players[1]
-  const myTurn = state.phase === 'main' && state.activePlayer === 0
-  const canEndTurn = legal.some((c) => c.type === 'EndTurn')
+  // 观战席没有「我方回合」可言:一切操作入口都要关掉,
+  // 否则会出现「点了没反应」的迷惑体验(服务器本来就会丢弃观战席的指令)
+  const myTurn = !spectating && state.phase === 'main' && state.activePlayer === 0
+  const canEndTurn = !spectating && legal.some((c) => c.type === 'EndTurn')
 
   const sendAndClear = (cmd: Command) => {
     send(cmd)
@@ -444,8 +449,8 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
       {/* 回合绳:只有联机局有服务器时限,本地局 turnDeadline 恒为 null */}
       <TurnRope deadline={turnDeadline} myTurn={myTurn} />
 
-      {/* 表情轮盘:只有联机局有对手可言 */}
-      {mode === 'remote' && state.phase !== 'ended' && (
+      {/* 表情轮盘:只有联机局有对手可言;观战席不参与社交 */}
+      {mode === 'remote' && !spectating && state.phase !== 'ended' && (
         <EmoteWheel onSend={sendEmote} incoming={incomingEmote} />
       )}
 
@@ -538,6 +543,13 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
         <ResultOverlay
           winner={state.winner}
           canRematch={mode === 'local'}
+          remoteRematch={mode === 'remote' && !spectating ? rematchState : null}
+          onRemoteRematch={() => {
+            playSfx('buttonTap')
+            setLog([])
+            namesRef.current.clear()
+            requestRematch()
+          }}
           ratingResult={mode === 'remote' ? ratingResult : null}
           onRematch={handleRematch}
           onExit={handleExit}

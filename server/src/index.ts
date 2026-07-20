@@ -63,6 +63,16 @@ export default {
       return env.ROOM.get(id).fetch(new Request(forward, request))
     }
 
+    // 观战:凭房间码取本局 matchId,客户端拿它以 seat=2 接入 MatchDO
+    const roomWatch = url.pathname.match(/^\/room\/watch\/([A-Za-z0-9]{4,8})$/)
+    if (roomWatch) {
+      const code = roomWatch[1].toUpperCase()
+      const forward = new URL(request.url)
+      forward.searchParams.set('mode', 'watch')
+      const id = env.ROOM.idFromName(code)
+      return env.ROOM.get(id).fetch(new Request(forward, request))
+    }
+
     // 天梯只读查询;/report 不经公网转发,只有 MatchDO 内部可写
     if ((url.pathname === '/rating' || url.pathname === '/ladder') && request.method === 'GET') {
       const id = env.RATINGS.idFromName('global')

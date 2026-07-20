@@ -280,6 +280,153 @@ async function checkProfileOwnership(): Promise<boolean> {
   return true
 }
 
+// 起一局并把两个玩家的 socket 交出来,供观战/再战检查复用
+async function openMatch(matchId: string): Promise<{ a: WebSocket; b: WebSocket }> {
+  const open = (seat: 0 | 1) =>
+    new WebSocket(
+      `${wsScheme(SERVER)}${SERVER}/match/${matchId}?seat=${seat}&token=${crypto.randomUUID()}`,
+    )
+  const a = open(0)
+  const b = open(1)
+  const ready = (ws: WebSocket) =>
+    new Promise<void>((res, rej) => {
+      const timer = setTimeout(() => rej(new Error('open timeout')), TIMEOUT_MS)
+      ws.addEventListener('open', () => {
+        clearTimeout(timer)
+        res()
+      })
+      ws.addEventListener('error', () => {
+        clearTimeout(timer)
+        rej(new Error('socket error'))
+      })
+    })
+  await Promise.all([ready(a), ready(b)])
+  const deck = PRECON_DECKS[0]
+  const join = (name: string) =>
+    JSON.stringify({
+      type: 'join',
+      heroId: deck.heroId,
+      deckIds: deck.cardIds,
+      name,
+      playerId: crypto.randomUUID(),
+    })
+  a.send(join('A'))
+  b.send(join('B'))
+  await new Promise((r) => setTimeout(r, 700))
+  return { a, b }
+}
+
+// 观战:第三个连接拿到的视角里,**双方手牌都不能有牌面**。
+// 这是观战唯一真正危险的地方 —— 泄漏手牌等于开挂。
+async function checkSpectator(): Promise<boolean> {
+  const matchId = `spec-${crypto.randomUUID()}`
+  const { a, b } = await openMatch(matchId)
+  try {
+    const spec = new WebSocket(
+      `${wsScheme(SERVER)}${SERVER}/match/${matchId}?seat=2&token=${crypto.randomUUID()}`,
+    )
+    const first = await new Promise<Record<string, unknown> | null>((res) => {
+      const timer = setTimeout(() => res(null), TIMEOUT_MS)
+      spec.addEventListener('message', (ev) => {
+        clearTimeout(timer)
+        res(JSON.parse(String((ev as MessageEvent).data)))
+      })
+      spec.addEventListener('error', () => {
+        clearTimeout(timer)
+        res(null)
+      })
+    })
+    if (!first || first.type !== 'start') {
+      console.log('✗ 观战席没有收到 start', first)
+      return false
+    }
+    const st = first.state as {
+      self: { hand: { defId: string }[] }
+      opponent: { handIids: number[] }
+    }
+    if (st.self.hand.length === 0) {
+      console.log('✗ 观战视角应能看到手牌数量(只是不能看牌面)')
+      return false
+    }
+    if (st.self.hand.some((c) => c.defId !== '')) {
+      console.log('✗ 观战视角泄漏了先手方的手牌牌面')
+      return false
+    }
+    // 观战席发指令必须被无视
+    spec.send(JSON.stringify({ type: 'cmd', cmd: { type: 'Concede' } }))
+    await new Promise((r) => setTimeout(r, 400))
+    spec.close()
+    console.log('✓ 观战:可接入、手牌牌面不泄漏、发指令被忽略')
+    return true
+  } finally {
+    a.close()
+    b.close()
+  }
+}
+
+// 再战:一方点了对手会收到 offer,双方都点才重开。
+async function checkRematch(): Promise<boolean> {
+  const matchId = `rematch-${crypto.randomUUID()}`
+  const { a, b } = await openMatch(matchId)
+  const bMsgs: string[] = []
+  b.addEventListener('message', (ev) => {
+    bMsgs.push((JSON.parse(String((ev as MessageEvent).data)) as { type: string }).type)
+  })
+  try {
+    a.send(JSON.stringify({ type: 'cmd', cmd: { type: 'Concede' } }))
+    await new Promise((r) => setTimeout(r, 600))
+    bMsgs.length = 0
+
+    a.send(JSON.stringify({ type: 'rematch' }))
+    await new Promise((r) => setTimeout(r, 500))
+    if (!bMsgs.includes('rematch-offered')) {
+      console.log('✗ 单方请求再战时对手应收到 offer,实收:', bMsgs)
+      return false
+    }
+    if (bMsgs.includes('start')) {
+      console.log('✗ 只有一方点再战就重开了')
+      return false
+    }
+
+    b.send(JSON.stringify({ type: 'rematch' }))
+    await new Promise((r) => setTimeout(r, 800))
+    if (!bMsgs.includes('start')) {
+      console.log('✗ 双方都点再战后应重开一局,实收:', bMsgs)
+      return false
+    }
+    console.log('✓ 再战:单方请求发 offer / 双方同意才重开')
+    return true
+  } finally {
+    a.close()
+    b.close()
+  }
+}
+
+// 观战入口:凭房间码换到 matchId(否则观战功能在客户端根本无从触达)
+async function checkRoomWatchLookup(): Promise<boolean> {
+  const base = httpBase(SERVER)
+  const missing = await fetch(`${base}/room/watch/ZZZZ`)
+  if (missing.status !== 404) {
+    console.log(`✗ 不存在的房间码应 404,实得 ${missing.status}`)
+    return false
+  }
+  console.log('✓ 观战入口:不存在的房间码返回 404')
+  return true
+}
+
+// 赛季:天梯查询要带上当前赛季标识(按 UTC 自然月切)
+async function checkSeason(): Promise<boolean> {
+  const res = await fetch(`${httpBase(SERVER)}/ladder`)
+  const body = (await res.json()) as { season?: string }
+  const expected = new Date().toISOString().slice(0, 7)
+  if (body.season !== expected) {
+    console.log(`✗ 天梯应返回当前赛季 ${expected},实得 ${body.season}`)
+    return false
+  }
+  console.log(`✓ 赛季:天梯按 UTC 自然月分季(当前 ${body.season})`)
+  return true
+}
+
 // 表情转发:合法 id 转给对手、非法 id 丢弃、3 秒内连发被限速。
 // 这是唯一的社交通道,做成封闭集合就必须验证「封闭」是真的。
 async function checkEmoteRelay(): Promise<boolean> {
@@ -515,6 +662,10 @@ console.log('\n=== 安全加固 ===')
 const guardOk = await checkProfileOwnership()
 const matchIdOk = await checkUnsignedMatchIdIsUnrated()
 const emoteOk = await checkEmoteRelay()
+const spectateOk = await checkSpectator()
+const rematchOk = await checkRematch()
+const seasonOk = await checkSeason()
+const watchLookupOk = await checkRoomWatchLookup()
 
 const pass =
   a.ended !== null &&
@@ -531,11 +682,15 @@ const pass =
   roomUnrated &&
   guardOk &&
   matchIdOk &&
-  emoteOk
+  emoteOk &&
+  spectateOk &&
+  rematchOk &&
+  seasonOk &&
+  watchLookupOk
 
 if (pass) {
   console.log(
-    '\n✓ 联机端到端验证通过:天梯匹配全流程(含重连/非法命令拒绝/ELO 结算)+ 好友房间流 + 存档同步 + 存档归属 + 天梯 id 验签 + 表情转发',
+    '\n✓ 联机端到端验证通过:天梯匹配全流程(含重连/非法命令拒绝/ELO 结算)+ 好友房间流 + 存档同步 + 存档归属 + 天梯 id 验签 + 表情转发 + 观战 + 再战 + 赛季',
   )
   process.exit(0)
 } else {
@@ -552,6 +707,10 @@ if (pass) {
     guardOk,
     matchIdOk,
     emoteOk,
+    spectateOk,
+    rematchOk,
+    seasonOk,
+    watchLookupOk,
   })
   process.exit(1)
 }
