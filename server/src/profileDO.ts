@@ -15,6 +15,8 @@
 // 这挡不住「一开始就冒名顶替一个还没同步过的 id」,但挡住了「拿到 id 就能改别人存档」——
 // 而后者才是现实中会发生的事(id 会随排行榜、房间码、截图泄漏出去)。
 // 老客户端(不带密钥)仍可读写未认主的存档,不会把已有用户锁在门外。
+import { log } from './log'
+
 const MAX_BODY_BYTES = 512 * 1024
 
 export interface ProfileEnvelope {
@@ -48,8 +50,13 @@ export class ProfileDO {
       }
       return null
     }
-    if (!presented) return json({ error: 'profile-locked' }, 401)
+    if (!presented) {
+      log.warn({ evt: 'profile.no_secret', method: request.method })
+      return json({ error: 'profile-locked' }, 401)
+    }
     if ((await sha256Hex(presented)) !== owner.secretHash) {
+      // 有人拿着别人的 playerId 来写 —— 这正是 TOFU 要挡的事,值得留痕
+      log.warn({ evt: 'profile.bad_secret', method: request.method })
       return json({ error: 'profile-forbidden' }, 403)
     }
     return null

@@ -62,6 +62,9 @@ test('replays: empty state, then a finished match is recorded and playable', asy
   await page.getByRole('button', { name: '观看' }).first().click()
   await expect(page.getByText('回放', { exact: true })).toBeVisible()
   await expect(page.getByText(/第 \d+ 回合 · \d+ \/ \d+/)).toBeVisible()
+  // 进度条 + 后退一手:此前只能从头顺着播
+  await expect(page.getByRole('slider', { name: '回放进度' })).toBeVisible()
+  await expect(page.getByTitle('上一手')).toBeVisible()
   await page.getByRole('button', { name: '退出回放' }).click()
   await expect(page.getByRole('heading', { name: '战报回放' })).toBeVisible()
 })

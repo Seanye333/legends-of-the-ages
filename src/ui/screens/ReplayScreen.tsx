@@ -230,6 +230,14 @@ function ReplayPlayer({ replay, onExit }: { replay: SavedReplay; onExit: () => v
         </button>
         <button
           className={styles.ctrlBtn}
+          disabled={idx <= 0}
+          onClick={() => setIdx((i) => Math.max(0, i - 1))}
+          title={t('上一手', 'Previous')}
+        >
+          ⏪
+        </button>
+        <button
+          className={styles.ctrlBtn}
           disabled={idx >= replay.frames.length - 1}
           onClick={() => setIdx((i) => Math.min(i + 1, replay.frames.length - 1))}
           title={t('下一手', 'Next')}
@@ -242,6 +250,19 @@ function ReplayPlayer({ replay, onExit }: { replay: SavedReplay; onExit: () => v
         >
           2x
         </button>
+        {/* 进度条:此前只能从头顺着播,想回看某一手只能重播一遍 */}
+        <input
+          className={styles.scrubber}
+          type="range"
+          min={0}
+          max={Math.max(0, replay.frames.length - 1)}
+          value={Math.min(idx, replay.frames.length - 1)}
+          aria-label={t('回放进度', 'Replay position')}
+          onChange={(e) => {
+            setPlaying(false)
+            setIdx(Number(e.target.value))
+          }}
+        />
         <button className={styles.plainBtn} onClick={onExit}>
           {t('退出回放', 'Exit')}
         </button>

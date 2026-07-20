@@ -25,6 +25,7 @@ import type { MatchClientMsg, MatchServerMsg } from '../../src/app/protocol'
 import { EMOTES } from '../../src/app/protocol'
 import type { ReportBody, ReportResult } from './ratingsDO'
 import { verifyMatchId } from './matchId'
+import { log } from './log'
 
 interface SeatInfo {
   heroId: string
@@ -234,6 +235,7 @@ export class MatchDO {
     const msgCount = windowStart === now ? 1 : att.msgCount + 1
     ws.serializeAttachment({ seat: att.seat, windowStart, msgCount } satisfies SocketAttachment)
     if (msgCount > RATE_MAX_MSGS) {
+      log.warn({ evt: 'match.rate_limited', match: this.ctx.id.name, seat: att.seat, msgCount })
       try {
         ws.close(1008, 'rate-limited')
       } catch {
@@ -273,6 +275,7 @@ export class MatchDO {
     if (forfeit && forfeit.at <= now && this.state && this.state.phase !== 'ended') {
       if (this.socketsFor(forfeit.seat).length === 0) {
         this.deadlines.forfeit = null
+        log.info({ evt: 'match.forfeit', match: this.ctx.id.name, seat: forfeit.seat })
         await this.applyServerCommand(forfeit.seat, { type: 'Concede' }, 'opponent-forfeited')
         return
       }
@@ -283,6 +286,7 @@ export class MatchDO {
     const turn = this.deadlines.turn
     if (turn && turn.at <= now && this.state && this.state.phase === 'main') {
       const active = this.state.activePlayer
+      log.info({ evt: 'match.turn_timeout', match: this.ctx.id.name, seat: active, turn: turn.forTurn })
       await this.applyServerCommand(active, { type: 'EndTurn' }, 'turn-timeout')
       return
     }
@@ -290,6 +294,7 @@ export class MatchDO {
     // 3) 弃坑清理:彻底销毁,不留 storage 残渣
     if (this.deadlines.abandon && this.deadlines.abandon <= now) {
       if (this.state && this.state.phase !== 'ended') {
+        log.warn({ evt: 'match.abandoned', match: this.ctx.id.name, turn: this.state.turn })
         for (const seat of [0, 1] as const) {
           this.sendTo(seat, { type: 'error', error: 'match-abandoned' })
         }
@@ -394,6 +399,14 @@ export class MatchDO {
       }
       const r = applyCommand(this.state, seatIdx, msg.cmd, CARDS_BY_ID)
       if (!r.ok) {
+        // 正常客户端不会发非法命令 —— 要么是 UI 有 bug,要么有人在试探
+        log.warn({
+          evt: 'match.illegal_command',
+          match: this.ctx.id.name,
+          seat: seatIdx,
+          reason: r.error,
+          cmd: msg.cmd.type,
+        })
         this.sendTo(seatIdx, { type: 'error', error: r.error })
         return
       }
@@ -478,8 +491,10 @@ export class MatchDO {
       const rated = (await res.json()) as ReportResult
       this.sendTo(0, { type: 'rated', rating: rated.a.rating, delta: rated.a.delta })
       this.sendTo(1, { type: 'rated', rating: rated.b.rating, delta: rated.b.delta })
-    } catch {
-      /* 天梯不可用不影响对局结束 */
+      log.info({ evt: 'ratings.reported', match: matchName, result })
+    } catch (e) {
+      // 天梯不可用不影响对局结束 —— 但必须留下痕迹,否则「分没加」永远查不出原因
+      log.error({ evt: 'ratings.report.failed', match: matchName }, e)
     }
   }
 

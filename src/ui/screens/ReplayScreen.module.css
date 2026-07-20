@@ -286,3 +286,18 @@
   color: var(--parchment-dim);
   cursor: pointer;
 }
+
+/* 回放进度条。此前只能从头顺着播,想回看某一手只能重播一遍。
+   拖动即暂停 —— 一边自动播一边被拖走是最难受的交互。 */
+.scrubber {
+  flex: 1 1 120px;
+  min-width: 90px;
+  max-width: 260px;
+  accent-color: #d4a84a;
+  cursor: pointer;
+}
+
+.scrubber:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 3px;
+}
