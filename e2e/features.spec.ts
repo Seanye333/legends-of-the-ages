@@ -164,3 +164,37 @@ test('deck codes: copy from a precon and import it back', async ({ page, context
   await page.getByRole('button', { name: '导入' }).click()
   await expect(page.getByText('卡组码无法识别')).toBeVisible()
 })
+
+test('arena: entry gate, hero pick, drafting, and fighting', async ({ page }) => {
+  await page.goto('/')
+  // 先给足功勋(报名费 100)—— 新号只有 0 功勋,入口应该是锁着的
+  await page.getByRole('button', { name: '校场点将' }).click()
+  await expect(page.getByRole('heading', { name: '校场点将' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /还差 \d+ 功勋/ })).toBeVisible()
+
+  // 注入功勋后重新进入
+  await page.evaluate(() => {
+    const raw = localStorage.getItem('qiangu-collection')
+    const s = raw ? JSON.parse(raw) : { state: {}, version: 0 }
+    s.state = { ...s.state, merit: 500 }
+    localStorage.setItem('qiangu-collection', JSON.stringify(s))
+  })
+  await page.reload()
+  await page.getByRole('button', { name: '校场点将' }).click()
+  await page.getByRole('button', { name: '报名参战' }).click()
+
+  // 择主:三选一
+  await expect(page.getByText('第一步 · 择主')).toBeVisible()
+  await page.locator('button').filter({ hasText: /王道|霸道|礼教|名利|割据|隐逸/ }).first().click()
+
+  // 抽满 30 张 —— 每次点第一张
+  await expect(page.getByText(/第二步 · 点将 1 \/ 30/)).toBeVisible()
+  for (let i = 0; i < 30; i++) {
+    await page.locator('[role="button"][aria-label]').first().click()
+  }
+
+  // 抽完进备战页,可以出战
+  await expect(page.getByRole('button', { name: '出战' })).toBeVisible()
+  await page.getByRole('button', { name: '出战' }).click()
+  await expect(page.getByRole('button', { name: /全部保留|确认/ })).toBeVisible()
+})

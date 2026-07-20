@@ -17,16 +17,28 @@ const ReplayScreen = lazy(() =>
 const SettingsScreen = lazy(() =>
   import('./ui/screens/SettingsScreen').then((m) => ({ default: m.SettingsScreen })),
 )
+const ArenaScreen = lazy(() =>
+  import('./ui/screens/ArenaScreen').then((m) => ({ default: m.ArenaScreen })),
+)
 
-export type Screen = 'title' | 'match' | 'collection' | 'deckbuilder' | 'replays' | 'settings'
+export type Screen =
+  | 'title'
+  | 'match'
+  | 'collection'
+  | 'deckbuilder'
+  | 'replays'
+  | 'settings'
+  | 'arena'
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('title')
   const back = () => setScreen('title')
+  // 竞技场对局打完要回竞技场,而不是回标题页 —— 一轮里要连打好几场
+  const [afterMatch, setAfterMatch] = useState<Screen>('title')
 
   switch (screen) {
     case 'match':
-      return <MatchScreen onExit={back} />
+      return <MatchScreen onExit={() => setScreen(afterMatch)} />
     case 'collection':
       return (
         <Suspense fallback={<ScreenFallback />}>
@@ -51,7 +63,27 @@ export default function App() {
           <SettingsScreen onBack={back} />
         </Suspense>
       )
+    case 'arena':
+      return (
+        <Suspense fallback={<ScreenFallback />}>
+          <ArenaScreen
+            onBack={back}
+            onEnterMatch={() => {
+              setAfterMatch('arena')
+              setScreen('match')
+            }}
+          />
+        </Suspense>
+      )
     default:
-      return <TitleScreen onStart={() => setScreen('match')} onNavigate={setScreen} />
+      return (
+        <TitleScreen
+          onStart={() => {
+            setAfterMatch('title')
+            setScreen('match')
+          }}
+          onNavigate={setScreen}
+        />
+      )
   }
 }

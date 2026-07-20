@@ -13,6 +13,7 @@ import { portraitCandidates } from '../portraitSource'
 import { launchMatch } from '../matchSetup'
 import { initSound, playSfx } from '../sound'
 import { useCollection } from '../../app/collectionStore'
+import { useArena } from '../../app/arenaStore'
 import type { DeckList } from '../../content/decks'
 import { PackOpening } from '../components/PackOpening'
 import { LeaderboardPanel } from '../components/LeaderboardPanel'
@@ -81,7 +82,9 @@ const DIFFICULTIES: { key: Difficulty; name: LocalizedText }[] = [
 
 interface TitleScreenProps {
   onStart?: () => void
-  onNavigate?: (screen: 'collection' | 'deckbuilder' | 'replays' | 'settings') => void
+  onNavigate?: (
+    screen: 'collection' | 'deckbuilder' | 'replays' | 'settings' | 'arena',
+  ) => void
 }
 
 export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
@@ -91,6 +94,7 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
     useSettings()
   const customDecks = useCollection((s) => s.customDecks)
   const packs = useCollection((s) => s.packs)
+  const arenaLive = useArena((s) => s.phase !== 'idle')
   const [deckIndex, setDeckIndex] = useState(0)
   const [startError, setStartError] = useState<string | null>(null)
   const [packsOpen, setPacksOpen] = useState(false)
@@ -221,6 +225,15 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
       </div>
 
       <div className={styles.navRow}>
+        <button
+          className={`${styles.navBtn} ${arenaLive ? styles.navGlow : ''}`}
+          onClick={() => {
+            playSfx('buttonTap')
+            onNavigate?.('arena')
+          }}
+        >
+          {arenaLive ? t('校场 · 进行中', 'Arena · in progress') : t('校场点将', 'Arena')}
+        </button>
         <button
           className={styles.navBtn}
           onClick={() => {

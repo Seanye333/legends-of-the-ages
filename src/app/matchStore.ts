@@ -9,6 +9,7 @@ import { AI_LEVELS, AI_NORMAL } from '../ai/greedy'
 import { useSettings } from './settingsStore'
 import { useCollection } from './collectionStore'
 import { useQuests } from './questStore'
+import { useArena } from './arenaStore'
 import { reportWin } from './leaderboard'
 import type { EmoteId } from './protocol'
 import {
@@ -28,6 +29,7 @@ export interface StartMatchArgs {
   deckIds: [string[], string[]]
   seed?: number
   tutorial?: boolean // 教学对局:对战画面挂教鞭浮层
+  arena?: boolean // 竞技场对局:胜负记进当前 run,而不是普通战绩
 }
 
 export interface StartRemoteArgs {
@@ -46,6 +48,7 @@ export interface RatingResult {
 interface MatchStoreState {
   mode: 'local' | 'remote'
   tutorial: boolean
+  arena: boolean
   match: LocalMatch | null
   remote: RemoteMatch | null
   remoteStatus: RemoteStatus | null
@@ -77,9 +80,14 @@ function settleQuests(events: GameEvent[], state: GameState | null): void {
 }
 
 // 终局统计:胜得卡包、负得安慰功勋、和局也给一点 —— 输了颗粒无收太劝退。
-function settleMatch(events: GameEvent[]): void {
+// 竞技场局走另一条账:胜负记进 run,奖励等整轮结束一次性结算。
+function settleMatch(events: GameEvent[], arena: boolean): void {
   const ended = events.find((e) => e.type === 'GameEnded')
   if (!ended || ended.type !== 'GameEnded') return
+  if (arena) {
+    if (ended.winner !== 'draw') useArena.getState().recordResult(ended.winner === 0)
+    return
+  }
   if (ended.winner === 'draw') {
     useCollection.getState().recordDraw()
     return
@@ -99,7 +107,7 @@ function remoteCallbacks(set: SetState) {
       opponentName?: string,
       turnDeadline?: number,
     ) => {
-      settleMatch(events)
+      settleMatch(events, false)
       settleQuests(events, state)
       recordReplayFrame(state, events, opponentName)
       set({
@@ -121,6 +129,7 @@ function remoteCallbacks(set: SetState) {
 export const useMatch = create<MatchStoreState>()((set, get) => ({
   mode: 'local',
   tutorial: false,
+  arena: false,
   match: null,
   remote: null,
   remoteStatus: null,
@@ -165,6 +174,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
     set({
       mode: 'local',
       tutorial: args.tutorial === true,
+      arena: args.arena === true,
       match,
       state,
       lastEvents: events,
@@ -206,7 +216,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
     }
     const events = r.updates.flatMap((u) => u.events)
     const last = r.updates[r.updates.length - 1]
-    settleMatch(events)
+    settleMatch(events, get().arena)
     settleQuests(events, last.state)
     recordReplayFrame(last.state, events)
     set({ state: last.state, lastEvents: events, error: null })
@@ -222,6 +232,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
     set({
       mode: 'local',
       tutorial: false,
+      arena: false,
       match: null,
       remote: null,
       remoteStatus: null,
