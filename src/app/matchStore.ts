@@ -4,37 +4,66 @@ import { DECK_SIZE } from '../engine/types'
 import type { CardDef, Doctrine } from '../engine/types'
 import { CARDS, CARDS_BY_ID } from '../content/cards'
 import { LocalMatch } from './transport'
-import { AI_NORMAL } from '../ai/greedy'
+import { AI_LEVELS, AI_NORMAL } from '../ai/greedy'
+import { useSettings } from './settingsStore'
 import { useCollection } from './collectionStore'
+import { useQuests } from './questStore'
 import { reportWin } from './leaderboard'
-import { RemoteMatch, type RemoteStatus } from './remoteMatch'
+import {
+  RemoteMatch,
+  loadSession,
+  type RemoteStatus,
+} from './remoteMatch'
+import {
+  beginReplayRecording,
+  discardReplayRecording,
+  recordReplayFrame,
+} from './replayStore'
 import type { DeckList } from '../content/decks'
 
 export interface StartMatchArgs {
   heroIds: [string, string]
   deckIds: [string[], string[]]
   seed?: number
+  tutorial?: boolean // 教学对局:对战画面挂教鞭浮层
 }
 
 export interface StartRemoteArgs {
   server: string
   deck: DeckList
   playerName: string
+  mode?: 'queue' | 'create-room' | 'join-room'
+  code?: string
+}
+
+export interface RatingResult {
+  rating: number
+  delta: number
 }
 
 interface MatchStoreState {
   mode: 'local' | 'remote'
+  tutorial: boolean
   match: LocalMatch | null
   remote: RemoteMatch | null
   remoteStatus: RemoteStatus | null
   opponentName: string | null
+  roomCode: string | null
+  ratingResult: RatingResult | null
   state: GameState | null
   lastEvents: GameEvent[]
   error: string | null
   startMatch(args: StartMatchArgs): void
   startRemoteMatch(args: StartRemoteArgs): void
+  resumeRemoteMatch(): boolean
   send(cmd: Command): void
   reset(): void
+}
+
+// 每批事件都记一次任务进度(计数类任务天然累加,不会重复计)
+function settleQuests(events: GameEvent[], state: GameState | null): void {
+  if (events.length === 0 || !state) return
+  useQuests.getState().recordMatch(events, state.players[0].heroId)
 }
 
 // 终局统计:胜得卡包 + 上报排行;平局不计胜负
@@ -45,12 +74,32 @@ function settleMatch(events: GameEvent[]): void {
   if (ended.winner === 0) reportWin()
 }
 
+// 联机回调统一在此落进 store;opponent-back 属瞬时提示,不覆盖 playing 状态
+type SetState = (partial: Partial<MatchStoreState>) => void
+function remoteCallbacks(set: SetState) {
+  return {
+    onStatus: (remoteStatus: RemoteStatus) => set({ remoteStatus }),
+    onUpdate: (state: GameState, events: GameEvent[], opponentName?: string) => {
+      settleMatch(events)
+      settleQuests(events, state)
+      recordReplayFrame(state, events, opponentName)
+      set({ state, lastEvents: events, opponentName: opponentName ?? null, error: null })
+    },
+    onError: (error: string) => set({ error }),
+    onRoomCode: (roomCode: string) => set({ roomCode }),
+    onRated: (rating: number, delta: number) => set({ ratingResult: { rating, delta } }),
+  }
+}
+
 export const useMatch = create<MatchStoreState>()((set, get) => ({
   mode: 'local',
+  tutorial: false,
   match: null,
   remote: null,
   remoteStatus: null,
   opponentName: null,
+  roomCode: null,
+  ratingResult: null,
   state: null,
   lastEvents: [],
   error: null,
@@ -60,27 +109,46 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
     // 应用层允许非确定性;引擎内部只吃这里传进去的种子
     const seed = args.seed ?? Math.floor(Math.random() * 0x7fffffff)
     const first = (seed & 1) as 0 | 1
+    // 教学局固定用最宽容的 AI,别让新手第一局就被打穿
+    const ai = args.tutorial
+      ? AI_LEVELS.recruit
+      : (AI_LEVELS[useSettings.getState().difficulty] ?? AI_NORMAL)
     const match = new LocalMatch(
       { seed, heroIds: args.heroIds, deckIds: args.deckIds, first },
       CARDS_BY_ID,
-      AI_NORMAL,
+      ai,
     )
     const { state, events } = match.start()
-    set({ mode: 'local', match, state, lastEvents: events, error: null })
+    beginReplayRecording('local')
+    recordReplayFrame(state, events)
+    set({
+      mode: 'local',
+      tutorial: args.tutorial === true,
+      match,
+      state,
+      lastEvents: events,
+      error: null,
+    })
   },
 
   startRemoteMatch(args) {
     get().reset()
-    const remote = new RemoteMatch(args.server, args.deck, args.playerName, {
-      onStatus: (remoteStatus) => set({ remoteStatus }),
-      onUpdate: (state, events, opponentName) => {
-        settleMatch(events)
-        set({ state, lastEvents: events, opponentName: opponentName ?? null, error: null })
-      },
-      onError: (error) => set({ error }),
-    })
+    const remote = new RemoteMatch(args.server, args.deck, args.playerName, remoteCallbacks(set))
     set({ mode: 'remote', remote, remoteStatus: 'connecting', state: null, lastEvents: [], error: null })
-    remote.start()
+    if (args.mode === 'create-room') remote.createRoom()
+    else if (args.mode === 'join-room') remote.joinRoom(args.code ?? '')
+    else remote.start()
+  },
+
+  // 刷新/掉线后续上未完成的联机对局;无会话返回 false
+  resumeRemoteMatch() {
+    const session = loadSession()
+    if (!session) return false
+    get().reset()
+    const remote = new RemoteMatch(session.server, session.deck, session.name, remoteCallbacks(set))
+    set({ mode: 'remote', remote, remoteStatus: 'reconnecting', state: null, lastEvents: [], error: null })
+    remote.resume(session)
+    return true
   },
 
   send(cmd) {
@@ -98,17 +166,23 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
     const events = r.updates.flatMap((u) => u.events)
     const last = r.updates[r.updates.length - 1]
     settleMatch(events)
+    settleQuests(events, last.state)
+    recordReplayFrame(last.state, events)
     set({ state: last.state, lastEvents: events, error: null })
   },
 
   reset() {
     get().remote?.close()
+    discardReplayRecording() // 未打完的对局不留战报
     set({
       mode: 'local',
+      tutorial: false,
       match: null,
       remote: null,
       remoteStatus: null,
       opponentName: null,
+      roomCode: null,
+      ratingResult: null,
       state: null,
       lastEvents: [],
       error: null,

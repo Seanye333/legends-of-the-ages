@@ -2,7 +2,7 @@
 // localStorage 持久化;Phase 3 联网后同一结构上服务器。
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { CardDef, Rarity } from '../engine/types'
+import type { CardDef, LocalizedText, Rarity } from '../engine/types'
 import { CARDS, CARDS_BY_ID } from '../content/cards'
 import { PRECON_DECKS, validateDeck, type DeckList } from '../content/decks'
 import { HEROES_BY_ID } from '../content/overrides/heroes'
@@ -78,8 +78,9 @@ interface CollectionState {
   customDecks: DeckList[]
   // 对局结束时调用一次;胜利得一包
   recordResult(win: boolean): void
+  grantPacks(n: number): void // 任务奖励等外部发包
   openPack(): PackResult | null
-  saveDeck(deck: DeckList): string[] // 返回校验错误;空数组=成功
+  saveDeck(deck: DeckList): LocalizedText[] // 返回校验错误;空数组=成功
   deleteDeck(name: string): void
   ownedCount(cardId: string): number
 }
@@ -101,6 +102,11 @@ export const useCollection = create<CollectionState>()(
         }))
       },
 
+      grantPacks(n) {
+        if (n <= 0) return
+        set((s) => ({ packs: s.packs + n }))
+      },
+
       openPack() {
         const { packs, owned } = get()
         if (packs <= 0) return null
@@ -120,13 +126,21 @@ export const useCollection = create<CollectionState>()(
       },
 
       saveDeck(deck) {
-        const errors = validateDeck(deck, CARDS_BY_ID, HEROES_BY_ID)
+        // validateDeck 返回的是内部英文诊断信息,原样双语透传
+        const errors: LocalizedText[] = validateDeck(deck, CARDS_BY_ID, HEROES_BY_ID).map((e) => ({
+          zh: e,
+          en: e,
+        }))
         // 额外校验:必须实际拥有这些卡
         const counts: Record<string, number> = {}
         for (const id of deck.cardIds) counts[id] = (counts[id] ?? 0) + 1
         for (const [id, n] of Object.entries(counts)) {
           if ((get().owned[id] ?? 0) < n) {
-            errors.push(`未拥有足够的「${CARDS_BY_ID[id]?.name.zh ?? id}」(需 ${n})`)
+            const card = CARDS_BY_ID[id]
+            errors.push({
+              zh: `未拥有足够的「${card?.name.zh ?? id}」(需 ${n})`,
+              en: `Not enough copies of ${card?.name.en ?? id} (need ${n})`,
+            })
           }
         }
         if (errors.length > 0) return errors

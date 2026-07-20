@@ -3,6 +3,29 @@
 
 const NAME_KEY = 'qiangu-player-name'
 const DAILY_KEY = 'qiangu-daily-wins'
+const PLAYER_ID_KEY = 'qiangu-player-id'
+
+// 匿名设备 ID:首次生成后永续,天梯积分挂在它上面(无账号系统的最小方案)
+let memPlayerId: string | null = null
+export function getPlayerId(): string {
+  if (memPlayerId) return memPlayerId
+  try {
+    const saved = localStorage.getItem(PLAYER_ID_KEY)
+    if (saved) {
+      memPlayerId = saved
+      return saved
+    }
+  } catch {
+    /* node/隐私模式:退化为会话内存 ID */
+  }
+  memPlayerId = crypto.randomUUID()
+  try {
+    localStorage.setItem(PLAYER_ID_KEY, memPlayerId)
+  } catch {
+    /* 忽略 */
+  }
+  return memPlayerId
+}
 
 export interface LeaderboardRow {
   name: string
