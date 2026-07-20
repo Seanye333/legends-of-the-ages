@@ -91,8 +91,21 @@ export function rankOf(rating: number): { zh: string; en: string } {
 export const DEFAULT_SERVER = 'localhost:8787'
 
 // ws(s):// 地址 → http(s):// REST 根(天梯查询用)
+// 用户只填主机名时该用哪种协议:跟随页面。
+// 线上是 HTTPS 的话,ws:// 和 http:// 都会被浏览器按混合内容拦掉,联机会静默失效;
+// 本地 http://localhost 开发则照旧用不加密的。Node(drive-test)里没有 location,按明文走。
+function pageIsSecure(): boolean {
+  const loc = (globalThis as { location?: { protocol?: string } }).location
+  return loc?.protocol === 'https:'
+}
+
+export function wsScheme(): 'ws://' | 'wss://' {
+  return pageIsSecure() ? 'wss://' : 'ws://'
+}
+
 export function httpBase(server: string): string {
   if (server.startsWith('wss://')) return `https://${server.slice(6)}`
   if (server.startsWith('ws://')) return `http://${server.slice(5)}`
-  return `http://${server}`
+  if (server.startsWith('https://') || server.startsWith('http://')) return server
+  return `${pageIsSecure() ? 'https://' : 'http://'}${server}`
 }

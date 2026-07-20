@@ -22,6 +22,7 @@ import type {
   QueueServerMsg,
   RoomServerMsg,
 } from './protocol'
+import { wsScheme } from './protocol'
 import type { DeckList } from '../content/decks'
 import { getPlayerId } from './leaderboard'
 
@@ -178,7 +179,8 @@ export function flipEvent(ev: GameEvent, mySeat: PlayerIdx): GameEvent {
 
 function wsUrl(server: string, path: string): string {
   if (server.startsWith('ws://') || server.startsWith('wss://')) return `${server}${path}`
-  return `ws://${server}${path}`
+  // 只填了主机名:协议跟随页面(线上 HTTPS 必须 wss,否则被当混合内容拦掉)
+  return `${wsScheme()}${server}${path}`
 }
 
 const MAX_RECONNECT_TRIES = 6
