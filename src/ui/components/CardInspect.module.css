@@ -248,3 +248,81 @@
   color: var(--parchment-faint);
   font-style: normal;
 }
+
+/* ---- 功勋锻造(图鉴入口) ---- */
+.forge {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(212, 168, 74, 0.22);
+}
+
+.forgeOwned {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--parchment-faint);
+  margin-bottom: 8px;
+}
+
+.forgeMerit {
+  color: #d4a84a;
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+}
+
+.forgeRow {
+  display: flex;
+  gap: 8px;
+}
+
+.craftBtn,
+.dustBtn {
+  flex: 1;
+  padding: 9px 8px;
+  border-radius: 9px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: filter 0.15s ease;
+}
+
+.craftBtn {
+  background: linear-gradient(180deg, #d4a84a, #8a6c26);
+  color: #1a1206;
+}
+
+.dustBtn {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(150, 170, 190, 0.4);
+  color: #b8c4d0;
+}
+
+.craftBtn:disabled,
+.dustBtn:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.craftBtn:not(:disabled):hover,
+.dustBtn:not(:disabled):hover {
+  filter: brightness(1.15);
+}
+
+.craftBtn:focus-visible,
+.dustBtn:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
+}
+
+.forgeHint {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: var(--parchment-faint);
+  text-align: center;
+}

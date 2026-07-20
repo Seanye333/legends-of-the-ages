@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createGame } from '../engine/init'
+import { createGame, createInstance } from '../engine/init'
 import { applyCommand } from '../engine/reducer'
 import type { CardDef, CardLibrary, GameConfig, GameState, PlayerIdx } from '../engine/types'
 import { aiStep, AI_NORMAL } from './greedy'
@@ -93,19 +93,7 @@ describe('greedy AI', () => {
     state.turn = 5
     state.players[0].mana = { current: 10, max: 10 }
     state.players[1].heroHp = 2
-    state.players[0].hand = [
-      {
-        iid: 555,
-        defId: 'a-charge',
-        attack: 3,
-        health: 2,
-        maxHealth: 2,
-        keywords: ['charge'],
-        exhausted: false,
-        attacksUsed: 0,
-        enchants: [],
-      },
-    ]
+    state.players[0].hand = [createInstance('a-charge', 555, LIB)]
     // 两步内(出牌→冲脸)AI 应终结比赛
     const rngs: [number, number] = [1, 1]
     for (let i = 0; i < 4 && state.phase !== 'ended'; i++) {

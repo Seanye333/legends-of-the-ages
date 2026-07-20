@@ -1,0 +1,118 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom));
+  background: rgba(6, 4, 2, 0.72);
+  backdrop-filter: blur(3px);
+  animation: fadeIn 0.16s ease-out;
+}
+
+.panel {
+  width: min(420px, 100%);
+  padding: clamp(18px, 3vh, 28px) clamp(18px, 3vw, 28px);
+  border-radius: 16px;
+  background: linear-gradient(180deg, #241c10, #14100a);
+  box-shadow:
+    inset 0 0 0 1px rgba(212, 168, 74, 0.32),
+    inset 0 1px 0 rgba(255, 236, 180, 0.1),
+    0 18px 48px rgba(0, 0, 0, 0.7);
+  animation: rise 0.18s cubic-bezier(0.2, 0.8, 0.4, 1);
+}
+
+.title {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-size: clamp(17px, 3vh, 22px);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--gold-bright);
+  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.9);
+}
+
+.body {
+  margin: 0 0 20px;
+  font-size: clamp(12px, 2vh, 14px);
+  line-height: 1.65;
+  color: var(--parchment-faint);
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.cancel,
+.confirm,
+.danger {
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-family: var(--font-display);
+  font-size: clamp(12px, 2.1vh, 15px);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: filter 0.15s ease;
+}
+
+.cancel {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(212, 168, 74, 0.35);
+  color: var(--parchment);
+}
+
+.confirm {
+  background: linear-gradient(180deg, #d4a84a, #8a6c26);
+  color: #1a1206;
+}
+
+.danger {
+  background: linear-gradient(180deg, #b8442e, #7a2418);
+  border-color: #d4674e;
+  color: #ffeee8;
+}
+
+.cancel:hover,
+.confirm:hover,
+.danger:hover {
+  filter: brightness(1.15);
+}
+
+.cancel:focus-visible,
+.confirm:focus-visible,
+.danger:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop,
+  .panel {
+    animation: none;
+  }
+}

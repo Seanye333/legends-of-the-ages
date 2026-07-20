@@ -32,9 +32,14 @@ export function GeneralToken({ inst, ready, selected, targetable, floats, fx, on
   const doctrine = def?.doctrine ?? 'neutral'
   const hasGuard = inst.keywords.includes('guard')
 
+  // 状态一眼可辨:铁壁描金环 / 潜行半透虚边 / 冰封蓝罩 / 沉默灰化
   const cls = [
     styles.token,
     hasGuard ? styles.guard : '',
+    inst.keywords.includes('divineShield') ? styles.shielded : '',
+    inst.keywords.includes('stealth') ? styles.stealthed : '',
+    inst.frozen ? styles.frozen : '',
+    inst.silenced ? styles.silenced : '',
     inst.exhausted ? styles.exhausted : '',
     ready ? styles.ready : '',
     selected ? styles.selected : '',

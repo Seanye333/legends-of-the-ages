@@ -16,6 +16,7 @@ import { targetFloatKey } from '../components/floats'
 import { Portrait } from '../components/Portrait'
 import { CardInspect } from '../components/CardInspect'
 import { TutorialCoach } from '../components/TutorialCoach'
+import { ConfirmDialog } from '../components/ConfirmDialog'
 import type { CardDef } from '../../engine/types'
 import { useEventAnimations } from '../useEventAnimations'
 import { initSound, playSfx } from '../sound'
@@ -24,8 +25,13 @@ import styles from './MatchScreen.module.css'
 
 type PlayCmd = Extract<Command, { type: 'PlayCard' }>
 type AttackCmd = Extract<Command, { type: 'Attack' }>
+type PowerCmd = Extract<Command, { type: 'UseHeroPower' }>
 
-type Selection = { kind: 'hand'; iid: number } | { kind: 'attacker'; iid: number } | null
+type Selection =
+  | { kind: 'hand'; iid: number }
+  | { kind: 'attacker'; iid: number }
+  | { kind: 'heroPower' }
+  | null
 
 interface MatchScreenProps {
   onExit: () => void
@@ -42,6 +48,9 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
   const [log, setLog] = useState<LocalizedText[]>([])
   const [toast, setToast] = useState<string | null>(null)
   const [inspect, setInspect] = useState<CardDef | null>(null)
+  // 认输确认原来用的是 window.confirm —— 在一个全自绘的界面里弹系统框太出戏,
+  // 而且 iOS 上的样式完全不受控。
+  const [confirmConcede, setConfirmConcede] = useState(false)
 
   // 事件时间轴:动效 + 音效 + 飘字都由它按节拍产出
   const anim = useEventAnimations(state, lastEvents)
@@ -66,6 +75,10 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
   )
   const playableIids = useMemo(() => new Set(playCmds.map((c) => c.iid)), [playCmds])
   const readyIids = useMemo(() => new Set(attackCmds.map((c) => c.attackerIid)), [attackCmds])
+  const powerCmds = useMemo(
+    () => legal.filter((c): c is PowerCmd => c.type === 'UseHeroPower'),
+    [legal],
+  )
 
   // 当前选择模式下:目标键 → 待发送命令
   const activeTargets = useMemo(() => {
@@ -75,13 +88,17 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
       for (const c of playCmds) {
         if (c.iid === selection.iid && c.target) m.set(targetFloatKey(c.target), c)
       }
+    } else if (selection.kind === 'heroPower') {
+      for (const c of powerCmds) {
+        if (c.target) m.set(targetFloatKey(c.target), c)
+      }
     } else {
       for (const c of attackCmds) {
         if (c.attackerIid === selection.iid) m.set(targetFloatKey(c.target), c)
       }
     }
     return m
-  }, [selection, playCmds, attackCmds])
+  }, [selection, playCmds, attackCmds, powerCmds])
 
   const directPlay = useMemo(
     () =>
@@ -207,9 +224,23 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
     setSelection(null)
   }
 
-  const onConcede = () => {
-    if (window.confirm(t('确定认输?', 'Concede this match?'))) send({ type: 'Concede' })
+  // 主公技:无目标的直接发动;需要目标的进入选目标模式(与出牌同一套交互)
+  const onUseHeroPower = () => {
+    if (!myTurn || powerCmds.length === 0) return
+    if (selection?.kind === 'heroPower') {
+      setSelection(null)
+      return
+    }
+    const untargeted = powerCmds.find((c) => !c.target)
+    if (untargeted) {
+      playSfx('stratagemCast')
+      sendAndClear(untargeted)
+      return
+    }
+    setSelection({ kind: 'heroPower' })
   }
+
+  const onConcede = () => setConfirmConcede(true)
 
   const handleRematch = () => {
     playSfx('buttonTap')
@@ -314,6 +345,12 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
           floats={floatsFor('hero-0')}
           fx={fxFor('hero-0')}
           pulse={anim.myTurnPulse}
+          powerUsable={myTurn && powerCmds.length > 0}
+          powerSelected={selection?.kind === 'heroPower'}
+          onUsePower={(e) => {
+            e.stopPropagation()
+            onUseHeroPower()
+          }}
           onClick={(e) => {
             e.stopPropagation()
             onEntityClick({ kind: 'hero', player: 0 })
@@ -349,9 +386,11 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
       {selection && targeting && (
         <div className={styles.targetBar} onClick={(e) => e.stopPropagation()}>
           <span className={styles.targetHint}>
-            {selection.kind === 'hand'
-              ? t('选择目标', 'Choose a target')
-              : t('选择攻击目标', 'Choose attack target')}
+            {selection.kind === 'attacker'
+              ? t('选择攻击目标', 'Choose attack target')
+              : selection.kind === 'heroPower'
+                ? t('主公技:选择目标', 'Hero Power — choose a target')
+                : t('选择目标', 'Choose a target')}
           </span>
           {directPlay && (
             <button className={styles.goldBtn} onClick={() => sendAndClear(directPlay)}>
@@ -385,6 +424,23 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
       {tutorial && <TutorialCoach state={state} events={lastEvents} onQuit={handleExit} />}
 
       {inspect && <CardInspect def={inspect} onClose={() => setInspect(null)} />}
+
+      {confirmConcede && (
+        <ConfirmDialog
+          title={t('确定认输?', 'Concede this match?')}
+          body={t(
+            '认输将立即判负,本局不会计入战利。',
+            'Conceding counts as an immediate loss. No spoils for this match.',
+          )}
+          confirmLabel={t('认输', 'Concede')}
+          cancelLabel={t('继续对局', 'Keep playing')}
+          onConfirm={() => {
+            setConfirmConcede(false)
+            send({ type: 'Concede' })
+          }}
+          onCancel={() => setConfirmConcede(false)}
+        />
+      )}
 
       {toast && <div className={styles.toast}>{toast}</div>}
 

@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useDeferredValue, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
-import type { CardDef, HeroDef, LocalizedText } from '../../engine/types'
+import type { CardDef, CardType, HeroDef, LocalizedText } from '../../engine/types'
 import { DECK_SIZE } from '../../engine/types'
-import { CARDS, CARDS_BY_ID } from '../../content/cards'
+import { CARDS_BY_ID, COLLECTIBLE_CARDS } from '../../content/cards'
 import { HEROES } from '../../content/overrides/heroes'
+import { PRECON_DECKS, type DeckList } from '../../content/decks'
 import { useCollection, copyLimit } from '../../app/collectionStore'
 import { DOCTRINE_COLORS, DOCTRINE_NAME } from '../doctrineColors'
 import { CardFace } from '../components/CardFace'
@@ -19,6 +20,25 @@ interface DeckBuilderScreenProps {
 }
 
 // 卡组构筑:选主公定主义 → 本主义 + 中立卡池(仅已拥有)→ 凑满 30 张保存。
+type SortKey = 'cost' | 'attack' | 'rarity' | 'name'
+
+const POOL_PAGE = 60
+const RARITY_RANK = { legendary: 0, epic: 1, rare: 2, common: 3 } as const
+
+const TYPE_FILTERS: { key: 'all' | CardType; label: LocalizedText }[] = [
+  { key: 'all', label: { zh: '全部', en: 'All' } },
+  { key: 'general', label: { zh: '武将', en: 'Generals' } },
+  { key: 'stratagem', label: { zh: '锦囊', en: 'Stratagems' } },
+  { key: 'equipment', label: { zh: '装备', en: 'Equipment' } },
+]
+
+const SORTS: { key: SortKey; label: LocalizedText }[] = [
+  { key: 'cost', label: { zh: '按费用', en: 'By cost' } },
+  { key: 'attack', label: { zh: '按攻击', en: 'By attack' } },
+  { key: 'rarity', label: { zh: '按稀有', en: 'By rarity' } },
+  { key: 'name', label: { zh: '按名字', en: 'By name' } },
+]
+
 export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
   const t = useT()
   const pick = usePickText()
@@ -34,15 +54,42 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
   const [errors, setErrors] = useState<LocalizedText[]>([])
   const [savedMsg, setSavedMsg] = useState(false)
   const [inspect, setInspect] = useState<CardDef | null>(null)
+  // 图鉴一直有搜索和筛选,构筑器却什么都没有 —— 卡池一大就只能靠滚。
+  const [query, setQuery] = useState('')
+  const [typeFilter, setTypeFilter] = useState<'all' | CardType>('all')
+  const [sort, setSort] = useState<SortKey>('cost')
+  const [poolLimit, setPoolLimit] = useState(POOL_PAGE)
+  const deferredQuery = useDeferredValue(query)
 
   const total = useMemo(() => Object.values(counts).reduce((a, b) => a + b, 0), [counts])
 
   const pool = useMemo(() => {
     if (!hero) return []
-    return CARDS.filter(
-      (c) => (c.doctrine === hero.doctrine || c.doctrine === 'neutral') && (owned[c.id] ?? 0) > 0,
-    ).sort((a, b) => a.cost - b.cost || a.collectorNo - b.collectorNo)
-  }, [hero, owned])
+    const q = deferredQuery.trim()
+    const qLower = q.toLowerCase()
+    const list = COLLECTIBLE_CARDS.filter((c) => {
+      if (c.doctrine !== hero.doctrine && c.doctrine !== 'neutral') return false
+      if ((owned[c.id] ?? 0) <= 0) return false
+      if (typeFilter !== 'all' && c.type !== typeFilter) return false
+      if (q && !c.name.zh.includes(q) && !c.name.en.toLowerCase().includes(qLower)) return false
+      return true
+    })
+    const byName = (a: CardDef, b: CardDef) => a.name.zh.localeCompare(b.name.zh, 'zh')
+    switch (sort) {
+      case 'cost':
+        return list.sort((a, b) => a.cost - b.cost || a.collectorNo - b.collectorNo)
+      case 'attack':
+        return list.sort((a, b) => (b.attack ?? 0) - (a.attack ?? 0) || a.cost - b.cost)
+      case 'rarity':
+        return list.sort(
+          (a, b) => RARITY_RANK[a.rarity] - RARITY_RANK[b.rarity] || a.cost - b.cost,
+        )
+      case 'name':
+        return list.sort(byName)
+    }
+  }, [hero, owned, deferredQuery, typeFilter, sort])
+
+  const shownPool = useMemo(() => pool.slice(0, poolLimit), [pool, poolLimit])
 
   const curve = useMemo(() => {
     const bars = Array.from({ length: 8 }, () => 0)
@@ -88,6 +135,18 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
     }
   }
 
+  // 载入预组当模板:名字后缀「· 改」,免得一保存就把预组名占掉
+  const loadPrecon = (deck: DeckList) => {
+    playSfx('buttonTap')
+    setHero(HEROES.find((x) => x.id === deck.heroId) ?? null)
+    setDeckName(`${deck.name.zh} · 改`)
+    const c: Record<string, number> = {}
+    for (const id of deck.cardIds) c[id] = (c[id] ?? 0) + 1
+    setCounts(c)
+    setErrors([])
+    setSavedMsg(false)
+  }
+
   const loadDeck = (deckNameZh: string) => {
     const deck = customDecks.find((d) => d.name.zh === deckNameZh)
     if (!deck) return
@@ -128,7 +187,27 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
               </div>
               <div className={styles.heroName}>{pickCompact(h.name)}</div>
               <div className={styles.heroDoctrine}>{pickCompact(DOCTRINE_NAME[h.doctrine])}</div>
+              {/* 主公技是选主公时最该看到的信息 —— 六个主义的打法差别就在这一行 */}
+              <div className={styles.heroPower}>
+                <span className={styles.heroPowerName}>{pickCompact(h.power.name)}</span>
+                <span className={styles.heroPowerText}>{pick(h.power.text)}</span>
+              </div>
             </button>
+          ))}
+        </div>
+
+        {/* 六套预组可以直接载入当模板改 —— 从零凑 30 张对新玩家太劝退 */}
+        <div className={styles.savedList}>
+          <div className={styles.savedHead}>{t('以预组为模板', 'Start from a preconstructed deck')}</div>
+          {PRECON_DECKS.map((d) => (
+            <div key={d.name.zh} className={styles.savedRow}>
+              <button className={styles.savedName} onClick={() => loadPrecon(d)}>
+                {pickCompact(d.name)}
+              </button>
+              <span className={styles.savedHero}>
+                {pickCompact(HEROES.find((h) => h.id === d.heroId)?.name ?? { zh: d.heroId, en: d.heroId })}
+              </span>
+            </div>
           ))}
         </div>
         {customDecks.length > 0 && (
@@ -179,8 +258,48 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
 
       <div className={styles.builder}>
         <div className={styles.poolPane}>
+          <div className={styles.poolTools}>
+            <input
+              className={styles.poolSearch}
+              placeholder={t('搜索卡池…', 'Search pool…')}
+              value={query}
+              aria-label={t('搜索卡池', 'Search pool')}
+              onChange={(e) => {
+                setQuery(e.target.value)
+                setPoolLimit(POOL_PAGE)
+              }}
+            />
+            {TYPE_FILTERS.map((f) => (
+              <button
+                key={f.key}
+                className={typeFilter === f.key ? styles.chipActive : styles.chip}
+                onClick={() => {
+                  playSfx('buttonTap')
+                  setTypeFilter(f.key)
+                  setPoolLimit(POOL_PAGE)
+                }}
+              >
+                {pickCompact(f.label)}
+              </button>
+            ))}
+            {SORTS.map((s) => (
+              <button
+                key={s.key}
+                className={sort === s.key ? styles.chipActive : styles.chip}
+                onClick={() => {
+                  playSfx('buttonTap')
+                  setSort(s.key)
+                }}
+              >
+                {pickCompact(s.label)}
+              </button>
+            ))}
+            <span className={styles.poolCount}>
+              {shownPool.length}/{pool.length}
+            </span>
+          </div>
           <div className={styles.poolGrid}>
-            {pool.map((def) => {
+            {shownPool.map((def) => {
               const inDeck = counts[def.id] ?? 0
               const limit = Math.min(copyLimit(def.id), owned[def.id] ?? 0)
               const maxed = inDeck >= limit || total >= DECK_SIZE
@@ -198,6 +317,20 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
               )
             })}
           </div>
+          {shownPool.length < pool.length && (
+            <button
+              className={styles.moreBtn}
+              onClick={() => {
+                playSfx('buttonTap')
+                setPoolLimit((n) => n + POOL_PAGE)
+              }}
+            >
+              {t(
+                `加载更多(${shownPool.length}/${pool.length})`,
+                `Load more (${shownPool.length}/${pool.length})`,
+              )}
+            </button>
+          )}
         </div>
 
         <div className={styles.deckPane}>

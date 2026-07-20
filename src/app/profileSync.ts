@@ -19,6 +19,10 @@ const PUSH_DEBOUNCE_MS = 2500
 export interface ProfileData {
   owned: Record<string, number>
   packs: number
+  // 加了会变的存档字段,记得同时改 snapshot() 与 adopt() 两侧 —— 只改一边
+  // 表现为「换设备后这个字段悄悄归零」,而且不会报错。
+  merit: number
+  packsSinceLegendary: number
   wins: number
   losses: number
   customDecks: unknown[]
@@ -87,6 +91,8 @@ export function snapshot(): ProfileData {
   return {
     owned: c.owned,
     packs: c.packs,
+    merit: c.merit,
+    packsSinceLegendary: c.packsSinceLegendary,
     wins: c.wins,
     losses: c.losses,
     customDecks: c.customDecks,
@@ -101,6 +107,8 @@ function adopt(data: ProfileData): void {
   useCollection.setState({
     owned: data.owned ?? {},
     packs: data.packs ?? 0,
+    merit: data.merit ?? 0,
+    packsSinceLegendary: data.packsSinceLegendary ?? 0,
     wins: data.wins ?? 0,
     losses: data.losses ?? 0,
     customDecks: (data.customDecks ?? []) as never,

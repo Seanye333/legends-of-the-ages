@@ -253,6 +253,44 @@ function buildTimeline(events: GameEvent[], rects: ReadonlyMap<string, DOMRect>)
         break
       }
 
+      // ---- 第三卡包 ----
+      case 'HeroPowerUsed': {
+        // 主公技单独占一拍:它每回合都会响,给它一个稳定的节奏点,
+        // 后面的伤害/召唤飘字才不会和「按钮亮起」糊在一起
+        push(300, { sfx: ['stratagemCast'] })
+        cur = null
+        break
+      }
+
+      case 'DivineShieldPopped': {
+        const e = loose()
+        e.events.push(ev)
+        e.flashes.push({ key: `gen-${ev.iid}`, kind: 'clash' })
+        addSfxOnce(e, 'attack')
+        break
+      }
+
+      case 'GeneralSilenced': {
+        const e = loose()
+        e.events.push(ev)
+        e.motions.push({ key: `gen-${ev.iid}`, kind: 'shake' })
+        addSfxOnce(e, 'death')
+        break
+      }
+
+      case 'GeneralFrozen': {
+        const e = loose()
+        e.events.push(ev)
+        e.flashes.push({ key: `gen-${ev.iid}`, kind: 'clash' })
+        addSfxOnce(e, 'heal')
+        break
+      }
+
+      case 'ManaGained': {
+        loose().events.push(ev)
+        break
+      }
+
       case 'GameEnded': {
         push(0, {
           release: true,

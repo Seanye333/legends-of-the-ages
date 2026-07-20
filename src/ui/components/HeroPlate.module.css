@@ -246,3 +246,134 @@
     filter: brightness(1);
   }
 }
+
+/* ---- 牌库余量 / 疲劳 ---- */
+.deckInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: clamp(9px, 1.7vh, 12px);
+  font-weight: 600;
+  color: var(--parchment-faint);
+  letter-spacing: 0.06em;
+}
+
+.deckLow {
+  color: #e8a05a;
+  text-shadow: 0 0 6px rgba(232, 160, 90, 0.5);
+}
+
+.fatigue {
+  color: #ff6a55;
+}
+
+/* ---- 主公技印钮 ---- */
+.power {
+  position: relative;
+  flex: none;
+  width: clamp(48px, 9.5vh, 72px);
+  height: clamp(48px, 9.5vh, 72px);
+  margin-left: auto;
+  border-radius: 12px;
+  border: 2px solid #6d5a2c;
+  background:
+    radial-gradient(circle at 34% 26%, rgba(255, 236, 180, 0.16), rgba(255, 255, 255, 0) 55%),
+    linear-gradient(180deg, #2b2214, #171106);
+  color: #8d7c50;
+  font-family: var(--font-display);
+  cursor: not-allowed;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 2px;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    filter 0.18s ease,
+    transform 0.12s ease;
+}
+
+.powerName {
+  font-size: clamp(11px, 2.1vh, 15px);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.05;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 100%;
+  text-overflow: ellipsis;
+}
+
+.powerCost {
+  font-size: clamp(9px, 1.7vh, 12px);
+  font-weight: 800;
+  color: #5aa8f0;
+  text-shadow: 0 0 4px rgba(90, 168, 240, 0.8);
+}
+
+.powerReady {
+  border-color: #caa050;
+  color: var(--gold-bright);
+  cursor: pointer;
+  box-shadow:
+    0 0 0 1px rgba(10, 7, 3, 0.9),
+    0 0 12px 2px rgba(212, 168, 74, 0.35);
+  animation: powerBreath 2.4s ease-in-out infinite;
+}
+
+.powerReady:hover {
+  filter: brightness(1.18);
+}
+
+.powerReady:active {
+  transform: scale(0.95);
+}
+
+.powerSelected {
+  border-color: #ffd98a;
+  box-shadow:
+    0 0 0 2px rgba(255, 217, 138, 0.9),
+    0 0 18px 5px rgba(255, 217, 138, 0.5);
+  animation: none;
+}
+
+/* 已使用:压一道朱砂封条 */
+.powerUsed {
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(120, 24, 16, 0.42) 0 6px,
+    rgba(0, 0, 0, 0) 6px 12px
+  );
+  pointer-events: none;
+}
+
+@keyframes powerBreath {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(10, 7, 3, 0.9),
+      0 0 10px 1px rgba(212, 168, 74, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(10, 7, 3, 0.9),
+      0 0 16px 4px rgba(212, 168, 74, 0.5);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .powerReady {
+    animation: none;
+  }
+  .float {
+    animation-duration: 0.01ms;
+  }
+  .pulse {
+    animation: none;
+  }
+}

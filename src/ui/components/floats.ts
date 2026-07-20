@@ -37,11 +37,31 @@ export function extractFloats(events: GameEvent[], batch: number, lang: Language
       case 'HeroHealed':
         push(`hero-${ev.player}`, `+${ev.amount}`, 'heal')
         break
-      case 'GeneralBuffed':
-        push(`gen-${ev.iid}`, `+${ev.attack}/+${ev.health}`, 'buff')
+      case 'GeneralBuffed': {
+        // 临时增益到期/光环撤销走同一事件,数值为负 —— 别再硬加 '+' 号
+        const fmt = (v: number) => (v >= 0 ? `+${v}` : `${v}`)
+        const fading = ev.attack < 0 || ev.health < 0
+        push(`gen-${ev.iid}`, `${fmt(ev.attack)}/${fmt(ev.health)}`, fading ? 'damage' : 'buff')
         break
+      }
       case 'ArmorGained':
         push(`hero-${ev.player}`, `+${ev.amount}${pickCompact({ zh: '甲', en: ' ARM' }, lang)}`, 'buff')
+        break
+      case 'DivineShieldPopped':
+        push(`gen-${ev.iid}`, pickCompact({ zh: '壁碎', en: 'SHIELD' }, lang), 'damage')
+        break
+      case 'GeneralSilenced':
+        push(`gen-${ev.iid}`, pickCompact({ zh: '沉默', en: 'SILENCED' }, lang), 'damage')
+        break
+      case 'GeneralFrozen':
+        push(`gen-${ev.iid}`, pickCompact({ zh: '冰封', en: 'FROZEN' }, lang), 'buff')
+        break
+      case 'ManaGained':
+        push(
+          `hero-${ev.player}`,
+          `+${ev.amount}${pickCompact({ zh: '费', en: ' MANA' }, lang)}`,
+          'buff',
+        )
         break
       default:
         break

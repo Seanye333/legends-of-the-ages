@@ -58,7 +58,7 @@ export const PRECON_DECKS: DeckList[] = [
       ...copies(2, 'wang-lang', 'eq-mingguang-kai', 'strat-huo-ji'),
       ...copies(2, 'cao-ang', 'cao-rui'), ...copies(1, 'mao-jie'),
       ...copies(2, 'wang-ping', 'li-dian'), ...copies(1, 'hist-tian-dan', 'hist-shang-yang'),
-      ...copies(2, 'hist-zhou-yafu', 'xu-chu', 'hist-fan-kuai'), ...copies(1, 'zhang-liao', 'pang-de'),
+      ...copies(2, 'hist-zhou-yafu', 'xu-chu', 'hist-fan-kuai'), ...copies(1, 'zhang-liao', 'deng-ai'),
     ],
   },
   {
@@ -92,6 +92,9 @@ export const PRECON_DECKS: DeckList[] = [
     cardIds: [
       ...copies(1, 'zhang-bu'), ...copies(2, 'eq-teng-jia', 'strat-shengdong-jixi'),
       ...copies(2, 'hu-zong', 'eq-mingguang-kai', 'strat-huo-ji'),
+      // 试过把 zhu-ran(6/6)换成 du-yu(4/6 守护+光环)、hist-li-yu 换成 zhou-fang
+      // (3/4 潜行+冻结战吼):总胜率反而从 38% 掉到 36%。光环与控场的价值抵不过
+      // 直接掉的 3 点身材 —— 割据这套是靠站场磨死对手的,身材就是它的答案本身。
       ...copies(2, 'man-chong', 'lu-fan'), ...copies(1, 'hist-li-yu'),
       ...copies(2, 'wang-ping', 'shi-xie'), ...copies(1, 'sun-quan', 'hist-wang-shichong'),
       ...copies(2, 'ma-teng', 'zhou-tai', 'cheng-pu'), ...copies(1, 'sun-ce', 'zhu-ran'),

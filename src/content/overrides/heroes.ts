@@ -11,7 +11,7 @@ import { START_HP } from '../../engine/types'
 // ---- 主公技 ----
 // 全部 2 费、每回合一次 —— 这是炉石验证了很多年的基线,别轻易动。
 // 六个技能刻意落在六条**不同的资源轴**上,而不是「都是造成 X 点伤害,只有数字不同」:
-//   王道=回复 / 霸道=点杀 / 礼教=换牌 / 名利=铺场 / 割据=护甲 / 隐逸=保护。
+//   王道=增益 / 霸道=点杀 / 礼教=换牌 / 名利=铺场 / 割据=守墙 / 隐逸=控场。
 // 这样六个主义在还没发一张牌的时候就已经是六种打法了。
 // 改数值必跑 `npm run sim-balance`:主公技每回合都能用,是全局触发频率最高的效果,
 // 一点数值差在三十回合的对局里会被放大成压倒性优势。
@@ -19,9 +19,13 @@ const POWERS: Record<string, HeroPowerDef> = {
   'liu-bei': {
     id: 'hp-rende',
     name: { zh: '仁德', en: 'Benevolence' },
-    text: { zh: '為一個友方角色恢復 3 點生命。', en: 'Restore 3 Health to a friendly character.' },
+    // +1/+1 打出来只有 40.6%,而且被名利的铺场流压到 25%。
+    // 补的是血而不是攻:王道输在自家武将被 1 点法伤和小兵换掉,不是输在打不出伤害。
+    text: { zh: '使一名友方武將獲得+1/+2。', en: 'Give a friendly general +1/+2.' },
     cost: 2,
-    script: { ops: [{ op: 'heal', amount: 3, target: 'chosenFriendly' }] },
+    script: {
+      ops: [{ op: 'buffStats', attack: 1, health: 2, target: 'chosenFriendlyGeneral' }],
+    },
   },
   'cao-cao': {
     id: 'hp-weicai',
@@ -34,14 +38,14 @@ const POWERS: Record<string, HeroPowerDef> = {
     id: 'hp-youjiao',
     name: { zh: '有教無類', en: 'Teaching Without Class' },
     text: {
-      zh: '抽一張牌,你的主公受到 2 點傷害。',
-      en: 'Draw a card. Your hero takes 2 damage.',
+      zh: '抽一張牌,你的主公受到 1 點傷害。',
+      en: 'Draw a card. Your hero takes 1 damage.',
     },
     cost: 2,
     script: {
       ops: [
         { op: 'draw', count: 1 },
-        { op: 'damage', amount: 2, target: 'friendlyHero' },
+        { op: 'damage', amount: 1, target: 'friendlyHero' },
       ],
     },
   },
@@ -55,18 +59,21 @@ const POWERS: Record<string, HeroPowerDef> = {
   'sun-quan': {
     id: 'hp-zhiheng',
     name: { zh: '制衡', en: 'Equilibrium' },
-    text: { zh: '獲得 3 點護甲。', en: 'Gain 3 Armor.' },
+    text: {
+      zh: '召喚一個 0/4 的江東水寨(守護)。',
+      en: 'Summon a 0/4 Jiangdong Stockade with Guard.',
+    },
     cost: 2,
-    script: { ops: [{ op: 'gainArmor', amount: 3 }] },
+    script: { ops: [{ op: 'summon', defId: 'token-shui-zhai', count: 1 }] },
   },
   'hist-laozi': {
     id: 'hp-wuwei',
     name: { zh: '無為', en: 'Non-Action' },
-    text: { zh: '使一名友方武將獲得鐵壁。', en: 'Give a friendly general Divine Shield.' },
+    // 试过「获得铁壁」(太强,64%)和「获得潜行」(太弱,27%)。
+    // 冻结落在两者之间,而且「不战而屈人之兵」比给自己套盾更像隐逸。
+    text: { zh: '凍結一名敵方武將。', en: 'Freeze an enemy general.' },
     cost: 2,
-    script: {
-      ops: [{ op: 'grantKeyword', keyword: 'divineShield', target: 'chosenFriendlyGeneral' }],
-    },
+    script: { ops: [{ op: 'freeze', target: 'chosenEnemyGeneral' }] },
   },
 }
 

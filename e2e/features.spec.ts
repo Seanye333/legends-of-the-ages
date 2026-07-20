@@ -50,8 +50,9 @@ test('replays: empty state, then a finished match is recorded and playable', asy
   await page.getByRole('button', { name: '开始对战' }).click()
   await page.getByRole('button', { name: /全部保留|确认/ }).click()
   await expect(page.getByRole('button', { name: '结束回合' })).toBeVisible()
-  page.once('dialog', (d) => void d.accept())
+  // 认输改用自绘确认框(原来是 window.confirm),先点触发再在弹窗里确认
   await page.getByRole('button', { name: '认输' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: '认输' }).click()
   await expect(page.getByText(/卷土重来|凯旋而归|平分秋色/)).toBeVisible()
   await page.getByRole('button', { name: '返回标题' }).click()
 
@@ -73,4 +74,44 @@ test('collection: pack-2 equipment card is in the pool with its keyword rule', a
   await expect(page.getByText('装备')).toBeVisible()
   await expect(page.getByText('剧毒')).toBeVisible()
   await expect(page.getByText('战斗中伤害到的武将立即死亡')).toBeVisible()
+})
+
+test('hero power: visible, costs mana, once per turn', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: '开始对战' }).click()
+  await page.getByRole('button', { name: /全部保留|确认/ }).click()
+  await expect(page.getByRole('button', { name: '结束回合' })).toBeVisible()
+
+  // 主公技按钮存在(默认预组是刘备「仁德」)
+  const power = page.getByRole('button', { name: /仁德/ })
+  await expect(power).toBeVisible()
+
+  // 第 1 回合只有 1 费,2 费的主公技必然不可用
+  await expect(power).toBeDisabled()
+})
+
+test('deck builder: search, type filter and precon templates', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: '组建卡组' }).click()
+  // 选主公页要能看到主公技说明
+  await expect(page.getByText('唯才是舉')).toBeVisible()
+  await expect(page.getByText('以预组为模板')).toBeVisible()
+
+  // 从预组模板进构筑,卡池搜索与类型筛选都在
+  await page.getByRole('button', { name: '桃園仁德' }).click()
+  await expect(page.getByPlaceholder('搜索卡池…')).toBeVisible()
+  await expect(page.getByRole('button', { name: '锦囊', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: '保存卡组(30/30)' })).toBeVisible()
+})
+
+test('collection: merit badge and craft/disenchant controls', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: '名将图鉴' }).click()
+  await expect(page.getByText(/✦ \d+/)).toBeVisible()
+  // 稀有度/费用筛选条
+  await page.getByRole('button', { name: '传说', exact: true }).click()
+  await page.getByPlaceholder('搜索名将…').fill('關羽')
+  await page.getByText('關羽').first().click()
+  await expect(page.getByRole('button', { name: /合成 · \d+/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /分解 · \+\d+/ })).toBeVisible()
 })

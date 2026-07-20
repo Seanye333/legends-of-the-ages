@@ -2,10 +2,12 @@
 // 运行:npm run sim-balance(GAMES=每对局数,默认 40)
 import { PRECON_DECKS, type DeckList } from '../src/content/decks'
 import { CARDS_BY_ID } from '../src/content/cards'
+import { HEROES_BY_ID } from '../src/content/overrides/heroes'
 import { createGame } from '../src/engine/init'
 import { applyCommand } from '../src/engine/reducer'
 import { aiStep, AI_NORMAL } from '../src/ai/greedy'
 import type { GameConfig, PlayerIdx, Winner } from '../src/engine/types'
+import { START_HP } from '../src/engine/types'
 
 // 默认 100 局/对(约 30 秒)。40 局的噪声有 ±8 个百分点 —— 同一套牌能读出
 // 62% 和 55% 两种结果,拿它当闸门只会制造误报和假绿。要快速试探用 GAMES=40,
@@ -17,11 +19,16 @@ const GAMES_PER_PAIR = Number(process.env.GAMES ?? 100)
 // (三个乘数都是奇数 → seed 奇偶 = (i+j+g+1)%2,swap = g%2),
 // 结果每个对位里永远是同一套牌先手 —— 整张矩阵都带着先手偏置。
 function playGame(a: DeckList, b: DeckList, seed: number, first: PlayerIdx): Winner {
+  // 主公技必须进模拟 —— 它每回合都能用,是全局触发频率最高的效果,
+  // 不带着一起跑等于在测一个和实际对局不一样的游戏。
+  const heroes = [HEROES_BY_ID[a.heroId], HEROES_BY_ID[b.heroId]]
   const cfg: GameConfig = {
     seed,
     heroIds: [a.heroId, b.heroId],
     deckIds: [[...a.cardIds], [...b.cardIds]],
     first,
+    heroPowers: [heroes[0]?.power, heroes[1]?.power],
+    heroHps: [heroes[0]?.hp ?? START_HP, heroes[1]?.hp ?? START_HP],
   }
   let state = createGame(cfg, CARDS_BY_ID)
   const rngs: [number, number] = [seed ^ 0x0a1a, seed ^ 0x0b2b]

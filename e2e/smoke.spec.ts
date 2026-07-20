@@ -29,8 +29,9 @@ test('full match loop: start → mulligan → play → concede → back to title
   }
 
   // 认输 → 结算 → 回标题
-  page.once('dialog', (d) => void d.accept())
+  // 认输改用自绘确认框(原来是 window.confirm),先点触发再在弹窗里确认
   await page.getByRole('button', { name: '认输' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: '认输' }).click()
   await expect(page.getByText(/卷土重来|凯旋而归|平分秋色/)).toBeVisible()
   await page.getByRole('button', { name: '返回标题' }).click()
   await expect(page.getByRole('heading', { name: '千古名将' })).toBeVisible()

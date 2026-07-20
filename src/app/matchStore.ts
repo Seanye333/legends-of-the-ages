@@ -1,8 +1,9 @@
 import { create } from 'zustand'
 import type { Command, GameEvent, GameState } from '../engine/types'
-import { DECK_SIZE } from '../engine/types'
+import { DECK_SIZE, START_HP } from '../engine/types'
 import type { CardDef, Doctrine } from '../engine/types'
 import { CARDS, CARDS_BY_ID } from '../content/cards'
+import { HEROES_BY_ID } from '../content/overrides/heroes'
 import { LocalMatch } from './transport'
 import { AI_LEVELS, AI_NORMAL } from '../ai/greedy'
 import { useSettings } from './settingsStore'
@@ -66,10 +67,14 @@ function settleQuests(events: GameEvent[], state: GameState | null): void {
   useQuests.getState().recordMatch(events, state.players[0].heroId)
 }
 
-// 终局统计:胜得卡包 + 上报排行;平局不计胜负
+// 终局统计:胜得卡包、负得安慰功勋、和局也给一点 —— 输了颗粒无收太劝退。
 function settleMatch(events: GameEvent[]): void {
   const ended = events.find((e) => e.type === 'GameEnded')
-  if (!ended || ended.type !== 'GameEnded' || ended.winner === 'draw') return
+  if (!ended || ended.type !== 'GameEnded') return
+  if (ended.winner === 'draw') {
+    useCollection.getState().recordDraw()
+    return
+  }
   useCollection.getState().recordResult(ended.winner === 0)
   if (ended.winner === 0) reportWin()
 }
@@ -113,8 +118,20 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
     const ai = args.tutorial
       ? AI_LEVELS.recruit
       : (AI_LEVELS[useSettings.getState().difficulty] ?? AI_NORMAL)
+    // 教学局不给主公技:第一局要先把「出牌—攻击—结束回合」讲明白,
+    // 多一个每回合都亮的按钮只会分散注意力(教鞭也没有对应的步骤)。
+    const heroDefs = args.heroIds.map((id) => HEROES_BY_ID[id])
     const match = new LocalMatch(
-      { seed, heroIds: args.heroIds, deckIds: args.deckIds, first },
+      {
+        seed,
+        heroIds: args.heroIds,
+        deckIds: args.deckIds,
+        first,
+        heroPowers: args.tutorial
+          ? [undefined, undefined]
+          : [heroDefs[0]?.power, heroDefs[1]?.power],
+        heroHps: [heroDefs[0]?.hp ?? START_HP, heroDefs[1]?.hp ?? START_HP],
+      },
       CARDS_BY_ID,
       ai,
     )

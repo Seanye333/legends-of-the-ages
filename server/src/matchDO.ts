@@ -12,6 +12,7 @@ import { createGame } from '../../src/engine/init'
 import { applyCommand } from '../../src/engine/reducer'
 import { redactEvent, redactState } from '../../src/engine/redact'
 import type { GameConfig, GameEvent, GameState, PlayerIdx } from '../../src/engine/types'
+import { START_HP } from '../../src/engine/types'
 import { CARDS_BY_ID } from '../../src/content/cards'
 import { HEROES_BY_ID } from '../../src/content/overrides/heroes'
 import { validateDeck } from '../../src/content/decks'
@@ -217,11 +218,15 @@ export class MatchDO {
   private async startGame(): Promise<void> {
     // 种子在引擎之外生成(服务器层允许非确定性);引擎内只吃种子
     const seed = Math.floor(Math.random() * 0x7fffffff)
+    const heroes = [HEROES_BY_ID[this.seats[0].heroId], HEROES_BY_ID[this.seats[1].heroId]]
     this.cfg = {
       seed,
       heroIds: [this.seats[0].heroId, this.seats[1].heroId],
       deckIds: [this.seats[0].deckIds.slice(), this.seats[1].deckIds.slice()],
       first: (seed & 1) as PlayerIdx,
+      // 主公技由服务器发放,客户端说了不算
+      heroPowers: [heroes[0]?.power, heroes[1]?.power],
+      heroHps: [heroes[0]?.hp ?? START_HP, heroes[1]?.hp ?? START_HP],
     }
     this.state = createGame(this.cfg, CARDS_BY_ID)
     await this.persist()
