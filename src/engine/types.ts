@@ -33,10 +33,11 @@ export type DynastyTag =
   | 'ming'
   | 'qing'
 
-export type CardType = 'general' | 'stratagem'
+// 武将牌/锦囊牌/装备牌(装备:打给一名友方武将,加成攻血并授予关键词)
+export type CardType = 'general' | 'stratagem' | 'equipment'
 export type Rarity = 'common' | 'rare' | 'epic' | 'legendary'
-// 冲锋/突袭/守护/连击/单挑
-export type Keyword = 'charge' | 'rush' | 'guard' | 'windfury' | 'duel'
+// 冲锋/突袭/守护/连击/单挑/吸血/剧毒(第二卡包新增后两个)
+export type Keyword = 'charge' | 'rush' | 'guard' | 'windfury' | 'duel' | 'lifesteal' | 'poison'
 export type Archetype = 'warrior' | 'strategist'
 
 export interface LocalizedText {
@@ -69,6 +70,10 @@ export type EffectOp =
   | { op: 'aoeDamage'; amount: number }
   | { op: 'destroy'; target: EffectTarget }
   | { op: 'grantKeyword'; keyword: Keyword; target: EffectTarget }
+  // ---- 第二卡包 ----
+  | { op: 'gainArmor'; amount: number } // 我方主公获得护甲
+  | { op: 'returnToHand'; target: EffectTarget } // 武将弹回持有者手牌(重置至卡面原值;手满则烧毁)
+  | { op: 'discardRandom'; count: number } // 对手随机弃牌
 
 export interface EffectScript {
   ops: EffectOp[]
@@ -87,6 +92,7 @@ export interface CardDef {
   rarity: Rarity
   archetype: Archetype
   cost: number
+  // 武将:攻/血;装备:攻血加成值(keywords 为授予的关键词)
   attack?: number
   health?: number
   keywords: Keyword[]
@@ -220,6 +226,11 @@ export type GameEvent =
       challengerDied: boolean
       defenderDied: boolean
     }
+  // ---- 第二卡包 ----
+  | { type: 'EquipmentAttached'; player: PlayerIdx; targetIid: number; defId: string }
+  | { type: 'ArmorGained'; player: PlayerIdx; amount: number; armorAfter: number }
+  | { type: 'GeneralReturned'; player: PlayerIdx; iid: number; defId: string }
+  | { type: 'CardDiscarded'; player: PlayerIdx; iid: number; defId: string }
   | { type: 'GameEnded'; winner: Winner }
 
 // ---------- 对局配置与 API 结果 ----------

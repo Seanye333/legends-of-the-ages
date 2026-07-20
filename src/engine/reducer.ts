@@ -121,7 +121,8 @@ function playCard(
   if (def.cost > p.mana.current) return 'not-enough-mana'
 
   // ---- 打出前校验目标(校验失败不产生任何变化) ----
-  const script = def.type === 'general' ? def.battlecry : def.spell
+  const script =
+    def.type === 'general' ? def.battlecry : def.type === 'stratagem' ? def.spell : undefined
   const needsChosen = requiresChosenTarget(script)
   const pool = needsChosen ? chosenTargetPool(state, player, script) : []
   const targetInPool = (t: TargetRef) =>
@@ -143,6 +144,10 @@ function playCard(
       return 'invalid-target'
     // 战吼需要目标但未给:目标池非空时要求给目标(单挑目标除外),池空则跳过对应操作
     if (needsChosen && pool.length > 0 && !target) return 'target-required'
+  } else if (def.type === 'equipment') {
+    // 装备必须指定一名友方在场武将
+    if (!target || target.kind !== 'general') return 'target-required'
+    if (findGeneral(state, target.iid)?.player !== player) return 'invalid-target'
   } else {
     if (!def.spell) return 'stratagem-without-spell'
     if (needsChosen) {
@@ -188,6 +193,33 @@ function playCard(
         performDuel(state, events, lib, player, inst.iid, target.iid)
       }
     }
+  } else if (def.type === 'equipment') {
+    // 装备:加成攻血 + 授予关键词,随后入墓
+    const loc = target?.kind === 'general' ? findGeneral(state, target.iid) : undefined
+    if (loc) {
+      events.push({ type: 'EquipmentAttached', player, targetIid: loc.inst.iid, defId: inst.defId })
+      const atk = def.attack ?? 0
+      const hp = def.health ?? 0
+      if (atk !== 0 || hp !== 0) {
+        loc.inst.attack = Math.max(0, loc.inst.attack + atk)
+        loc.inst.health += hp
+        if (hp > 0) loc.inst.maxHealth += hp
+        events.push({
+          type: 'GeneralBuffed',
+          player,
+          iid: loc.inst.iid,
+          attack: atk,
+          health: hp,
+        })
+      }
+      for (const kw of def.keywords) {
+        if (!loc.inst.keywords.includes(kw)) {
+          loc.inst.keywords.push(kw)
+          events.push({ type: 'KeywordGranted', player, iid: loc.inst.iid, keyword: kw })
+        }
+      }
+    }
+    p.graveyard.push(inst.defId)
   } else {
     events.push({
       type: 'EffectTriggered',

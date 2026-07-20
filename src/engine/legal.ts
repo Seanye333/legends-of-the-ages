@@ -42,6 +42,11 @@ export function legalCommands(state: GameState, player: PlayerIdx, lib: CardLibr
       } else {
         commands.push({ type: 'PlayCard', iid: card.iid })
       }
+    } else if (def.type === 'equipment') {
+      // 装备:目标为任一友方在场武将;无友军则不可打出
+      for (const c of p.board) {
+        commands.push({ type: 'PlayCard', iid: card.iid, target: { kind: 'general', iid: c.iid } })
+      }
     } else {
       const needsChosen = requiresChosenTarget(def.spell)
       if (needsChosen) {

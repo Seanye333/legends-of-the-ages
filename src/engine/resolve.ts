@@ -383,6 +383,60 @@ export function runScript(
         }
         break
       }
+      case 'gainArmor': {
+        const p = state.players[player]
+        p.armor += op.amount
+        events.push({ type: 'ArmorGained', player, amount: op.amount, armorAfter: p.armor })
+        break
+      }
+      case 'returnToHand': {
+        for (const ref of resolveRefs(state, player, sourceIid, sourceDefId, lib, op.target, chosen, degradeChosen)) {
+          if (ref.kind !== 'general') continue
+          const loc = findGeneral(state, ref.iid)
+          if (!loc) continue
+          const owner = state.players[loc.player]
+          owner.board.splice(loc.index, 1)
+          events.push({
+            type: 'GeneralReturned',
+            player: loc.player,
+            iid: loc.inst.iid,
+            defId: loc.inst.defId,
+          })
+          if (owner.hand.length >= HAND_LIMIT) {
+            owner.graveyard.push(loc.inst.defId)
+            events.push({ type: 'CardBurned', player: loc.player, defId: loc.inst.defId })
+            continue
+          }
+          // 回手即重置为卡面原值(增益/受伤/授予关键词全部清除)
+          const def = lib[loc.inst.defId]
+          const inst = loc.inst
+          inst.attack = def?.attack ?? 0
+          inst.health = def?.health ?? 0
+          inst.maxHealth = def?.health ?? 0
+          inst.keywords = def?.keywords.slice() ?? []
+          inst.exhausted = false
+          inst.attacksUsed = 0
+          inst.enchants = []
+          owner.hand.push(inst)
+        }
+        break
+      }
+      case 'discardRandom': {
+        const foe = state.players[other(player)]
+        for (let i = 0; i < op.count && foe.hand.length > 0; i++) {
+          const roll = rngInt(state.rng, foe.hand.length)
+          state.rng = roll.next
+          const [discarded] = foe.hand.splice(roll.value, 1)
+          foe.graveyard.push(discarded.defId)
+          events.push({
+            type: 'CardDiscarded',
+            player: other(player),
+            iid: discarded.iid,
+            defId: discarded.defId,
+          })
+        }
+        break
+      }
       default: {
         const exhaustive: never = op
         void exhaustive

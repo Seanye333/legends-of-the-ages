@@ -11,12 +11,30 @@ import {
   damageGeneral,
   damageHero,
   findGeneral,
+  healHero,
   other,
   processDeaths,
+  type GeneralLoc,
 } from './resolve'
 
 export function hasKeyword(inst: CardInstance, kw: CardInstance['keywords'][number]): boolean {
   return inst.keywords.includes(kw)
+}
+
+// 武将对武将的战斗打击:吸血为持有者回血,剧毒补足致死
+function strike(
+  state: GameState,
+  events: GameEvent[],
+  src: GeneralLoc,
+  dst: GeneralLoc,
+  amount: number,
+): void {
+  if (amount <= 0) return
+  damageGeneral(state, dst, amount, events)
+  if (hasKeyword(src.inst, 'lifesteal')) healHero(state, src.player, amount, events)
+  if (hasKeyword(src.inst, 'poison') && dst.inst.health > 0) {
+    damageGeneral(state, dst, dst.inst.health, events)
+  }
 }
 
 export function maxAttacksOf(inst: CardInstance): number {
@@ -82,6 +100,7 @@ export function performAttack(
       damageToAttacker: 0,
     })
     damageHero(state, target.player, attacker.attack, events)
+    if (hasKeyword(attacker, 'lifesteal')) healHero(state, player, attacker.attack, events)
   } else {
     const defLoc = findGeneral(state, target.iid)
     if (!defLoc) return 'target-not-found'
@@ -95,8 +114,8 @@ export function performAttack(
       damageToAttacker: defender.attack,
     })
     // 同时互击
-    damageGeneral(state, defLoc, attacker.attack, events)
-    damageGeneral(state, loc, defender.attack, events)
+    strike(state, events, loc, defLoc, attacker.attack)
+    strike(state, events, defLoc, loc, defender.attack)
   }
   processDeaths(state, events, lib)
   return null
@@ -125,14 +144,14 @@ export function performDuel(
 
   if (firstStrikeIid === undefined) {
     // 同攻:同时互击
-    damageGeneral(state, defLoc, ch.attack, events)
-    damageGeneral(state, chLoc, def.attack, events)
+    strike(state, events, chLoc, defLoc, ch.attack)
+    strike(state, events, defLoc, chLoc, def.attack)
   } else if (firstStrikeIid === ch.iid) {
-    damageGeneral(state, defLoc, ch.attack, events)
-    if (def.health > 0) damageGeneral(state, chLoc, def.attack, events)
+    strike(state, events, chLoc, defLoc, ch.attack)
+    if (def.health > 0) strike(state, events, defLoc, chLoc, def.attack)
   } else {
-    damageGeneral(state, chLoc, def.attack, events)
-    if (ch.health > 0) damageGeneral(state, defLoc, ch.attack, events)
+    strike(state, events, defLoc, chLoc, def.attack)
+    if (ch.health > 0) strike(state, events, chLoc, defLoc, ch.attack)
   }
 
   events.push({
