@@ -91,21 +91,52 @@ export function rankOf(rating: number): { zh: string; en: string } {
 export const DEFAULT_SERVER = 'localhost:8787'
 
 // ws(s):// 地址 → http(s):// REST 根(天梯查询用)
-// 用户只填主机名时该用哪种协议:跟随页面。
-// 线上是 HTTPS 的话,ws:// 和 http:// 都会被浏览器按混合内容拦掉,联机会静默失效;
-// 本地 http://localhost 开发则照旧用不加密的。Node(drive-test)里没有 location,按明文走。
+// 用户只填主机名(不带 scheme)时该用加密还是明文。
+// 三种运行环境要同时照顾到,所以不能只看页面协议:
+// - 网页部署在 HTTPS:ws:// 和 http:// 会被浏览器按混合内容拦掉,必须加密
+// - Tauri iOS/桌面:页面来自自定义协议不是 https,但远端 Workers 只收 wss://
+// - 本地开发 / 局域网真机联调:localhost 与内网地址没有证书,必须明文
+// 判断顺序:页面是 HTTPS 就必须加密;否则看目标主机是不是本地/内网。
 function pageIsSecure(): boolean {
   const loc = (globalThis as { location?: { protocol?: string } }).location
   return loc?.protocol === 'https:'
 }
 
-export function wsScheme(): 'ws://' | 'wss://' {
-  return pageIsSecure() ? 'wss://' : 'ws://'
+function hostOf(server: string): string {
+  return server
+    .replace(/^[a-z]+:\/\//i, '')
+    .split('/')[0]
+    .split(':')[0]
+    .toLowerCase()
+}
+
+// 本地或内网地址:没有可用证书,只能明文
+function isLocalTarget(server: string): boolean {
+  const host = hostOf(server)
+  return (
+    host === 'localhost' ||
+    host === '127.0.0.1' ||
+    host === '::1' ||
+    host === '0.0.0.0' ||
+    host.endsWith('.local') ||
+    /^10\./.test(host) ||
+    /^192\.168\./.test(host) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(host)
+  )
+}
+
+function useSecure(server: string): boolean {
+  if (pageIsSecure()) return true
+  return !isLocalTarget(server)
+}
+
+export function wsScheme(server: string): 'ws://' | 'wss://' {
+  return useSecure(server) ? 'wss://' : 'ws://'
 }
 
 export function httpBase(server: string): string {
   if (server.startsWith('wss://')) return `https://${server.slice(6)}`
   if (server.startsWith('ws://')) return `http://${server.slice(5)}`
   if (server.startsWith('https://') || server.startsWith('http://')) return server
-  return `${pageIsSecure() ? 'https://' : 'http://'}${server}`
+  return `${useSecure(server) ? 'https://' : 'http://'}${server}`
 }
