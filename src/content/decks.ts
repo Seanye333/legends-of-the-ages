@@ -12,91 +12,101 @@ export interface DeckList {
 
 const copies = (n: number, ...ids: string[]): string[] => ids.flatMap((id) => Array(n).fill(id) as string[])
 
+// 六套预组共用一张「骨架」,主义只决定填进插槽的卡,不决定卡组能不能开局。
+//
+// 骨架(30 张,六套完全一致):
+//   曲线 2费5 / 3费6 / 4费5 / 5费6 / 6费8,均费 4.20
+//   22 随从 + 4 锦囊(聲東擊西×2 单体+随机、火計×2 单体 4 伤)+ 4 装备
+//   守护 12 张,且**按费用分布对齐**:2费2(藤甲)/ 3费2(明光鎧)/ 5费2 / 6费6
+//   抢攻 1~2 张(冲锋或突袭),总身材 89~100 攻 / 118~127 血(差 ≤5%)
+//
+// 三条来之不易的经验(改预组前先读):
+// 1. **先手优势随卡组节奏放大**。引擎给后手多摸一张牌作为补偿(OPENING_HAND=[3,4]),
+//    但这份补偿只够抵消慢速对局的先手红利:实测镜像对战里,快攻型卡组先手胜率
+//    75~88%,慢速互拆型只有 43~55%。所以骨架刻意压低攻击、堆守护、把对局拉到
+//    30 回合左右,让补偿追得上先手。
+//    反向验证:同一副牌加 3 张冲锋/单挑,先手胜率 51% → 65%,对局 36 回合 → 23 回合。
+//    (注:sim-balance 早期版本把「谁先手」从 seed 奇偶推导,而它恰好与座位互换同步
+//    翻转,导致每个对位里永远是同一方先手 —— 已修,现在座位与先手独立跑满四种组合。
+//    上面这些数字是修复后重测的。)
+// 2. **守护的费用分布比总数更重要**。只有 6 费守护的卡组会被有 4~5 费守护的卡组压制,
+//    哪怕两边总身材、总守护数完全一样。
+// 3. **战吼点杀 ≈ 10 个百分点**。两张「战吼:造成 2~3 点伤害」的差距,足以让两套
+//    身材几乎相同的卡组差出 10%+。治疗战吼在贪心 AI 里近乎白板(见铁律 6),
+//    所以每套都配了 1~2 张点杀/AOE 战吼当解场答案;霸道卡池 6 费内没有点杀战吼,
+//    改用龐德的「單挑」顶替这个位置。
 export const PRECON_DECKS: DeckList[] = [
   {
     heroId: 'liu-bei',
     name: { zh: '桃園仁德', en: 'Oath of the Peach Garden' },
+    // 王道:群体增益 + 守护墙。謝玄战吼 AOE 当解场,魏延冲锋收线,劉備上场全场 +1/+1。
     cardIds: [
-      ...copies(2, 'liu-xie', 'liu-qi'), // 2费
-      ...copies(2, 'sun-qian', 'yi-ji', 'cui-yan', 'strat-caochuan-jiejian'), // 3费
-      ...copies(2, 'fei-yi', 'ma-liang'), // 4费
-      ...copies(2, 'deng-zhi', 'liao-hua'), // 5费
-      ...copies(1, 'ma-dai'),
-      ...copies(2, 'zhang-fei'), // 6费
-      ...copies(1, 'liu-bei', 'zhuge-liang', 'wei-yan'),
-      ...copies(2, 'chen-dao'),
-      ...copies(1, 'guan-yu', 'zhao-yun'), // 7费
+      ...copies(1, 'liu-qi'), ...copies(2, 'eq-teng-jia', 'strat-shengdong-jixi'),
+      ...copies(2, 'cui-yan', 'eq-mingguang-kai', 'strat-huo-ji'),
+      ...copies(2, 'ma-liang', 'fei-yi'), ...copies(1, 'hist-xiao-he'),
+      ...copies(2, 'wang-ping', 'deng-zhi'), ...copies(1, 'hist-wen-tianxiang', 'jiang-wan'),
+      ...copies(2, 'chen-dao', 'zhang-fei'), ...copies(1, 'cheng-pu', 'hist-xie-xuan', 'wei-yan', 'liu-bei'),
     ],
   },
   {
     heroId: 'cao-cao',
     name: { zh: '魏武揮鞭', en: 'The Tyrant’s Vanguard' },
+    // 霸道:全场最高攻。守护清一色自家猛将(周亞夫/許褚/樊噲),
+    // 霸道 6 费内没有点杀战吼,改用龐德「單挑」上场就换掉一个敌将。
     cardIds: [
-      ...copies(2, 'lady-bian'), // 2费
-      ...copies(2, 'chen-jiao', 'wang-lang', 'strat-beishui-yizhan'), // 3费
-      ...copies(1, 'strat-pofu-chenzhou'),
-      ...copies(2, 'liu-ye', 'dong-zhao'), // 4费
-      ...copies(2, 'cao-hong'), // 5费
-      ...copies(1, 'chen-gong', 'strat-andu-chencang'),
-      ...copies(2, 'hua-xiong'), // 5费
-      ...copies(2, 'xu-chu', 'zhang-liao', 'xiahou-dun'), // 6费
-      ...copies(1, 'dian-wei', 'hist-han-xin'),
-      ...copies(1, 'cao-cao', 'hist-huo-qubing'), // 7费
-      ...copies(1, 'hist-xiang-yu'), // 8费
+      ...copies(1, 'cao-lin'), ...copies(2, 'eq-teng-jia', 'strat-shengdong-jixi'),
+      ...copies(2, 'wang-lang', 'eq-mingguang-kai', 'strat-huo-ji'),
+      ...copies(2, 'cao-ang', 'cao-rui'), ...copies(1, 'mao-jie'),
+      ...copies(2, 'wang-ping', 'li-dian'), ...copies(1, 'hist-tian-dan', 'hist-shang-yang'),
+      ...copies(2, 'hist-zhou-yafu', 'xu-chu', 'hist-fan-kuai'), ...copies(1, 'zhang-liao', 'pang-de'),
     ],
   },
   {
     heroId: 'hist-confucius',
     name: { zh: '克己復禮', en: 'Rites and Righteousness' },
+    // 礼教:身材最低但战吼最稳(治疗/点杀/抽牌),顏真卿撑中期,文醜突袭补一刀。
     cardIds: [
-      ...copies(2, 'liu-ba', 'hist-sang-hongyang', 'hist-hai-rui', 'strat-yuanjiao-jingong'), // 3费
-      ...copies(1, 'strat-huo-ji'),
-      ...copies(2, 'xun-you', 'cheng-yu', 'tian-feng', 'zhang-zhao'), // 4费
-      ...copies(1, 'hist-xunzi'),
-      ...copies(2, 'hist-bao-zheng', 'xun-yu', 'hist-yan-zhenqing'), // 5费
-      ...copies(1, 'hist-yu-qian', 'hist-fan-zhongyan', 'hist-confucius'),
-      ...copies(2, 'huang-zhong'), // 6费
-      ...copies(1, 'hist-wang-shouren'),
+      ...copies(1, 'liu-xie'), ...copies(2, 'eq-teng-jia', 'strat-shengdong-jixi'),
+      ...copies(2, 'hist-hai-rui', 'eq-mingguang-kai', 'strat-huo-ji'),
+      ...copies(2, 'hist-wei-zheng', 'hist-sima-guang'), ...copies(1, 'cheng-yu'),
+      ...copies(2, 'hist-yan-zhenqing', 'hist-lin-zexu'), ...copies(1, 'hist-confucius', 'hist-fan-zhongyan'),
+      ...copies(2, 'cheng-pu', 'zhou-tai', 'chen-dao'), ...copies(1, 'wen-chou', 'hist-wang-shouren'),
     ],
   },
   {
     heroId: 'sima-yi',
     name: { zh: '鷹視狼顧', en: 'The Patient Schemer' },
+    // 名利:解场最多的一套(法正/周瑜点杀 + 火計/聲東擊西),司馬家高血站场磨死对手。
     cardIds: [
-      ...copies(2, 'hist-gao-jianli', 'hist-yu-ji'), // 3费
-      ...copies(1, 'hist-wei-jie'),
-      ...copies(2, 'diaochan', 'guo-jia', 'fa-zheng', 'hist-su-qin', 'strat-lianhuan-ji'), // 4费
-      ...copies(1, 'strat-fanjian-ji'),
-      ...copies(2, 'jia-xu', 'cao-pi'), // 5费
-      ...copies(1, 'sima-yi', 'sima-shi', 'zhang-jiao', 'hist-jing-ke', 'pang-tong'),
-      ...copies(2, 'hist-yang-youji'), // 6费
-      ...copies(1, 'zhou-yu', 'lu-xun', 'strat-meiren-ji'),
+      ...copies(1, 'han-fu'), ...copies(2, 'eq-teng-jia', 'strat-shengdong-jixi'),
+      ...copies(2, 'hist-gao-jianli', 'eq-mingguang-kai', 'strat-huo-ji'),
+      ...copies(2, 'zhuge-ke', 'fa-zheng'), ...copies(1, 'hist-you-yu'),
+      ...copies(2, 'wang-ping', 'sima-shi'), ...copies(1, 'cao-pi', 'sima-yi'),
+      ...copies(2, 'zhou-tai', 'cheng-pu', 'chen-dao'), ...copies(1, 'hist-yang-su', 'zhou-yu'),
     ],
   },
   {
     heroId: 'sun-quan',
     name: { zh: '坐斷東南', en: 'Lords of the Riverlands' },
+    // 割据:江东羁绊,馬騰/周泰 5/7 守护三对铺满六费,孫策冲锋收场。
     cardIds: [
-      ...copies(2, 'da-qiao', 'sun-liang', 'strat-kurou-ji'), // 2费
-      ...copies(2, 'yu-fan', 'chen-jiao'), // 3费
-      ...copies(2, 'hist-li-yu', 'kan-ze', 'bu-zhi', 'luo-tong'), // 4费
-      ...copies(1, 'pan-zhang', 'zhou-tai'), // 5-6费
-      ...copies(1, 'sun-quan', 'han-dang', 'hist-chen-sheng'),
-      ...copies(2, 'taishi-ci', 'gan-ning', 'lu-meng'), // 6费
-      ...copies(1, 'sun-ce'),
+      ...copies(1, 'zhang-bu'), ...copies(2, 'eq-teng-jia', 'strat-shengdong-jixi'),
+      ...copies(2, 'hu-zong', 'eq-mingguang-kai', 'strat-huo-ji'),
+      ...copies(2, 'man-chong', 'lu-fan'), ...copies(1, 'hist-li-yu'),
+      ...copies(2, 'wang-ping', 'shi-xie'), ...copies(1, 'sun-quan', 'hist-wang-shichong'),
+      ...copies(2, 'ma-teng', 'zhou-tai', 'cheng-pu'), ...copies(1, 'sun-ce', 'zhu-ran'),
     ],
   },
   {
     heroId: 'hist-laozi',
     name: { zh: '大隱於市', en: 'The Hidden Sages' },
+    // 隐逸:抽牌续航 + 张衡/嵇康的点杀与遗计。隐逸卡池 6 费断档,顶端用中立猛将补齐。
     cardIds: [
-      ...copies(2, 'zhang-zhongjing', 'strat-shengdong-jixi'), // 2费
-      ...copies(2, 'zuo-ci', 'yu-ji', 'hua-tuo', 'sima-hui', 'cui-zhouping', 'strat-huo-ji'), // 3费
-      ...copies(2, 'ji-kang', 'xu-shu', 'hist-bian-que'), // 4费
-      ...copies(2, 'hist-zhuangzi', 'hist-guiguzi'), // 5费
-      ...copies(1, 'hist-laozi', 'hist-li-bai'),
-      ...copies(1, 'hist-long-qu'), // 6费
-      ...copies(1, 'lu-bu'), // 8费
+      ...copies(1, 'ruan-xian'), ...copies(2, 'eq-teng-jia', 'strat-shengdong-jixi'),
+      ...copies(2, 'shi-tao', 'eq-mingguang-kai', 'strat-huo-ji'),
+      ...copies(2, 'hist-zhang-heng', 'ji-kang'), ...copies(1, 'hist-tang-yin'),
+      ...copies(2, 'hist-kou-qianzhi', 'wang-ping'), ...copies(1, 'hist-laozi', 'hist-xu-xiake'),
+      ...copies(2, 'cheng-pu', 'chen-dao', 'guan-xing'), ...copies(1, 'wen-chou', 'yu-jin'),
     ],
   },
 ]
