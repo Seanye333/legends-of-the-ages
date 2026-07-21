@@ -62,6 +62,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
     rematchState,
     requestRematch,
     retryConnection,
+    stats,
     spectating,
   } = useMatch()
   const { soundEnabled, setSoundEnabled } = useSettings()
@@ -618,6 +619,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
             requestRematch()
           }}
           ratingResult={mode === 'remote' ? ratingResult : null}
+          stats={stats}
           onRematch={handleRematch}
           onExit={handleExit}
         />

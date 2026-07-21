@@ -322,3 +322,28 @@ test('collection: dynasty / mechanic filters, sorting, and infinite scroll', asy
   }
   expect(await shownNow()).toBeGreaterThan(before)
 })
+
+test('result overlay: match recap lists the numbers the state cannot recover', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: '不必' }).click().catch(() => {})
+  await page.getByRole('button', { name: '开始对战' }).click()
+  await page.waitForTimeout(500)
+  const mull = page.getByRole('button', { name: /确认|保留|开始/ }).first()
+  if (await mull.isVisible().catch(() => false)) await mull.click()
+  for (let i = 0; i < 3; i++) {
+    const end = page.getByRole('button', { name: /结束回合/ })
+    if (await end.isVisible().catch(() => false)) {
+      await end.click()
+      await page.waitForTimeout(600)
+    }
+  }
+  await page.getByRole('button', { name: /认输/ }).click()
+  const yes = page.getByRole('button', { name: /确认|认输/ }).last()
+  if (await yes.isVisible().catch(() => false)) await yes.click()
+
+  // 伤害/承受/回合数三项恒显示(必然非零或有意义),其余零值项刻意不列 ——
+  // 一场三回合的速攻显示成一整屏 0 比不显示更糟
+  await expect(page.getByText('造成伤害')).toBeVisible()
+  await expect(page.getByText('承受伤害')).toBeVisible()
+  await expect(page.getByText('回合数')).toBeVisible()
+})

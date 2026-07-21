@@ -14,6 +14,7 @@ import { useAchievements } from './achievementStore'
 import { useCampaign } from './campaignStore'
 import { reportWin } from './leaderboard'
 import type { EmoteId } from './protocol'
+import { EMPTY_STATS, foldStats, type MatchStats } from './matchStats'
 import {
   RemoteMatch,
   loadSession,
@@ -71,6 +72,8 @@ interface MatchStoreState {
   rematchState: 'none' | 'offered' | 'sent'
   state: GameState | null
   lastEvents: GameEvent[]
+  // 终局战绩:边打边折,打完给结算画面看(状态里推不出「总共造成多少伤害」)
+  stats: MatchStats
   error: string | null
   startMatch(args: StartMatchArgs): void
   startRemoteMatch(args: StartRemoteArgs): void
@@ -116,7 +119,8 @@ function settleMatch(events: GameEvent[], arena: boolean, campaign: boolean): vo
 
 // 联机回调统一在此落进 store;opponent-back 属瞬时提示,不覆盖 playing 状态
 type SetState = (partial: Partial<MatchStoreState>) => void
-function remoteCallbacks(set: SetState) {
+// 联机回调只拿得到 set,而战绩要在旧值上累加 —— 所以额外传一个读取器进来
+function remoteCallbacks(set: SetState, getStats: () => MatchStats) {
   return {
     onStatus: (remoteStatus: RemoteStatus) => set({ remoteStatus }),
     onUpdate: (
@@ -131,6 +135,7 @@ function remoteCallbacks(set: SetState) {
       set({
         state,
         lastEvents: events,
+        stats: foldStats(getStats(), events, state),
         opponentName: opponentName ?? null,
         turnDeadline: turnDeadline ?? null,
         error: null,
@@ -164,6 +169,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
   rematchState: 'none',
   state: null,
   lastEvents: [],
+  stats: EMPTY_STATS,
   error: null,
 
   startMatch(args) {
@@ -205,13 +211,14 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       match,
       state,
       lastEvents: events,
+      stats: foldStats(EMPTY_STATS, events, state),
       error: null,
     })
   },
 
   startRemoteMatch(args) {
     get().reset()
-    const remote = new RemoteMatch(args.server, args.deck, args.playerName, remoteCallbacks(set))
+    const remote = new RemoteMatch(args.server, args.deck, args.playerName, remoteCallbacks(set, () => get().stats))
     set({
       mode: 'remote',
       spectating: args.mode === 'watch-room',
@@ -232,7 +239,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
     const session = loadSession()
     if (!session) return false
     get().reset()
-    const remote = new RemoteMatch(session.server, session.deck, session.name, remoteCallbacks(set))
+    const remote = new RemoteMatch(session.server, session.deck, session.name, remoteCallbacks(set, () => get().stats))
     set({ mode: 'remote', remote, remoteStatus: 'reconnecting', state: null, lastEvents: [], error: null })
     remote.resume(session)
     return true
@@ -255,7 +262,12 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
     settleMatch(events, get().arena, get().campaign)
     settleQuests(events, last.state)
     recordReplayFrame(last.state, events)
-    set({ state: last.state, lastEvents: events, error: null })
+    set({
+      state: last.state,
+      lastEvents: events,
+      stats: foldStats(get().stats, events, last.state),
+      error: null,
+    })
   },
 
   sendEmote(emote) {
@@ -294,6 +306,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       rematchState: 'none',
       state: null,
       lastEvents: [],
+      stats: EMPTY_STATS,
       error: null,
     })
   },

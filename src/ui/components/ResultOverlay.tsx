@@ -1,5 +1,6 @@
 import type { Winner } from '../../engine/types'
 import type { RatingResult } from '../../app/matchStore'
+import type { MatchStats } from '../../app/matchStats'
 import { rankOf } from '../../app/protocol'
 import { useT } from '../i18n'
 import styles from './ResultOverlay.module.css'
@@ -11,6 +12,7 @@ interface ResultOverlayProps {
   remoteRematch?: 'none' | 'offered' | 'sent' | null
   onRemoteRematch?: () => void
   ratingResult?: RatingResult | null // 天梯局:结算后的分数变化
+  stats?: MatchStats | null // 战绩回顾
   onRematch: () => void
   onExit: () => void
 }
@@ -22,10 +24,29 @@ export function ResultOverlay({
   remoteRematch = null,
   onRemoteRematch,
   ratingResult = null,
+  stats = null,
   onRematch,
   onExit,
 }: ResultOverlayProps) {
   const t = useT()
+  // 只列**这一局真的发生过**的项。零值全列出来会把一场三回合的速攻
+  // 显示成一整屏 0,那比不显示更糟。伤害与回合数恒显示(它们必然非零)。
+  const rows: [string, string, number][] = stats
+    ? [
+        ['造成伤害', 'Damage dealt', stats.damageDealt],
+        ['打脸伤害', 'To the enemy hero', stats.damageToFace],
+        ['承受伤害', 'Damage taken', stats.damageTaken],
+        ['斩将', 'Generals slain', stats.enemyGeneralsSlain],
+        ['登场武将', 'Generals fielded', stats.generalsPlayed],
+        ['最大场面', 'Peak board', stats.peakBoard],
+        ['抽牌', 'Cards drawn', stats.cardsDrawn],
+        ['耗费法力', 'Mana spent', stats.manaSpent],
+        ['伏兵触发', 'Secrets sprung', stats.secretsRevealed],
+        ['连击', 'Combos', stats.combosTriggered],
+        ['回合数', 'Turns', stats.turns],
+      ]
+    : []
+  const shownRows = rows.filter(([, , v], i) => v > 0 || i < 3)
   const [glyph, word, verdictCls, bgCls] =
     winner === 0
       ? ['勝', t('凯旋而归', 'Victory'), styles.win, styles.bgWin]
@@ -48,6 +69,16 @@ export function ResultOverlay({
             `Ladder: ${rankOf(ratingResult.rating).en} ${ratingResult.rating} (${ratingResult.delta >= 0 ? '+' : ''}${ratingResult.delta})`,
           )}
         </div>
+      )}
+      {shownRows.length > 0 && (
+        <dl className={styles.stats}>
+          {shownRows.map(([zh, en, v]) => (
+            <div key={en} className={styles.statRow}>
+              <dt>{t(zh, en)}</dt>
+              <dd>{v}</dd>
+            </div>
+          ))}
+        </dl>
       )}
       <div className={styles.buttons}>
         {canRematch && (

@@ -188,3 +188,37 @@
     transform: translateY(0);
   }
 }
+
+/* 战绩回顾:两列自适应,长局也不会顶出屏幕 */
+.stats {
+  margin: 14px 0 4px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 2px 18px;
+  width: min(86vw, 460px);
+  max-height: 34vh;
+  overflow-y: auto;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(212, 168, 74, 0.25);
+  background: rgba(10, 8, 4, 0.55);
+}
+
+.statRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.statRow dt {
+  opacity: 0.72;
+}
+
+.statRow dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--gold-bright, #f0d79a);
+}
