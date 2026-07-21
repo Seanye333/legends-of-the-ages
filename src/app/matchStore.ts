@@ -78,6 +78,7 @@ interface MatchStoreState {
   send(cmd: Command): void
   sendEmote(emote: EmoteId): void
   requestRematch(): void
+  retryConnection(): void
   reset(): void
 }
 
@@ -266,6 +267,11 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
     if (!remote || rematchState === 'sent') return
     remote.sendRematch()
     set({ rematchState: 'sent' })
+  },
+
+  // 自动重连放弃之后的手动出路
+  retryConnection() {
+    get().remote?.retryNow()
   },
 
   reset() {

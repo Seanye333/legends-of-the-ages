@@ -51,6 +51,8 @@ export function RemoteMatchPanel({ deck, onStart, onClose }: RemoteMatchPanelPro
   const [searching, setSearching] = useState(false)
   const [myRating, setMyRating] = useState<number | null>(null)
   const [ladder, setLadder] = useState<RatingRow[] | null>(null)
+  const [season, setSeason] = useState<string | null>(null)
+  const [myRank, setMyRank] = useState<{ rank: number | null; rating: number } | null>(null)
   const [hasSession] = useState(() => loadSession() !== null)
 
   // 对局开场 → 切入对战画面
@@ -68,11 +70,23 @@ export function RemoteMatchPanel({ deck, onStart, onClose }: RemoteMatchPanelPro
         if (alive && j?.rating !== undefined) setMyRating(j.rating)
       })
       .catch(() => undefined)
-    void fetch(`${base}/ladder`)
+    // 带上 playerId,顺便把「我在第几名」要回来 —— 榜外玩家此前完全看不到自己的位置
+    void fetch(`${base}/ladder?limit=10&playerId=${encodeURIComponent(getPlayerId())}`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((j: { rows?: RatingRow[] } | null) => {
-        if (alive && j?.rows) setLadder(j.rows.slice(0, 10))
-      })
+      .then(
+        (
+          j: {
+            rows?: RatingRow[]
+            season?: string
+            you?: { rank: number | null; rating: number }
+          } | null,
+        ) => {
+          if (!alive || !j?.rows) return
+          setLadder(j.rows.slice(0, 10))
+          setSeason(j.season ?? null)
+          setMyRank(j.you ?? null)
+        },
+      )
       .catch(() => undefined)
     return () => {
       alive = false
@@ -247,7 +261,11 @@ export function RemoteMatchPanel({ deck, onStart, onClose }: RemoteMatchPanelPro
 
         {!searching && ladder && ladder.length > 0 && (
           <div className={styles.ladderBox}>
-            <div className={styles.ladderTitle}>{t('天梯前十', 'Top 10')}</div>
+            <div className={styles.ladderTitle}>
+              {t('天梯前十', 'Top 10')}
+              {/* 赛季按 UTC 自然月切,标出来玩家才知道榜什么时候会重置 */}
+              {season && <span className={styles.ladderSeason}>{season}</span>}
+            </div>
             {ladder.map((row, i) => (
               <div key={`${row.name}-${i}`} className={styles.ladderRow}>
                 <span className={styles.ladderNo}>{i + 1}</span>
@@ -256,6 +274,13 @@ export function RemoteMatchPanel({ deck, onStart, onClose }: RemoteMatchPanelPro
                 <span className={styles.ladderScore}>{row.rating}</span>
               </div>
             ))}
+            {myRank && (
+              <div className={styles.ladderMe}>
+                {myRank.rank === null
+                  ? t(`我:${myRank.rating} 分(未上榜)`, `You: ${myRank.rating} (unranked)`)
+                  : t(`我:第 ${myRank.rank} 名 · ${myRank.rating} 分`, `You: #${myRank.rank} · ${myRank.rating}`)}
+              </div>
+            )}
           </div>
         )}
       </div>

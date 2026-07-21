@@ -299,3 +299,22 @@
   outline: 2px solid var(--gold-bright);
   outline-offset: 2px;
 }
+
+.ladderSeason {
+  margin-left: 8px;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--parchment-faint);
+  letter-spacing: 0.08em;
+}
+
+/* 「我在第几名」—— 榜外玩家此前完全看不到自己的位置 */
+.ladderMe {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed rgba(212, 168, 74, 0.25);
+  font-size: 11px;
+  font-weight: 700;
+  color: #e8c878;
+  text-align: right;
+}

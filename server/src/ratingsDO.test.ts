@@ -147,3 +147,85 @@ describe('seasons', () => {
     expect(ladder.rows).toHaveLength(0)
   })
 })
+
+describe('榜单不再遍历全表', () => {
+  it('首次读会建一次缓冲区,之后的读一次 list 都不做', async () => {
+    const ctx = fakeCtx()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const r = new RatingsDO(ctx as any)
+    await report(r, 'alice', 'bob', 1)
+    ctx._listCalls = 0
+
+    await r.fetch(new Request('https://r/ladder')) // 首次:建缓冲区
+    const afterFirst = ctx._listCalls
+    await r.fetch(new Request('https://r/ladder'))
+    await r.fetch(new Request('https://r/ladder'))
+    // 后续读一次全表扫描都不该有 —— 这正是要修的东西
+    expect(ctx._listCalls).toBe(afterFirst)
+    expect(afterFirst).toBeLessThanOrEqual(1)
+  })
+
+  it('结算会增量更新榜单,不触发全表扫描', async () => {
+    const ctx = fakeCtx()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const r = new RatingsDO(ctx as any)
+    await r.fetch(new Request('https://r/ladder')) // 先把缓冲区建起来
+    ctx._listCalls = 0
+    for (let i = 0; i < 20; i++) await report(r, `p${i}`, `q${i}`, 1)
+    expect(ctx._listCalls).toBe(0)
+
+    const ladder = (await (await r.fetch(new Request('https://r/ladder'))).json()) as {
+      rows: { name: string }[]
+    }
+    expect(ladder.rows.length).toBeGreaterThan(0)
+    expect(ladder.rows.map((x) => x.name)).toContain('p0')
+  })
+
+  it('榜单按分数降序,且赢家排在输家前面', async () => {
+    const r = make()
+    await report(r, 'winner', 'loser', 1)
+    const ladder = (await (await r.fetch(new Request('https://r/ladder'))).json()) as {
+      rows: { name: string; rating: number }[]
+    }
+    expect(ladder.rows[0].name).toBe('winner')
+    expect(ladder.rows[0].rating).toBeGreaterThan(ladder.rows[1].rating)
+  })
+
+  it('limit 可以收窄返回条数', async () => {
+    const r = make()
+    for (let i = 0; i < 6; i++) await report(r, `a${i}`, `b${i}`, 1)
+    const ladder = (await (await r.fetch(new Request('https://r/ladder?limit=3'))).json()) as {
+      rows: unknown[]
+    }
+    expect(ladder.rows).toHaveLength(3)
+  })
+
+  it('带 playerId 时回报「我在第几名」,榜外玩家 rank 为 null 但仍给分数', async () => {
+    const r = make()
+    await report(r, 'champ', 'chump', 1)
+    const inTop = (await (await r.fetch(new Request('https://r/ladder?playerId=champ'))).json()) as {
+      you: { rank: number | null; rating: number }
+    }
+    expect(inTop.you.rank).toBe(1)
+
+    const stranger = (await (
+      await r.fetch(new Request('https://r/ladder?playerId=never-played'))
+    ).json()) as { you: { rank: number | null; rating: number } }
+    expect(stranger.you.rank).toBeNull()
+    expect(stranger.you.rating).toBe(DEFAULT_RATING)
+  })
+
+  it('换季后榜单自然清空,不会把上赛季的人混进来', async () => {
+    const ctx = fakeCtx()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const r = new RatingsDO(ctx as any)
+    ctx._map.set('top:1999-01', [
+      { id: 'ancient', name: 'ancient', rating: 9999, wins: 5, losses: 0 },
+    ])
+    await report(r, 'alice', 'bob', 1)
+    const ladder = (await (await r.fetch(new Request('https://r/ladder'))).json()) as {
+      rows: { name: string }[]
+    }
+    expect(ladder.rows.map((x) => x.name)).not.toContain('ancient')
+  })
+})

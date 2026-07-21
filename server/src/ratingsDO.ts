@@ -19,6 +19,11 @@ interface StoredRating {
   losses: number
 }
 
+// 榜单缓冲区里的一行:比 StoredRating 多一个 id,好做增量 upsert
+interface TopRow extends StoredRating {
+  id: string
+}
+
 export interface ReportBody {
   a: { id: string; name: string }
   b: { id: string; name: string }
@@ -32,6 +37,18 @@ export interface ReportResult {
 
 const K = 32
 const LADDER_SIZE = 50
+
+// 榜单缓冲区大小。/ladder 只读这一个键,**不再遍历全表**。
+//
+// 从前每次打开天梯面板都 `storage.list({prefix})` 把当季**所有**玩家读进内存再排序:
+// 千人没事,十万人就是每次请求几十兆的反序列化,百万人直接挂。
+// 而榜单是「读远多于写」的东西 —— 该在写的时候把它算好。
+//
+// 缓冲区取 200 而展示 50,是为了留出容错余量:
+// 榜内玩家掉分后**可能**跌到某个榜外玩家之下,而我们无从得知(那需要全表扫描)。
+// 有 150 名的余量,展示的前 50 名出错的概率可以忽略。
+// 这是有意接受的近似,不是疏忽。
+const TOP_BUFFER = 200
 // 换季软重置系数:0 = 完全清零,1 = 完全继承
 const CARRY_OVER = 0.5
 
@@ -54,6 +71,35 @@ export class RatingsDO {
 
   private key(season: string, playerId: string): string {
     return `s:${season}:${playerId}`
+  }
+
+  private topKey(season: string): string {
+    return `top:${season}`
+  }
+
+  // 榜单缓冲区。首次读取时如果还没建立(刚上线 / 刚换季),
+  // 回退到一次全表扫描把它建起来 —— 只发生一次,之后全靠增量维护。
+  private async loadTop(season: string): Promise<TopRow[]> {
+    const cached = await this.ctx.storage.get<TopRow[]>(this.topKey(season))
+    if (cached) return cached
+    const all = await this.ctx.storage.list<StoredRating>({ prefix: `s:${season}:` })
+    const rows: TopRow[] = []
+    for (const [key, r] of all) {
+      rows.push({ id: key.slice(`s:${season}:`.length), ...r })
+    }
+    rows.sort((x, y) => y.rating - x.rating)
+    const top = rows.slice(0, TOP_BUFFER)
+    await this.ctx.storage.put(this.topKey(season), top)
+    return top
+  }
+
+  // 增量维护:一场对局只动两个人,O(TOP_BUFFER) 的插入排序,写入是一个键。
+  private async upsertTop(season: string, entries: TopRow[]): Promise<void> {
+    const top = await this.loadTop(season)
+    const byId = new Map(top.map((r) => [r.id, r]))
+    for (const e of entries) byId.set(e.id, e)
+    const next = [...byId.values()].sort((x, y) => y.rating - x.rating).slice(0, TOP_BUFFER)
+    await this.ctx.storage.put(this.topKey(season), next)
   }
 
   // 本赛季还没有记录时,去上一个赛季捞一份做软重置(惰性,不遍历全表)。
@@ -96,13 +142,21 @@ export class RatingsDO {
 
     if (url.pathname === '/ladder') {
       const season = currentSeason()
-      const all = await this.ctx.storage.list<StoredRating>({ prefix: `s:${season}:` })
-      const rows: RatingRow[] = [...all.values()]
-        .filter((r) => r.wins + r.losses > 0)
-        .sort((x, y) => y.rating - x.rating)
-        .slice(0, LADDER_SIZE)
+      const top = (await this.loadTop(season)).filter((r) => r.wins + r.losses > 0)
+      const limit = Math.max(1, Math.min(LADDER_SIZE, Number(url.searchParams.get('limit')) || LADDER_SIZE))
+      const rows: RatingRow[] = top
+        .slice(0, limit)
         .map((r) => ({ name: r.name || '无名氏', rating: r.rating, wins: r.wins, losses: r.losses }))
-      return json({ rows, season })
+
+      // 「我在第几名」—— 榜外玩家此前完全看不到自己的位置
+      const me = url.searchParams.get('playerId')
+      let you: { rank: number | null; rating: number } | undefined
+      if (me) {
+        const idx = top.findIndex((r) => r.id === me)
+        const mine = await this.load(season, me, '')
+        you = { rank: idx >= 0 ? idx + 1 : null, rating: mine.rating }
+      }
+      return json({ rows, season, you })
     }
 
     return new Response('not found', { status: 404 })
@@ -130,6 +184,10 @@ export class RatingsDO {
     }
     await this.ctx.storage.put(keyA, a)
     await this.ctx.storage.put(keyB, b)
+    await this.upsertTop(season, [
+      { id: body.a.id, ...a },
+      { id: body.b.id, ...b },
+    ])
     return {
       a: { rating: a.rating, delta: deltaA },
       b: { rating: b.rating, delta: -deltaA },

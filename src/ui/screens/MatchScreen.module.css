@@ -604,3 +604,25 @@
   animation: none;
   opacity: 1;
 }
+
+/* 断线横幅里的动作按钮 */
+.bannerBtn {
+  margin-left: 10px;
+  padding: 4px 12px;
+  border-radius: 7px;
+  border: 1px solid rgba(212, 168, 74, 0.55);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--gold-bright);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.bannerBtn:hover {
+  filter: brightness(1.2);
+}
+
+.bannerBtn:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
+}

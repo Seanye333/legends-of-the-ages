@@ -202,7 +202,15 @@ function wsUrl(server: string, path: string): string {
   return `${wsScheme(server)}${server}${path}`
 }
 
-const MAX_RECONNECT_TRIES = 6
+// 重连窗口必须**大于服务端的掉线判负时限**(matchDO 的 FORFEIT_MS = 90s)。
+//
+// 原来是「最多重试 6 次」,退避 1/2/4/8/8/8 秒 ≈ 63 秒就放弃 ——
+// 而那时对局在服务器上还活着,再撑 27 秒就能接回来。玩家看到的是
+// 「连接已断开」然后干等着被判负,中间没有任何出路。
+// 现在按**时长**重试而不是按次数,并把上限设到 120 秒;
+// 真的超时了也给一个手动重试入口(MatchScreen 的「重新连接」)。
+const RECONNECT_WINDOW_MS = 120_000
+const RECONNECT_MAX_DELAY_MS = 5_000
 
 export class RemoteMatch {
   private queueWs: WebSocket | null = null
@@ -213,6 +221,8 @@ export class RemoteMatch {
   private closed = false
   private ended = false
   private reconnectTries = 0
+  // 本轮重连的起始时刻(0 = 当前没在重连)
+  private reconnectSince = 0
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
   // 观战模式:不发 join、不存会话、不参与再战
   private spectating = false
@@ -353,6 +363,7 @@ export class RemoteMatch {
       const msg = JSON.parse(String(ev.data)) as MatchServerMsg
       if (msg.type === 'start' || msg.type === 'update') {
         this.reconnectTries = 0
+        this.reconnectSince = 0
         if (msg.type === 'start') this.cb.onStatus('playing')
         const state = inflateRedacted(msg.state, this.seat)
         if (state.phase === 'ended') {
@@ -422,18 +433,32 @@ export class RemoteMatch {
   // 意外断开:1s/2s/4s/8s… 指数退避重连,超限才认输为 closed
   private scheduleReconnect(): void {
     if (!this.matchId || this.reconnectTimer) return
-    if (this.reconnectTries >= MAX_RECONNECT_TRIES) {
+    if (this.reconnectSince === 0) this.reconnectSince = Date.now()
+    if (Date.now() - this.reconnectSince >= RECONNECT_WINDOW_MS) {
+      // 放弃自动重连,但会话还在 —— 玩家可以手动重试,或从标题页「回到对局」
       this.cb.onStatus('closed')
       return
     }
     this.reconnectTries++
     this.cb.onStatus('reconnecting')
-    const delay = Math.min(8000, 1000 * 2 ** (this.reconnectTries - 1))
+    const delay = Math.min(RECONNECT_MAX_DELAY_MS, 1000 * 2 ** (this.reconnectTries - 1))
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null
       if (this.closed || this.ended || !this.matchId) return
       this.openMatch(this.matchId)
     }, delay)
+  }
+
+  // 手动重试:自动重连放弃之后的出路。重置计时窗口再来一轮。
+  retryNow(): void {
+    if (this.closed || this.ended || !this.matchId) return
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
+    this.reconnectSince = 0
+    this.reconnectTries = 0
+    this.openMatch(this.matchId)
   }
 
   // 测试钩子:模拟网络闪断(不置 closed,应触发自动重连)

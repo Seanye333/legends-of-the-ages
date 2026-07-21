@@ -8,6 +8,8 @@
 // 真正需要 workerd 语义的部分(hibernation、alarm 真的被调度、WebSocketPair)
 // 仍然只能靠 server/drive-test.ts —— 那条防线不能撤。
 export interface FakeCtx {
+  // 计数器:用来断言「读榜单不再遍历全表」这类性能契约
+  _listCalls: number
   storage: {
     get<T>(key: string): Promise<T | undefined>
     put(key: string, value: unknown): Promise<void>
@@ -27,6 +29,7 @@ export function fakeCtx(name?: string): FakeCtx {
   const ctx: FakeCtx = {
     _map: map,
     _alarm: null,
+    _listCalls: 0,
     id: { name },
     storage: {
       async get<T>(key: string) {
@@ -45,6 +48,7 @@ export function fakeCtx(name?: string): FakeCtx {
         map.clear()
       },
       async list<T>(opts?: { prefix?: string }) {
+        ctx._listCalls++
         const out = new Map<string, T>()
         for (const [k, v] of map) {
           if (opts?.prefix && !k.startsWith(opts.prefix)) continue

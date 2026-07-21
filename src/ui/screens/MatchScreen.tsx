@@ -61,6 +61,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
     sendEmote,
     rematchState,
     requestRematch,
+    retryConnection,
     spectating,
   } = useMatch()
   const { soundEnabled, setSoundEnabled } = useSettings()
@@ -498,8 +499,30 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
       {mode === 'remote' && remoteStatus === 'opponent-left' && state.phase !== 'ended' && (
         <div className={styles.linkBanner}>{t('对手掉线,等待重连…', 'Opponent disconnected, waiting…')}</div>
       )}
+      {/* 自动重连放弃后不该只剩一句「已断开」—— 对局在服务器上可能还活着 */}
       {mode === 'remote' && remoteStatus === 'closed' && state.phase !== 'ended' && (
-        <div className={styles.linkBanner}>{t('连接已断开,可回标题页稍后续局', 'Disconnected — rejoin later from title')}</div>
+        <div className={styles.linkBanner} role="status" aria-live="assertive">
+          {t('连接已断开', 'Disconnected')}
+          <button
+            className={styles.bannerBtn}
+            onClick={(e) => {
+              e.stopPropagation()
+              playSfx('buttonTap')
+              retryConnection()
+            }}
+          >
+            {t('重新连接', 'Reconnect')}
+          </button>
+          <button
+            className={styles.bannerBtn}
+            onClick={(e) => {
+              e.stopPropagation()
+              handleExit()
+            }}
+          >
+            {t('回标题页', 'Back to title')}
+          </button>
+        </div>
       )}
 
       {tutorial && <TutorialCoach state={state} events={lastEvents} onQuit={handleExit} />}
