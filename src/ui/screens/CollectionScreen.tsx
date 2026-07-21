@@ -187,20 +187,30 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
   const shown = filtered.slice(0, limit)
 
   // 无限滚动。仍然只渲染 limit 张(DOM 有界,所以不需要虚拟列表),
-  // 但不用玩家每 48 张点一次按钮 —— 2211 张卡意味着点 46 次才能翻到底。
+  // 但不用玩家每 48 张点一次按钮 —— 2200 张卡意味着点 46 次才能翻到底。
+  //
+  // 分成「记录是否可见」和「可见就继续加载」两个 effect,不在 IO 回调里直接加页。
+  // 原因是 IntersectionObserver **只在相交状态发生变化时**回调:
+  // 加载一页之后哨兵往往还留在视口里(尤其筛选结果本来就不足一屏时),
+  // 状态没变 → 不再回调 → 加载卡死在第二页。第一版就是这么写的,
+  // e2e 因此断续地红,而且是真 bug 不是测试抖动:玩家会看到「滚到底了却不再加载」。
   const sentinelRef = useRef<HTMLDivElement | null>(null)
+  const [sentinelVisible, setSentinelVisible] = useState(false)
   useEffect(() => {
     const el = sentinelRef.current
     if (!el) return
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) setLimit((l) => l + PAGE)
-      },
-      { rootMargin: '400px' },
-    )
+    const io = new IntersectionObserver((entries) => setSentinelVisible(!!entries[0]?.isIntersecting), {
+      rootMargin: '400px',
+    })
     io.observe(el)
     return () => io.disconnect()
   }, [])
+  useEffect(() => {
+    if (!sentinelVisible || limit >= filtered.length) return
+    // 让一帧再加下一页:一次性把 2200 张全挂上去会把主线程钉死
+    const timer = window.setTimeout(() => setLimit((l) => l + PAGE), 60)
+    return () => window.clearTimeout(timer)
+  }, [sentinelVisible, limit, filtered.length])
 
   // 任一筛选条件变化就回到第一页。放在这里而不是散在每个 onClick 里 ——
   // 之前每加一个筛选器就要记得补一次 setLimit(PAGE),漏一个就是「换了筛选却还停在第 5 页」。

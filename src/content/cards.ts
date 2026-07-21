@@ -28,3 +28,27 @@ export const CARDS_BY_ID: CardLibrary = Object.fromEntries(CARDS.map((c) => [c.i
 export const COLLECTIBLE_CARDS: CardDef[] = CARDS.filter((c) => !c.token)
 
 export const SIGNATURE_IDS = Object.keys(SIGNATURE_OVERRIDES)
+
+// 卡池里**重名**的卡(中文名相同的两张及以上)。
+//
+// 这不是 bug 清单,而是一个必须承认的事实:花名册里既有真正的同名异人
+// (蜀漢馬忠 / 東吳馬忠;東漢賈逵 / 曹魏賈逵;蜀漢李密 / 隋末李密),
+// 也有导入期两批花名册重叠留下的同一个人(杜預、嵇康、阮籍 等在三国册里记作「群」、
+// 在两晋册里记作「晋」)。
+//
+// **不做自动合并。** 分辨这两类需要逐个的史料判断,而合并的代价是不可逆的:
+// 卡 id 一旦从卡池消失,玩家收藏里的那张就静默蒸发了。
+// 所以这里只做一件事 —— 把重名的卡在界面上标出朝代,让「賈逵 · 魏」和
+// 「賈逵 · 西漢」各自成立。真正该合并的那些,等有人愿意逐条过一遍史料再说。
+//
+// content.test.ts 钉住了当前数量,防止它悄悄变多。
+export const AMBIGUOUS_NAMES: ReadonlySet<string> = (() => {
+  const seen = new Map<string, number>()
+  for (const c of COLLECTIBLE_CARDS) seen.set(c.name.zh, (seen.get(c.name.zh) ?? 0) + 1)
+  return new Set([...seen.entries()].filter(([, n]) => n > 1).map(([name]) => name))
+})()
+
+// 该不该在卡名旁边标朝代
+export function needsDynastyTag(card: CardDef): boolean {
+  return AMBIGUOUS_NAMES.has(card.name.zh)
+}

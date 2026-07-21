@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { CARDS, CARDS_BY_ID } from './cards'
+import { AMBIGUOUS_NAMES, CARDS, CARDS_BY_ID, COLLECTIBLE_CARDS } from './cards'
+import type { CardDef } from '../engine/types'
 import { PRECON_DECKS, validateDeck } from './decks'
 import { GENERATED_CARDS } from './generated/cards.gen'
 import { HEROES, HEROES_BY_ID } from './overrides/heroes'
@@ -96,5 +97,37 @@ describe('precon decks', () => {
       expect(strats, `deck ${deck.heroId} stratagem count`).toBeGreaterThanOrEqual(2)
       expect(strats, `deck ${deck.heroId} stratagem count`).toBeLessThanOrEqual(4)
     }
+  })
+})
+
+describe('重名卡', () => {
+  // 卡池里既有真正的同名异人(蜀漢馬忠 / 東吳馬忠、東漢賈逵 / 曹魏賈逵),
+  // 也有导入期两批花名册重叠留下的同一个人(杜預、嵇康、阮籍…在三国册记「群」、
+  // 两晋册记「晋」)。分辨这两类要逐条史料判断,而合并是不可逆的 ——
+  // 卡 id 从池子里消失,玩家收藏里的那张就静默蒸发。
+  //
+  // 所以这里不断言「没有重名」(那是假的),而是**钉住数量**:
+  // 现状可以接受,但不能在没人注意的时候变多。
+  // 界面上这些卡会带朝代标注(见 CardFace 的 dynastyTag),所以玩家分得清。
+  it('数量被钉住 —— 变多说明又导入了一批重叠的花名册', () => {
+    expect(AMBIGUOUS_NAMES.size).toBe(36)
+  })
+
+  it('每一个重名都必须能靠朝代或身材区分,否则界面上无法分辨', () => {
+    const byName = new Map<string, CardDef[]>()
+    for (const c of COLLECTIBLE_CARDS) {
+      if (!AMBIGUOUS_NAMES.has(c.name.zh)) continue
+      const list = byName.get(c.name.zh) ?? []
+      list.push(c)
+      byName.set(c.name.zh, list)
+    }
+    const indistinguishable: string[] = []
+    for (const [name, cards] of byName) {
+      const keys = new Set(cards.map((c) => `${c.dynasty}/${c.cost}/${c.attack}/${c.health}`))
+      if (keys.size < cards.length) indistinguishable.push(name)
+    }
+    // 这一条现在是绿的。将来它红了,说明有两张卡在玩家眼里**完全一样** ——
+    // 那才是真正必须合并的情况。
+    expect(indistinguishable).toEqual([])
   })
 })

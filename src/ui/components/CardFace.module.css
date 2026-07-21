@@ -304,3 +304,15 @@
   border: 1px solid rgba(255, 235, 180, 0.7);
   box-shadow: 0 0 6px rgba(232, 178, 58, 1);
 }
+
+/* 重名卡的朝代标注(见 cards.ts 的 AMBIGUOUS_NAMES) */
+.dynastyTag {
+  margin-left: 3px;
+  padding: 0 3px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.13);
+  font-size: 0.62em;
+  font-weight: 600;
+  vertical-align: 0.18em;
+  opacity: 0.8;
+}

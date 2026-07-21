@@ -1,8 +1,8 @@
 import type { CSSProperties, MouseEvent } from 'react'
 import type { CardInstance } from '../../engine/types'
-import { CARDS_BY_ID } from '../../content/cards'
+import { CARDS_BY_ID, needsDynastyTag } from '../../content/cards'
 import { useSettings } from '../../app/settingsStore'
-import { DOCTRINE_COLORS } from '../doctrineColors'
+import { DOCTRINE_COLORS, dynastyName } from '../doctrineColors'
 import { Portrait } from './Portrait'
 import { useLongPress } from '../useLongPress'
 import styles from './CardFace.module.css'
@@ -95,7 +95,16 @@ export function CardFace({ inst, playable, selected, large, onClick, onInspect }
         <Portrait id={def.id} nameZh={def.name.zh} doctrine={def.doctrine} />
       </div>
       <div className={styles.nameBox}>
-        <div className={styles.name}>{mainName}</div>
+        <div className={styles.name}>
+          {mainName}
+          {/* 重名卡才标朝代:光看卡面「杜預」和「杜預」分不出是两张不同的牌。
+              只有 40 张卡会走到这里,不会给正常卡面添噪。 */}
+          {needsDynastyTag(def) && (
+            <span className={styles.dynastyTag}>
+              {lang === 'en' ? dynastyName(def.dynasty).en : dynastyName(def.dynasty).zh}
+            </span>
+          )}
+        </div>
         {subName && <div className={styles.sub}>{subName}</div>}
       </div>
       <span className={`${styles.rarity} ${styles[def.rarity]}`} />

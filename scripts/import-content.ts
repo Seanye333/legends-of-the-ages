@@ -517,9 +517,27 @@ const all = [...tkOfficers, ...histOfficers]
 
 console.log(`officers: three-kingdoms=${tkOfficers.length} historical=${histOfficers.length}`)
 
+// 同一个人在两份花名册里各占一条(id 拼法不同,人是同一个)。
+//
+// 只列**玩家完全分不出来的**那几对 —— 同名、同朝代、同费用、同身材。
+// 卡池里还有 36 组重名不在这里:有的是真同名异人(蜀漢馬忠 / 東吳馬忠、
+// 東漢賈逵 / 曹魏賈逵、蜀漢李密 / 隋末李密,上游 id 用 -wu / -wei 后缀
+// 明确区分过);有的是同一个人在三国册记「群」、在两晋册记「晋」
+// (杜預、嵇康、阮籍…)—— 那批要合并得逐条过史料,而且合并不可逆,
+// 不在这里替人决定。界面上它们会带朝代标注,玩家分得清(见 CardFace 的 dynastyTag)。
+//
+// 去留标准:保留信息更多的那条(有主义 > 中立、稀有度更高),同分取 collectorNo 更小的。
+const DUPLICATE_OFFICER_IDS: ReadonlySet<string> = new Set([
+  'mulu-da', // 木鹿大王 —— 保留 mu-lu(collectorNo 更小)
+  'daolaidong', // 帶來洞主 —— 保留 dailai-dongzhu(有主义:名利)
+  'cui-zhou-ping', // 崔州平 —— 保留 cui-zhouping(稀有 + 隐逸,信息更全)
+  'fu-qi', // 傅僉 —— 保留 fu-qian(collectorNo 更小)
+])
+
 // 源数据存在重复 id(如 nan-lou 在 officers.ts 出现两次)—— 保留首个,警告跳过
 const seen = new Set<string>()
 const unique = all.filter((o) => {
+  if (DUPLICATE_OFFICER_IDS.has(o.id)) return false
   if (seen.has(o.id)) {
     console.warn(`⚠ duplicate officer id in source data, skipping: ${o.id} (${o.name.zh})`)
     return false
