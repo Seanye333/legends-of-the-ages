@@ -13,11 +13,19 @@ import { CARDS_BY_ID } from '../src/content/cards'
 import { HEROES_BY_ID } from '../src/content/overrides/heroes'
 import { createGame } from '../src/engine/init'
 import { applyCommand } from '../src/engine/reducer'
-import { aiStep, AI_NORMAL } from '../src/ai/greedy'
+import { aiStep, AI_LEVELS, AI_NORMAL } from '../src/ai/greedy'
 import { START_HP } from '../src/engine/types'
 import type { GameConfig, PlayerIdx, Winner } from '../src/engine/types'
 
 const GAMES = Number(process.env.GAMES ?? 60)
+
+// Boss 侧的 AI 档位。默认 AI_NORMAL —— 它是这套曲线一路调出来的基准尺,
+// 换掉就没法和历史数字比了。
+//
+// `BOSS_AI=general` 可以量**名将档玩家实际面对的 Boss**:
+// 名将比 AI_NORMAL 多一层前瞻(foresight),对打实测 64% 胜率。
+// 这两个数字**不是一回事**,别混着看 —— campaign.ts 里记的曲线是前者。
+const BOSS_AI = process.env.BOSS_AI === 'general' ? AI_LEVELS.general : AI_NORMAL
 
 function play(bossIdx: number, playerDeckIdx: number, seed: number, first: PlayerIdx): Winner {
   const boss = BOSSES[bossIdx]
@@ -38,7 +46,8 @@ function play(bossIdx: number, playerDeckIdx: number, seed: number, first: Playe
     if (++guard > 5000) return 'draw'
     const actor: PlayerIdx =
       state.phase === 'mulligan' ? (state.players[0].mulliganDone ? 1 : 0) : state.activePlayer
-    const step = aiStep(state, actor, CARDS_BY_ID, rngs[actor], AI_NORMAL)
+    // 模拟的「玩家」恒用 AI_NORMAL 当基准尺;Boss 侧可以换档(见 BOSS_AI)
+    const step = aiStep(state, actor, CARDS_BY_ID, rngs[actor], actor === 1 ? BOSS_AI : AI_NORMAL)
     rngs[actor] = step.rng
     const r = applyCommand(state, actor, step.cmd, CARDS_BY_ID)
     if (!r.ok) throw new Error(`AI illegal command (${r.error}) vs ${boss.name.zh}`)

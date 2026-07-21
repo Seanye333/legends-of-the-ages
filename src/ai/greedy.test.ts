@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { createGame, createInstance } from '../engine/init'
 import { applyCommand } from '../engine/reducer'
 import type { CardDef, CardLibrary, GameConfig, GameState, PlayerIdx } from '../engine/types'
-import { aiStep, AI_NORMAL } from './greedy'
+import { aiStep, AI_NORMAL, evaluate } from './greedy'
+
+let nextIid = 3000
 
 function def(id: string, over: Partial<CardDef>): CardDef {
   return {
@@ -28,6 +30,7 @@ const LIB: CardLibrary = Object.fromEntries(
     def('a-van2', {}),
     def('a-charge', { cost: 3, attack: 3, health: 2, keywords: ['charge'] }),
     def('a-wall', { cost: 3, attack: 2, health: 5, keywords: ['guard'] }),
+    def('a-glass', { cost: 3, attack: 4, health: 1 }), // 高攻脆皮:一换一很划算
     def('a-strat-bolt', {
       type: 'stratagem',
       cost: 2,
@@ -105,5 +108,80 @@ describe('greedy AI', () => {
     }
     expect(state.phase).toBe('ended')
     expect(state.winner).toBe(0)
+  })
+})
+
+
+describe('一层前瞻(名将档)', () => {
+  // 场面:我方一个 3/2 冲锋;敌方三个 4/1 —— 下回合合计 12 点扑上来。
+  // 我 10 血:直接打脸就是死;拿冲锋换掉一个 4/1,进来的伤害降到 8,能活。
+  //
+  // 关键是这一步**对贪心来说是亏的**:3/2 换 4/1 丢了自己的场面,
+  // 而打脸能实打实推进 3 点。所以无前瞻的一定选打脸 —— 然后下回合被带走。
+  const mk = (defId: string) => {
+    const c = createInstance(defId, nextIid++, LIB)
+    c.exhausted = false
+    return c
+  }
+  const side = (heroHp: number, board: string[]) => ({
+    heroId: 'h',
+    heroHp,
+    heroMaxHp: 30,
+    armor: 0,
+    fatigue: 0,
+    mana: { current: 0, max: 6 },
+    deck: [],
+    hand: [],
+    board: board.map(mk),
+    graveyard: [],
+    mulliganDone: true,
+    heroPowerUsed: false,
+    secrets: [],
+    overloadNext: 0,
+    overloadLocked: 0,
+    cardsPlayedThisTurn: 0,
+  })
+  const scene = (myHp: number): GameState =>
+    ({
+      seed: 1,
+      rng: 7,
+      turn: 9,
+      activePlayer: 0,
+      phase: 'main',
+      nextIid: 4000,
+      players: [side(myHp, ['a-charge']), side(30, ['a-glass', 'a-glass', 'a-glass'])],
+    }) as unknown as GameState
+
+  const PLAIN = { blunderChance: 0, lethalSearch: true, foresight: false }
+  const SEER = { blunderChance: 0, lethalSearch: true, foresight: true }
+  const hitsFace = (c: { type: string; target?: { kind: string } }) =>
+    c.type === 'Attack' && c.target?.kind === 'hero'
+
+  it('能靠一次交换活下来时,前瞻会去换,不前瞻的会打脸然后死', () => {
+    const s = scene(10) // 进来 12 > 10;换掉一个 4/1 之后 8 < 10
+    expect(hitsFace(aiStep(s, 0, LIB, 1, PLAIN).cmd)).toBe(true)
+    expect(hitsFace(aiStep(s, 0, LIB, 1, SEER).cmd)).toBe(false)
+  })
+
+  it('血线安全时前瞻不改变选择 —— 它不该把 AI 变成缩头乌龟', () => {
+    const s = scene(30)
+    expect(hitsFace(aiStep(s, 0, LIB, 1, SEER).cmd)).toBe(true)
+  })
+
+  it('怎么换都活不了时,前瞻不再浪费这一步,照样打脸', () => {
+    // 8 血面对 12:换掉一个还剩 8,正好还是致死 —— 换了也没用,那就换血
+    const s = scene(8)
+    expect(hitsFace(aiStep(s, 0, LIB, 1, SEER).cmd)).toBe(true)
+  })
+
+  it('断崖罚分只在会被带走时出现', () => {
+    const safe = scene(30)
+    const doomed = scene(10)
+    expect(evaluate(safe, 0, LIB, true)).toBeCloseTo(evaluate(safe, 0, LIB, false) - 12 * 0.3, 5)
+    // 12 攻扑脸 + 断崖 400
+    expect(evaluate(doomed, 0, LIB, false) - evaluate(doomed, 0, LIB, true)).toBeCloseTo(
+      12 * 0.3 + 400,
+      5,
+    )
   })
 })

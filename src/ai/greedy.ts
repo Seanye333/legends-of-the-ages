@@ -29,17 +29,21 @@ export interface AiConfig {
   blunderChance: number
   // 是否启用斩杀搜索。关掉之后 AI 会漏掉多步斩杀 —— 这是低难度最像人的失误。
   lethalSearch: boolean
+  // 一层前瞻:评分时把「对手下回合能打我多少」算进去。见 incomingFaceDamage。
+  // 只给最高难度开 —— 它是三档之间**最大**的一处差别,也是最像人的那一处。
+  foresight?: boolean
 }
 
 export const AI_NORMAL: AiConfig = { blunderChance: 0, lethalSearch: true }
 export const AI_EASY: AiConfig = { blunderChance: 0.25, lethalSearch: false }
 
 // 三档难度(UI 用兵法称谓:新兵/宿将/名将)。
-// 三档的差别不只是失误率:新兵完全看不见多步斩杀,宿将偶尔失误,名将零失误且必算斩杀。
+// 三档的差别不只是失误率:新兵完全看不见多步斩杀,宿将偶尔失误,
+// 名将零失误、必算斩杀,而且**会看对手下一回合**(foresight)。
 export const AI_LEVELS = {
   recruit: { blunderChance: 0.35, lethalSearch: false },
   veteran: { blunderChance: 0.12, lethalSearch: false },
-  general: { blunderChance: 0, lethalSearch: true },
+  general: { blunderChance: 0, lethalSearch: true, foresight: true },
 } as const satisfies Record<string, AiConfig>
 
 // ---------- 估值 ----------
@@ -102,7 +106,35 @@ function sideValue(p: PlayerState, lib: CardLibrary): number {
   return v
 }
 
-export function evaluate(state: GameState, player: PlayerIdx, lib: CardLibrary): number {
+// 对手下回合能打到我脸上多少。
+//
+// 贪心 AI 最后一个大盲区:它看得见「这一步换得赚不赚」,看不见「我这样收手会不会被一波带走」。
+// 表现出来就是把守护换掉去多打两点脸,然后下回合被打死 —— 每一步单看都是赚的。
+//
+// 刻意做成粗糙的近似,不做真搜索:
+//   - 假设对手所有单位下回合都能动(疲劳/冲锋差异忽略);
+//   - 守护墙按「总血量要先被啃穿」折算,不考虑谁打谁;
+//   - 潜行单位算进去(它下回合照样能打)。
+// 真要精确得展开对手的整个回合,分支立刻上千 —— 而这个近似已经足够
+// 把「别在能被斩杀的场面上收手」这条学会,那是它 90% 的价值所在。
+function incomingFaceDamage(state: GameState, player: PlayerIdx): number {
+  const me = state.players[player]
+  const foe = state.players[player === 0 ? 1 : 0]
+  let swing = 0
+  for (const unit of foe.board) swing += unit.attack * maxAttacksOf(unit)
+  let guardHp = 0
+  for (const unit of me.board) {
+    if (unit.keywords.includes('guard')) guardHp += unit.health
+  }
+  return Math.max(0, swing - guardHp)
+}
+
+export function evaluate(
+  state: GameState,
+  player: PlayerIdx,
+  lib: CardLibrary,
+  foresight = false,
+): number {
   if (state.phase === 'ended') {
     if (state.winner === player) return 1e9
     if (state.winner === 'draw') return 0
@@ -141,6 +173,18 @@ export function evaluate(state: GameState, player: PlayerIdx, lib: CardLibrary):
   // 即时价值,因为债要下回合才还,中间还有一回合的场面收益)。
   score -= me.overloadNext * 0.5
   score += foe.overloadNext * 0.5
+
+  // 一层前瞻(仅最高难度)
+  if (foresight) {
+    const incoming = incomingFaceDamage(state, player)
+    // 连续项:留着挨打的场面本来就该扣分,幅度小于一点血本身(0.6),
+    // 否则 AI 会缩回去只做防守、永远不推进。
+    score -= incoming * 0.3
+    // 断崖项:对手下回合就能带走我 —— 这一步无论换得多赚都不能选。
+    // 量级要压过任何单步的场面收益,但远小于胜负项(1e9),
+    // 免得它在真正的必死局面里连「拼一把」都不肯。
+    if (incoming >= myHp) score -= 400
+  }
 
   return score
 }
@@ -242,7 +286,7 @@ export function aiStep(
   const scored = commands.map((cmd) => {
     const r = applyCommand(state, player, cmd, lib)
     if (!r.ok) return { cmd, score: -Infinity }
-    let score = evaluate(r.state, player, lib)
+    let score = evaluate(r.state, player, lib, config.foresight === true)
     if (cmd.type === 'EndTurn') {
       // 浮费惩罚:结束回合时每点没花掉的法力都是白扔的。
       // 没有这一项,AI 会因为「出牌会掉一点手牌分」而攥着牌过回合。
