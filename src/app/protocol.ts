@@ -3,12 +3,28 @@
 import type { Command, GameEvent, PlayerIdx } from '../engine/types'
 import type { RedactedState } from '../engine/redact'
 
+// ---- 协议版本 ----
+//
+// 此前协议**完全没有版本号**。而客户端是 PWA:Service Worker 会把旧构建缓存住,
+// 玩家可能连着好几天跑的都是旧代码。一旦服务端改了消息结构,
+// 旧客户端不会报错 —— 它会静默地按旧字段解析新消息,表现为
+// 「牌打不出去」「状态对不上」这种没法归因的诡异 bug。
+//
+// 规则:**任何改动 MatchClientMsg / MatchServerMsg / QueueClientMsg 结构的提交,
+// 都要 bump PROTOCOL_VERSION,并同步 server 的 MIN_CLIENT_VERSION。**
+// 老客户端会收到一条明确的 `protocol-outdated`,UI 直接请玩家刷新 ——
+// 刷新会让 PWA 的 autoUpdate 拉到新构建,这条路是通的。
+//
+// 只加可选字段(不改已有字段含义)不需要 bump:老客户端忽略它即可。
+export const PROTOCOL_VERSION = 1
+
 // ---- 队列 ----
 
 export interface QueueJoinMsg {
   type: 'join'
   name: string
   playerId?: string // 匿名设备 ID:天梯积分与分段匹配的键
+  v?: number // 协议版本;缺省视为 0(版本机制上线前的老客户端)
 }
 
 export interface QueueMatchedMsg {
@@ -35,6 +51,7 @@ export interface MatchJoinMsg {
   deckIds: string[]
   name: string
   playerId?: string
+  v?: number // 协议版本;缺省视为 0
 }
 
 export interface MatchCmdMsg {

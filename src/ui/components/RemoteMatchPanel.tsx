@@ -13,6 +13,7 @@ import type { DeckList } from '../../content/decks'
 import type { LocalizedText } from '../../engine/types'
 import { usePickCompact, usePickText, useT } from '../i18n'
 import { playSfx } from '../sound'
+import { isProtocolOutdated, matchErrorText } from './errorText'
 import styles from './RemoteMatchPanel.module.css'
 
 const SERVER_KEY = 'qiangu-server-addr'
@@ -174,7 +175,18 @@ export function RemoteMatchPanel({ deck, onStart, onClose }: RemoteMatchPanelPro
             </span>
           </div>
         )}
-        {error && <div className={styles.error}>{error}</div>}
+        {/* 联机面板此前把内部错误码原样显示给玩家(connect-failed / room-not-found…)。
+            版本过旧是唯一必须给出动作的一条 —— 不刷新永远好不了。 */}
+        {error && (
+          <div className={styles.error}>
+            {pick(matchErrorText(error))}
+            {isProtocolOutdated(error) && (
+              <button className={styles.reloadBtn} onClick={() => location.reload()}>
+                {t('立即刷新', 'Reload now')}
+              </button>
+            )}
+          </div>
+        )}
 
         {!searching && tab === 'queue' && (
           <div className={styles.buttons}>

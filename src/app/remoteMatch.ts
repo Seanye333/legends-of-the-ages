@@ -22,7 +22,7 @@ import type {
   QueueServerMsg,
   RoomServerMsg,
 } from './protocol'
-import { httpBase, wsScheme } from './protocol'
+import { httpBase, wsScheme, PROTOCOL_VERSION } from './protocol'
 import type { EmoteId } from './protocol'
 import type { DeckList } from '../content/decks'
 import { getPlayerId } from './leaderboard'
@@ -234,7 +234,12 @@ export class RemoteMatch {
   // 快速匹配(计天梯)
   start(): void {
     this.openLobby('/queue', (ws) => {
-      const join: QueueClientMsg = { type: 'join', name: this.playerName, playerId: this.playerId }
+      const join: QueueClientMsg = {
+        type: 'join',
+        name: this.playerName,
+        playerId: this.playerId,
+        v: PROTOCOL_VERSION,
+      }
       ws.send(JSON.stringify(join))
       this.cb.onStatus('queued')
     })
@@ -340,6 +345,7 @@ export class RemoteMatch {
         deckIds: this.deck.cardIds,
         name: this.playerName,
         playerId: this.playerId,
+        v: PROTOCOL_VERSION,
       }
       ws.send(JSON.stringify(join))
     }

@@ -26,6 +26,7 @@ import { EMOTES } from '../../src/app/protocol'
 import type { ReportBody, ReportResult } from './ratingsDO'
 import { verifyMatchId } from './matchId'
 import { log } from './log'
+import { isSupported, outdatedError } from './protocolGuard'
 
 interface SeatInfo {
   heroId: string
@@ -339,6 +340,12 @@ export class MatchDO {
     }
 
     if (msg.type === 'join') {
+      // 版本闸门放在 join:它是每次连接(含重连)必发的第一条消息
+      if (!isSupported(msg.v)) {
+        log.warn({ evt: 'match.protocol_outdated', match: this.ctx.id.name, v: msg.v })
+        this.sendTo(seatIdx, { type: 'error', error: outdatedError(msg.v) })
+        return
+      }
       const seat = this.seats[seatIdx]
       if (this.state) return // 已开局,join 只用于重连(fetch 已补发)
       // 服务器侧卡组校验:防非法卡组

@@ -279,3 +279,23 @@
   color: var(--gold);
   font-variant-numeric: tabular-nums;
 }
+
+.reloadBtn {
+  display: block;
+  margin: 8px auto 0;
+  padding: 6px 16px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: linear-gradient(180deg, #d4a84a, #8a6c26);
+  color: #1a1206;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.reloadBtn:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
+}

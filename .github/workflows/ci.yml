@@ -30,6 +30,9 @@ jobs:
       - name: 类型检查 + 构建
         run: npm run build
 
+      # 含 server/ 的单测(ELO 数学、赛季换算、TOFU 判定、协议闸门)。
+      # server/ 不在 tsc 项目内,单测是这部分逻辑唯一的自动化防线 ——
+      # drive-test 覆盖得更全,但它要手动起 wrangler,进不了 CI。
       - name: 单元测试
         run: npm test
 

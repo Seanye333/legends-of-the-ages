@@ -31,7 +31,19 @@ const MATCH_ERRORS: Record<string, LocalizedText> = {
   'profile-forbidden': { zh: '存档密钥不匹配', en: 'Save key does not match' },
 }
 
+// 客户端版本落后于服务端要求。这是唯一一条**必须给出动作**的错误 ——
+// 其余错误重试就行,这条不刷新永远好不了。
+export function isProtocolOutdated(code: string): boolean {
+  return code.startsWith('protocol-outdated')
+}
+
 export function matchErrorText(code: string): LocalizedText {
+  if (isProtocolOutdated(code)) {
+    return {
+      zh: '客户端版本过旧,请刷新页面以更新',
+      en: 'This client is out of date — reload to update',
+    }
+  }
   const known = MATCH_ERRORS[code]
   if (known) return known
   // `illegal-deck: ...`、`unknown-card-def: ...` 这类带冒号的复合码取前缀再试一次

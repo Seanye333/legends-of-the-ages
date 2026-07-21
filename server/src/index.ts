@@ -1,3 +1,4 @@
+import { MIN_CLIENT_VERSION, SERVER_PROTOCOL_VERSION } from './protocolGuard'
 // 千古名将联机服务器:Cloudflare Worker 入口。
 // /queue → QueueDO(全局单例匹配队列,按天梯分段撮合)
 // /room/new /room/join/:code → RoomDO(好友房间码,一码一实例)
@@ -34,7 +35,7 @@ export default {
     const url = new URL(request.url)
 
     if (url.pathname === '/health') {
-      return new Response(JSON.stringify({ ok: true, service: 'qiangu-server' }), {
+      return new Response(JSON.stringify({ ok: true, service: 'qiangu-server', protocol: SERVER_PROTOCOL_VERSION, minClient: MIN_CLIENT_VERSION }), {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
       })
     }

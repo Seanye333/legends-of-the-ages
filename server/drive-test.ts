@@ -4,7 +4,7 @@
 // 2. 好友房间:创建房间拿码 → 凭码加入 → 开局 → 认输速结 → 不计天梯
 // 运行:npx wrangler dev 起服后 node --import tsx server/drive-test.ts
 import { RemoteMatch } from '../src/app/remoteMatch'
-import { httpBase, wsScheme, DEFAULT_RATING } from '../src/app/protocol'
+import { httpBase, wsScheme, DEFAULT_RATING, PROTOCOL_VERSION } from '../src/app/protocol'
 import { PRECON_DECKS } from '../src/content/decks'
 import { CARDS_BY_ID } from '../src/content/cards'
 import { aiStep, AI_NORMAL } from '../src/ai/greedy'
@@ -309,6 +309,7 @@ async function openMatch(matchId: string): Promise<{ a: WebSocket; b: WebSocket 
       deckIds: deck.cardIds,
       name,
       playerId: crypto.randomUUID(),
+      v: PROTOCOL_VERSION,
     })
   a.send(join('A'))
   b.send(join('B'))
@@ -402,6 +403,71 @@ async function checkRematch(): Promise<boolean> {
   }
 }
 
+// 协议版本闸门:不带版本号的 join(= 版本机制上线前的老客户端)必须被明确拒绝,
+// 而不是被放进来按旧字段解析新消息。
+async function checkProtocolGuard(): Promise<boolean> {
+  const matchId = `proto-${crypto.randomUUID()}`
+  const ws = new WebSocket(
+    `${wsScheme(SERVER)}${SERVER}/match/${matchId}?seat=0&token=${crypto.randomUUID()}`,
+  )
+  const errors: string[] = []
+  ws.addEventListener('message', (ev) => {
+    const msg = JSON.parse(String((ev as MessageEvent).data)) as { type: string; error?: string }
+    if (msg.type === 'error' && msg.error) errors.push(msg.error)
+  })
+  try {
+    await new Promise<void>((res, rej) => {
+      const timer = setTimeout(() => rej(new Error('proto: open timeout')), TIMEOUT_MS)
+      ws.addEventListener('open', () => {
+        clearTimeout(timer)
+        res()
+      })
+      ws.addEventListener('error', () => {
+        clearTimeout(timer)
+        rej(new Error('proto: socket error'))
+      })
+    })
+    const deck = PRECON_DECKS[0]
+    // 故意不带 v 字段
+    ws.send(
+      JSON.stringify({
+        type: 'join',
+        heroId: deck.heroId,
+        deckIds: deck.cardIds,
+        name: 'legacy',
+        playerId: crypto.randomUUID(),
+      }),
+    )
+    await new Promise((r) => setTimeout(r, 600))
+    if (!errors.some((e) => e.startsWith('protocol-outdated'))) {
+      console.log('✗ 无版本号的 join 应被拒,实收:', errors)
+      return false
+    }
+    // /health 要能自报版本,便于部署后核对前后端是否配套
+    const health = (await (await fetch(`${httpBase(SERVER)}/health`)).json()) as {
+      protocol?: number
+      minClient?: number
+    }
+    if (typeof health.protocol !== 'number' || typeof health.minClient !== 'number') {
+      console.log('✗ /health 应自报协议版本', health)
+      return false
+    }
+    console.log(
+      `✓ 协议闸门:无版本号的老客户端被明确拒绝;/health 自报 protocol=${health.protocol} minClient=${health.minClient}`,
+    )
+    return true
+  } catch (e) {
+    console.log('✗ 协议闸门检查失败', e)
+    return false
+  } finally {
+    try {
+      ws.close()
+    } catch {
+      /* 忽略 */
+    }
+  }
+}
+
 // 观战入口:凭房间码换到 matchId(否则观战功能在客户端根本无从触达)
 async function checkRoomWatchLookup(): Promise<boolean> {
   const base = httpBase(SERVER)
@@ -463,6 +529,7 @@ async function checkEmoteRelay(): Promise<boolean> {
       deckIds: deck.cardIds,
       name: 'emote',
       playerId: crypto.randomUUID(),
+      v: PROTOCOL_VERSION,
     })
     a.send(join)
     b.send(join)
@@ -546,6 +613,7 @@ async function playForgedMatch(matchId: string, pidA: string, pidB: string): Pro
         deckIds: deck.cardIds,
         name: 'forged',
         playerId: pid,
+        v: PROTOCOL_VERSION,
       })
     a.send(join(pidA))
     b.send(join(pidB))
@@ -666,6 +734,7 @@ const spectateOk = await checkSpectator()
 const rematchOk = await checkRematch()
 const seasonOk = await checkSeason()
 const watchLookupOk = await checkRoomWatchLookup()
+const protocolOk = await checkProtocolGuard()
 
 const pass =
   a.ended !== null &&
@@ -686,7 +755,8 @@ const pass =
   spectateOk &&
   rematchOk &&
   seasonOk &&
-  watchLookupOk
+  watchLookupOk &&
+  protocolOk
 
 if (pass) {
   console.log(
@@ -711,6 +781,7 @@ if (pass) {
     rematchOk,
     seasonOk,
     watchLookupOk,
+    protocolOk,
   })
   process.exit(1)
 }

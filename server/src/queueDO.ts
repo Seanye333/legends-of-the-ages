@@ -4,6 +4,7 @@
 // 等待者名单不放内存,直接由 ctx.getWebSockets() + attachment 推导 ——
 // 唤醒后内存必然是空的,socket 才是唯一可靠的真相来源。
 import { signMatchId } from './matchId'
+import { isSupported, outdatedError } from './protocolGuard'
 import type { QueueClientMsg, QueueServerMsg } from '../../src/app/protocol'
 import { DEFAULT_RATING } from '../../src/app/protocol'
 
@@ -49,6 +50,12 @@ export class QueueDO {
     }
     if (msg.type !== 'join') return
     if (attachmentOf(ws)?.joined) return // 重复 join 忽略
+    // 版本闸门:旧客户端进不了队列,免得撮合成功后才在对局里炸
+    if (!isSupported(msg.v)) {
+      send(ws, { type: 'error', error: outdatedError(msg.v) } as never)
+      close(ws)
+      return
+    }
 
     const rating = await this.lookupRating(msg.playerId)
     // 查分是异步的:期间此人可能已被并发 join 撮合或掉线
