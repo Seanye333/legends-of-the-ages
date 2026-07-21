@@ -180,3 +180,40 @@ describe('飘字', () => {
     expect(new Set(floats.map((f) => f.id)).size).toBe(floats.length)
   })
 })
+
+describe('架构铁律 7 的另一半:该看得见的事件要真的看得见', () => {
+  // 战报文案有了不等于玩家看得见 —— 战报是折叠面板,多数人不看。
+  //
+  // 这里**不能**断言「所有事件都要有飘字」:TurnEnded、MulliganDone 这类
+  // 本来就不该有。所以维护一份「必须有视觉反馈」的清单。
+  // 清单是人写的,但比没有强 —— 第四卡包上线时我只补了 eventText,
+  // 伏兵翻开在画面上毫无提示,玩家只会看到场面莫名其妙变了。
+  const MUST_BE_VISIBLE: GameEvent[] = [
+    { type: 'SecretPlayed', player: 0, iid: 7, defId: 'secret-da-cao-jing-she' },
+    { type: 'ComboTriggered', player: 0, iid: 8, defId: 'strat-tou-liang-huan-zhu' },
+    { type: 'ManaOverloaded', player: 0, amount: 2 },
+    { type: 'ManaLocked', player: 0, amount: 2 },
+    { type: 'GeneralSilenced', player: 1, iid: 3 },
+    { type: 'GeneralFrozen', player: 1, iid: 4 },
+    { type: 'DivineShieldPopped', player: 1, iid: 5 },
+    { type: 'ArmorGained', player: 0, amount: 3, armorAfter: 3 },
+  ]
+
+  it('每条都会产出飘字', () => {
+    for (const ev of MUST_BE_VISIBLE) {
+      const floats = extractFloats([ev], 1, 'zh')
+      expect(floats.length, `${ev.type} 没有任何飘字`).toBeGreaterThan(0)
+      expect(floats[0].text.trim().length).toBeGreaterThan(0)
+    }
+  })
+
+  it('伏兵翻开走展示大卡,而不是一行飘字', () => {
+    // 这一条单列:伏兵是唯一「对手的牌突然生效」的机制,
+    // 玩家刚点了攻击、场面就变了,他需要看到**是哪张牌**。
+    // 飘字给不了这个信息,所以它必须走 cast(展示大卡)那条路。
+    const src = readFileSync(new URL('../useEventAnimations.ts', import.meta.url), 'utf8')
+    const branch = src.slice(src.indexOf("case 'SecretRevealed'"))
+    const body = branch.slice(0, branch.indexOf('break'))
+    expect(body).toContain('cast:')
+  })
+})

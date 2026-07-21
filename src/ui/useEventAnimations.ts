@@ -274,6 +274,33 @@ function buildTimeline(events: GameEvent[], rects: ReadonlyMap<string, DOMRect>)
         break
       }
 
+      // ---- 第四卡包 ----
+
+      case 'SecretRevealed': {
+        // 伏兵翻开必须**看得见是哪一张**。只发一行战报是不够的:
+        // 玩家刚点了攻击,场面突然变了,他需要知道原因。
+        // 复用锦囊的展示大卡动画 —— 语义上这就是「对手甩出一张牌」。
+        // 给的时间比锦囊长(680 vs 520):这张牌是意料之外的,要留出读的时间。
+        push(680, { cast: { defId: ev.defId, fromEnemy: ev.player === 1 }, sfx: ['stratagemCast'] })
+        cur = null // 伏兵的效果飘字落在展示之后
+        break
+      }
+
+      case 'SecretPlayed': {
+        // 埋下:不展示牌面(对手拿到的 defId 本来就是空的),只给一拍音效
+        push(200, { sfx: ['cardPlay'] })
+        break
+      }
+
+      case 'ComboTriggered':
+      case 'ManaOverloaded':
+      case 'ManaLocked': {
+        // 这三条只出飘字,不单独占节拍 —— 它们伴随出牌/回合开始发生,
+        // 单独给一拍会把出牌的节奏拖散
+        loose().events.push(ev)
+        break
+      }
+
       case 'DivineShieldPopped': {
         const e = loose()
         e.events.push(ev)

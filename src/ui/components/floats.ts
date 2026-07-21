@@ -56,6 +56,28 @@ export function extractFloats(events: GameEvent[], batch: number, lang: Language
       case 'GeneralFrozen':
         push(`gen-${ev.iid}`, pickCompact({ zh: '冰封', en: 'FROZEN' }, lang), 'buff')
         break
+      // ---- 第四卡包 ----
+      case 'SecretPlayed':
+        push(`hero-${ev.player}`, pickCompact({ zh: '伏兵', en: 'SECRET' }, lang), 'buff')
+        break
+      case 'ComboTriggered':
+        push(`hero-${ev.player}`, pickCompact({ zh: '连击', en: 'COMBO' }, lang), 'buff')
+        break
+      case 'ManaOverloaded':
+        push(
+          `hero-${ev.player}`,
+          pickCompact({ zh: `过载 ${ev.amount}`, en: `OVERLOAD ${ev.amount}` }, lang),
+          'damage',
+        )
+        break
+      case 'ManaLocked':
+        // 用 damage 色:被锁水晶对玩家就是一次损失,视觉上不该和增益同色
+        push(
+          `hero-${ev.player}`,
+          pickCompact({ zh: `-${ev.amount} 水晶`, en: `-${ev.amount} MANA` }, lang),
+          'damage',
+        )
+        break
       case 'ManaGained':
         push(
           `hero-${ev.player}`,
