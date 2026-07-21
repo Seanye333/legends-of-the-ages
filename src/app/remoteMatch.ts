@@ -225,6 +225,19 @@ function wsUrl(server: string, path: string): string {
 const RECONNECT_WINDOW_MS = 120_000
 const RECONNECT_MAX_DELAY_MS = 5_000
 
+// 看门狗:每隔这么久检查一次「我以为自己在对局里,但连接其实已经死了」。
+//
+// 为什么需要它 —— 重连的**唯一**触发点是 `ws.onclose`。只要那一次回调因为任何
+// 原因没跑到(浏览器切后台冻结、close 事件在 onmessage 里同步触发时被吞、
+// 移动端网络栈直接把 socket 丢掉),客户端就会一直静静地等下去,
+// 直到服务端 90 秒判负。玩家看到的是「界面还在,但点什么都没反应」。
+//
+// drive-test 里断续复现过三次这个形态:掉线之后**一条 reconnecting 都没有**,
+// 服务端 90 秒后判负。根因没能钉死(加了日志之后连跑十二次都正常),
+// 但不管根因是什么,「连接死了却没人安排重连」这个状态本身就是错的,
+// 看门狗直接消灭这个状态。
+const WATCHDOG_MS = 5_000
+
 export class RemoteMatch {
   private queueWs: WebSocket | null = null
   private matchWs: WebSocket | null = null
@@ -237,6 +250,7 @@ export class RemoteMatch {
   // 本轮重连的起始时刻(0 = 当前没在重连)
   private reconnectSince = 0
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
+  private watchdog: ReturnType<typeof setInterval> | null = null
   // 观战模式:不发 join、不存会话、不参与再战
   private spectating = false
 
@@ -341,8 +355,27 @@ export class RemoteMatch {
     }
   }
 
+  // 连接死了却没人安排重连 —— 补一脚。幂等:scheduleReconnect 自己会挡住重复。
+  private startWatchdog(): void {
+    if (this.watchdog) return
+    this.watchdog = setInterval(() => {
+      if (this.closed || this.ended || !this.matchId) return
+      if (this.reconnectTimer) return
+      const ws = this.matchWs
+      const dead = !ws || ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING
+      if (dead) this.scheduleReconnect()
+    }, WATCHDOG_MS)
+  }
+
+  private stopWatchdog(): void {
+    if (this.watchdog === null) return
+    clearInterval(this.watchdog)
+    this.watchdog = null
+  }
+
   private openMatch(matchId: string): void {
     this.matchId = matchId
+    this.startWatchdog()
     // 观战不写会话:标题页的「回到对局」应该只续自己的对局,不该把人拉回别人的战场
     if (!this.spectating) {
       saveSession({
@@ -381,11 +414,13 @@ export class RemoteMatch {
         const state = inflateRedacted(msg.state, this.seat)
         if (state.phase === 'ended') {
           this.ended = true
+          this.stopWatchdog()
           clearSession()
         } else if (this.ended && !this.spectating) {
           // 再战:服务器用同一个 matchId 重开了一局,把终局标记撤销并把会话写回去,
           // 否则这一局中途掉线就再也接不回来了。
           this.ended = false
+          this.startWatchdog() // 再战重开:看门狗要跟着回来
           if (this.matchId) {
             saveSession({
               server: this.server,
@@ -503,6 +538,7 @@ export class RemoteMatch {
 
   close(): void {
     this.closed = true
+    this.stopWatchdog()
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer)
       this.reconnectTimer = null
