@@ -23,6 +23,9 @@ const ArenaScreen = lazy(() =>
 const CampaignScreen = lazy(() =>
   import('./ui/screens/CampaignScreen').then((m) => ({ default: m.CampaignScreen })),
 )
+const CodexScreen = lazy(() =>
+  import('./ui/screens/CodexScreen').then((m) => ({ default: m.CodexScreen })),
+)
 
 export type Screen =
   | 'title'
@@ -33,6 +36,7 @@ export type Screen =
   | 'settings'
   | 'arena'
   | 'campaign'
+  | 'codex'
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('title')
@@ -65,6 +69,12 @@ export default function App() {
       return (
         <Suspense fallback={<ScreenFallback />}>
           <SettingsScreen onBack={back} />
+        </Suspense>
+      )
+    case 'codex':
+      return (
+        <Suspense fallback={<ScreenFallback />}>
+          <CodexScreen onBack={back} />
         </Suspense>
       )
     case 'arena':

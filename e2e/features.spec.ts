@@ -347,3 +347,28 @@ test('result overlay: match recap lists the numbers the state cannot recover', a
   await expect(page.getByText('承受伤害')).toBeVisible()
   await expect(page.getByText('回合数')).toBeVisible()
 })
+
+test('codex: every keyword and mechanic is searchable, with a real card as the example', async ({
+  page,
+}) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: '兵法讲堂' }).click()
+  await expect(page.getByRole('heading', { name: '兵法讲堂' })).toBeVisible()
+
+  // 第四卡包的三个机制都要在册
+  await expect(page.getByRole('button', { name: /伏兵 Secret/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /連擊 Combo/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /過載 Overload/ })).toBeVisible()
+
+  // 展开:补充说明 + 例卡(例卡从真实卡池里挑,挑不到就不该显示)
+  const secret = page.getByRole('button', { name: /伏兵 Secret/ })
+  await secret.click()
+  await expect(secret).toHaveAttribute('aria-expanded', 'true')
+  await expect(page.getByText('一次动作最多翻一个')).toBeVisible()
+  await expect(page.getByText('請君入甕')).toBeVisible()
+
+  // 搜索按规则正文过滤,不只按词条名
+  await page.getByPlaceholder('搜索规则…').fill('疲勞')
+  await expect(page.getByRole('button', { name: /疲勞/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /衝鋒 Charge/ })).toHaveCount(0)
+})
