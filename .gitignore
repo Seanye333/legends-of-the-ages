@@ -12,3 +12,7 @@ dev-dist
 
 # wrangler 本地开发状态(SQLite + 缓存,每次 wrangler dev 都变)
 server/.wrangler
+
+# wrangler 本地开发状态(DO storage / 缓存 / 打包临时文件)。
+# 每跑一次 `wrangler dev` 这些 sqlite 文件都会变,跟踪它们只会让工作区常年是脏的。
+server/.wrangler/
