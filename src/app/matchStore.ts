@@ -96,6 +96,21 @@ function settleQuests(events: GameEvent[], state: GameState | null): void {
   useAchievements.getState().recordMatch(events, heroId)
 }
 
+// 整局口径的成就:tallyStats 每批调用一次,看不到「整局」。
+// 这些只能在终局那一刻、拿着累计好的 MatchStats 来判。
+function settleWholeMatchAchievements(
+  events: GameEvent[],
+  stats: MatchStats,
+  online: boolean,
+): void {
+  const ended = events.find((e) => e.type === 'GameEnded')
+  if (!ended || ended.type !== 'GameEnded' || ended.winner !== 0) return
+  const ach = useAchievements.getState()
+  if (online) ach.bump('onlineWins')
+  // 护甲挡下的不算掉血 —— HeroDamaged 只在真扣血时才发,所以看 damageTaken 就够
+  if (stats.damageTaken === 0) ach.bump('flawlessWins')
+}
+
 // 终局统计:胜得卡包、负得安慰功勋、和局也给一点 —— 输了颗粒无收太劝退。
 // 竞技场局走另一条账:胜负记进 run,奖励等整轮结束一次性结算。
 function settleMatch(events: GameEvent[], arena: boolean, campaign: boolean): void {
@@ -132,10 +147,12 @@ function remoteCallbacks(set: SetState, getStats: () => MatchStats) {
       settleMatch(events, false, false)
       settleQuests(events, state)
       recordReplayFrame(state, events, opponentName)
+      const nextStats = foldStats(getStats(), events, state)
+      settleWholeMatchAchievements(events, nextStats, true)
       set({
         state,
         lastEvents: events,
-        stats: foldStats(getStats(), events, state),
+        stats: nextStats,
         opponentName: opponentName ?? null,
         turnDeadline: turnDeadline ?? null,
         error: null,
@@ -262,12 +279,9 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
     settleMatch(events, get().arena, get().campaign)
     settleQuests(events, last.state)
     recordReplayFrame(last.state, events)
-    set({
-      state: last.state,
-      lastEvents: events,
-      stats: foldStats(get().stats, events, last.state),
-      error: null,
-    })
+    const nextStats = foldStats(get().stats, events, last.state)
+    settleWholeMatchAchievements(events, nextStats, false)
+    set({ state: last.state, lastEvents: events, stats: nextStats, error: null })
   },
 
   sendEmote(emote) {

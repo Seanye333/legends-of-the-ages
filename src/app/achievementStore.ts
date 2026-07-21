@@ -32,6 +32,14 @@ export type StatKey =
   | 'packsOpened'
   | 'arenaBestWins'
   | 'bestTurnDamage'
+  // ---- 第四卡包 ----
+  | 'secretsSprung'
+  | 'combosTriggered'
+  | 'overloadLocked'
+  // ---- 模式类(靠 bump 记,不从事件流推) ----
+  | 'campaignCleared'
+  | 'onlineWins'
+  | 'flawlessWins'
   | `won_${Doctrine}`
 
 export type Stats = Partial<Record<StatKey, number>>
@@ -167,6 +175,63 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     merit: 400,
     packs: 2,
   },
+  // ---- 第四卡包:三个新机制各一条 ----
+  //
+  // 这几条不只是奖励,也是**发现机制存在的入口**:伏兵/连击/过载的卡不进预组,
+  // 新玩家很可能打了二十局都没见过。功名簿里摆着「伏兵触发 25 次」,
+  // 至少他知道有这么个东西,会去图鉴里搜。
+  ...tier(
+    'ach-secret',
+    'secretsSprung',
+    { zh: '设伏', en: 'Ambusher' },
+    (n) => ({ zh: `让伏兵触发 ${n} 次`, en: `Spring ${n} Secrets` }),
+    [10, 60],
+    [80, 260],
+  ),
+  ...tier(
+    'ach-combo',
+    'combosTriggered',
+    { zh: '连环', en: 'Chain of Plots' },
+    (n) => ({ zh: `触发连击 ${n} 次`, en: `Trigger Combo ${n} times` }),
+    [15, 80],
+    [70, 240],
+  ),
+  {
+    id: 'ach-overload',
+    name: { zh: '透支', en: 'Borrowed Power' },
+    desc: { zh: '累计被过载锁掉 40 点水晶', en: 'Have 40 crystals locked by Overload' },
+    stat: 'overloadLocked',
+    goal: 40,
+    merit: 110,
+  },
+
+  // ---- 冒险与联机:这两个模式此前一条成就都没有 ----
+  ...tier(
+    'ach-campaign',
+    'campaignCleared',
+    { zh: '逐鹿', en: 'Contender' },
+    (n) => ({ zh: `通关冒险模式 ${n} 关`, en: `Clear ${n} campaign stages` }),
+    [1, 4, 8],
+    [80, 220, 600],
+  ),
+  ...tier(
+    'ach-online',
+    'onlineWins',
+    { zh: '扬名', en: 'Renowned' },
+    (n) => ({ zh: `联机对战赢下 ${n} 场`, en: `Win ${n} online matches` }),
+    [1, 15, 60],
+    [70, 240, 700],
+  ),
+  {
+    id: 'ach-flawless',
+    name: { zh: '全甲而归', en: 'Without a Scratch' },
+    desc: { zh: '主公一滴血未掉地赢下一局', en: 'Win a match without your hero taking damage' },
+    stat: 'flawlessWins',
+    goal: 1,
+    merit: 200,
+    packs: 1,
+  },
+
   // 六主义各一条:逼玩家把六套预组都摸一遍,这是最好的「教程之后的教程」
   ...(Object.keys(DOCTRINE_NAME) as (Doctrine | 'neutral')[])
     .filter((d): d is Doctrine => d !== 'neutral')
@@ -197,6 +262,7 @@ export function tallyStats(events: GameEvent[], myHeroId: string): Stats {
   // 单回合脸伤:回合切换时清零,取整局最大值
   let turnFaceDamage = 0
   let bestTurn = 0
+
 
   for (const ev of events) {
     switch (ev.type) {
@@ -243,11 +309,25 @@ export function tallyStats(events: GameEvent[], myHeroId: string): Stats {
       case 'DivineShieldPopped':
         if (ev.player === 1) add('shieldsPopped', 1)
         break
+      // ---- 第四卡包 ----
+      case 'SecretRevealed':
+        if (ev.player === 0) add('secretsSprung', 1)
+        break
+      case 'ComboTriggered':
+        if (ev.player === 0) add('combosTriggered', 1)
+        break
+      case 'ManaLocked':
+        if (ev.player === 0) add('overloadLocked', ev.amount)
+        break
       default:
         break
     }
   }
   if (bestTurn > 0) out.bestTurnDamage = bestTurn
+  // 「全甲而归」(flawlessWins)**不在这里判**。
+  // tallyStats 是按批调用的,一批事件只是一局的一小段;
+  // 在这里数「本批没有我方 HeroDamaged」会把绝大多数普通对局都判成全甲。
+  // 整局口径的东西要用整局的数据 —— 见 matchStore 里基于 MatchStats.damageTaken 的判定。
   return out
 }
 

@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { BOSSES } from '../content/campaign'
 import { useCollection } from './collectionStore'
+import { useAchievements } from './achievementStore'
 
 // 冒险模式进度。只记两件事:打通了哪几关、当前正在挑战哪一关。
 // 关卡按顺序解锁 —— 通了第 N 关才能打第 N+1 关。
@@ -52,6 +53,7 @@ export const useCampaign = create<CampaignState>()(
         if (!boss) return null
         if (cleared.includes(active)) return null // 重打不再发奖
         set({ cleared: [...cleared, active] })
+        useAchievements.getState().bump('campaignCleared')
         useCollection.getState().grantPacks(boss.rewardPacks)
         useCollection.setState({
           merit: useCollection.getState().merit + boss.rewardMerit,
