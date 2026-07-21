@@ -131,3 +131,43 @@ describe('重名卡', () => {
     expect(indistinguishable).toEqual([])
   })
 })
+
+describe('collectorNo 稳定性', () => {
+  // 卡组码把每张卡编成它的 collectorNo(见 deckCode.ts —— 编 id 的话码长
+  // 会到七八百字符,没法手工传递)。这意味着 **collectorNo 一旦漂移,
+  // 所有已经分享出去的卡组码都会静默解出另一副牌** ——
+  // 不报错、不提示,玩家导入的就是别人的牌。
+  //
+  // 从卡池里删卡是安全的(码里引用的卡不存在会明确报错),
+  // 危险的是「删卡导致后面的卡编号前移」。2026-07-21 合并四张重复卡时
+  // 验证过没有漂移(生成器用的是源花名册的固定索引,不是数组下标),
+  // 这里把几张锚点钉住,让下次真漂了能立刻发现。
+  const ANCHORS: [string, number][] = [
+    ['cao-cao', 1],
+    ['liu-bei', 10],
+    ['guan-yu', 11],
+    ['zhang-fei', 12],
+    ['hist-jing-ke', 1000],
+    ['hist-xiang-yu', 1165],
+    ['strat-huo-ji', 9001],
+    ['eq-teng-jia', 9114],
+  ]
+
+  it('锚点卡的 collectorNo 不能变 —— 变了等于所有分享出去的卡组码都作废', () => {
+    for (const [id, no] of ANCHORS) {
+      expect(CARDS_BY_ID[id], `锚点卡 ${id} 从卡池里消失了`).toBeDefined()
+      expect(CARDS_BY_ID[id].collectorNo, `${id} 的 collectorNo 漂移了`).toBe(no)
+    }
+  })
+
+  it('全卡池 collectorNo 唯一 —— 撞号会让两张卡共用一个码位', () => {
+    const seen = new Map<number, string>()
+    const clashes: string[] = []
+    for (const c of CARDS) {
+      const prev = seen.get(c.collectorNo)
+      if (prev) clashes.push(`${c.collectorNo}: ${prev} / ${c.id}`)
+      else seen.set(c.collectorNo, c.id)
+    }
+    expect(clashes).toEqual([])
+  })
+})
