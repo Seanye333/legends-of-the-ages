@@ -1,0 +1,20 @@
+{
+  // 联机端到端脚本。它是 node 进程里的**客户端**:直接 import
+  // src/app/remoteMatch,所以要的是 DOM 的 WebSocket,不是 Workers 的。
+  // 分开的理由见 tsconfig.server.json 顶部。
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023", "DOM"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "strict": true,
+    "noFallthroughCasesInSwitch": true,
+    "types": ["node"]
+  },
+  "include": ["server/drive-test.ts"]
+}

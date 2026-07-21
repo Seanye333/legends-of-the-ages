@@ -1,0 +1,25 @@
+{
+  // Workers 运行时的那一半:五个 Durable Object + index.ts + 它们的单测。
+  //
+  // 为什么和 drive-test 分开:drive-test 是一个**跑在 node 里的客户端**
+  // (它 import 了真正的 src/app/remoteMatch,用 DOM 的 WebSocket 事件回调),
+  // 而 DO 代码用的是 Workers 的 WebSocket(有 READY_STATE_OPEN 这类常量)。
+  // 两套 WebSocket 类型互不兼容,硬塞进一个配置只能靠 any 抹掉 —— 那就白检了。
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "types": ["node", "@cloudflare/workers-types"]
+  },
+  "include": ["server/src/**/*.ts"]
+}
