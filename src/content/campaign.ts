@@ -14,8 +14,10 @@ import { CARDS_BY_ID, COLLECTIBLE_CARDS } from './cards'
 // 用它们做难度曲线不需要动引擎一行代码。
 //
 // 难度曲线的三个旋钮,以及它们各自有多大用(都是 sim-campaign 实测出来的):
-//   1. **卡组质量分位 deckTier —— 强旋钮。** 同一个张角,tier 0 → 0.75,
-//      玩家胜率从 35% 变成 97%。
+//   1. **卡组曲线 deckTier —— 强旋钮。** 同一个张角,tier 0 → 0.75,
+//      玩家胜率从 35% 变成 97%。注意它**换过一次含义**:卡池重做费用曲线后,
+//      身材变成了费用的函数,「同档挑身材最好的」失效,tier 改为移动曲线本身
+//      (低平 ↔ 顶重)。见 bossDeck 里的第三版说明。
 //   2. 主公技 —— 中等且极不线性。每回合铺两个 1/1 远强于每回合 3 点伤害,
 //      因为贪心 AI 的胜负主要由场面交换决定。
 //   3. **血量 —— 弱旋钮。** 张角从 30 血压到 23 血,胜率只从 35% 挪到 37%;
@@ -23,7 +25,7 @@ import { CARDS_BY_ID, COLLECTIBLE_CARDS } from './cards'
 //      真正定难度的是 deckTier(用 npm run tune-campaign 二分搜出来)。
 // AI 档位固定用最强的「名将」—— 关底战本来就该是能力检定,不该靠对手失误过关。
 //
-// 当前实测曲线(六套预组轮流上,60 局/关):73 / 63 / 63 / 40 / 53 / 28 / 40 / 22 %。
+// 当前实测曲线(六套预组轮流上,60 局/关):63 / 52 / 50 / 42 / 50 / 45 / 30 / 18 %。
 // 真人玩家强于贪心 AI,所以这组数字是**下限**,实际体感会更松一些。
 
 export interface BossDef {
@@ -34,7 +36,7 @@ export interface BossDef {
   intro: LocalizedText
   doctrine: Doctrine
   hp: number
-  deckTier: number // 卡组质量分位,0=最强 1=最弱;见 bossDeck
+  deckTier: number // 卡组曲线分位,0=最快(最强) 1=最顶重(最弱);见 bossDeck
   power: HeroPowerDef
   rewardMerit: number
   rewardPacks: number
@@ -60,7 +62,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'fame',
     hp: 30,
-    deckTier: 0.23,
+    deckTier: 0.58,
     power: power(
       'bp-taiping',
       { zh: '太平要術', en: 'Way of Great Peace' },
@@ -82,7 +84,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'hegemonic',
     hp: 34,
-    deckTier: 0.24,
+    deckTier: 0.68,
     power: power(
       'bp-fenjing',
       { zh: '焚城', en: 'Raze' },
@@ -104,7 +106,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'hegemonic',
     hp: 36,
-    deckTier: 0.23,
+    deckTier: 0.83,
     power: power(
       'bp-wushuang',
       { zh: '無雙', en: 'Peerless Might' },
@@ -129,7 +131,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'royal',
     hp: 38,
-    deckTier: 0.14,
+    deckTier: 0.23,
     // 这一关的调校记录(结论已并入 bossDeck 的注释,这里只留因果):
     // 原技能是「抽一张牌 + 2 点护甲」,实测玩家胜率 75%,比第 1 关还好打。
     // 换成「召唤 1 个 1/1 + 2 护甲」后仍是 77% —— 说明瓶颈不在技能。
@@ -157,7 +159,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'separatist',
     hp: 40,
-    deckTier: 0.14,
+    deckTier: 0.06,
     power: power(
       'bp-xiaoba',
       { zh: '小霸王', en: 'Conqueror’s Charge' },
@@ -182,7 +184,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'separatist',
     hp: 42,
-    deckTier: 0.14,
+    deckTier: 0.45,
     power: power(
       'bp-huogong',
       { zh: '火攻', en: 'Fire Attack' },
@@ -204,7 +206,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'ritual',
     hp: 45,
-    deckTier: 0.03,
+    deckTier: 0.07,
     power: power(
       'bp-bagua',
       { zh: '八陣圖', en: 'Stone Sentinel Maze' },
@@ -229,7 +231,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'hegemonic',
     hp: 52,
-    deckTier: 0.03,
+    deckTier: 0.79,
     power: power(
       'bp-weiwu',
       { zh: '魏武揮鞭', en: 'The Tyrant’s Lash' },
@@ -274,18 +276,43 @@ export function bossDeck(doctrine: Doctrine, tier = 0): string[] {
 
   const deck: string[] = []
   const copies = new Map<string, number>()
-  // 目标曲线:1-2 费 6 张 / 3 费 6 / 4 费 6 / 5 费 6 / 6+ 费 6
-  const bands: [number, number, number][] = [
-    [0, 2, 6],
-    [3, 3, 6],
+  // 第三版:tier 主要移动的是**费用曲线**,而不再是同档内的分位。
+  //
+  // 卡池重做曲线之后,身材总点数变成了费用的函数(见 import-content.ts 的
+  // statBudget:攻+血 ≈ 2×费+1)。于是「同一费用档里挑身材最好的」这个
+  // 从前很管用的旋钮**直接失效**了 —— 同档卡的身材本来就一样。
+  // 实测八个 Boss 的卡组曲线一模一样、总身材只在 222~245 之间抖动,
+  // 难度曲线被 sim-campaign 判为「太平」(前四关均 53% vs 后四关均 51%)。
+  //
+  // 身材既然锁死在费用上,卡组强度就几乎只剩**曲线**说了算:
+  // 压得低的卡组能抢节奏,顶得高的卡组前四回合无事可做、场面直接被打崩。
+  // 所以现在在「低平曲线」和「顶重曲线」之间按 tier 插值;
+  // 同档内的分位保留一点(权重减半),让效果密度也跟着变,不至于八套牌雷同。
+  const FAST: [number, number, number][] = [
+    [0, 2, 7],
+    [3, 3, 7],
     [4, 4, 6],
-    [5, 5, 6],
-    [6, 10, 6],
+    [5, 5, 5],
+    [6, 7, 4],
+    [8, 10, 1],
   ]
+  const SLOW: [number, number, number][] = [
+    [0, 2, 4],
+    [3, 3, 4],
+    [4, 4, 5],
+    [5, 5, 5],
+    [6, 7, 7],
+    [8, 10, 5],
+  ]
+  const bands: [number, number, number][] = FAST.map(([lo, hi, fast], i) => [
+    lo,
+    hi,
+    Math.round(fast + (SLOW[i][2] - fast) * tier),
+  ])
   for (const [lo, hi, want] of bands) {
     const band = pool.filter((c) => c.cost >= lo && c.cost <= hi)
     // 从分位处起手,留出足够余量把这一档填满
-    const start = Math.max(0, Math.min(band.length - want, Math.floor(band.length * tier)))
+    const start = Math.max(0, Math.min(band.length - want, Math.floor(band.length * tier * 0.5)))
     let taken = 0
     for (const c of band.slice(start)) {
       if (taken >= want || deck.length >= DECK_SIZE) break

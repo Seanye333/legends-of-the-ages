@@ -27,6 +27,8 @@ const OUT_PORTRAITS = join(ROOT, 'public', 'portraits')
 // ---------- 生成公式(默认值;signature.ts 的手工覆盖优先) ----------
 
 const clamp = (lo: number, hi: number, v: number) => Math.max(lo, Math.min(hi, Math.round(v)))
+// 同上但不取整(比例用)
+const clamp2 = (lo: number, hi: number, v: number) => Math.max(lo, Math.min(hi, v))
 
 interface Stats {
   leadership: number
@@ -57,6 +59,67 @@ function makeRarityOf(allFames: number[]): (f: number) => Rarity {
     if (f >= rareMin) return 'rare'
     return 'common'
   }
+}
+
+// ── 费用曲线 ────────────────────────────────────────────────────────────────
+//
+// 从前费用是**直接从光荣数值线性算出来**的:cost ≈ (攻+血)/2 - 0.5,
+// 而攻血又各自是武力/统率的线性映射。历史人物的能力值是钟形分布,
+// 线性映射不会把钟形拉平 —— 实测 2211 张武将里 **72.4% 挤在 3-5 费**,
+// 0 费、9 费、10 费一张都没有,攻击力上限卡在 8(尽管 clamp 写的是 12)。
+//
+// 后果不是「不好看」,是**卡池在设计上没有边缘**:
+// 竞技场三选一常常三张都是 4 费白板,冒险模式的 Boss 卡组抽不出压场的大哥,
+// 玩家也永远没有「这张 9 费值不值得留」的决策。曲线的两端才是构筑的乐趣所在。
+//
+// 现在改成**按名次分配**:先给每个武将算一个战力分,排序后按百分位落进
+// 一条设计好的曲线。这样曲线形状是我们说了算的,不再由数值分布决定;
+// 而「谁更强 → 谁更贵」的相对关系完全保留(名次是单调的)。
+//
+// 曲线偏低费(1-4 费占 55%),因为一副 30 张的卡组本来就需要更多早期牌;
+// 高费段刻意留薄(9-10 费共 4%)—— 它们是「一局最多出一张」的牌。
+// 不生成 0 费武将:0 费随从是 combo 的启动器,不是能随手播种的东西。
+const COST_CURVE: readonly [cost: number, share: number][] = [
+  [1, 0.09],
+  [2, 0.15],
+  [3, 0.17],
+  [4, 0.16],
+  [5, 0.14],
+  [6, 0.11],
+  [7, 0.08],
+  [8, 0.06],
+  [9, 0.025],
+  [10, 0.015],
+]
+
+// 战力分:决定名次(进而决定费用)。和 fame()(决定稀有度)刻意用不同的公式 ——
+// 名将不等于大牌,关羽该是贵的猛将,而荀彧该是便宜的谋士。
+function might(s: Stats): number {
+  return Math.max(s.war, s.intelligence) * 0.55 + s.leadership * 0.3 + s.charisma * 0.15
+}
+
+// 名次 → 费用。返回的函数吃战力分,吐 1..10。
+function makeCostOf(allMights: number[]): (m: number) => number {
+  const sorted = [...allMights].sort((a, b) => a - b)
+  // 累积份额的切点:第 i 档的上界百分位
+  const cuts: [number, number][] = []
+  let acc = 0
+  for (const [cost, share] of COST_CURVE) {
+    acc += share
+    cuts.push([cost, sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * acc))]])
+  }
+  return (m) => {
+    for (const [cost, upper] of cuts) if (m <= upper) return cost
+    return 10
+  }
+}
+
+// 费用 → 身材总点数。炉石的白板基准线是 攻+血 ≈ 2×费+1
+// (1 费 2/1、3 费 3/4、5 费 5/6…)。高费段按同一条线会过强
+// —— 8 费给 17 点身材意味着 8/9,而对手到 8 费时手里往往还有解场牌 ——
+// 所以 7 费以上每费只加 1.5 点。
+function statBudget(cost: number): number {
+  return cost <= 6 ? 2 * cost + 1 : Math.round(13 + (cost - 6) * 1.5)
 }
 
 // 引擎 DynastyTag 的运行时校验集(跨仓库边界不做裸 cast)
@@ -357,14 +420,40 @@ function generateCard(
 ): CardDef {
   const s = officer.stats
   const archetype = s.intelligence > s.war + 10 ? 'strategist' : 'warrior'
-  const baseAttack =
+  // 预组骨架卡沿用**旧的线性公式**,不走新曲线。
+  //
+  // 不是偷懒 —— 是新曲线整体把费用推高了(设计上如此:旧公式没有高费段),
+  // 而六套预组的每个插槽都是照旧身材调出来的。直接套上去,六套预组的
+  // 平均费用从 ~3.3 跳到 4.0~4.8,曲线全线后置,开局三四回合无牌可出。
+  // 那不是平衡问题,是「六副卡组一起变难玩」。
+  //
+  // 代价:约 100 张骨架卡的定价和新池子不是同一套语言。可以接受 ——
+  // 它们本来就是刻意压平的白板,而且已经在预组里各就各位。
+  // 真要统一,得连着 decks.ts 的插槽一起重调,那是另一件事。
+  const legacy = PRECON_CARD_IDS.has(officer.id)
+  const legacyAttack =
     archetype === 'warrior'
       ? clamp(1, 12, (s.war - 30) / 9)
       : clamp(1, 8, (s.intelligence - 40) / 12)
-  const baseHealth = clamp(1, 12, (0.5 * s.leadership + 0.3 * s.charisma + 0.2 * s.war - 25) / 9)
-  // 费用按**未扣点数前**的身材算,这样带效果的卡就是「同费更弱的身材 + 一个效果」,
-  // 而不是「同费同身材还白送一个效果」。
-  const cost = clamp(0, 10, (baseAttack + baseHealth) / 2 - 0.5)
+  const legacyHealth = clamp(1, 12, (0.5 * s.leadership + 0.3 * s.charisma + 0.2 * s.war - 25) / 9)
+
+  // 新卡的因果方向和旧公式相反:先由名次定**费用**,再由费用给出身材预算,
+  // 最后按武将自己的攻守倾向把预算劈成攻和血。理由见 COST_CURVE 上方。
+  const cost = legacy
+    ? clamp(0, 10, (legacyAttack + legacyHealth) / 2 - 0.5)
+    : costOf(might(s))
+  const budget = statBudget(cost)
+  // 攻血配比 0.3~0.7:谋士偏血(靠效果吃饭,身板要活得下来),猛将偏攻。
+  // 用连续比例而不是分档,免得同费卡的身材只有两三种。
+  const aggression = clamp2(
+    0.3,
+    0.7,
+    0.5 + (s.war - s.leadership) / 200 + (archetype === 'warrior' ? 0.06 : -0.06),
+  )
+  const baseAttack = legacy
+    ? legacyAttack
+    : Math.max(1, Math.min(budget - 1, Math.round(budget * aggression)))
+  const baseHealth = legacy ? legacyHealth : budget - baseAttack
   const f = fame(s)
   const rarity = rarityOf(f)
   // 原来所有普通卡一律中立(1320 张),这是隐逸只有 17 张可构筑卡的直接原因 ——
@@ -440,6 +529,7 @@ const unique = all.filter((o) => {
 })
 
 const rarityOf = makeRarityOf(unique.map((o) => fame(o.stats)))
+const costOf = makeCostOf(unique.map((o) => might(o.stats)))
 const cards = unique
   .map((o) => generateCard(o, rarityOf))
   .sort((a, b) => a.collectorNo - b.collectorNo || a.id.localeCompare(b.id))
