@@ -6,11 +6,15 @@ export interface RedactedSelf extends Omit<PlayerState, 'deck'> {
   deckCount: number
 }
 
+// 对手的伏兵**只给 iid**。这是整个裁剪层里最不能出错的一处 ——
+// 伏兵的全部价值就是对手不知道它是什么;泄漏 defId 等于这个机制不存在。
+// pack4.test.ts 里有一条针对性断言。
 export interface RedactedOpponent
-  extends Omit<PlayerState, 'deck' | 'hand'> {
+  extends Omit<PlayerState, 'deck' | 'hand' | 'secrets'> {
   deckCount: number
   handCount: number
   handIids: number[]
+  secretIids: number[]
 }
 
 export interface RedactedState {
@@ -46,6 +50,10 @@ export function redactState(state: GameState, viewer: PlayerIdx): RedactedState 
       mulliganDone: me.mulliganDone,
       heroPowerUsed: me.heroPowerUsed,
       heroPower: me.heroPower,
+      secrets: me.secrets.map((x) => ({ ...x })),
+      overloadNext: me.overloadNext,
+      overloadLocked: me.overloadLocked,
+      cardsPlayedThisTurn: me.cardsPlayedThisTurn,
       deckCount: me.deck.length,
     },
     opponent: {
@@ -60,9 +68,13 @@ export function redactState(state: GameState, viewer: PlayerIdx): RedactedState 
       mulliganDone: opp.mulliganDone,
       heroPowerUsed: opp.heroPowerUsed,
       heroPower: opp.heroPower,
+      overloadNext: opp.overloadNext,
+      overloadLocked: opp.overloadLocked,
+      cardsPlayedThisTurn: opp.cardsPlayedThisTurn,
       deckCount: opp.deck.length,
       handCount: opp.hand.length,
       handIids: opp.hand.map((c) => c.iid),
+      secretIids: opp.secrets.map((s) => s.iid),
     },
   }
 }
@@ -78,6 +90,8 @@ export function redactForSpectator(state: GameState): RedactedState {
     self: {
       ...rs.self,
       hand: rs.self.hand.map((c) => ({ ...c, defId: '' })),
+      // 观战席看不到任何一方的伏兵(否则观众比对手多知道一半信息)
+      secrets: rs.self.secrets.map((s) => ({ ...s, defId: '' })),
     },
   }
 }
@@ -85,12 +99,17 @@ export function redactForSpectator(state: GameState): RedactedState {
 // 观战者也不能从事件流里反推手牌:任何一方的抽牌都抹掉牌面。
 export function redactEventForSpectator(event: GameEvent): GameEvent {
   if (event.type === 'CardDrawn') return { ...event, defId: '' }
+  if (event.type === 'SecretPlayed') return { ...event, defId: '' }
   return event
 }
 
 // 对手抽牌不暴露牌面(defId 置空)。其余事件均为公开信息。
 export function redactEvent(event: GameEvent, viewer: PlayerIdx): GameEvent {
   if (event.type === 'CardDrawn' && event.player !== viewer) {
+    return { ...event, defId: '' }
+  }
+  // 埋伏兵的那一刻也是秘密 —— SecretRevealed 才是公开的
+  if (event.type === 'SecretPlayed' && event.player !== viewer) {
     return { ...event, defId: '' }
   }
   return event

@@ -7,6 +7,7 @@ import type {
   PlayerIdx,
   TargetRef,
 } from './types'
+import { fireEnemySecret } from './secrets'
 import {
   breakStealth,
   damageGeneral,
@@ -56,6 +57,12 @@ export function canAttackNow(inst: CardInstance): boolean {
   return true
 }
 
+// 伏兵触发后的攻击者复检。**不看 attacksUsed** —— 这次攻击的次数在触发前就扣了,
+// 用 canAttackNow 会把每一次「触发了伏兵的攻击」都判成无效。
+function canAttackNow2(inst: CardInstance): boolean {
+  return !inst.frozen && inst.attack > 0
+}
+
 // 攻击者的合法目标(守护强制、突袭限制、潜行不可选)
 export function legalAttackTargets(
   state: GameState,
@@ -99,17 +106,37 @@ export function performAttack(
   attacker.attacksUsed += 1
   // 出手即暴露
   breakStealth(loc, lib, events)
+
+  // ---- 伏兵在**伤害结算之前**触发 ----
+  // 这是三个触发时机里唯一会打断调用方流程的:埋伏可以直接把攻击者带走
+  // (请君入甕),也可以把它弹回手牌(欲擒故縱)。所以触发之后必须**重新取一次**
+  // 攻击者与目标,任一方没了就当这次攻击已经被化解 —— 攻击次数照扣。
+  //
+  // 注意 `attacker`/`loc` 是触发前抓的引用:武将弹回手牌时实例会离开 board,
+  // 拿着旧引用继续算伤害就是「打了个已经不在场上的人」。这里的重取不是保险,是必需。
+  if (fireEnemySecret(state, events, lib, player, 'enemyAttack', attackerIid) !== null) {
+    const stillThere = findGeneral(state, attackerIid)
+    if (!stillThere || stillThere.player !== player) return null
+    if (!canAttackNow2(stillThere.inst)) return null
+    if (target.kind === 'general' && !findGeneral(state, target.iid)) return null
+    if (target.kind === 'hero' && state.players[target.player].heroHp <= 0) return null
+    // 攻击者可能被冻结/被削成 0 攻,上面已挡掉;身材变化则照新数值结算
+    loc.inst = stillThere.inst
+    loc.player = stillThere.player
+  }
+  const attackerNow = loc.inst
+
   if (target.kind === 'hero') {
     events.push({
       type: 'AttackResolved',
       attacker: player,
       attackerIid,
       target,
-      damageToTarget: attacker.attack,
+      damageToTarget: attackerNow.attack,
       damageToAttacker: 0,
     })
-    damageHero(state, target.player, attacker.attack, events)
-    if (hasKeyword(attacker, 'lifesteal')) healHero(state, player, attacker.attack, events)
+    damageHero(state, target.player, attackerNow.attack, events)
+    if (hasKeyword(attackerNow, 'lifesteal')) healHero(state, player, attackerNow.attack, events)
   } else {
     const defLoc = findGeneral(state, target.iid)
     if (!defLoc) return 'target-not-found'
@@ -119,11 +146,11 @@ export function performAttack(
       attacker: player,
       attackerIid,
       target,
-      damageToTarget: attacker.attack,
+      damageToTarget: attackerNow.attack,
       damageToAttacker: defender.attack,
     })
     // 同时互击
-    strike(state, events, lib, loc, defLoc, attacker.attack)
+    strike(state, events, lib, loc, defLoc, attackerNow.attack)
     strike(state, events, lib, defLoc, loc, defender.attack)
   }
   processDeaths(state, events, lib)

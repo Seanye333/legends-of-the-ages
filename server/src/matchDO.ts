@@ -17,6 +17,7 @@ import {
   redactState,
 } from '../../src/engine/redact'
 import type { GameConfig, GameEvent, GameState, PlayerIdx } from '../../src/engine/types'
+import { migrateState } from '../../src/engine/migrate'
 import { START_HP } from '../../src/engine/types'
 import { CARDS_BY_ID } from '../../src/content/cards'
 import { HEROES_BY_ID } from '../../src/content/overrides/heroes'
@@ -115,7 +116,9 @@ export class MatchDO {
       this.ctx.storage.get<Deadlines>('deadlines'),
     ])
     if (game) {
-      this.state = game.state
+      // 一局打到一半服务端就部署了 —— 存下的 GameState 可能少了新版引擎的必填字段。
+      // 不迁移的话 redactState 直接抛 TypeError,那一局的双方都会卡死在最后一帧。
+      this.state = migrateState(game.state)
       this.cfg = game.cfg
     }
     if (seats) this.seats = seats

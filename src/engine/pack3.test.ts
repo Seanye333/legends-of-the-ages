@@ -169,6 +169,10 @@ function player(over: Partial<PlayerState> = {}): PlayerState {
     graveyard: [],
     mulliganDone: true,
     heroPowerUsed: false,
+    secrets: [],
+    overloadNext: 0,
+    overloadLocked: 0,
+    cardsPlayedThisTurn: 0,
     ...over,
   }
 }

@@ -130,6 +130,10 @@ export function inflateRedacted(rs: RedactedState, mySeat: PlayerIdx): GameState
     mulliganDone: rs.self.mulliganDone,
     heroPowerUsed: rs.self.heroPowerUsed,
     heroPower: rs.self.heroPower,
+    secrets: rs.self.secrets ?? [],
+    overloadNext: rs.self.overloadNext ?? 0,
+    overloadLocked: rs.self.overloadLocked ?? 0,
+    cardsPlayedThisTurn: rs.self.cardsPlayedThisTurn ?? 0,
   }
   const opponent: PlayerState = {
     heroId: rs.opponent.heroId,
@@ -145,6 +149,15 @@ export function inflateRedacted(rs: RedactedState, mySeat: PlayerIdx): GameState
     mulliganDone: rs.opponent.mulliganDone,
     heroPowerUsed: rs.opponent.heroPowerUsed,
     heroPower: rs.opponent.heroPower,
+    // 对手的伏兵只知道有几个、iid 是什么。defId 空串 = UI 渲染成「未知」,
+    // 和对手手牌走的是同一条既有路径。
+    // ?? 兜底不是多余的:PWA 是 autoUpdate,一个还没刷新的旧页面
+    // 完全可能连上新服务端(反过来不会 —— 服务端先部署)。旧服务端不发这几个字段,
+    // 少一层兜底这里就是 `undefined.map`,整局白屏。
+    secrets: (rs.opponent.secretIids ?? []).map((iid) => ({ iid, defId: '' })),
+    overloadNext: rs.opponent.overloadNext ?? 0,
+    overloadLocked: rs.opponent.overloadLocked ?? 0,
+    cardsPlayedThisTurn: rs.opponent.cardsPlayedThisTurn ?? 0,
   }
   return {
     seed: 0,

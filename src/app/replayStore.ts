@@ -2,6 +2,7 @@
 // 本地/联机通吃(联机录的是裁剪后视角,天然不泄露对手手牌)。
 // 只保存打完的对局;超大对局(JSON 超限)静默放弃持久化。
 import type { GameEvent, GameState, Winner } from '../engine/types'
+import { migrateState } from '../engine/migrate'
 
 export interface ReplayFrame {
   state: GameState
@@ -76,7 +77,11 @@ export function listReplays(): SavedReplay[] {
     const raw = localStorage.getItem(KEY)
     if (!raw) return []
     const list = JSON.parse(raw) as SavedReplay[]
-    return Array.isArray(list) ? list.filter((r) => r?.frames?.length > 0) : []
+    if (!Array.isArray(list)) return []
+    // 存下来的战报可能是旧版引擎写的。不迁移的话,加一条必填字段就等于
+    // 把玩家所有历史战报变成打开即崩 —— 回放是只读的,更没有理由让它崩。
+    for (const r of list) for (const f of r?.frames ?? []) migrateState(f.state)
+    return list.filter((r) => r?.frames?.length > 0)
   } catch {
     return []
   }

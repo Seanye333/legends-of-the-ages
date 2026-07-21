@@ -6,7 +6,7 @@ import type { GameEvent } from '../../engine/types'
 import { formatEvent } from './eventText'
 import { extractFloats } from './floats'
 
-// 架构铁律 5:新增 GameEvent 变体后必须同步 eventText(战报文案)与
+// 架构铁律 7:新增 GameEvent 变体后必须同步 eventText(战报文案)与
 // floats/useEventAnimations(动效),否则事件会在 UI 里**静默丢失**。
 //
 // 这条铁律此前只写在文档里,没有任何自动化保障 —— 而它的失败模式恰恰是
@@ -82,6 +82,12 @@ const SAMPLES: GameEvent[] = [
   { type: 'StealthBroken', player: 0, iid: 2 },
   { type: 'ManaGained', player: 0, amount: 1, temporary: true },
   { type: 'HeroPowerUsed', player: 0, heroId: 'liu-bei', powerId: 'hp-rende', cost: 2 },
+  // ---- 第四卡包 ----
+  { type: 'SecretPlayed', player: 0, iid: 7, defId: 'secret-qing-jun-ru-weng' },
+  { type: 'SecretRevealed', player: 0, iid: 7, defId: 'secret-qing-jun-ru-weng' },
+  { type: 'ComboTriggered', player: 0, iid: 8, defId: 'strat-huo-ji' },
+  { type: 'ManaOverloaded', player: 0, amount: 2 },
+  { type: 'ManaLocked', player: 0, amount: 2 },
   { type: 'GameEnded', winner: 0 },
 ]
 
@@ -91,7 +97,7 @@ const CTX = {
   heroName: (p: 0 | 1) => ({ zh: p === 0 ? '刘备' : '曹操', en: p === 0 ? 'Liu Bei' : 'Cao Cao' }),
 }
 
-describe('架构铁律 5:每个 GameEvent 都要能在 UI 里落地', () => {
+describe('架构铁律 7:每个 GameEvent 都要能在 UI 里落地', () => {
   it('样本集覆盖 types.ts 里声明的全部事件(加了事件忘了补 UI 就会红)', () => {
     const declared = declaredEventTypes().sort()
     const sampled = [...new Set(SAMPLES.map((e) => e.type))].sort()

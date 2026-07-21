@@ -45,6 +45,7 @@ const KIND_NAME = {
   startOfTurn: { zh: '回合开始', en: 'Start of Turn' },
   onDamaged: { zh: '受创', en: 'On Damaged' },
   heroPower: { zh: '主公技', en: 'Hero Power' },
+  combo: { zh: '连击', en: 'Combo' },
 } as const
 
 // 每种 GameEvent 一条战报,中英各出一份(英文用战报口吻的一般过去时)。
@@ -205,6 +206,25 @@ function line(ev: GameEvent, ctx: EventTextCtx, l: Lang): string {
       return zh
         ? `${hero(ev.player)} 发动主公技(${ev.cost} 费)`
         : `${hero(ev.player)} used their Hero Power (${ev.cost} mana)`
+    // ---- 第四卡包 ----
+    // 埋伏兵时对手拿到的 defId 是空串(见 redactEvent),dn('') 会退化成「未知」,
+    // 战报里读起来就是「敌方埋下一处伏兵」—— 正是想要的效果。
+    case 'SecretPlayed':
+      return zh ? `${side(ev.player)}埋下一处伏兵` : `${side(ev.player)} set a Secret`
+    case 'SecretRevealed':
+      return zh
+        ? `伏兵发动:${dn(ev.defId)}!`
+        : `Secret revealed — ${dn(ev.defId)}!`
+    case 'ComboTriggered':
+      return zh ? `${dn(ev.defId)}连击生效` : `${dn(ev.defId)} — Combo!`
+    case 'ManaOverloaded':
+      return zh
+        ? `${side(ev.player)}过载 ${ev.amount} 点(下回合水晶被锁)`
+        : `${side(ev.player)} overloaded ${ev.amount} (locked next turn)`
+    case 'ManaLocked':
+      return zh
+        ? `${side(ev.player)}本回合被锁 ${ev.amount} 点水晶`
+        : `${side(ev.player)} has ${ev.amount} crystals locked this turn`
     case 'GameEnded':
       if (ev.winner === 'draw') return zh ? '对局结束:平局' : 'Battle over — a draw'
       return zh

@@ -1,6 +1,7 @@
 import type { MouseEvent } from 'react'
 import type { PlayerState } from '../../engine/types'
 import { HEROES_BY_ID } from '../../content/overrides/heroes'
+import { CARDS_BY_ID } from '../../content/cards'
 import { useSettings } from '../../app/settingsStore'
 import { useT } from '../i18n'
 import type { FloatItem } from './floats'
@@ -79,14 +80,34 @@ export function HeroPlate({
       <div className={styles.info}>
         <div className={styles.name}>{name}</div>
         <div className={styles.mana} title={t(`法力 ${ps.mana.current}/${ps.mana.max}`, `Mana ${ps.mana.current}/${ps.mana.max}`)}>
-          {Array.from({ length: ps.mana.max }, (_, i) => (
-            <span key={i} className={i < ps.mana.current ? styles.gemFull : styles.gemEmpty}>
-              ◆
-            </span>
-          ))}
+          {/* 被过载锁住的水晶画成 ✕ 而不是空心 ——
+              「没花掉」和「被锁了」在玩家眼里是两件完全不同的事 */}
+          {Array.from({ length: ps.mana.max }, (_, i) => {
+            const locked = i >= ps.mana.max - ps.overloadLocked
+            const filled = i < ps.mana.current
+            return (
+              <span
+                key={i}
+                className={locked ? styles.gemLocked : filled ? styles.gemFull : styles.gemEmpty}
+              >
+                {locked ? '✕' : '◆'}
+              </span>
+            )
+          })}
           <span className={styles.manaText}>
             {ps.mana.current}/{ps.mana.max}
           </span>
+          {ps.overloadNext > 0 && (
+            <span
+              className={styles.overloadNext}
+              title={t(
+                `下回合将被锁 ${ps.overloadNext} 点水晶`,
+                `${ps.overloadNext} crystals will be locked next turn`,
+              )}
+            >
+              ⧗{ps.overloadNext}
+            </span>
+          )}
         </div>
         {enemy && (
           <div className={styles.backs} title={t(`对方手牌 ${ps.hand.length} 张`, `Opponent hand: ${ps.hand.length}`)}>
@@ -110,6 +131,31 @@ export function HeroPlate({
           {ps.fatigue > 0 && <span className={styles.fatigue}>☠ {ps.fatigue}</span>}
         </div>
       </div>
+      {/* 伏兵区。对手的伏兵 defId 是空串(裁剪层保证),渲染成「?」——
+          玩家能看到有几个、但不知道是什么,这正是这个机制的全部价值。 */}
+      {ps.secrets.length > 0 && (
+        <div
+          className={styles.secrets}
+          aria-label={t(`伏兵 ${ps.secrets.length} 处`, `${ps.secrets.length} Secrets`)}
+        >
+          {ps.secrets.map((sec) => {
+            const card = sec.defId ? CARDS_BY_ID[sec.defId] : undefined
+            const label = card ? (lang === 'en' ? card.name.en : card.name.zh) : '?'
+            const desc = card
+              ? `${label}\n${lang === 'en' ? (card.text?.en ?? '') : (card.text?.zh ?? '')}`
+              : t('对手的伏兵 —— 内容未知', 'An enemy Secret — contents unknown')
+            return (
+              <span
+                key={sec.iid}
+                className={`${styles.secret} ${card ? styles.secretKnown : ''}`}
+                title={desc}
+              >
+                {card ? label.slice(0, 2) : '?'}
+              </span>
+            )
+          })}
+        </div>
+      )}
       {power && (
         <button
           type="button"

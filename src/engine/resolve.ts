@@ -591,7 +591,16 @@ export interface ScriptCtx {
   sourceIid?: number
   chosen?: TargetRef
   degradeChosen?: boolean
-  kind?: 'battlecry' | 'deathrattle' | 'spell' | 'endOfTurn' | 'startOfTurn' | 'onDamaged' | 'heroPower'
+  kind?:
+    | 'battlecry'
+    | 'deathrattle'
+    | 'spell'
+    | 'endOfTurn'
+    | 'startOfTurn'
+    | 'onDamaged'
+    | 'heroPower'
+    | 'secret'
+    | 'combo'
   depth?: number
 }
 

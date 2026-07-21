@@ -128,6 +128,20 @@ export function evaluate(state: GameState, player: PlayerIdx, lib: CardLibrary):
   // 主公技这回合还没用 = 一份没兑现的资源
   if (me.heroPower && !me.heroPowerUsed && me.mana.current >= me.heroPower.cost) score += 0.3
 
+  // ---- 第四卡包 ----
+  // 伏兵对贪心 AI 是**不可见的价值**:打出它场面一点变化都没有,
+  // 于是纯贪心永远不会打伏兵 —— 那批卡在 AI 手里等于废牌。
+  // 这里给一个固定的持有价值(约等于一张 2 费牌的场面折算),
+  // 让 AI 至少愿意把伏兵埋下去。不做「猜对手会不会踩」的推演 ——
+  // 那需要对手模型,而这一层是刻意贪心的(见 ARCHITECTURE.md 的平衡一节)。
+  score += me.secrets.length * 1.6 - foe.secrets.length * 1.6
+
+  // 过载是**下回合的债**。不记这一笔的话,AI 眼里过载牌就是白送的超模身材,
+  // 会毫不犹豫地连着两张过载把自己锁死。按每点 0.5 折算(略低于一点法力的
+  // 即时价值,因为债要下回合才还,中间还有一回合的场面收益)。
+  score -= me.overloadNext * 0.5
+  score += foe.overloadNext * 0.5
+
   return score
 }
 

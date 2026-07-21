@@ -8,7 +8,7 @@ import type {
   TargetRef,
   Winner,
 } from './types'
-import { BOARD_LIMIT, MANA_CAP, TURN_LIMIT } from './types'
+import { BOARD_LIMIT, MANA_CAP, SECRET_LIMIT, TURN_LIMIT } from './types'
 import { rngShuffle } from './rng'
 import {
   addEnchant,
@@ -22,6 +22,7 @@ import {
   runScript,
 } from './resolve'
 import { hasKeyword, performAttack, performDuel } from './combat'
+import { fireEnemySecret, hasSecretNamed } from './secrets'
 
 // 纯函数核心:不修改入参,返回新状态 + 事件流。
 // AI 模拟、UI 乐观更新、服务器权威校验共用这一个入口。
@@ -185,9 +186,26 @@ function playCard(
   if (!def) return `unknown-card-def: ${inst.defId}`
   if (def.cost > p.mana.current) return 'not-enough-mana'
 
+  // ---- 连击:本回合此牌**之前**已经打出过牌,就改用 combo 脚本 ----
+  // 「改用」而不是「追加」:追加的话一张连击牌在连击时价值翻倍,定价没法做。
+  // 判定放在扣费之前,因为目标校验也要按实际会跑的那个脚本来 ——
+  // 基础脚本要目标而连击脚本不要(或反过来)的卡是存在的。
+  const comboActive = def.combo !== undefined && p.cardsPlayedThisTurn > 0
+
+  // ---- 伏兵:打出后进伏兵区,不结算 spell ----
+  if (def.type === 'stratagem' && def.secret) {
+    if (p.secrets.length >= SECRET_LIMIT) return 'secrets-full'
+    // 同名伏兵不能重复埋 —— 否则「对手还剩几个伏兵」这个信息就失真了
+    if (hasSecretNamed(state, player, def.id)) return 'secret-duplicate'
+  }
+
   // ---- 打出前校验目标(校验失败不产生任何变化) ----
   const script =
-    def.type === 'general' ? def.battlecry : def.type === 'stratagem' ? def.spell : undefined
+    def.type === 'general'
+      ? (comboActive ? def.combo : def.battlecry)
+      : def.type === 'stratagem'
+        ? (def.secret ? undefined : comboActive ? def.combo : def.spell)
+        : undefined
   const needsChosen = requiresChosenTarget(script)
   const pool = needsChosen ? chosenTargetPool(state, player, script) : []
   const targetInPool = (t: TargetRef) =>
@@ -217,7 +235,7 @@ function playCard(
     if (!target || target.kind !== 'general') return 'target-required'
     if (findGeneral(state, target.iid)?.player !== player) return 'invalid-target'
   } else {
-    if (!def.spell) return 'stratagem-without-spell'
+    if (!def.spell && !def.secret && !def.combo) return 'stratagem-without-spell'
     if (needsChosen) {
       if (pool.length === 0) return 'no-legal-target'
       if (!target) return 'target-required'
@@ -230,6 +248,17 @@ function playCard(
   p.mana.current -= def.cost
   p.hand.splice(handIndex, 1)
   events.push({ type: 'CardPlayed', player, iid, defId: inst.defId, cost: def.cost })
+  // 连击计数在**打出之后**加,所以这张牌自己不会让自己进入连击态
+  p.cardsPlayedThisTurn += 1
+  if (comboActive) {
+    events.push({ type: 'ComboTriggered', player, iid, defId: inst.defId })
+  }
+  // 过载只记账,真正扣水晶在下个回合开始时(beginTurn)。
+  // 分两步是为了让 UI 能分别说清「这张牌过载了 2 点」和「你这回合被锁了 2 点」。
+  if (def.overload) {
+    p.overloadNext += def.overload
+    events.push({ type: 'ManaOverloaded', player, amount: def.overload })
+  }
 
   if (def.type === 'general') {
     const pos = Math.max(0, Math.min(boardPos ?? p.board.length, p.board.length))
@@ -247,20 +276,20 @@ function playCard(
     })
     // 光环可能在入场瞬间改变全场身材
     processDeaths(state, events, lib)
-    if (def.battlecry) {
+    if (script) {
       events.push({
         type: 'EffectTriggered',
         player,
         sourceIid: inst.iid,
         sourceDefId: inst.defId,
-        kind: 'battlecry',
+        kind: comboActive ? 'combo' : 'battlecry',
       })
-      runScript(state, events, lib, def.battlecry, {
+      runScript(state, events, lib, script, {
         player,
         sourceDefId: inst.defId,
         sourceIid: inst.iid,
         chosen: chosenForScript,
-        kind: 'battlecry',
+        kind: comboActive ? 'combo' : 'battlecry',
       })
     }
     // 单挑:战吼结算后,若单挑者仍在场且目标仍在场
@@ -269,6 +298,9 @@ function playCard(
         performDuel(state, events, lib, player, inst.iid, target.iid)
       }
     }
+    // 伏兵在战吼与单挑**之后**触发:入场的战吼是「打出的一部分」,
+    // 先让它跑完再让对手的埋伏说话,顺序上更接近玩家的心理模型。
+    fireEnemySecret(state, events, lib, player, 'enemySummon', inst.iid)
   } else if (def.type === 'equipment') {
     // 装备:作为一条附魔挂上(因此可被沉默清除),随后入墓
     const loc = target?.kind === 'general' ? findGeneral(state, target.iid) : undefined
@@ -287,20 +319,27 @@ function playCard(
       )
     }
     p.graveyard.push(inst.defId)
+  } else if (def.secret) {
+    // 伏兵不结算、不入墓 —— 它现在住在伏兵区,翻开时才入墓
+    p.secrets.push({ iid: inst.iid, defId: inst.defId })
+    events.push({ type: 'SecretPlayed', player, iid: inst.iid, defId: inst.defId })
   } else {
     events.push({
       type: 'EffectTriggered',
       player,
       sourceDefId: inst.defId,
-      kind: 'spell',
+      kind: comboActive ? 'combo' : 'spell',
     })
-    runScript(state, events, lib, def.spell!, {
+    runScript(state, events, lib, script!, {
       player,
       sourceDefId: inst.defId,
       chosen: chosenForScript,
+      // 连击脚本也算锦囊,照吃法术伤害加成
       kind: 'spell',
     })
     p.graveyard.push(inst.defId)
+    // 锦囊伏兵在**结算之后**触发:对手先看到锦囊的效果,再被反制
+    fireEnemySecret(state, events, lib, player, 'enemyStratagem')
   }
 
   processDeaths(state, events, lib)
@@ -360,6 +399,15 @@ function beginTurn(state: GameState, events: GameEvent[], lib: CardLibrary): voi
   const p = state.players[active]
   p.mana.max = Math.min(MANA_CAP, p.mana.max + 1)
   p.mana.current = p.mana.max
+  // 过载:上回合透支的水晶现在还。锁到 0 为止,不会欠成负数、也不跨回合累积 ——
+  // 累积的话一次连锁过载能把人锁死好几轮,那不是风险,那是自杀。
+  p.overloadLocked = Math.min(p.overloadNext, p.mana.current)
+  p.overloadNext = 0
+  if (p.overloadLocked > 0) {
+    p.mana.current -= p.overloadLocked
+    events.push({ type: 'ManaLocked', player: active, amount: p.overloadLocked })
+  }
+  p.cardsPlayedThisTurn = 0
   p.heroPowerUsed = false
   for (const unit of p.board) {
     unit.exhausted = false

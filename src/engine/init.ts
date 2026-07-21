@@ -70,6 +70,10 @@ export function createGame(cfg: GameConfig, lib: CardLibrary): GameState {
       mulliganDone: false,
       heroPowerUsed: false,
       heroPower: cfg.heroPowers?.[side],
+      secrets: [],
+      overloadNext: 0,
+      overloadLocked: 0,
+      cardsPlayedThisTurn: 0,
     }
   }) as [PlayerState, PlayerState]
 

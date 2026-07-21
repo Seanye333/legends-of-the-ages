@@ -1,7 +1,8 @@
 import type { CardLibrary, Command, GameState, PlayerIdx, TargetRef } from './types'
-import { BOARD_LIMIT } from './types'
+import { BOARD_LIMIT, SECRET_LIMIT } from './types'
 import { chosenTargetPool, findGeneral, other, requiresChosenTarget } from './resolve'
 import { hasKeyword, legalAttackTargets } from './combat'
+import { hasSecretNamed } from './secrets'
 
 // 当前玩家的合法命令。驱动 AI 决策和 UI 可点判定。
 // 契约:此处返回的每一条命令,applyCommand 都必须接受(fuzz 测试强制)。
@@ -25,9 +26,13 @@ export function legalCommands(state: GameState, player: PlayerIdx, lib: CardLibr
   for (const card of p.hand) {
     const def = lib[card.defId]
     if (!def || def.cost > p.mana.current) continue
+    // 连击态要在这里就判掉:combo 脚本和基础脚本的**目标要求可能不同**,
+    // 这里按基础脚本列命令、applyCommand 按 combo 脚本校验,就会漏出
+    // 「legalCommands 给的命令被 applyCommand 拒绝」—— fuzz 测试专门盯这个契约。
+    const comboActive = def.combo !== undefined && p.cardsPlayedThisTurn > 0
     if (def.type === 'general') {
       if (p.board.length >= BOARD_LIMIT) continue
-      const script = def.battlecry
+      const script = comboActive ? def.combo : def.battlecry
       const needsChosen = requiresChosenTarget(script)
       const pool = needsChosen ? chosenTargetPool(state, player, script) : []
       const duelTargets: TargetRef[] = hasKeyword(card, 'duel')
@@ -49,10 +54,16 @@ export function legalCommands(state: GameState, player: PlayerIdx, lib: CardLibr
       for (const c of p.board) {
         commands.push({ type: 'PlayCard', iid: card.iid, target: { kind: 'general', iid: c.iid } })
       }
+    } else if (def.secret) {
+      // 伏兵:区满或已埋同名则打不出
+      if (p.secrets.length >= SECRET_LIMIT) continue
+      if (hasSecretNamed(state, player, def.id)) continue
+      commands.push({ type: 'PlayCard', iid: card.iid })
     } else {
-      const needsChosen = requiresChosenTarget(def.spell)
+      const spell = comboActive ? def.combo : def.spell
+      const needsChosen = requiresChosenTarget(spell)
       if (needsChosen) {
-        const pool = chosenTargetPool(state, player, def.spell)
+        const pool = chosenTargetPool(state, player, spell)
         for (const target of pool) commands.push({ type: 'PlayCard', iid: card.iid, target })
       } else {
         commands.push({ type: 'PlayCard', iid: card.iid })
