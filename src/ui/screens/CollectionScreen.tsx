@@ -1,9 +1,17 @@
-import { useDeferredValue, useMemo, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
-import type { CardDef, CardInstance, Doctrine, LocalizedText, Rarity } from '../../engine/types'
+import type {
+  CardDef,
+  CardInstance,
+  Doctrine,
+  DynastyTag,
+  Keyword,
+  LocalizedText,
+  Rarity,
+} from '../../engine/types'
 import { COLLECTIBLE_CARDS } from '../../content/cards'
 import { useCollection } from '../../app/collectionStore'
-import { DOCTRINE_COLORS } from '../doctrineColors'
+import { DOCTRINE_COLORS, DYNASTY_NAME } from '../doctrineColors'
 import { CardFace } from '../components/CardFace'
 import { CardInspect } from '../components/CardInspect'
 import { FoilLayer } from '../components/FoilLayer'
@@ -40,6 +48,64 @@ const COST_FILTERS: { key: 'all' | '0-3' | '4-6' | '7+'; label: LocalizedText }[
   { key: '7+', label: { zh: '≥7 费', en: '≥7' } },
 ]
 
+// 机制筛选。关键词与「有没有战吼/亡语/光环/伏兵/连击/过载」放在同一个下拉里 ——
+// 玩家找牌时想的是「我要一张带守护的」或者「我要伏兵」,不会先在心里分类。
+type MechKey = Keyword | 'battlecry' | 'deathrattle' | 'aura' | 'secret' | 'combo' | 'overload'
+
+const MECH_FILTERS: { key: MechKey; label: LocalizedText }[] = [
+  { key: 'charge', label: { zh: '冲锋', en: 'Charge' } },
+  { key: 'rush', label: { zh: '突袭', en: 'Rush' } },
+  { key: 'guard', label: { zh: '守护', en: 'Guard' } },
+  { key: 'windfury', label: { zh: '连击(风怒)', en: 'Windfury' } },
+  { key: 'duel', label: { zh: '单挑', en: 'Duel' } },
+  { key: 'lifesteal', label: { zh: '吸血', en: 'Lifesteal' } },
+  { key: 'poison', label: { zh: '剧毒', en: 'Poison' } },
+  { key: 'divineShield', label: { zh: '铁壁', en: 'Divine Shield' } },
+  { key: 'stealth', label: { zh: '潜行', en: 'Stealth' } },
+  { key: 'battlecry', label: { zh: '战吼', en: 'Battlecry' } },
+  { key: 'deathrattle', label: { zh: '亡语', en: 'Deathrattle' } },
+  { key: 'aura', label: { zh: '光环', en: 'Aura' } },
+  { key: 'secret', label: { zh: '伏兵', en: 'Secret' } },
+  { key: 'combo', label: { zh: '连击', en: 'Combo' } },
+  { key: 'overload', label: { zh: '过载', en: 'Overload' } },
+]
+
+function hasMechanic(c: CardDef, m: MechKey): boolean {
+  switch (m) {
+    case 'battlecry':
+      return c.battlecry !== undefined
+    case 'deathrattle':
+      return c.deathrattle !== undefined
+    case 'aura':
+      return c.aura !== undefined
+    case 'secret':
+      return c.secret !== undefined
+    case 'combo':
+      return c.combo !== undefined
+    case 'overload':
+      return (c.overload ?? 0) > 0
+    default:
+      return c.keywords.includes(m)
+  }
+}
+
+type SortKey = 'rarity' | 'cost' | 'attack' | 'health' | 'no'
+
+const SORTS: { key: SortKey; label: LocalizedText }[] = [
+  { key: 'rarity', label: { zh: '按稀有度', en: 'By rarity' } },
+  { key: 'cost', label: { zh: '按费用', en: 'By cost' } },
+  { key: 'attack', label: { zh: '按攻击', en: 'By attack' } },
+  { key: 'health', label: { zh: '按生命', en: 'By health' } },
+  { key: 'no', label: { zh: '按编号', en: 'By number' } },
+]
+
+// 图鉴里出现过的朝代(按卡数排序,空的不列)
+const DYNASTIES_IN_POOL: DynastyTag[] = (() => {
+  const count = new Map<DynastyTag, number>()
+  for (const c of COLLECTIBLE_CARDS) count.set(c.dynasty, (count.get(c.dynasty) ?? 0) + 1)
+  return [...count.entries()].sort((a, b) => b[1] - a[1]).map(([d]) => d)
+})()
+
 export function fakeInstance(def: CardDef): CardInstance {
   return {
     iid: -def.collectorNo,
@@ -74,6 +140,9 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
   const [ownedOnly, setOwnedOnly] = useState(false)
   const [rarity, setRarity] = useState<Rarity | 'all'>('all')
   const [costBand, setCostBand] = useState<'all' | '0-3' | '4-6' | '7+'>('all')
+  const [dynasty, setDynasty] = useState<DynastyTag | 'all'>('all')
+  const [mech, setMech] = useState<MechKey | 'all'>('all')
+  const [sortKey, setSortKey] = useState<SortKey>('rarity')
   const [limit, setLimit] = useState(PAGE)
   const [inspect, setInspect] = useState<CardDef | null>(null)
 
@@ -89,19 +158,55 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
       if (costBand === '0-3' && c.cost > 3) return false
       if (costBand === '4-6' && (c.cost < 4 || c.cost > 6)) return false
       if (costBand === '7+' && c.cost < 7) return false
+      if (dynasty !== 'all' && c.dynasty !== dynasty) return false
+      if (mech !== 'all' && !hasMechanic(c, mech)) return false
       if (q && !c.name.zh.includes(deferredQuery.trim()) && !c.name.en.toLowerCase().includes(q))
         return false
       return true
-    }).sort(
-      (a, b) =>
-        RARITY_ORDER[a.rarity] - RARITY_ORDER[b.rarity] ||
-        a.cost - b.cost ||
-        a.collectorNo - b.collectorNo,
-    )
-  }, [tab, deferredQuery, ownedOnly, rarity, costBand, owned])
+    }).sort((a, b) => {
+      // 每种排序都以「稀有度 → 编号」收尾,保证结果稳定 ——
+      // 不然同攻击力的卡每次筛选顺序都不一样,看起来像列表在乱跳。
+      const tail =
+        RARITY_ORDER[a.rarity] - RARITY_ORDER[b.rarity] || a.collectorNo - b.collectorNo
+      switch (sortKey) {
+        case 'cost':
+          return a.cost - b.cost || tail
+        case 'attack':
+          return (b.attack ?? -1) - (a.attack ?? -1) || tail
+        case 'health':
+          return (b.health ?? -1) - (a.health ?? -1) || tail
+        case 'no':
+          return a.collectorNo - b.collectorNo
+        default:
+          return RARITY_ORDER[a.rarity] - RARITY_ORDER[b.rarity] || a.cost - b.cost || tail
+      }
+    })
+  }, [tab, deferredQuery, ownedOnly, rarity, costBand, dynasty, mech, sortKey, owned])
 
   const ownedCount = useMemo(() => Object.values(owned).filter((n) => n > 0).length, [owned])
   const shown = filtered.slice(0, limit)
+
+  // 无限滚动。仍然只渲染 limit 张(DOM 有界,所以不需要虚拟列表),
+  // 但不用玩家每 48 张点一次按钮 —— 2211 张卡意味着点 46 次才能翻到底。
+  const sentinelRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el) return
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) setLimit((l) => l + PAGE)
+      },
+      { rootMargin: '400px' },
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+
+  // 任一筛选条件变化就回到第一页。放在这里而不是散在每个 onClick 里 ——
+  // 之前每加一个筛选器就要记得补一次 setLimit(PAGE),漏一个就是「换了筛选却还停在第 5 页」。
+  useEffect(() => {
+    setLimit(PAGE)
+  }, [tab, deferredQuery, ownedOnly, rarity, costBand, dynasty, mech, sortKey])
 
   return (
     <div className={styles.screen}>
@@ -141,7 +246,6 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
               onClick={() => {
                 playSfx('buttonTap')
                 setTab(d.key)
-                setLimit(PAGE)
               }}
             >
               {pick({ zh: d.zh, en: d.en })}
@@ -155,7 +259,6 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
             value={query}
             onChange={(e) => {
               setQuery(e.target.value)
-              setLimit(PAGE)
             }}
           />
           <button
@@ -163,7 +266,6 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
             onClick={() => {
               playSfx('buttonTap')
               setOwnedOnly(!ownedOnly)
-              setLimit(PAGE)
             }}
           >
             {t('仅看已拥有', 'Owned only')}
@@ -177,7 +279,6 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
               onClick={() => {
                 playSfx('buttonTap')
                 setRarity(r.key)
-                setLimit(PAGE)
               }}
             >
               {pick(r.label)}
@@ -190,12 +291,55 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
               onClick={() => {
                 playSfx('buttonTap')
                 setCostBand(c.key)
-                setLimit(PAGE)
               }}
             >
               {pick(c.label)}
             </button>
           ))}
+        </div>
+        {/* 朝代与机制是 16 / 15 个选项,做成按钮会把筛选区撑满一屏 —— 用下拉 */}
+        <div className={styles.toolsRow}>
+          <select
+            className={styles.select}
+            value={dynasty}
+            aria-label={t('按朝代筛选', 'Filter by dynasty')}
+            onChange={(e) => setDynasty(e.target.value as DynastyTag | 'all')}
+          >
+            <option value="all">{t('全部朝代', 'All dynasties')}</option>
+            {DYNASTIES_IN_POOL.map((d) => (
+              <option key={d} value={d}>
+                {pick(DYNASTY_NAME[d] ?? { zh: d, en: d })}
+              </option>
+            ))}
+          </select>
+          <select
+            className={styles.select}
+            value={mech}
+            aria-label={t('按机制筛选', 'Filter by mechanic')}
+            onChange={(e) => setMech(e.target.value as MechKey | 'all')}
+          >
+            <option value="all">{t('全部机制', 'All mechanics')}</option>
+            {MECH_FILTERS.map((m) => (
+              <option key={m.key} value={m.key}>
+                {pick(m.label)}
+              </option>
+            ))}
+          </select>
+          <select
+            className={styles.select}
+            value={sortKey}
+            aria-label={t('排序方式', 'Sort order')}
+            onChange={(e) => setSortKey(e.target.value as SortKey)}
+          >
+            {SORTS.map((o) => (
+              <option key={o.key} value={o.key}>
+                {pick(o.label)}
+              </option>
+            ))}
+          </select>
+          <span className={styles.resultCount}>
+            {t(`${filtered.length} 张`, `${filtered.length} cards`)}
+          </span>
         </div>
       </div>
 
@@ -215,17 +359,11 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
         })}
       </div>
 
-      {shown.length < filtered.length && (
-        <button
-          className={styles.moreBtn}
-          onClick={() => {
-            playSfx('buttonTap')
-            setLimit((l) => l + PAGE)
-          }}
-        >
-          {t(`加载更多(${shown.length}/${filtered.length})`, `Load more (${shown.length}/${filtered.length})`)}
-        </button>
-      )}
+      {/* 滚到这里就自动加载下一页;同时兼作「还有多少」的进度提示 */}
+      <div ref={sentinelRef} className={styles.sentinel}>
+        {shown.length < filtered.length &&
+          t(`载入中… ${shown.length}/${filtered.length}`, `Loading… ${shown.length}/${filtered.length}`)}
+      </div>
       {filtered.length === 0 && <p className={styles.empty}>{t('没有符合条件的卡', 'No cards match')}</p>}
 
       {inspect && <CardInspect def={inspect} forge onClose={() => setInspect(null)} />}

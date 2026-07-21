@@ -216,33 +216,6 @@ export const PACK4_COMBO: CardDef[] = [
       en: 'Give a friendly general +2/+2. Combo: it also gains Guard, and draw a card.',
     },
   },
-  {
-    id: 'gen-combo-ci-ke',
-    collectorNo: 9313,
-    name: { zh: '荊軻', en: 'Jing Ke' },
-    type: 'general',
-    doctrine: 'separatist',
-    dynasty: 'warring-states',
-    rarity: 'legendary',
-    archetype: 'warrior',
-    cost: 4,
-    attack: 4,
-    health: 3,
-    keywords: [],
-    // 白板 4/3 是 4 费的**弱**身材(基准 9 点,它只有 7);
-    // 连击给潜行 + 冲锋,等于「凑得出第二张就是一次 4 点直伤,凑不出就是张软牌」。
-    // 风萧萧兮易水寒 —— 这张牌的手感就该是一次性的孤注一掷。
-    combo: {
-      ops: [
-        { op: 'grantKeyword', keyword: 'charge', target: 'self' },
-        { op: 'grantKeyword', keyword: 'stealth', target: 'self' },
-      ],
-    },
-    text: {
-      zh: '連擊:獲得衝鋒與潛行。風蕭蕭兮易水寒,壯士一去兮不復還。',
-      en: 'Combo: gain Charge and Stealth. The wind is cold on the Yi River; the hero goes and does not return.',
-    },
-  },
 ]
 
 // ---------- 过载 ----------
@@ -253,27 +226,6 @@ export const PACK4_COMBO: CardDef[] = [
 // 一条自我约束:**不做过载 3 以上的卡。** 过载 3 意味着下回合几乎跳过,
 // 而「一整个回合什么都做不了」在对局里读起来不是刺激,是卡死。
 export const PACK4_OVERLOAD: CardDef[] = [
-  {
-    id: 'gen-ol-xiang-yu',
-    collectorNo: 9321,
-    name: { zh: '項羽', en: 'Xiang Yu' },
-    type: 'general',
-    doctrine: 'hegemonic',
-    dynasty: 'chu-han',
-    rarity: 'legendary',
-    archetype: 'warrior',
-    cost: 5,
-    attack: 8,
-    health: 7,
-    keywords: ['charge'],
-    overload: 2,
-    // 5 费 8/7 冲锋:身材 15 点是 7 费的量,冲锋再加 2 费 —— 严重超模。
-    // 代价是下回合只剩 4 费(6 - 2)。力拔山兮气盖世,然后就没有然后了。
-    text: {
-      zh: '衝鋒。過載 (2)。力拔山兮氣蓋世,時不利兮騅不逝。',
-      en: 'Charge. Overload (2). His strength could uproot mountains — and then the tide turned.',
-    },
-  },
   {
     id: 'strat-po-fu-chen-zhou-p4',
     collectorNo: 9322,
@@ -316,5 +268,52 @@ export const PACK4_OVERLOAD: CardDef[] = [
     },
   },
 ]
+
+// ---------- 覆盖既有卡 ----------
+//
+// 这两个人**卡池里本来就有**。第一版我给他们各建了一张新卡,
+// 结果图鉴里立刻出现两张「項羽」、两张「荊軻」—— 名字一样、身材不同、
+// 立绘还只有旧的那张有(新 id 匹配不上立绘文件名)。
+// 新机制该做成覆盖,不是新卡:同一个历史人物在一个卡池里只该有一个位置。
+//
+// 顺带一提,卡池里本来就有 40 组重名(生成卡 vs `hist-` 签名卡,如杜預/嵇康),
+// 那是导入期两批花名册重叠留下的,不在这一包的范围内 —— 但确实该收拾。
+export const PACK4_OVERRIDES: Record<string, Partial<CardDef>> = {
+  // 項羽:原本 10 费 9/8 单挑 —— 十费的白板大哥,登场即终局,没什么可玩的。
+  // 改成 5 费 8/7 冲锋 + 过载 2:力拔山兮气盖世,然后就没有然后了。
+  // 这是全卡池最能诠释「过载」的人。
+  'hist-xiang-yu': {
+    cost: 5,
+    attack: 8,
+    health: 7,
+    keywords: ['charge'],
+    overload: 2,
+    battlecry: undefined,
+    text: {
+      zh: '衝鋒。過載 (2)。力拔山兮氣蓋世,時不利兮騅不逝。',
+      en: 'Charge. Overload (2). His strength could uproot mountains — and then the tide turned.',
+    },
+  },
+  // 荊軻:原本是「战吼造成 4 点伤害」。图穷匕见 —— 匕首出现在一连串动作的**最后**,
+  // 这本来就是连击的形状,比战吼贴切。基础 4/3 白板(4 费的弱身材),
+  // 连击给冲锋 + 潜行,等于「凑得出第二张就是一次 4 点直伤,凑不出就是张软牌」。
+  'hist-jing-ke': {
+    cost: 4,
+    attack: 4,
+    health: 3,
+    rarity: 'legendary',
+    battlecry: undefined,
+    combo: {
+      ops: [
+        { op: 'grantKeyword', keyword: 'charge', target: 'self' },
+        { op: 'grantKeyword', keyword: 'stealth', target: 'self' },
+      ],
+    },
+    text: {
+      zh: '連擊:獲得衝鋒與潛行。圖窮匕見,風蕭蕭兮易水寒。',
+      en: 'Combo: gain Charge and Stealth. The map unrolls; the dagger appears.',
+    },
+  },
+}
 
 export const PACK4_CARDS: CardDef[] = [...PACK4_SECRETS, ...PACK4_COMBO, ...PACK4_OVERLOAD]

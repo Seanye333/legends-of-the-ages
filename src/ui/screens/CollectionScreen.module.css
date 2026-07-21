@@ -177,3 +177,36 @@
   font-weight: 700;
   letter-spacing: 0.06em;
 }
+
+/* 下拉筛选(朝代 / 机制 / 排序) */
+.select {
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(212, 168, 74, 0.4);
+  background: rgba(20, 15, 9, 0.9);
+  color: var(--ink-bright, #e8dcc0);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.select:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 1px;
+}
+
+.resultCount {
+  margin-left: auto;
+  align-self: center;
+  font-size: 12px;
+  opacity: 0.65;
+}
+
+/* 无限滚动哨兵 */
+.sentinel {
+  min-height: 40px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  opacity: 0.6;
+}

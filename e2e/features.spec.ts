@@ -74,9 +74,12 @@ test('collection: pack-2 equipment card is in the pool with its keyword rule', a
   await page.getByRole('button', { name: '名将图鉴' }).click()
   await page.getByPlaceholder('搜索名将…').fill('青釭劍')
   await page.getByText('青釭劍').first().click()
-  await expect(page.getByText('装备')).toBeVisible()
-  await expect(page.getByText('剧毒')).toBeVisible()
-  await expect(page.getByText('战斗中伤害到的武将立即死亡')).toBeVisible()
+  // 只在卡牌详情面板里找 —— 图鉴的筛选下拉里也有「剧毒」这一项,
+  // 用全页 getByText 会撞上 <option>(strict mode 直接报两个匹配)
+  const inspect = page.locator('[class*="overlay"]').first()
+  await expect(inspect.getByText('装备')).toBeVisible()
+  await expect(inspect.getByText('剧毒')).toBeVisible()
+  await expect(inspect.getByText('战斗中伤害到的武将立即死亡')).toBeVisible()
 })
 
 test('hero power: both heroes show a power button wired to the engine', async ({ page }) => {
@@ -284,4 +287,38 @@ test('settings: music can be turned off independently of sfx', async ({ page }) 
   await expect(page.getByText(/音效音量/)).toBeVisible()
   // 音乐与音效是两个独立开关
   await expect(page.getByRole('slider')).toHaveCount(2)
+})
+
+test('collection: dynasty / mechanic filters, sorting, and infinite scroll', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: '名将图鉴' }).click()
+  await expect(page.getByRole('heading', { name: '名将图鉴' })).toBeVisible()
+
+  // 机制筛选:伏兵是第四卡包引入的,数量固定
+  await page.getByLabel('按机制筛选').selectOption('secret')
+  await expect(page.locator('[class*="resultCount"]')).toHaveText(/6 张/)
+
+  // 换筛选要回到第一页 —— 从前每加一个筛选器就得记着补 setLimit,漏一个就停在旧页
+  await page.getByLabel('按机制筛选').selectOption('all')
+  await page.getByLabel('按朝代筛选').selectOption('tang')
+  const tangCount = await page.locator('[class*="resultCount"]').innerText()
+  expect(Number(tangCount.replace(/\D/g, ''))).toBeGreaterThan(0)
+
+  // 排序切换不该把结果筛没
+  await page.getByLabel('排序方式').selectOption('cost')
+  await expect(page.locator('[class*="resultCount"]')).toHaveText(tangCount)
+
+  // 无限滚动:滚到底自动加载下一页,不用点按钮
+  await page.getByLabel('按朝代筛选').selectOption('all')
+  await page.waitForTimeout(200)
+  // 不假设起始页数:筛选结果短的时候哨兵一开始就在视口里,会立刻自动多载一页 ——
+  // 那是对的行为,断言写死 48 反而会红。只验证「滚动确实让它继续长」。
+  const sentinel = page.locator('[class*="sentinel"]')
+  const shownNow = async () => Number((await sentinel.innerText()).match(/(\d+)\//)![1])
+  const before = await shownNow()
+  for (let i = 0; i < 3; i++) {
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+    await page.waitForTimeout(400)
+  }
+  expect(await shownNow()).toBeGreaterThan(before)
 })
