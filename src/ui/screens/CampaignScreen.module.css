@@ -219,9 +219,15 @@
 
 .briefPortrait {
   width: 100%;
-  aspect-ratio: 3 / 2;
+  /* 3:2 太扁,竖向全身立绘会被从中间裁,正好切掉脸。
+     放到 3:2.4 并把裁切锚点上移 —— Boss 简报最该看见的就是那张脸。 */
+  aspect-ratio: 3 / 2.4;
   overflow: hidden;
   border-radius: 15px 15px 0 0;
+}
+
+.briefPortrait img {
+  object-position: 50% 18%;
 }
 
 .briefName {
