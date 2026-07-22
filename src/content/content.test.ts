@@ -171,3 +171,50 @@ describe('collectorNo 稳定性', () => {
     expect(clashes).toEqual([])
   })
 })
+
+describe('第五卡包:抉择与发现', () => {
+  const withChoose = COLLECTIBLE_CARDS.filter((c) => c.choose)
+  const withDiscover = COLLECTIBLE_CARDS.filter((c) =>
+    JSON.stringify(c).includes('"discover"'),
+  )
+
+  it('抉择卡每个模式至少两个,且都带脚本与标签', () => {
+    for (const c of withChoose) {
+      expect(c.choose!.modes.length, `${c.id} 抉择模式不足两个`).toBeGreaterThanOrEqual(2)
+      for (const m of c.choose!.modes) {
+        expect(m.script.ops.length, `${c.id} 有空模式`).toBeGreaterThan(0)
+        expect(m.label.zh.length, `${c.id} 模式缺中文标签`).toBeGreaterThan(0)
+        expect(m.label.en.length, `${c.id} 模式缺英文标签`).toBeGreaterThan(0)
+      }
+    }
+    expect(withChoose.length).toBeGreaterThan(0)
+  })
+
+  it('抉择与连击互斥 —— 一张牌只能是其一(reducer 的脚本优先级依赖这条)', () => {
+    for (const c of withChoose) {
+      expect(c.combo, `${c.id} 同时有 choose 和 combo`).toBeUndefined()
+    }
+  })
+
+  it('抉择卡不该再留残余的 battlecry/spell —— 效果全在 modes 里,留着是死代码', () => {
+    for (const c of withChoose) {
+      if (c.type === 'general') expect(c.battlecry, `${c.id} 残留 battlecry`).toBeUndefined()
+      if (c.type === 'stratagem') expect(c.spell, `${c.id} 残留 spell`).toBeUndefined()
+    }
+  })
+
+  it('发现必须是脚本的最后一个 op —— 之后的 op 永远不会跑(runScript 见挂起即 break)', () => {
+    const scriptsOf = (c: CardDef) =>
+      [c.battlecry, c.spell, c.combo, ...(c.choose?.modes.map((m) => m.script) ?? [])].filter(
+        (s): s is NonNullable<typeof s> => s !== undefined,
+      )
+    for (const c of withDiscover) {
+      for (const s of scriptsOf(c)) {
+        const idx = s.ops.findIndex((o) => o.op === 'discover')
+        if (idx < 0) continue
+        expect(idx, `${c.id} 的发现 op 后面还有 op,永远跑不到`).toBe(s.ops.length - 1)
+      }
+    }
+    expect(withDiscover.length).toBeGreaterThan(0)
+  })
+})
