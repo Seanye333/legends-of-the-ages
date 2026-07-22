@@ -229,3 +229,12 @@ describe('第五卡包:抉择与发现', () => {
     expect(withDiscover.length).toBeGreaterThan(0)
   })
 })
+
+describe('风味文本', () => {
+  it('所有可收集传奇武将都有中文风味文本 —— 顶级传奇不该是白文案', () => {
+    const naked = COLLECTIBLE_CARDS.filter(
+      (c) => c.rarity === 'legendary' && c.type === 'general' && !c.text?.zh,
+    ).map((c) => `${c.id}(${c.name.zh})`)
+    expect(naked).toEqual([])
+  })
+})
