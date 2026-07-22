@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { BOSSES } from '../content/campaign'
 import { RELICS, type RelicDef } from '../content/relics'
+import { MODIFIERS_BY_ID, rollModifier } from '../content/expeditionModifiers'
 import { useCollection } from './collectionStore'
 import { useAchievements } from './achievementStore'
 
@@ -23,7 +24,8 @@ export interface ExpeditionRun {
   stage: number // 0-based:当前要打(或刚打完)的 Boss 序号
   relics: string[] // 已收集的宝物 id
   offered: string[] | null // 通关后亮出的三选一(等玩家挑);null = 不在选宝物
-  rngState: number // 宝物随机的种子推进(可复现)
+  stageMod: string | null // 当前关的战场态势修饰符 id(第 1 关为 null)
+  rngState: number // 宝物/修饰符随机的种子推进(可复现)
 }
 
 interface ExpeditionState {
@@ -79,6 +81,7 @@ export const useExpedition = create<ExpeditionState>()(
             stage: 0,
             relics: [],
             offered: null,
+            stageMod: null,
             rngState: (Math.floor(Math.random() * 0x7fffffff) || 1) >>> 0,
           },
           totalRuns: get().totalRuns + 1,
@@ -95,6 +98,9 @@ export const useExpedition = create<ExpeditionState>()(
         }
         const clearedStage = run.stage
         useAchievements.getState().bump('expeditionWins')
+        // 高难修饰符的补偿:通关多给一件宝物 → 直接折成一个卡包(结算即得)
+        const clearedMod = run.stageMod ? MODIFIERS_BY_ID[run.stageMod] : undefined
+        if (clearedMod?.bonusRelic) useCollection.getState().grantPacks(1)
         if (clearedStage >= BOSSES.length - 1) {
           // 通关全部:大奖 + 满进度
           useCollection.getState().grantPacks(3)
@@ -113,8 +119,17 @@ export const useExpedition = create<ExpeditionState>()(
       pickRelic(id) {
         const run = get().run
         if (!run || !run.offered || !run.offered.includes(id)) return
+        // 进下一关:抽一个战场态势修饰符(可复现,推进 rngState)
+        const { id: modId, next } = rollModifier(run.rngState)
         set({
-          run: { ...run, relics: [...run.relics, id], offered: null, stage: run.stage + 1 },
+          run: {
+            ...run,
+            relics: [...run.relics, id],
+            offered: null,
+            stage: run.stage + 1,
+            stageMod: modId,
+            rngState: next,
+          },
         })
       },
 

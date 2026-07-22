@@ -52,18 +52,27 @@ describe('远征 run 状态机', () => {
     exp.start('liu-bei', Array(30).fill('c'))
     // 直接把 run 推到最后一关
     useExpedition.setState({
-      run: { heroId: 'liu-bei', deck: [], stage: BOSSES.length - 1, relics: [], offered: null, rngState: 1 },
+      run: { heroId: 'liu-bei', deck: [], stage: BOSSES.length - 1, relics: [], offered: null, stageMod: null, rngState: 1 },
     })
     useExpedition.getState().settle(true)
     expect(useExpedition.getState().run).toBeNull()
     expect(useExpedition.getState().bestDepth).toBe(BOSSES.length)
   })
 
+  it('第 1 关无修饰符,选宝物进第 2 关起有战场态势', () => {
+    const exp = useExpedition.getState()
+    exp.start('liu-bei', Array(30).fill('c'))
+    expect(useExpedition.getState().run?.stageMod).toBeNull() // 第 1 关干净
+    exp.settle(true)
+    useExpedition.getState().pickRelic(useExpedition.getState().run!.offered![0])
+    expect(useExpedition.getState().run?.stageMod).toBeTruthy() // 第 2 关有修饰符
+  })
+
   it('三选一排除已拥有的宝物', () => {
     const exp = useExpedition.getState()
     exp.start('liu-bei', Array(30).fill('c'))
     useExpedition.setState({
-      run: { heroId: 'liu-bei', deck: [], stage: 0, relics: ['relic-jinpai'], offered: null, rngState: 42 },
+      run: { heroId: 'liu-bei', deck: [], stage: 0, relics: ['relic-jinpai'], offered: null, stageMod: null, rngState: 42 },
     })
     useExpedition.getState().settle(true)
     const offered = useExpedition.getState().run!.offered!

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { BOSSES, bossDeck } from '../../content/campaign'
 import { RELICS_BY_ID, combineRelics } from '../../content/relics'
+import { MODIFIERS_BY_ID } from '../../content/expeditionModifiers'
 import { PRECON_DECKS } from '../../content/decks'
 import { HEROES_BY_ID } from '../../content/overrides/heroes'
 import { START_HP } from '../../engine/types'
@@ -40,6 +41,10 @@ export function ExpeditionScreen({ onBack, onEnterMatch }: ExpeditionScreenProps
     if (!boss) return
     const myHero = HEROES_BY_ID[run.heroId]
     const { bonusHp, modifiers } = combineRelics(run.relics)
+    // 战场态势修饰符:合进 Boss 侧修正 / 双方修正 / Boss 血量
+    const mod = run.stageMod ? MODIFIERS_BY_ID[run.stageMod] : undefined
+    const playerMods = { ...modifiers, ...(mod?.both ?? {}) }
+    const bossMods = { ...(mod?.boss ?? {}), ...(mod?.both ?? {}) }
     playSfx('duel')
     haptic('impact')
     launchMatch({
@@ -47,8 +52,8 @@ export function ExpeditionScreen({ onBack, onEnterMatch }: ExpeditionScreenProps
       deckIds: [run.deck.slice(), bossDeck(boss.doctrine, boss.deckTier)],
       expedition: true,
       heroPowersOverride: [myHero?.power, boss.power],
-      heroHpsOverride: [(myHero?.hp ?? START_HP) + bonusHp, boss.hp],
-      modifiersOverride: [modifiers, undefined],
+      heroHpsOverride: [(myHero?.hp ?? START_HP) + bonusHp, boss.hp + (mod?.bossHpBonus ?? 0)],
+      modifiersOverride: [playerMods, bossMods],
     })
     onEnterMatch()
   }
@@ -138,7 +143,14 @@ export function ExpeditionScreen({ onBack, onEnterMatch }: ExpeditionScreenProps
                 {t(`第 ${run.stage + 1} 关`, `Stage ${run.stage + 1}`)} · {pick(boss.name)}
               </div>
               <div className={styles.bossTitle}>{pick(boss.title)}</div>
-              <div className={styles.bossHp}>{t(`血量 ${boss.hp}`, `${boss.hp} HP`)}</div>
+              <div className={styles.bossHp}>
+                {t(`血量 ${boss.hp + (run.stageMod ? MODIFIERS_BY_ID[run.stageMod]?.bossHpBonus ?? 0 : 0)}`, `${boss.hp + (run.stageMod ? MODIFIERS_BY_ID[run.stageMod]?.bossHpBonus ?? 0 : 0)} HP`)}
+              </div>
+              {run.stageMod && MODIFIERS_BY_ID[run.stageMod] && (
+                <div className={styles.modChip}>
+                  ⚔ {pick(MODIFIERS_BY_ID[run.stageMod].name)} —— {pick(MODIFIERS_BY_ID[run.stageMod].text)}
+                </div>
+              )}
             </div>
             <button className={styles.fightBtn} onClick={fight}>
               {t('开战', 'Fight')}
