@@ -88,6 +88,10 @@ const SAMPLES: GameEvent[] = [
   { type: 'ComboTriggered', player: 0, iid: 8, defId: 'strat-huo-ji' },
   { type: 'ManaOverloaded', player: 0, amount: 2 },
   { type: 'ManaLocked', player: 0, amount: 2 },
+  // ---- 第五卡包 ----
+  { type: 'ChooseModePlayed', player: 0, defId: 'strat-huo-ji', mode: 0 },
+  { type: 'DiscoverStarted', player: 0, options: ['guan-yu', 'zhang-fei', 'liu-bei'], reason: 'discover' },
+  { type: 'DiscoverPicked', player: 0, defId: 'guan-yu' },
   { type: 'GameEnded', winner: 0 },
 ]
 

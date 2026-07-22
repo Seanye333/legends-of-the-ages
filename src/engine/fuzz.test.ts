@@ -89,6 +89,39 @@ const LIB: CardLibrary = Object.fromEntries(
         ],
       },
     }),
+    // ---- 第五卡包:让 fuzz 真的踩到抉择与发现的路径 ----
+    // 抉择武将:一个模式要目标、一个不要 —— 正是 legal/apply 契约最容易破的形状
+    def('f-choose-gen', {
+      cost: 3,
+      attack: 2,
+      health: 3,
+      choose: {
+        modes: [
+          { label: { zh: 'A', en: 'A' }, script: { ops: [{ op: 'grantKeyword', keyword: 'guard', target: 'self' }] } },
+          { label: { zh: 'B', en: 'B' }, script: { ops: [{ op: 'damage', amount: 2, target: 'chosenEnemyGeneral' }] } },
+        ],
+      },
+    }),
+    def('f-choose-strat', {
+      type: 'stratagem',
+      cost: 2,
+      attack: undefined,
+      health: undefined,
+      choose: {
+        modes: [
+          { label: { zh: 'A', en: 'A' }, script: { ops: [{ op: 'draw', count: 1 }] } },
+          { label: { zh: 'B', en: 'B' }, script: { ops: [{ op: 'damage', amount: 3, target: 'chosenAny' }] } },
+        ],
+      },
+    }),
+    // 发现:把对局停在 pendingChoice 上,fuzz 必须能从挂起里选出去、不卡死
+    def('f-discover', {
+      type: 'stratagem',
+      cost: 2,
+      attack: undefined,
+      health: undefined,
+      spell: { ops: [{ op: 'discover', pool: 'myGeneral' }] },
+    }),
   ].map((d) => [d.id, d]),
 )
 

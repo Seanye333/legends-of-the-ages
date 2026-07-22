@@ -159,6 +159,19 @@ export function inflateRedacted(rs: RedactedState, mySeat: PlayerIdx): GameState
     overloadLocked: rs.opponent.overloadLocked ?? 0,
     cardsPlayedThisTurn: rs.opponent.cardsPlayedThisTurn ?? 0,
   }
+  // 待决选择:座位翻回本地帧。对手在发现时 options 是空的,
+  // 补 count 个空串占位(和对手手牌用 dummy 实例、伏兵用空 defId 是同一套路)——
+  // UI 把空串当「未知牌」渲染,于是「对手在从 3 张里挑」就有 3 个牌背可显示。
+  const pc = rs.pendingChoice
+  const pendingChoice = pc
+    ? {
+        player: flip(pc.player),
+        reason: pc.reason,
+        options:
+          pc.options.length > 0 ? pc.options : (Array.from({ length: pc.count }, () => '') as string[]),
+      }
+    : undefined
+
   return {
     seed: 0,
     rng: 0,
@@ -168,6 +181,7 @@ export function inflateRedacted(rs: RedactedState, mySeat: PlayerIdx): GameState
     winner: rs.winner === 0 || rs.winner === 1 ? flip(rs.winner) : rs.winner,
     players: [self, opponent],
     nextIid: 0,
+    pendingChoice,
   }
 }
 

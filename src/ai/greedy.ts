@@ -275,6 +275,18 @@ export function aiStep(
     return { cmd: { type: 'Mulligan', keepIids: mulliganKeep(state, player, lib) }, rng }
   }
 
+  // 发现挂起:evaluate 看不见手牌里具体是哪张牌(只数张数),所以不能靠通用打分选。
+  // 用一个便宜的代理:挑费用最高的那张(费用是身材/效果的总量,粗糙但方向对)。
+  // options 里可能有引擎不认识的 defId 兜底成 -1,永远排在最后。
+  if (state.pendingChoice && state.pendingChoice.player === player) {
+    const opts = state.pendingChoice.options
+    let best = 0
+    for (let i = 1; i < opts.length; i++) {
+      if ((lib[opts[i]]?.cost ?? -1) > (lib[opts[best]]?.cost ?? -1)) best = i
+    }
+    return { cmd: { type: 'ResolveChoice', index: best }, rng }
+  }
+
   if (config.lethalSearch) {
     const lethal = findLethal(state, player, lib)
     if (lethal) return { cmd: lethal, rng }

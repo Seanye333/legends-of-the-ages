@@ -17,6 +17,16 @@ export interface RedactedOpponent
   secretIids: number[]
 }
 
+// 待决选择的裁剪视图。`count` 永远真实(对手 UI 要显示「对方在从 3 张里挑」),
+// 但 `options` 只对**选择方**给内容;不是选择方时是空数组 —— 否则对手能提前
+// 看到你会拿到什么牌,发现这个机制的悬念就没了。
+export interface RedactedPendingChoice {
+  player: PlayerIdx
+  reason: 'discover'
+  count: number
+  options: string[]
+}
+
 export interface RedactedState {
   viewer: PlayerIdx
   turn: number
@@ -25,6 +35,20 @@ export interface RedactedState {
   winner?: GameState['winner']
   self: RedactedSelf
   opponent: RedactedOpponent
+  pendingChoice?: RedactedPendingChoice
+}
+
+function redactPending(
+  pc: GameState['pendingChoice'],
+  viewer: PlayerIdx,
+): RedactedPendingChoice | undefined {
+  if (!pc) return undefined
+  return {
+    player: pc.player,
+    reason: pc.reason,
+    count: pc.options.length,
+    options: pc.player === viewer ? pc.options.slice() : [],
+  }
 }
 
 export function redactState(state: GameState, viewer: PlayerIdx): RedactedState {
@@ -37,6 +61,7 @@ export function redactState(state: GameState, viewer: PlayerIdx): RedactedState 
     activePlayer: state.activePlayer,
     phase: state.phase,
     winner: state.winner,
+    pendingChoice: redactPending(state.pendingChoice, viewer),
     self: {
       heroId: me.heroId,
       heroHp: me.heroHp,
@@ -87,6 +112,10 @@ export function redactForSpectator(state: GameState): RedactedState {
   const rs = redactState(state, 0)
   return {
     ...rs,
+    // 观战席看不到任何一方在发现什么(否则观众比双方都多知道信息)
+    pendingChoice: rs.pendingChoice
+      ? { ...rs.pendingChoice, options: [] }
+      : undefined,
     self: {
       ...rs.self,
       hand: rs.self.hand.map((c) => ({ ...c, defId: '' })),
@@ -100,6 +129,8 @@ export function redactForSpectator(state: GameState): RedactedState {
 export function redactEventForSpectator(event: GameEvent): GameEvent {
   if (event.type === 'CardDrawn') return { ...event, defId: '' }
   if (event.type === 'SecretPlayed') return { ...event, defId: '' }
+  if (event.type === 'DiscoverStarted') return { ...event, options: [] }
+  if (event.type === 'DiscoverPicked') return { ...event, defId: '' }
   return event
 }
 
@@ -110,6 +141,13 @@ export function redactEvent(event: GameEvent, viewer: PlayerIdx): GameEvent {
   }
   // 埋伏兵的那一刻也是秘密 —— SecretRevealed 才是公开的
   if (event.type === 'SecretPlayed' && event.player !== viewer) {
+    return { ...event, defId: '' }
+  }
+  // 发现:候选与选定的牌面都不给对手(count 已在 state 裁剪里给了)
+  if (event.type === 'DiscoverStarted' && event.player !== viewer) {
+    return { ...event, options: [] }
+  }
+  if (event.type === 'DiscoverPicked' && event.player !== viewer) {
     return { ...event, defId: '' }
   }
   return event

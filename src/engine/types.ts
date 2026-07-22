@@ -108,11 +108,40 @@ export type EffectOp =
   | { op: 'gainMana'; amount: number; temporary: boolean } // 增益法力(temporary 只补本回合)
   | { op: 'damageAll'; amount: number } // 双方全场武将
   | { op: 'summonForEnemy'; defId: string; count: number } // 为对手召唤(负面锦囊/亡语用)
+  // ---- 第五卡包 ----
+  // 发现:亮 count 张(默认 3),玩家挑一张进手牌。**必须是脚本的最后一个 op** ——
+  // 它会把对局停在 pendingChoice 上等玩家选,后面的 op 不会再跑(见 runScript)。
+  | { op: 'discover'; pool: DiscoverPool; count?: number }
 
 export interface EffectScript {
   ops: EffectOp[]
   condition?: EffectCondition
 }
+
+// ---------- 第五卡包:抉择 / 发现 ----------
+
+// 抉择:一张牌两个(或更多)模式,打出时**当场**选一个。
+// 和连击的区别:连击由「本回合是不是第二张牌」决定,玩家不选;抉择永远是玩家现选。
+// 每个模式自带一段脚本,选中的那段照常走目标校验 —— 于是「模式 A 要目标、
+// 模式 B 不要目标」的卡是合法的(reducer/legal 都按选中模式的脚本判)。
+export interface ChooseMode {
+  label: LocalizedText
+  script: EffectScript
+}
+
+export interface ChooseDef {
+  modes: ChooseMode[]
+}
+
+// 发现:从一个牌池里亮出 count 张,玩家挑一张进手牌。
+// 这是全游戏第一个「效果中途停下来问玩家」的机制 —— 靠 GameState.pendingChoice
+// 落地(见下),而不是把引擎改成异步。发现的牌池刻意只做几个具名的,
+// 不开放任意谓词:池子一旦能任意描述,平衡就没法测了。
+export type DiscoverPool =
+  | 'myStratagem' // 我方主义 + 中立的锦囊
+  | 'myGeneral' // 我方主义 + 中立的武将
+  | 'anyKeyword' // 任意带关键词的武将(跨主义,做「找关键词」的卡)
+  | 'costlyGeneral' // 6 费及以上的武将(做「找大哥」的卡)
 
 // ---------- 第四卡包:伏兵 / 连击 / 过载 ----------
 
@@ -170,6 +199,8 @@ export interface CardDef {
   secret?: SecretDef // 伏兵:打出后进伏兵区,对手触发才翻开(仅锦囊)
   combo?: EffectScript // 连击:本回合此牌之前已打出过牌时,**改用**这个脚本
   overload?: number // 过载:下回合锁定的水晶数
+  // ---- 第五卡包 ----
+  choose?: ChooseDef // 抉择:打出时选一个模式(替代 battlecry/spell)
 }
 
 // 主公技:每回合一次的主动技能,六主义各一。
@@ -249,6 +280,15 @@ export interface PlayerState {
 export type GamePhase = 'mulligan' | 'main' | 'ended'
 export type Winner = PlayerIdx | 'draw'
 
+// 待决选择:发现机制把对局停在这里等一名玩家挑牌。
+// 只要它非空,除了「那名玩家的 ResolveChoice」之外的一切命令都被拒 —— 对局冻在此处。
+// 对**非选择方**必须裁掉 options(见 redact.ts),否则对手能提前看到你会拿什么牌。
+export interface PendingChoice {
+  player: PlayerIdx
+  options: string[] // 亮出的候选 defId
+  reason: 'discover'
+}
+
 export interface GameState {
   seed: number
   rng: number
@@ -258,6 +298,8 @@ export interface GameState {
   winner?: Winner
   players: [PlayerState, PlayerState]
   nextIid: number
+  // 非空时对局暂停,等 pendingChoice.player 发 ResolveChoice(见上)
+  pendingChoice?: PendingChoice
 }
 
 // ---------- 命令(玩家意图) ----------
@@ -268,10 +310,12 @@ export type TargetRef =
 
 export type Command =
   | { type: 'Mulligan'; keepIids: number[] }
-  | { type: 'PlayCard'; iid: number; boardPos?: number; target?: TargetRef }
+  | { type: 'PlayCard'; iid: number; boardPos?: number; target?: TargetRef; mode?: number }
   | { type: 'Attack'; attackerIid: number; target: TargetRef }
   | { type: 'UseHeroPower'; target?: TargetRef }
   | { type: 'EndTurn' }
+  // 发现:回应一个待决选择(pendingChoice)。index 指向亮出的第几张。
+  | { type: 'ResolveChoice'; index: number }
   | { type: 'Concede' }
 
 // ---------- 事件(UI 动画与观战/回放的唯一来源) ----------
@@ -364,6 +408,11 @@ export type GameEvent =
       powerId: string
       cost: number
     }
+  // ---- 第五卡包 ----
+  | { type: 'ChooseModePlayed'; player: PlayerIdx; defId: string; mode: number } // 抉择选了哪个模式
+  // 发现开始。options 对**非选择方**要抹空(redactEvent),否则对手提前知道你在挑什么。
+  | { type: 'DiscoverStarted'; player: PlayerIdx; options: string[]; reason: 'discover' }
+  | { type: 'DiscoverPicked'; player: PlayerIdx; defId: string } // 选定后加入手牌(defId 对对手同样要抹)
   | { type: 'GameEnded'; winner: Winner }
 
 // ---------- 对局配置与 API 结果 ----------

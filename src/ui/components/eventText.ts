@@ -225,6 +225,19 @@ function line(ev: GameEvent, ctx: EventTextCtx, l: Lang): string {
       return zh
         ? `${side(ev.player)}本回合被锁 ${ev.amount} 点水晶`
         : `${side(ev.player)} has ${ev.amount} crystals locked this turn`
+    // ---- 第五卡包 ----
+    case 'ChooseModePlayed':
+      return zh
+        ? `${side(ev.player)}抉择:第 ${ev.mode + 1} 式`
+        : `${side(ev.player)} chose mode ${ev.mode + 1}`
+    case 'DiscoverStarted':
+      // options 对对手是空串(redactEvent),所以这里只说「在发现」,不点名候选
+      return zh ? `${side(ev.player)}正在发现…` : `${side(ev.player)} is discovering…`
+    case 'DiscoverPicked':
+      // defId 对对手抹空 → dn('') 退化成「未知」,战报读起来就是「敌方发现了一张牌」
+      return zh
+        ? `${side(ev.player)}发现:${dn(ev.defId)}`
+        : `${side(ev.player)} discovered ${dn(ev.defId)}`
     case 'GameEnded':
       if (ev.winner === 'draw') return zh ? '对局结束:平局' : 'Battle over — a draw'
       return zh

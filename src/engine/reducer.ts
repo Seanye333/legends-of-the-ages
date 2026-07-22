@@ -8,7 +8,8 @@ import type {
   TargetRef,
   Winner,
 } from './types'
-import { BOARD_LIMIT, MANA_CAP, SECRET_LIMIT, TURN_LIMIT } from './types'
+import { BOARD_LIMIT, HAND_LIMIT, MANA_CAP, SECRET_LIMIT, TURN_LIMIT } from './types'
+import type { EffectScript } from './types'
 import { rngShuffle } from './rng'
 import {
   addEnchant,
@@ -16,6 +17,7 @@ import {
   drawCards,
   expireTemporaryEnchants,
   findGeneral,
+  makeBoardInstance,
   other,
   processDeaths,
   requiresChosenTarget,
@@ -34,12 +36,25 @@ export function applyCommand(
 ): ApplyResult {
   if (state.phase === 'ended') return { ok: false, error: 'game-ended' }
 
+  // 发现挂起时,对局冻结:只有选择方的 ResolveChoice(或认输)能通过。
+  // 放在最前面 —— 别让「待决选择」期间还能出牌/攻击,那会让 pendingChoice 的
+  // 目标池、场面统统失去意义。
+  if (state.pendingChoice && cmd.type !== 'ResolveChoice' && cmd.type !== 'Concede') {
+    return { ok: false, error: 'choice-pending' }
+  }
+
   const next = structuredClone(state)
   const events: GameEvent[] = []
 
   switch (cmd.type) {
     case 'Concede': {
       endGame(next, events, other(player))
+      return { ok: true, state: next, events }
+    }
+    case 'ResolveChoice': {
+      const error = resolveChoice(next, player, cmd.index, events, lib)
+      if (error) return { ok: false, error }
+      checkGameEnd(next, events)
       return { ok: true, state: next, events }
     }
     case 'Mulligan': {
@@ -85,7 +100,7 @@ export function applyCommand(
       return { ok: true, state: next, events }
     }
     case 'PlayCard': {
-      const error = playCard(next, player, cmd.iid, cmd.boardPos, cmd.target, events, lib)
+      const error = playCard(next, player, cmd.iid, cmd.boardPos, cmd.target, cmd.mode, events, lib)
       if (error) return { ok: false, error }
       checkGameEnd(next, events)
       return { ok: true, state: next, events }
@@ -173,6 +188,7 @@ function playCard(
   iid: number,
   boardPos: number | undefined,
   target: TargetRef | undefined,
+  mode: number | undefined,
   events: GameEvent[],
   lib: CardLibrary,
 ): string | null {
@@ -192,6 +208,17 @@ function playCard(
   // 基础脚本要目标而连击脚本不要(或反过来)的卡是存在的。
   const comboActive = def.combo !== undefined && p.cardsPlayedThisTurn > 0
 
+  // ---- 抉择:打出时选一个模式(和连击互斥,一张牌只能是其一)----
+  // 校验 index 合法;缺省选 0。模式选中的脚本会替代 battlecry/spell,
+  // 于是「模式 A 要目标、模式 B 不要」也照选中的那段走目标校验。
+  let chosenMode: EffectScript | undefined
+  let modeIndex = 0
+  if (def.choose) {
+    modeIndex = mode ?? 0
+    if (modeIndex < 0 || modeIndex >= def.choose.modes.length) return 'invalid-mode'
+    chosenMode = def.choose.modes[modeIndex].script
+  }
+
   // ---- 伏兵:打出后进伏兵区,不结算 spell ----
   if (def.type === 'stratagem' && def.secret) {
     if (p.secrets.length >= SECRET_LIMIT) return 'secrets-full'
@@ -200,11 +227,12 @@ function playCard(
   }
 
   // ---- 打出前校验目标(校验失败不产生任何变化) ----
+  // 优先级:抉择模式 > 连击 > 基础脚本
   const script =
     def.type === 'general'
-      ? (comboActive ? def.combo : def.battlecry)
+      ? (chosenMode ?? (comboActive ? def.combo : def.battlecry))
       : def.type === 'stratagem'
-        ? (def.secret ? undefined : comboActive ? def.combo : def.spell)
+        ? (def.secret ? undefined : (chosenMode ?? (comboActive ? def.combo : def.spell)))
         : undefined
   const needsChosen = requiresChosenTarget(script)
   const pool = needsChosen ? chosenTargetPool(state, player, script) : []
@@ -235,7 +263,7 @@ function playCard(
     if (!target || target.kind !== 'general') return 'target-required'
     if (findGeneral(state, target.iid)?.player !== player) return 'invalid-target'
   } else {
-    if (!def.spell && !def.secret && !def.combo) return 'stratagem-without-spell'
+    if (!def.spell && !def.secret && !def.combo && !def.choose) return 'stratagem-without-spell'
     if (needsChosen) {
       if (pool.length === 0) return 'no-legal-target'
       if (!target) return 'target-required'
@@ -248,6 +276,9 @@ function playCard(
   p.mana.current -= def.cost
   p.hand.splice(handIndex, 1)
   events.push({ type: 'CardPlayed', player, iid, defId: inst.defId, cost: def.cost })
+  if (def.choose) {
+    events.push({ type: 'ChooseModePlayed', player, defId: inst.defId, mode: modeIndex })
+  }
   // 连击计数在**打出之后**加,所以这张牌自己不会让自己进入连击态
   p.cardsPlayedThisTurn += 1
   if (comboActive) {
@@ -343,6 +374,35 @@ function playCard(
   }
 
   processDeaths(state, events, lib)
+  return null
+}
+
+// 发现:玩家从亮出的候选里挑一张进手牌。
+// 挂起期间对局其他一切被拒(见 applyCommand 顶部的闸门),所以这里不用再判
+// activePlayer / phase —— 谁挂起的就是谁能选,pendingChoice.player 说了算。
+function resolveChoice(
+  state: GameState,
+  player: PlayerIdx,
+  index: number,
+  events: GameEvent[],
+  lib: CardLibrary,
+): string | null {
+  const pc = state.pendingChoice
+  if (!pc) return 'no-pending-choice'
+  if (pc.player !== player) return 'not-your-choice'
+  if (index < 0 || index >= pc.options.length) return 'invalid-choice-index'
+  const defId = pc.options[index]
+  // 先清挂起再加牌:万一加牌又触发别的(目前不会),也不会二次挂在旧选择上
+  state.pendingChoice = undefined
+  const p = state.players[player]
+  // 手满则烧掉,和抽牌撞上限一致 —— 发现不该凭空突破手牌上限
+  if (p.hand.length >= HAND_LIMIT) {
+    events.push({ type: 'CardBurned', player, defId })
+    return null
+  }
+  const inst = makeBoardInstance(state, defId, lib)
+  p.hand.push(inst)
+  events.push({ type: 'DiscoverPicked', player, defId })
   return null
 }
 

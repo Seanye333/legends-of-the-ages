@@ -9,6 +9,11 @@ import { hasSecretNamed } from './secrets'
 // 注:调度阶段换牌组合是指数级,只列「全保留」代表项;任意子集由 applyCommand 校验。
 export function legalCommands(state: GameState, player: PlayerIdx, lib: CardLibrary): Command[] {
   if (state.phase === 'ended') return []
+  // 发现挂起:只有选择方能动,而且只能选。其他一切被 applyCommand 顶部的闸门拒掉。
+  if (state.pendingChoice) {
+    if (state.pendingChoice.player !== player) return []
+    return state.pendingChoice.options.map((_, i) => ({ type: 'ResolveChoice', index: i }))
+  }
   if (state.phase === 'mulligan') {
     const p = state.players[player]
     if (p.mulliganDone) return []
@@ -30,6 +35,26 @@ export function legalCommands(state: GameState, player: PlayerIdx, lib: CardLibr
     // 这里按基础脚本列命令、applyCommand 按 combo 脚本校验,就会漏出
     // 「legalCommands 给的命令被 applyCommand 拒绝」—— fuzz 测试专门盯这个契约。
     const comboActive = def.combo !== undefined && p.cardsPlayedThisTurn > 0
+    // ---- 抉择:每个模式各自算目标要求(模式之间可能不同),逐模式列命令 ----
+    // 必须精确对齐 reducer 的目标语义,否则「legal 给的命令 apply 拒绝」——
+    // 武将模式:池空时无目标也可打(脚本里的 chosen op 跳过);
+    // 锦囊模式:池空 = 该模式无法施放(reducer 返回 no-legal-target),整个模式不列。
+    if (def.choose) {
+      if (def.type === 'general' && p.board.length >= BOARD_LIMIT) continue
+      def.choose.modes.forEach((m, mode) => {
+        const needsChosen = requiresChosenTarget(m.script)
+        const pool = needsChosen ? chosenTargetPool(state, player, m.script) : []
+        if (needsChosen && pool.length > 0) {
+          for (const target of pool)
+            commands.push({ type: 'PlayCard', iid: card.iid, target, mode })
+        } else if (needsChosen && def.type === 'stratagem') {
+          // 锦囊模式池空 → 不可施放,跳过
+        } else {
+          commands.push({ type: 'PlayCard', iid: card.iid, mode })
+        }
+      })
+      continue
+    }
     if (def.type === 'general') {
       if (p.board.length >= BOARD_LIMIT) continue
       const script = comboActive ? def.combo : def.battlecry

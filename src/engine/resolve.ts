@@ -5,8 +5,11 @@
 // 任何对数值的修改都必须记成一条 Enchant 再 refreshInstance(),而不是直接赋值。
 // 这是沉默、临时增益、光环三件事共用的撤销路径 —— 直接改数值就没法还原了。
 import type {
+  CardDef,
   CardInstance,
   CardLibrary,
+  DiscoverPool,
+  Doctrine,
   EffectScript,
   Enchant,
   GameEvent,
@@ -621,6 +624,9 @@ export function runScript(
     resolveRefs(state, player, sourceIid, sourceDefId, lib, target, chosen, degradeChosen)
 
   for (const op of script.ops) {
+    // 发现把对局停在 pendingChoice 上等玩家挑牌 —— 一旦挂起,本脚本剩下的 op 不再跑。
+    // 所以「发现必须是脚本最后一个 op」不是约定,是这里强制的。
+    if (state.pendingChoice) break
     switch (op.op) {
       case 'damage': {
         for (const ref of refs(op.target)) {
@@ -795,6 +801,10 @@ export function runScript(
         }
         break
       }
+      case 'discover': {
+        beginDiscover(state, player, op.pool, op.count ?? 3, lib, events, sourceDefId)
+        break
+      }
       default: {
         const exhaustive: never = op
         void exhaustive
@@ -817,6 +827,63 @@ export function resetInstance(inst: CardInstance, lib: CardLibrary): void {
   inst.exhausted = false
   inst.attacksUsed = 0
   refreshInstance(inst, lib)
+}
+
+// ---------- 发现 ----------
+
+// 发现的候选池。用**来源卡的主义**判定「我方主义」——
+// 引擎只有 heroId、拿不到主义,而「你打出一张王道卡 → 发现王道卡」在体感上
+// 和「你的主公是王道」是一回事,还免去了把主义塞进引擎。
+function discoverCandidates(
+  lib: CardLibrary,
+  pool: DiscoverPool,
+  sourceDoctrine: Doctrine | 'neutral',
+): string[] {
+  const all = Object.values(lib).filter((c) => !c.token)
+  const mine = (c: CardDef) => c.doctrine === sourceDoctrine || c.doctrine === 'neutral'
+  let picked: CardDef[]
+  switch (pool) {
+    case 'myStratagem':
+      picked = all.filter((c) => c.type === 'stratagem' && mine(c))
+      break
+    case 'myGeneral':
+      picked = all.filter((c) => c.type === 'general' && mine(c))
+      break
+    case 'anyKeyword':
+      picked = all.filter((c) => c.type === 'general' && c.keywords.length > 0)
+      break
+    case 'costlyGeneral':
+      picked = all.filter((c) => c.type === 'general' && c.cost >= 6)
+      break
+  }
+  // 按 collectorNo 排序:候选集合必须**确定**,采样才可复现(引擎纯度铁律)
+  return picked.sort((a, b) => a.collectorNo - b.collectorNo).map((c) => c.id)
+}
+
+// 从候选池里用种子 RNG 取 count 张不重复的,挂上 pendingChoice。
+// 池子比 count 小就全给(常见于窄主义 + 窄谓词)。
+export function beginDiscover(
+  state: GameState,
+  player: PlayerIdx,
+  pool: DiscoverPool,
+  count: number,
+  lib: CardLibrary,
+  events: GameEvent[],
+  sourceDefId: string,
+): void {
+  const doctrine = lib[sourceDefId]?.doctrine ?? 'neutral'
+  const candidates = discoverCandidates(lib, pool, doctrine)
+  if (candidates.length === 0) return // 无候选:发现直接落空,不挂起对局
+  // 部分 Fisher–Yates:只洗出前 count 个就够
+  const bag = candidates.slice()
+  const options: string[] = []
+  for (let i = 0; i < count && bag.length > 0; i++) {
+    const roll = rngInt(state.rng, bag.length)
+    state.rng = roll.next
+    options.push(bag.splice(roll.value, 1)[0])
+  }
+  state.pendingChoice = { player, options, reason: 'discover' }
+  events.push({ type: 'DiscoverStarted', player, options, reason: 'discover' })
 }
 
 export function makeBoardInstance(
