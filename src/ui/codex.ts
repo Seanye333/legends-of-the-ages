@@ -194,6 +194,17 @@ export const CODEX: CodexSection[] = [
         example: (c) => JSON.stringify(c).includes('"discover"'),
       },
       {
+        id: 'dynasty',
+        term: { zh: '勢力羈絆 Dynasty', en: 'Dynasty Synergy' },
+        rule: { zh: '有些卡会数你场上「同势力」的武将,越多越强。', en: 'Some cards count your same-dynasty generals — the more you field, the stronger they get.' },
+        note: {
+          zh: '每张卡都有势力(魏/蜀/吴/春秋/唐…),这是主义之外的第二条构筑轴。三国势力池子小,靠「势力召集」的衍生物(虎豹骑/白毦兵/丹阳兵)撑起来;大池(春秋/唐)本身就够厚。围绕一个势力堆牌,羁绊 payoff 会滚雪球。',
+          en: 'Every card has a dynasty — a second deckbuilding axis beyond doctrine. The Three Kingdoms pools are small, propped up by "muster" tokens; the big eras (Spring & Autumn, Tang) are deep on their own. Stack one dynasty and the payoffs snowball.',
+        },
+        example: (c) =>
+          JSON.stringify(c).includes('friendlyDynasty') || JSON.stringify(c).includes('ifDynastyCount'),
+      },
+      {
         id: 'spellDamage',
         term: { zh: '法術傷害', en: 'Spell Damage' },
         rule: { zh: '在场时,我方锦囊造成的伤害增加。', en: 'While on the field, your stratagems deal extra damage.' },
