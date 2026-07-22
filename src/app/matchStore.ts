@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { Command, GameEvent, GameState } from '../engine/types'
 import { DECK_SIZE, START_HP } from '../engine/types'
-import type { CardDef, Doctrine, HeroPowerDef } from '../engine/types'
+import type { CardDef, Doctrine, HeroPowerDef, RunModifiers } from '../engine/types'
 import { CARDS, CARDS_BY_ID } from '../content/cards'
 import { HEROES_BY_ID } from '../content/overrides/heroes'
 import { LocalMatch } from './transport'
@@ -12,6 +12,7 @@ import { useQuests } from './questStore'
 import { useArena } from './arenaStore'
 import { useAchievements } from './achievementStore'
 import { useCampaign } from './campaignStore'
+import { useExpedition } from './expeditionStore'
 import { reportWin } from './leaderboard'
 import type { EmoteId } from './protocol'
 import { EMPTY_STATS, foldStats, type MatchStats } from './matchStats'
@@ -37,6 +38,9 @@ export interface StartMatchArgs {
   // 关底战的不对称配置(Boss 血量与主公技由内容层给)
   heroPowersOverride?: [HeroPowerDef | undefined, HeroPowerDef | undefined]
   heroHpsOverride?: [number, number]
+  // 远征(单人 roguelike):关间宝物合成的开局修正;胜负记进远征进度
+  expedition?: boolean
+  modifiersOverride?: [RunModifiers | undefined, RunModifiers | undefined]
 }
 
 export interface StartRemoteArgs {
@@ -58,6 +62,7 @@ interface MatchStoreState {
   tutorial: boolean
   arena: boolean
   campaign: boolean
+  expedition: boolean
   match: LocalMatch | null
   remote: RemoteMatch | null
   remoteStatus: RemoteStatus | null
@@ -113,9 +118,18 @@ function settleWholeMatchAchievements(
 
 // 终局统计:胜得卡包、负得安慰功勋、和局也给一点 —— 输了颗粒无收太劝退。
 // 竞技场局走另一条账:胜负记进 run,奖励等整轮结束一次性结算。
-function settleMatch(events: GameEvent[], arena: boolean, campaign: boolean): void {
+function settleMatch(
+  events: GameEvent[],
+  arena: boolean,
+  campaign: boolean,
+  expedition: boolean,
+): void {
   const ended = events.find((e) => e.type === 'GameEnded')
   if (!ended || ended.type !== 'GameEnded') return
+  if (expedition) {
+    if (ended.winner !== 'draw') useExpedition.getState().settle(ended.winner === 0)
+    return
+  }
   if (campaign) {
     useCampaign.getState().settle(ended.winner === 0)
     return
@@ -144,7 +158,7 @@ function remoteCallbacks(set: SetState, getStats: () => MatchStats) {
       opponentName?: string,
       turnDeadline?: number,
     ) => {
-      settleMatch(events, false, false)
+      settleMatch(events, false, false, false)
       settleQuests(events, state)
       recordReplayFrame(state, events, opponentName)
       const nextStats = foldStats(getStats(), events, state)
@@ -175,6 +189,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
   tutorial: false,
   arena: false,
   campaign: false,
+  expedition: false,
   match: null,
   remote: null,
   remoteStatus: null,
@@ -213,6 +228,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
           (args.tutorial ? [undefined, undefined] : [heroDefs[0]?.power, heroDefs[1]?.power]),
         heroHps:
           args.heroHpsOverride ?? [heroDefs[0]?.hp ?? START_HP, heroDefs[1]?.hp ?? START_HP],
+        modifiers: args.modifiersOverride,
       },
       CARDS_BY_ID,
       ai,
@@ -225,6 +241,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       tutorial: args.tutorial === true,
       arena: args.arena === true,
       campaign: args.campaign === true,
+      expedition: args.expedition === true,
       match,
       state,
       lastEvents: events,
@@ -276,7 +293,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
     }
     const events = r.updates.flatMap((u) => u.events)
     const last = r.updates[r.updates.length - 1]
-    settleMatch(events, get().arena, get().campaign)
+    settleMatch(events, get().arena, get().campaign, get().expedition)
     settleQuests(events, last.state)
     recordReplayFrame(last.state, events)
     const nextStats = foldStats(get().stats, events, last.state)
@@ -309,6 +326,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       tutorial: false,
       arena: false,
       campaign: false,
+      expedition: false,
       match: null,
       remote: null,
       remoteStatus: null,

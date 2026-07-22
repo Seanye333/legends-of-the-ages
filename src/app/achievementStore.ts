@@ -43,6 +43,7 @@ export type StatKey =
   | 'campaignCleared'
   | 'onlineWins'
   | 'flawlessWins'
+  | 'expeditionWins'
   | `won_${Doctrine}`
 
 export type Stats = Partial<Record<StatKey, number>>
@@ -235,6 +236,14 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     (n) => ({ zh: `通关冒险模式 ${n} 关`, en: `Clear ${n} campaign stages` }),
     [1, 4, 8],
     [80, 220, 600],
+  ),
+  ...tier(
+    'ach-expedition',
+    'expeditionWins',
+    { zh: '遠征', en: 'Expedition' },
+    (n) => ({ zh: `远征中赢下 ${n} 场`, en: `Win ${n} Expedition battles` }),
+    [3, 20],
+    [80, 260],
   ),
   ...tier(
     'ach-online',
