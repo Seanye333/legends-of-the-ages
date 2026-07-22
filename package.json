@@ -17,7 +17,8 @@
     "deck-stats": "node --import tsx scripts/deck-stats.ts",
     "tauri": "tauri",
     "sim-campaign": "node --import tsx scripts/sim-campaign.ts",
-    "tune-campaign": "node --import tsx scripts/tune-campaign.ts"
+    "tune-campaign": "node --import tsx scripts/tune-campaign.ts",
+    "sim-hero-mirror": "node --import tsx scripts/sim-hero-mirror.ts"
   },
   "dependencies": {
     "react": "^19.0.0",

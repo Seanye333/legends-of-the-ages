@@ -3,8 +3,14 @@ import type { CSSProperties } from 'react'
 import type { CardDef, CardType, HeroDef, LocalizedText } from '../../engine/types'
 import { DECK_SIZE } from '../../engine/types'
 import { CARDS_BY_ID, COLLECTIBLE_CARDS } from '../../content/cards'
-import { HEROES } from '../../content/overrides/heroes'
+import { ALL_HEROES } from '../../content/overrides/heroes'
 import { PRECON_DECKS, type DeckList } from '../../content/decks'
+
+// 主公选择器按主义分组:同主义的基准与备选主公相邻。
+const DOCTRINE_ORDER = ['royal', 'hegemonic', 'ritual', 'fame', 'separatist', 'reclusion']
+const HERO_PICKS = [...ALL_HEROES].sort(
+  (a, b) => DOCTRINE_ORDER.indexOf(a.doctrine) - DOCTRINE_ORDER.indexOf(b.doctrine),
+)
 import { decodeDeck, encodeDeck } from '../../content/deckCode'
 import { useCollection, copyLimit } from '../../app/collectionStore'
 import { DOCTRINE_COLORS, DOCTRINE_NAME } from '../doctrineColors'
@@ -141,7 +147,7 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
   // 载入预组当模板:名字后缀「· 改」,免得一保存就把预组名占掉
   const loadPrecon = (deck: DeckList) => {
     playSfx('buttonTap')
-    setHero(HEROES.find((x) => x.id === deck.heroId) ?? null)
+    setHero(ALL_HEROES.find((x) => x.id === deck.heroId) ?? null)
     setDeckName(`${deck.name.zh} · 改`)
     const c: Record<string, number> = {}
     for (const id of deck.cardIds) c[id] = (c[id] ?? 0) + 1
@@ -174,7 +180,7 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
     playSfx('buttonTap')
     try {
       const decoded = decodeDeck(codeInput, CARDS_BY_ID)
-      const h = HEROES.find((x) => x.id === decoded.heroId)
+      const h = ALL_HEROES.find((x) => x.id === decoded.heroId)
       if (!h) throw new Error('unknown-hero')
       setHero(h)
       const c: Record<string, number> = {}
@@ -201,7 +207,7 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
     const deck = customDecks.find((d) => d.name.zh === deckNameZh)
     if (!deck) return
     playSfx('buttonTap')
-    const h = HEROES.find((x) => x.id === deck.heroId) ?? null
+    const h = ALL_HEROES.find((x) => x.id === deck.heroId) ?? null
     setHero(h)
     setDeckName(deck.name.zh)
     const c: Record<string, number> = {}
@@ -222,7 +228,7 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
           <h2 className={styles.title}>{t('组建卡组 · 择主而事', 'Deck Builder')}</h2>
         </header>
         <div className={styles.heroRow}>
-          {HEROES.map((h) => (
+          {HERO_PICKS.map((h) => (
             <button
               key={h.id}
               className={styles.heroCard}
@@ -255,7 +261,7 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
                 {pickCompact(d.name)}
               </button>
               <span className={styles.savedHero}>
-                {pickCompact(HEROES.find((h) => h.id === d.heroId)?.name ?? { zh: d.heroId, en: d.heroId })}
+                {pickCompact(ALL_HEROES.find((h) => h.id === d.heroId)?.name ?? { zh: d.heroId, en: d.heroId })}
               </span>
             </div>
           ))}
@@ -269,7 +275,7 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
                   {d.name.zh}
                 </button>
                 <span className={styles.savedHero}>
-                  {pickCompact(HEROES.find((h) => h.id === d.heroId)?.name ?? { zh: d.heroId, en: d.heroId })}
+                  {pickCompact(ALL_HEROES.find((h) => h.id === d.heroId)?.name ?? { zh: d.heroId, en: d.heroId })}
                 </span>
                 <button
                   className={styles.deleteBtn}

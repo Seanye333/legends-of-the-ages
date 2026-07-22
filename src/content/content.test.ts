@@ -3,7 +3,7 @@ import { AMBIGUOUS_NAMES, CARDS, CARDS_BY_ID, COLLECTIBLE_CARDS } from './cards'
 import type { CardDef } from '../engine/types'
 import { PRECON_DECKS, validateDeck } from './decks'
 import { GENERATED_CARDS } from './generated/cards.gen'
-import { HEROES, HEROES_BY_ID } from './overrides/heroes'
+import { ALL_HEROES, ALT_HEROES, HEROES, HEROES_BY_ID } from './overrides/heroes'
 import { SIGNATURE_OVERRIDES } from './overrides/signature'
 import { STRATAGEMS } from './overrides/stratagems'
 
@@ -71,9 +71,20 @@ describe('heroes', () => {
   })
 
   it('every hero id exists in the merged pool (portraits follow roster ids)', () => {
-    for (const h of HEROES) {
+    for (const h of ALL_HEROES) {
       expect(CARDS_BY_ID[h.id], `hero id not in pool: ${h.id}`).toBeDefined()
     }
+  })
+
+  it('备选主公:每个主义恰好一位第二主公,主公技 id 全局唯一', () => {
+    // 每个主义一个备选(六位),和基准一一对应
+    expect(ALT_HEROES.length).toBe(6)
+    const altDoctrines = new Set(ALT_HEROES.map((h) => h.doctrine))
+    expect(altDoctrines.size).toBe(6)
+    for (const h of ALT_HEROES) expect(h.hp).toBe(30)
+    // 主公技 id 不能撞 —— 它进事件流/成就埋点,撞了就串账
+    const powerIds = ALL_HEROES.map((h) => h.power.id)
+    expect(new Set(powerIds).size).toBe(powerIds.length)
   })
 })
 

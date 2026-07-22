@@ -81,6 +81,13 @@ jobs:
         env:
           GAMES: 60
 
+      # 备选主公技闸门:sim-balance 只测基准主公,测不到备选主公技。
+      # 这道补那个洞 —— 每个备选主公在自家预组镜像里 40–60%。
+      - name: 备选主公技闸门
+        run: npm run sim-hero-mirror
+        env:
+          GAMES: 100
+
   content:
     # 内容生成必须幂等:cards.gen.ts 入 git,重跑一次不能有 diff。
     # 需要姊妹仓库,CI 上没有 —— 所以这里只验证「已入库的产物与源码自洽」。
