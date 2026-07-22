@@ -95,6 +95,8 @@ const SAMPLES: GameEvent[] = [
   // ---- 第七卡包 ----
   { type: 'CardCostChanged', player: 0, iid: 9, cost: 2 },
   { type: 'CardGenerated', player: 0, iid: 10, defId: 'guan-yu' },
+  // ---- 第八卡包 ----
+  { type: 'GeneralTransformed', player: 1, iid: 3, intoIid: 11, defId: 'token-xiangyong' },
   { type: 'GameEnded', winner: 0 },
 ]
 

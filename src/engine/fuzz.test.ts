@@ -153,6 +153,15 @@ const LIB: CardLibrary = Object.fromEntries(
     def('f-generator', {
       cost: 3, battlecry: { ops: [{ op: 'addToHand', defId: 'f-van1', count: 2 }] },
     }),
+    // ---- 第八卡包:变形 / 复生 ----
+    def('f-polymorph', {
+      type: 'stratagem', cost: 4, attack: undefined, health: undefined,
+      spell: { ops: [{ op: 'transform', target: 'chosenEnemyGeneral', into: 'f-van1' }] },
+    }),
+    def('f-rez', {
+      type: 'stratagem', cost: 5, attack: undefined, health: undefined,
+      spell: { ops: [{ op: 'resurrect', count: 2 }] },
+    }),
   ].map((d) => [d.id, d]),
 )
 

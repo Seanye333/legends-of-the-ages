@@ -214,6 +214,26 @@ export const CODEX: CodexSection[] = [
         example: (c) => JSON.stringify(c).includes('addToHand'),
       },
       {
+        id: 'transform',
+        term: { zh: '變形 Transform', en: 'Transform' },
+        rule: { zh: '把一个武将原地变成另一张牌(通常是弱小的 1/1)。', en: 'Turn a general into something else (usually a weak 1/1) in place.' },
+        note: {
+          zh: '硬解的另一条路:再大的大哥变成 1/1 羔羊也就没了。而且变形**不是死亡** —— 不触发亡语,也不会进墓地被复生。',
+          en: 'Another answer to big threats: even a giant becomes a 1/1. Transform is not death — no deathrattle, and it cannot be resurrected.',
+        },
+        example: (c) => JSON.stringify(c).includes('transform'),
+      },
+      {
+        id: 'resurrect',
+        term: { zh: '復生 Resurrect', en: 'Resurrect' },
+        rule: { zh: '从墓地随机召回死去的友方武将。', en: 'Return random friendly generals that have died to the field.' },
+        note: {
+          zh: '亡语流与人海流的顶点:死得越多,复生越赚。变形/弹回手牌不进墓地,所以复不出来。',
+          en: 'The payoff for deathrattle and swarm decks — the more that died, the more you get back. Transformed or bounced minions never enter the graveyard.',
+        },
+        example: (c) => JSON.stringify(c).includes('resurrect'),
+      },
+      {
         id: 'dynasty',
         term: { zh: '勢力羈絆 Dynasty', en: 'Dynasty Synergy' },
         rule: { zh: '有些卡会数你场上「同势力」的武将,越多越强。', en: 'Some cards count your same-dynasty generals — the more you field, the stronger they get.' },

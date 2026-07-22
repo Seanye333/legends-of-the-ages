@@ -873,6 +873,47 @@ export function runScript(
         }
         break
       }
+      case 'transform': {
+        if (!lib[op.into]) break
+        for (const ref of refs(op.target)) {
+          if (ref.kind !== 'general') continue
+          const loc = findGeneral(state, ref.iid)
+          if (!loc) continue
+          // 原地替换成全新实例:不触发亡语(变形不是死亡),保持位置。新单位当回合眩晕。
+          const fresh = makeBoardInstance(state, op.into, lib)
+          state.players[loc.player].board[loc.index] = fresh
+          events.push({
+            type: 'GeneralTransformed',
+            player: loc.player,
+            iid: ref.iid,
+            intoIid: fresh.iid,
+            defId: op.into,
+          })
+        }
+        break
+      }
+      case 'resurrect': {
+        // 从墓地随机召回死去的**友方武将**(按卡面复生)。墓地混着锦囊,先滤出武将。
+        const p = state.players[player]
+        const deadGenerals = p.graveyard.filter((id) => lib[id]?.type === 'general' && !lib[id]?.token)
+        for (let i = 0; i < op.count && p.board.length < BOARD_LIMIT && deadGenerals.length > 0; i++) {
+          const roll = rngInt(state.rng, deadGenerals.length)
+          state.rng = roll.next
+          const [defId] = deadGenerals.splice(roll.value, 1)
+          const inst = makeBoardInstance(state, defId, lib)
+          p.board.push(inst)
+          events.push({
+            type: 'GeneralSummoned',
+            player,
+            iid: inst.iid,
+            defId,
+            position: p.board.length - 1,
+            attack: inst.attack,
+            health: inst.health,
+          })
+        }
+        break
+      }
       default: {
         const exhaustive: never = op
         void exhaustive

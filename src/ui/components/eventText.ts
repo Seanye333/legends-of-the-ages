@@ -246,6 +246,10 @@ function line(ev: GameEvent, ctx: EventTextCtx, l: Lang): string {
       return zh
         ? `${side(ev.player)}发现:${dn(ev.defId)}`
         : `${side(ev.player)} discovered ${dn(ev.defId)}`
+    case 'GeneralTransformed':
+      return zh
+        ? `${n(ev.iid)}被变为${dn(ev.defId)}`
+        : `${n(ev.iid)} was transformed into ${dn(ev.defId)}`
     case 'GameEnded':
       if (ev.winner === 'draw') return zh ? '对局结束:平局' : 'Battle over — a draw'
       return zh

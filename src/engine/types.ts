@@ -131,6 +131,11 @@ export type EffectOp =
   | { op: 'reduceCost'; amount: number; filter: CostFilter }
   // 把 count 张 defId 加入手牌(生成);手满则烧掉。价值/工具箱流的地基。
   | { op: 'addToHand'; defId: string; count: number }
+  // ---- 第八卡包:变形 / 复生 ----
+  // 变形:把目标武将原地换成一个全新的 into(不触发亡语 —— 变形不是死亡)。硬解的另一条路。
+  | { op: 'transform'; target: EffectTarget; into: string }
+  // 复生:从墓地随机召回 count 个死去的**友方武将**(按卡面复生)。亡语流的顶点。
+  | { op: 'resurrect'; count: number }
 
 export interface EffectScript {
   ops: EffectOp[]
@@ -444,6 +449,8 @@ export type GameEvent =
   // ---- 第七卡包 ----
   | { type: 'CardCostChanged'; player: PlayerIdx; iid: number; cost: number } // 费用消减后的有效费
   | { type: 'CardGenerated'; player: PlayerIdx; iid: number; defId: string } // 生成进手牌(defId 对对手抹)
+  // ---- 第八卡包 ----
+  | { type: 'GeneralTransformed'; player: PlayerIdx; iid: number; intoIid: number; defId: string }
   | { type: 'GameEnded'; winner: Winner }
 
 // ---------- 对局配置与 API 结果 ----------
