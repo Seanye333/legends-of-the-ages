@@ -194,6 +194,26 @@ export const CODEX: CodexSection[] = [
         example: (c) => JSON.stringify(c).includes('"discover"'),
       },
       {
+        id: 'reduceCost',
+        term: { zh: '費用消減', en: 'Cost Reduction' },
+        rule: { zh: '有些牌让你手牌里的某类牌变便宜(永久)。', en: 'Some cards make a category of cards in your hand cheaper — permanently.' },
+        note: {
+          zh: '这是 build-around 的地基:「使你手牌中所有锦囊/同势力/武将 -1 费」,一张牌能定义一整副的费用曲线。折后价在卡面变绿。',
+          en: 'The backbone of build-around decks: one card can define your whole curve. Discounted cards show their price in green.',
+        },
+        example: (c) => JSON.stringify(c).includes('reduceCost'),
+      },
+      {
+        id: 'generate',
+        term: { zh: '牌生成', en: 'Card Generation' },
+        rule: { zh: '有些牌凭空生成牌加入你的手牌。', en: 'Some cards create new cards directly into your hand.' },
+        note: {
+          zh: '价值/工具箱流的燃料:靠源源不断的牌把牌差滚成胜势。生成的牌手满会烧掉。',
+          en: 'Fuel for value decks: keep the cards flowing and grind out an advantage. Generated cards burn if your hand is full.',
+        },
+        example: (c) => JSON.stringify(c).includes('addToHand'),
+      },
+      {
         id: 'dynasty',
         term: { zh: '勢力羈絆 Dynasty', en: 'Dynasty Synergy' },
         rule: { zh: '有些卡会数你场上「同势力」的武将,越多越强。', en: 'Some cards count your same-dynasty generals — the more you field, the stronger they get.' },
