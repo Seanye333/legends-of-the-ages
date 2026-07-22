@@ -18,6 +18,7 @@ import { useCampaign } from '../../app/campaignStore'
 import { BOSSES } from '../../content/campaign'
 import { ACHIEVEMENTS, useAchievements } from '../../app/achievementStore'
 import { AchievementPanel } from '../components/AchievementPanel'
+import { StatsPanel } from '../components/StatsPanel'
 import type { DeckList } from '../../content/decks'
 import { PackOpening } from '../components/PackOpening'
 import { LeaderboardPanel } from '../components/LeaderboardPanel'
@@ -114,6 +115,7 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
   const [pendingSession] = useState(() => loadSession() !== null)
   const [questsOpen, setQuestsOpen] = useState(false)
   const [achOpen, setAchOpen] = useState(false)
+  const [statsOpen, setStatsOpen] = useState(false)
   const [offerTutorial, setOfferTutorial] = useState(() => shouldOfferTutorial())
   const resumeRemoteMatch = useMatch((s) => s.resumeRemoteMatch)
   const quests = useQuests((s) => s.quests)
@@ -350,6 +352,15 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
           className={styles.navBtn}
           onClick={() => {
             playSfx('buttonTap')
+            setStatsOpen(true)
+          }}
+        >
+          {t('战绩簿', 'Record')}
+        </button>
+        <button
+          className={styles.navBtn}
+          onClick={() => {
+            playSfx('buttonTap')
             onNavigate?.('settings')
           }}
         >
@@ -416,6 +427,7 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
 
       {questsOpen && <QuestPanel onClose={() => setQuestsOpen(false)} />}
       {achOpen && <AchievementPanel onClose={() => setAchOpen(false)} />}
+      {statsOpen && <StatsPanel onClose={() => setStatsOpen(false)} />}
       {packsOpen && <PackOpening onClose={() => setPacksOpen(false)} />}
       {ladderOpen && <LeaderboardPanel onClose={() => setLadderOpen(false)} />}
       {remoteOpen && selectableDecks.length > 0 && (
