@@ -7,6 +7,7 @@
 import type {
   CardDef,
   CardInstance,
+  CountSource,
   CardLibrary,
   DiscoverPool,
   Doctrine,
@@ -494,7 +495,34 @@ function conditionMet(
   if (cond.ifHandCount) {
     if (state.players[player].hand.length < cond.ifHandCount.atLeast) return false
   }
+  if (cond.ifKeywordCount) {
+    const { keyword, atLeast } = cond.ifKeywordCount
+    const count = state.players[player].board.filter((c) => c.keywords.includes(keyword)).length
+    if (count < atLeast) return false
+  }
   return true
+}
+
+// buffPer 的计数来源。只数**我方场面**。
+// friendlyDynasty 用来源卡的势力,和 friendlyDynastyGenerals 目标一致。
+function countFor(
+  state: GameState,
+  player: PlayerIdx,
+  sourceDefId: string,
+  lib: CardLibrary,
+  per: CountSource,
+): number {
+  const board = state.players[player].board
+  switch (per.kind) {
+    case 'friendlyGenerals':
+      return board.length
+    case 'friendlyKeyword':
+      return board.filter((c) => c.keywords.includes(per.keyword)).length
+    case 'friendlyDynasty': {
+      const dynasty = lib[sourceDefId]?.dynasty
+      return board.filter((c) => lib[c.defId]?.dynasty === dynasty).length
+    }
+  }
 }
 
 // 在场友方单位提供的法术伤害加成
@@ -663,6 +691,26 @@ export function runScript(
             events,
             loc.player,
           )
+        }
+        break
+      }
+      case 'buffPer': {
+        // 计数在**施加前**定死:自己也在场时会被算进 friendlyGenerals/friendlyDynasty,
+        // 但增益是同一批一次性加的,不会自我滚雪球(先数,再加)。
+        const n = countFor(state, player, sourceDefId, lib, op.per)
+        if (n > 0) {
+          for (const ref of refs(op.target)) {
+            if (ref.kind !== 'general') continue
+            const loc = findGeneral(state, ref.iid)
+            if (!loc) continue
+            addEnchant(
+              loc.inst,
+              lib,
+              { attack: op.attack * n, health: op.health * n },
+              events,
+              loc.player,
+            )
+          }
         }
         break
       }

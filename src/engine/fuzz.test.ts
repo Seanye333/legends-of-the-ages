@@ -122,6 +122,29 @@ const LIB: CardLibrary = Object.fromEntries(
       health: undefined,
       spell: { ops: [{ op: 'discover', pool: 'myGeneral' }] },
     }),
+    // ---- 第六卡包:势力羁绊 / 关键词 payoff ----
+    def('f-dynasty-lord', {
+      cost: 4,
+      dynasty: 'shu',
+      battlecry: { ops: [{ op: 'buffPer', per: { kind: 'friendlyDynasty' }, attack: 1, health: 1, target: 'self' }] },
+    }),
+    def('f-leech', { cost: 2, keywords: ['lifesteal'] }),
+    def('f-leech-payoff', {
+      type: 'stratagem',
+      cost: 3,
+      attack: undefined,
+      health: undefined,
+      spell: {
+        ops: [{ op: 'buffPer', per: { kind: 'friendlyKeyword', keyword: 'lifesteal' }, attack: 1, health: 1, target: 'allFriendlyGenerals' }],
+      },
+    }),
+    def('f-swarm-payoff', {
+      type: 'stratagem',
+      cost: 4,
+      attack: undefined,
+      health: undefined,
+      spell: { ops: [{ op: 'draw', count: 2 }], condition: { ifKeywordCount: { keyword: 'guard', atLeast: 2 } } },
+    }),
   ].map((d) => [d.id, d]),
 )
 

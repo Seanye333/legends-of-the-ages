@@ -80,7 +80,16 @@ export interface EffectCondition {
   ifBoardCount?: { side: 'friendly' | 'enemy'; atLeast: number }
   ifHeroHpBelow?: number // 我方主公血量低于此值
   ifHandCount?: { atLeast: number }
+  // ---- 第六卡包:关键词羁绊 ----
+  // 我方场上带某关键词的武将达到 atLeast 张(吸血流/潜行流/冲锋流的门槛 payoff)
+  ifKeywordCount?: { keyword: Keyword; atLeast: number }
 }
+
+// 计数来源:buffPer 按它数出一个倍数。全部只数**我方场面**(payoff 是自己铺出来的)。
+export type CountSource =
+  | { kind: 'friendlyDynasty' } // 与来源卡同势力的友方武将(不含自己更直观 → 见 resolve 注释)
+  | { kind: 'friendlyKeyword'; keyword: Keyword } // 带某关键词的友方武将
+  | { kind: 'friendlyGenerals' } // 友方武将总数
 
 export type EffectOp =
   | { op: 'damage'; amount: number; target: EffectTarget }
@@ -108,6 +117,10 @@ export type EffectOp =
   | { op: 'gainMana'; amount: number; temporary: boolean } // 增益法力(temporary 只补本回合)
   | { op: 'damageAll'; amount: number } // 双方全场武将
   | { op: 'summonForEnemy'; defId: string; count: number } // 为对手召唤(负面锦囊/亡语用)
+  // ---- 第六卡包:势力羁绊与流派 payoff ----
+  // 按计数来源缩放的增益:target 每满足一个计数,+attack/+health。
+  // 例:「战吼:此牌 +1/+1 每有一个同势力友军」= buffPer per:friendlyDynasty self 1/1。
+  | { op: 'buffPer'; per: CountSource; attack: number; health: number; target: EffectTarget }
   // ---- 第五卡包 ----
   // 发现:亮 count 张(默认 3),玩家挑一张进手牌。**必须是脚本的最后一个 op** ——
   // 它会把对局停在 pendingChoice 上等玩家选,后面的 op 不会再跑(见 runScript)。
