@@ -78,6 +78,9 @@ export function extractFloats(events: GameEvent[], batch: number, lang: Language
           'damage',
         )
         break
+      case 'CardGenerated':
+        push(`hero-${ev.player}`, pickCompact({ zh: '生成', en: 'CREATED' }, lang), 'buff')
+        break
       case 'ManaGained':
         push(
           `hero-${ev.player}`,

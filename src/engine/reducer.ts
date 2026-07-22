@@ -15,6 +15,7 @@ import {
   addEnchant,
   chosenTargetPool,
   drawCards,
+  effectiveCost,
   expireTemporaryEnchants,
   findGeneral,
   makeBoardInstance,
@@ -200,7 +201,9 @@ function playCard(
   const inst = p.hand[handIndex]
   const def = lib[inst.defId]
   if (!def) return `unknown-card-def: ${inst.defId}`
-  if (def.cost > p.mana.current) return 'not-enough-mana'
+  // 有效费用 = 卡面费 + 实例 costDelta(费用消减)。扣费、事件都走它。
+  const cost = effectiveCost(inst, lib)
+  if (cost > p.mana.current) return 'not-enough-mana'
 
   // ---- 连击:本回合此牌**之前**已经打出过牌,就改用 combo 脚本 ----
   // 「改用」而不是「追加」:追加的话一张连击牌在连击时价值翻倍,定价没法做。
@@ -273,9 +276,9 @@ function playCard(
   }
 
   // ---- 执行 ----
-  p.mana.current -= def.cost
+  p.mana.current -= cost
   p.hand.splice(handIndex, 1)
-  events.push({ type: 'CardPlayed', player, iid, defId: inst.defId, cost: def.cost })
+  events.push({ type: 'CardPlayed', player, iid, defId: inst.defId, cost })
   if (def.choose) {
     events.push({ type: 'ChooseModePlayed', player, defId: inst.defId, mode: modeIndex })
   }

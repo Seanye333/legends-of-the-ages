@@ -125,6 +125,12 @@ export type EffectOp =
   // 发现:亮 count 张(默认 3),玩家挑一张进手牌。**必须是脚本的最后一个 op** ——
   // 它会把对局停在 pendingChoice 上等玩家选,后面的 op 不会再跑(见 runScript)。
   | { op: 'discover'; pool: DiscoverPool; count?: number }
+  // ---- 第七卡包:费用消减 / 牌生成 ----
+  // 减少手牌中匹配 filter 的牌的费用(amount 点,永久)。build-around 大哥的地基:
+  // 「使你手牌中所有同势力牌 -1 费」。filter=dynasty 用来源卡的势力。
+  | { op: 'reduceCost'; amount: number; filter: CostFilter }
+  // 把 count 张 defId 加入手牌(生成);手满则烧掉。价值/工具箱流的地基。
+  | { op: 'addToHand'; defId: string; count: number }
 
 export interface EffectScript {
   ops: EffectOp[]
@@ -150,6 +156,9 @@ export interface ChooseDef {
 // 这是全游戏第一个「效果中途停下来问玩家」的机制 —— 靠 GameState.pendingChoice
 // 落地(见下),而不是把引擎改成异步。发现的牌池刻意只做几个具名的,
 // 不开放任意谓词:池子一旦能任意描述,平衡就没法测了。
+// reduceCost 的手牌筛选。dynasty 用来源卡的势力(和 friendlyDynastyGenerals 一致)。
+export type CostFilter = 'all' | 'dynasty' | 'generals' | 'stratagems'
+
 export type DiscoverPool =
   | 'myStratagem' // 我方主义 + 中立的锦囊
   | 'myGeneral' // 我方主义 + 中立的武将
@@ -265,6 +274,10 @@ export interface CardInstance {
   frozen: boolean
   shieldUsed: boolean // 铁壁已消耗(防止 refresh 从卡面把圣盾加回来)
   stealthBroken: boolean // 潜行已解除(同上,压制卡面自带的潜行)
+  // ---- 第七卡包:费用消减 ----
+  // 实例级费用修正(负=更便宜)。有效费用 = max(0, 卡面费 + costDelta)。
+  // 只对手牌有意义;进场/入墓后不再读它。见 effectiveCost()。
+  costDelta: number
 }
 
 export interface PlayerState {
@@ -426,6 +439,9 @@ export type GameEvent =
   // 发现开始。options 对**非选择方**要抹空(redactEvent),否则对手提前知道你在挑什么。
   | { type: 'DiscoverStarted'; player: PlayerIdx; options: string[]; reason: 'discover' }
   | { type: 'DiscoverPicked'; player: PlayerIdx; defId: string } // 选定后加入手牌(defId 对对手同样要抹)
+  // ---- 第七卡包 ----
+  | { type: 'CardCostChanged'; player: PlayerIdx; iid: number; cost: number } // 费用消减后的有效费
+  | { type: 'CardGenerated'; player: PlayerIdx; iid: number; defId: string } // 生成进手牌(defId 对对手抹)
   | { type: 'GameEnded'; winner: Winner }
 
 // ---------- 对局配置与 API 结果 ----------

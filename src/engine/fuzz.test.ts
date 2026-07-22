@@ -145,6 +145,14 @@ const LIB: CardLibrary = Object.fromEntries(
       health: undefined,
       spell: { ops: [{ op: 'draw', count: 2 }], condition: { ifKeywordCount: { keyword: 'guard', atLeast: 2 } } },
     }),
+    // ---- 第七卡包:费用消减 / 牌生成 ----
+    def('f-discount', {
+      type: 'stratagem', cost: 2, attack: undefined, health: undefined,
+      spell: { ops: [{ op: 'reduceCost', amount: 1, filter: 'all' }] },
+    }),
+    def('f-generator', {
+      cost: 3, battlecry: { ops: [{ op: 'addToHand', defId: 'f-van1', count: 2 }] },
+    }),
   ].map((d) => [d.id, d]),
 )
 

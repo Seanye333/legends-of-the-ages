@@ -31,6 +31,9 @@ export function CardFace({ inst, playable, selected, large, onClick, onInspect }
     )
   }
 
+  // 有效费用:被费用消减的手牌显示折后价并变色(和炉石一致)
+  const effCost = Math.max(0, def.cost + (inst.costDelta ?? 0))
+  const discounted = effCost < def.cost
   const mainName = lang === 'en' ? def.name.en : def.name.zh
   const subName = lang === 'both' ? def.name.en : null
   const isSpell = def.type !== 'general'
@@ -57,7 +60,7 @@ export function CardFace({ inst, playable, selected, large, onClick, onInspect }
   const interactive = Boolean(onClick || onInspect)
   const a11yLabel = [
     mainName,
-    `${def.cost} ${lang === 'en' ? 'mana' : '费'}`,
+    `${effCost} ${lang === 'en' ? 'mana' : '费'}`,
     def.type === 'general' ? `${def.attack ?? 0}/${def.health ?? 0}` : '',
     def.text ? (lang === 'en' ? def.text.en : def.text.zh) : '',
   ]
@@ -90,7 +93,7 @@ export function CardFace({ inst, playable, selected, large, onClick, onInspect }
       }}
       title={def.text ? (lang === 'en' ? def.text.en : def.text.zh) : undefined}
     >
-      <span className={styles.cost}>{def.cost}</span>
+      <span className={`${styles.cost} ${discounted ? styles.costDown : ''}`}>{effCost}</span>
       <div className={styles.art}>
         <Portrait id={def.id} nameZh={def.name.zh} doctrine={def.doctrine} />
       </div>

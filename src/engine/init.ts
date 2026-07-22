@@ -27,6 +27,7 @@ export function createInstance(defId: string, iid: number, lib: CardLibrary): Ca
     frozen: false,
     shieldUsed: false,
     stealthBroken: false,
+    costDelta: 0,
   }
   refreshInstance(inst, lib)
   return inst

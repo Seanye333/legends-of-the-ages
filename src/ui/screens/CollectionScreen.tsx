@@ -122,6 +122,7 @@ export function fakeInstance(def: CardDef): CardInstance {
     frozen: false,
     shieldUsed: false,
     stealthBroken: false,
+    costDelta: 0,
   }
 }
 

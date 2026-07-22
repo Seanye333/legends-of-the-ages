@@ -92,6 +92,9 @@ const SAMPLES: GameEvent[] = [
   { type: 'ChooseModePlayed', player: 0, defId: 'strat-huo-ji', mode: 0 },
   { type: 'DiscoverStarted', player: 0, options: ['guan-yu', 'zhang-fei', 'liu-bei'], reason: 'discover' },
   { type: 'DiscoverPicked', player: 0, defId: 'guan-yu' },
+  // ---- 第七卡包 ----
+  { type: 'CardCostChanged', player: 0, iid: 9, cost: 2 },
+  { type: 'CardGenerated', player: 0, iid: 10, defId: 'guan-yu' },
   { type: 'GameEnded', winner: 0 },
 ]
 

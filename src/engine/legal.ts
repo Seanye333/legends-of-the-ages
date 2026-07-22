@@ -1,6 +1,6 @@
 import type { CardLibrary, Command, GameState, PlayerIdx, TargetRef } from './types'
 import { BOARD_LIMIT, SECRET_LIMIT } from './types'
-import { chosenTargetPool, findGeneral, other, requiresChosenTarget } from './resolve'
+import { chosenTargetPool, effectiveCost, findGeneral, other, requiresChosenTarget } from './resolve'
 import { hasKeyword, legalAttackTargets } from './combat'
 import { hasSecretNamed } from './secrets'
 
@@ -30,7 +30,7 @@ export function legalCommands(state: GameState, player: PlayerIdx, lib: CardLibr
   // 出牌
   for (const card of p.hand) {
     const def = lib[card.defId]
-    if (!def || def.cost > p.mana.current) continue
+    if (!def || effectiveCost(card, lib) > p.mana.current) continue
     // 连击态要在这里就判掉:combo 脚本和基础脚本的**目标要求可能不同**,
     // 这里按基础脚本列命令、applyCommand 按 combo 脚本校验,就会漏出
     // 「legalCommands 给的命令被 applyCommand 拒绝」—— fuzz 测试专门盯这个契约。

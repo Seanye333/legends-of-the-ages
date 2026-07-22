@@ -7,6 +7,7 @@
 import type {
   CardDef,
   CardInstance,
+  CostFilter,
   CountSource,
   CardLibrary,
   DiscoverPool,
@@ -853,6 +854,25 @@ export function runScript(
         beginDiscover(state, player, op.pool, op.count ?? 3, lib, events, sourceDefId)
         break
       }
+      case 'reduceCost': {
+        reduceHandCost(state, player, sourceDefId, lib, op.amount, op.filter, events)
+        break
+      }
+      case 'addToHand': {
+        const def = lib[op.defId]
+        if (!def) break
+        const p = state.players[player]
+        for (let i = 0; i < op.count; i++) {
+          if (p.hand.length >= HAND_LIMIT) {
+            events.push({ type: 'CardBurned', player, defId: op.defId })
+            continue
+          }
+          const inst = makeBoardInstance(state, op.defId, lib)
+          p.hand.push(inst)
+          events.push({ type: 'CardGenerated', player, iid: inst.iid, defId: op.defId })
+        }
+        break
+      }
       default: {
         const exhaustive: never = op
         void exhaustive
@@ -875,6 +895,42 @@ export function resetInstance(inst: CardInstance, lib: CardLibrary): void {
   inst.exhausted = false
   inst.attacksUsed = 0
   refreshInstance(inst, lib)
+}
+
+// ---------- 费用消减 / 牌生成 ----------
+
+// 有效费用 = max(0, 卡面费 + 实例 costDelta)。手牌打出/合法性判定都走它。
+export function effectiveCost(inst: CardInstance, lib: CardLibrary): number {
+  return Math.max(0, (lib[inst.defId]?.cost ?? 0) + inst.costDelta)
+}
+
+// 减少手牌中匹配 filter 的牌的费用。dynasty 用来源卡的势力。
+export function reduceHandCost(
+  state: GameState,
+  player: PlayerIdx,
+  sourceDefId: string,
+  lib: CardLibrary,
+  amount: number,
+  filter: CostFilter,
+  events: GameEvent[],
+): void {
+  const srcDynasty = lib[sourceDefId]?.dynasty
+  for (const inst of state.players[player].hand) {
+    const def = lib[inst.defId]
+    if (!def) continue
+    const match =
+      filter === 'all' ||
+      (filter === 'dynasty' && def.dynasty === srcDynasty) ||
+      (filter === 'generals' && def.type === 'general') ||
+      (filter === 'stratagems' && def.type === 'stratagem')
+    if (!match) continue
+    const before = effectiveCost(inst, lib)
+    inst.costDelta -= amount
+    const after = effectiveCost(inst, lib)
+    if (after !== before) {
+      events.push({ type: 'CardCostChanged', player, iid: inst.iid, cost: after })
+    }
+  }
 }
 
 // ---------- 发现 ----------
@@ -954,6 +1010,7 @@ export function makeBoardInstance(
     frozen: false,
     shieldUsed: false,
     stealthBroken: false,
+    costDelta: 0,
   }
   refreshInstance(inst, lib)
   return inst

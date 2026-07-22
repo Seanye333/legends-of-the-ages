@@ -110,6 +110,7 @@ function dummyInstance(iid: number): CardInstance {
     frozen: false,
     shieldUsed: false,
     stealthBroken: false,
+    costDelta: 0,
   }
 }
 

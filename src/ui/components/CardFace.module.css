@@ -316,3 +316,9 @@
   vertical-align: 0.18em;
   opacity: 0.8;
 }
+
+/* 费用消减后的折后价:绿色高亮 */
+.costDown {
+  color: #6fe08a;
+  text-shadow: 0 0 6px rgba(80, 220, 130, 0.8);
+}

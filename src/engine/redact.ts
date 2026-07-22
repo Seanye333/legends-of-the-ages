@@ -131,6 +131,7 @@ export function redactEventForSpectator(event: GameEvent): GameEvent {
   if (event.type === 'SecretPlayed') return { ...event, defId: '' }
   if (event.type === 'DiscoverStarted') return { ...event, options: [] }
   if (event.type === 'DiscoverPicked') return { ...event, defId: '' }
+  if (event.type === 'CardGenerated') return { ...event, defId: '' }
   return event
 }
 
@@ -148,6 +149,10 @@ export function redactEvent(event: GameEvent, viewer: PlayerIdx): GameEvent {
     return { ...event, options: [] }
   }
   if (event.type === 'DiscoverPicked' && event.player !== viewer) {
+    return { ...event, defId: '' }
+  }
+  // 生成进对手手牌的牌面同样不给(和抽牌/发现一致)
+  if (event.type === 'CardGenerated' && event.player !== viewer) {
     return { ...event, defId: '' }
   }
   return event

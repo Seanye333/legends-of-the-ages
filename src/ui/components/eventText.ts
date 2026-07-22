@@ -233,6 +233,14 @@ function line(ev: GameEvent, ctx: EventTextCtx, l: Lang): string {
     case 'DiscoverStarted':
       // options 对对手是空串(redactEvent),所以这里只说「在发现」,不点名候选
       return zh ? `${side(ev.player)}正在发现…` : `${side(ev.player)} is discovering…`
+    case 'CardCostChanged':
+      return zh
+        ? `${side(ev.player)}一张手牌费用变为 ${ev.cost}`
+        : `${side(ev.player)} — a card now costs ${ev.cost}`
+    case 'CardGenerated':
+      return zh
+        ? `${side(ev.player)}获得${dn(ev.defId)}(生成)`
+        : `${side(ev.player)} generated ${dn(ev.defId)}`
     case 'DiscoverPicked':
       // defId 对对手抹空 → dn('') 退化成「未知」,战报读起来就是「敌方发现了一张牌」
       return zh
