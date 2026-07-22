@@ -27,8 +27,11 @@ import { CARDS_BY_ID, COLLECTIBLE_CARDS } from './cards'
 // 这一行以前写的是「固定用名将」,那是错的,一直没人对过。
 //
 // 曲线是拿 sim-campaign 的基准尺(AI_NORMAL,双方同档)调出来的:
-//   60 / 50 / 53 / 42 / 50 / 45 / 30 / 23 %
+//   60 / 50 / 50 / 42 / 48 / 40 / 30 / 17 %
 // 真人玩家强于贪心 AI,所以这组数字是**下限**,实际体感会更松一些。
+// (第六卡包把大量势力/流派卡灌进了 Boss 抽取的池子,曲线被扰动过,已用
+//  tune-campaign 重搜 + 手工平掉孫策的凸点重调。孫策的 tier→强度关系是反的
+//  —— 卡池重做费用曲线后每个 Boss 各不相同,只能实测,不能靠 tier 大小推。)
 //
 // **换成名将档(多一层前瞻)整条曲线会压平**,实测 `BOSS_AI=general`:
 //   52 / 47 / 48 / 43 / 50 / 48 / 25 / 23 %
@@ -70,7 +73,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'fame',
     hp: 30,
-    deckTier: 0.58,
+    deckTier: 0.62,
     power: power(
       'bp-taiping',
       { zh: '太平要術', en: 'Way of Great Peace' },
@@ -92,7 +95,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'hegemonic',
     hp: 34,
-    deckTier: 0.68,
+    deckTier: 0.84,
     power: power(
       'bp-fenjing',
       { zh: '焚城', en: 'Raze' },
@@ -114,7 +117,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'hegemonic',
     hp: 36,
-    deckTier: 0.83,
+    deckTier: 0.82,
     power: power(
       'bp-wushuang',
       { zh: '無雙', en: 'Peerless Might' },
@@ -139,7 +142,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'royal',
     hp: 38,
-    deckTier: 0.23,
+    deckTier: 0.28,
     // 这一关的调校记录(结论已并入 bossDeck 的注释,这里只留因果):
     // 原技能是「抽一张牌 + 2 点护甲」,实测玩家胜率 75%,比第 1 关还好打。
     // 换成「召唤 1 个 1/1 + 2 护甲」后仍是 77% —— 说明瓶颈不在技能。
@@ -167,7 +170,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'separatist',
     hp: 40,
-    deckTier: 0.06,
+    deckTier: 0.50,
     power: power(
       'bp-xiaoba',
       { zh: '小霸王', en: 'Conqueror’s Charge' },
@@ -192,7 +195,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'separatist',
     hp: 42,
-    deckTier: 0.45,
+    deckTier: 0.23,
     power: power(
       'bp-huogong',
       { zh: '火攻', en: 'Fire Attack' },
@@ -214,7 +217,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'ritual',
     hp: 45,
-    deckTier: 0.07,
+    deckTier: 0.23,
     power: power(
       'bp-bagua',
       { zh: '八陣圖', en: 'Stone Sentinel Maze' },
@@ -239,7 +242,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'hegemonic',
     hp: 52,
-    deckTier: 0.79,
+    deckTier: 0.68,
     power: power(
       'bp-weiwu',
       { zh: '魏武揮鞭', en: 'The Tyrant’s Lash' },
