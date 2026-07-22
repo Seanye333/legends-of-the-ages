@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { Command, GameEvent, LocalizedText, TargetRef } from '../../engine/types'
+import type { ChooseMode, Command, GameEvent, LocalizedText, TargetRef } from '../../engine/types'
 import { legalCommands } from '../../engine/legal'
 import { CARDS_BY_ID } from '../../content/cards'
 import { useMatch } from '../../app/matchStore'
@@ -9,6 +9,7 @@ import { HeroPlate } from '../components/HeroPlate'
 import { GeneralToken } from '../components/GeneralToken'
 import { HandFan } from '../components/HandFan'
 import { MulliganOverlay } from '../components/MulliganOverlay'
+import { DiscoverOverlay } from '../components/DiscoverOverlay'
 import { ResultOverlay } from '../components/ResultOverlay'
 import { BattleLog } from '../components/BattleLog'
 import { cardName, formatEvent, heroName } from '../components/eventText'
@@ -32,7 +33,8 @@ type AttackCmd = Extract<Command, { type: 'Attack' }>
 type PowerCmd = Extract<Command, { type: 'UseHeroPower' }>
 
 type Selection =
-  | { kind: 'hand'; iid: number }
+  // mode:抉择卡选定的模式(非抉择卡为 undefined);目标筛选按它过滤 playCmds
+  | { kind: 'hand'; iid: number; mode?: number }
   | { kind: 'attacker'; iid: number }
   | { kind: 'heroPower' }
   | null
@@ -67,6 +69,8 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
   } = useMatch()
   const { soundEnabled, setSoundEnabled } = useSettings()
   const [selection, setSelection] = useState<Selection>(null)
+  // 抉择卡的模式选择器(非空 = 正在选模式)
+  const [modeChoice, setModeChoice] = useState<{ iid: number; modes: ChooseMode[] } | null>(null)
   const [log, setLog] = useState<LocalizedText[]>([])
   const [toast, setToast] = useState<string | null>(null)
   const [inspect, setInspect] = useState<CardDef | null>(null)
@@ -116,6 +120,8 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
     if (!selection) return m
     if (selection.kind === 'hand') {
       for (const c of playCmds) {
+        // 抉择卡:只认选定模式的目标(不同模式的目标可能撞同一角色)
+        if (selection.mode !== undefined && c.mode !== selection.mode) continue
         if (c.iid === selection.iid && c.target) m.set(targetFloatKey(c.target), c)
       }
     } else if (selection.kind === 'heroPower') {
@@ -133,7 +139,12 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
   const directPlay = useMemo(
     () =>
       selection?.kind === 'hand'
-        ? playCmds.find((c) => c.iid === selection.iid && !c.target)
+        ? playCmds.find(
+            (c) =>
+              c.iid === selection.iid &&
+              !c.target &&
+              (selection.mode === undefined || c.mode === selection.mode),
+          )
         : undefined,
     [selection, playCmds],
   )
@@ -233,6 +244,19 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
     setSelection(null)
   }
 
+  // 抉择卡:点击后先弹模式选择器。选定模式再走「直接打出 / 进入选目标」。
+  const onPickMode = (iid: number, mode: number) => {
+    setModeChoice(null)
+    const variants = playCmds.filter((c) => c.iid === iid && c.mode === mode)
+    if (variants.length === 0) return
+    const targeted = variants.filter((c) => c.target)
+    if (targeted.length === 0) {
+      sendAndClear(variants.find((c) => !c.target) ?? variants[0])
+    } else {
+      setSelection({ kind: 'hand', iid, mode })
+    }
+  }
+
   const onHandClick = (iid: number) => {
     if (!myTurn) return
     if (selection?.kind === 'hand' && selection.iid === iid) {
@@ -241,6 +265,14 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
     }
     const variants = playCmds.filter((c) => c.iid === iid)
     if (variants.length === 0) return
+    // 抉择卡:legalCommands 会给每个模式各出命令(带 mode)。先让玩家选模式。
+    const inst = state?.players[0].hand.find((c) => c.iid === iid)
+    const def = inst ? CARDS_BY_ID[inst.defId] : undefined
+    if (def?.choose) {
+      setSelection(null)
+      setModeChoice({ iid, modes: def.choose.modes })
+      return
+    }
     const targeted = variants.filter((c) => c.target)
     if (targeted.length === 0) {
       sendAndClear(variants[0])
@@ -605,6 +637,37 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
             send({ type: 'Mulligan', keepIids })
           }}
         />
+      )}
+
+      {/* 发现:任一方在挑牌时都挂浮层(我方可点、对手方只显示牌背)。
+          观战席不该能替谁点,所以 spectating 时不给发现浮层。 */}
+      {state.pendingChoice && !spectating && (
+        <DiscoverOverlay
+          choice={state.pendingChoice}
+          mySeat={0}
+          onPick={(index) => send({ type: 'ResolveChoice', index })}
+        />
+      )}
+
+      {/* 抉择模式选择器:点空白处取消 */}
+      {modeChoice && (
+        <div className={styles.modeScrim} onClick={() => setModeChoice(null)}>
+          <div className={styles.modeCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modeTitle}>{t('抉择', 'Choose One')}</div>
+            {modeChoice.modes.map((m, i) => (
+              <button
+                key={i}
+                className={styles.modeBtn}
+                onClick={() => {
+                  playSfx('buttonTap')
+                  onPickMode(modeChoice.iid, i)
+                }}
+              >
+                {pickText(m.label)}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
 
       {state.phase === 'ended' && !anim.holdResult && (

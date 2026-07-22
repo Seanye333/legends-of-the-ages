@@ -1,0 +1,102 @@
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 45;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 2.4vh, 22px);
+  background:
+    radial-gradient(ellipse 120% 90% at 50% 40%, transparent 26%, rgba(6, 4, 2, 0.92) 100%),
+    linear-gradient(180deg, rgba(8, 6, 3, 0.86), rgba(6, 4, 2, 0.9));
+  animation: discoverIn 0.28s ease;
+}
+
+@keyframes discoverIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(22px, 5vw, 34px);
+  letter-spacing: 0.4em;
+  color: var(--gold-bright);
+  text-shadow: 0 2px 18px rgba(212, 168, 74, 0.5);
+}
+
+.hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--parchment-dim);
+}
+
+.enemyBanner {
+  font-size: clamp(15px, 3vw, 20px);
+  color: var(--gold-bright);
+  letter-spacing: 0.1em;
+}
+
+.row {
+  display: flex;
+  gap: clamp(12px, 3vw, 32px);
+  align-items: center;
+}
+
+/* 每张候选按图鉴卡的尺寸,悬停微微抬升 + 金边,让「挑」这个动作有分量 */
+.pick {
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 12px;
+  transition:
+    transform 0.14s ease,
+    filter 0.14s ease;
+}
+
+.pick:hover,
+.pick:focus-visible {
+  transform: translateY(-10px) scale(1.05);
+  filter: drop-shadow(0 8px 20px rgba(212, 168, 74, 0.55));
+  outline: none;
+}
+
+/* 对手发现时给的牌背(和对手手牌牌背同一视觉语言) */
+.cardBack {
+  width: clamp(84px, 16vw, 132px);
+  aspect-ratio: 5 / 7;
+  border-radius: 10px;
+  border: 1px solid rgba(212, 168, 74, 0.4);
+  background:
+    repeating-linear-gradient(45deg, rgba(60, 44, 22, 0.6) 0 6px, rgba(38, 28, 14, 0.6) 6px 12px),
+    #1a1208;
+  animation: backPulse 2.2s ease-in-out infinite;
+}
+
+@keyframes backPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 4px rgba(212, 168, 74, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(212, 168, 74, 0.7);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .pick,
+  .cardBack {
+    animation: none;
+    transition: none;
+  }
+}

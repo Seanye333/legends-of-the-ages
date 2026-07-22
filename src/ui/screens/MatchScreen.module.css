@@ -626,3 +626,65 @@
   outline: 2px solid var(--gold-bright);
   outline-offset: 2px;
 }
+
+/* 抉择模式选择器 */
+.modeScrim {
+  position: absolute;
+  inset: 0;
+  z-index: 44;
+  display: grid;
+  place-items: center;
+  background: rgba(6, 4, 2, 0.72);
+  animation: modeIn 0.16s ease;
+}
+
+@keyframes modeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modeCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: min(78vw, 320px);
+  padding: 20px 22px;
+  border-radius: 14px;
+  border: 1.5px solid rgba(212, 168, 74, 0.5);
+  background: linear-gradient(180deg, rgba(26, 20, 12, 0.98), rgba(14, 10, 6, 0.98));
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+}
+
+.modeTitle {
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 18px;
+  letter-spacing: 0.3em;
+  color: var(--gold-bright);
+  margin-bottom: 4px;
+}
+
+.modeBtn {
+  padding: 12px 16px;
+  border-radius: 9px;
+  border: 1px solid rgba(212, 168, 74, 0.45);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--parchment-bright, #f0e6cf);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: filter 0.12s ease, transform 0.12s ease;
+}
+
+.modeBtn:hover,
+.modeBtn:focus-visible {
+  filter: brightness(1.25);
+  transform: translateX(3px);
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modeScrim, .modeBtn { animation: none; transition: none; }
+}
