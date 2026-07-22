@@ -6,7 +6,7 @@ import type {
   PlayerIdx,
   PlayerState,
 } from './types'
-import { DECK_SIZE, OPENING_HAND, START_HP } from './types'
+import { BOARD_LIMIT, DECK_SIZE, OPENING_HAND, START_HP } from './types'
 import { rngShuffle, seedRng } from './rng'
 import { refreshInstance } from './resolve'
 
@@ -57,19 +57,36 @@ export function createGame(cfg: GameConfig, lib: CardLibrary): GameState {
     // 数组末尾为牌库顶
     const hand = deck.splice(deck.length - handSize, handSize)
     const maxHp = cfg.heroHps?.[side] ?? START_HP
+    const mod = cfg.modifiers?.[side]
+    // 远征宝物:起手多抽
+    if (mod?.bonusHandSize) {
+      const extra = deck.splice(deck.length - mod.bonusHandSize, mod.bonusHandSize)
+      hand.push(...extra)
+    }
+    // 起手全部手牌减费
+    if (mod?.handCostDelta) {
+      for (const c of hand) c.costDelta += mod.handCostDelta
+    }
+    // 开局场上衍生物
+    const board: CardInstance[] = []
+    for (const tokenId of mod?.startTokens ?? []) {
+      if (board.length >= BOARD_LIMIT) break
+      board.push(createInstance(tokenId, nextIid++, lib))
+    }
     return {
       heroId: cfg.heroIds[side],
       heroHp: maxHp,
       heroMaxHp: maxHp,
-      armor: 0,
+      armor: mod?.startArmor ?? 0,
       fatigue: 0,
       mana: { current: 0, max: 0 },
       deck,
       hand,
-      board: [],
+      board,
       graveyard: [],
       mulliganDone: false,
       heroPowerUsed: false,
+      heroPowerCostDelta: mod?.heroPowerCostDelta ?? 0,
       heroPower: cfg.heroPowers?.[side],
       secrets: [],
       overloadNext: 0,

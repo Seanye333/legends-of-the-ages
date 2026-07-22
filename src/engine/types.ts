@@ -299,6 +299,8 @@ export interface PlayerState {
   overloadNext: number // 下回合开始时要锁掉的水晶
   overloadLocked: number // 本回合已被锁掉的水晶(纯展示用,回合开始时结算)
   cardsPlayedThisTurn: number // 连击判定:本回合已打出的牌数
+  // ---- 远征 ----
+  heroPowerCostDelta: number // 主公技费用修正(远征宝物,整局有效)
   // 主公技随状态走(而不是查 HeroDef 表),这样引擎依旧零外部依赖、状态自足可序列化。
   heroPower?: HeroPowerDef
 }
@@ -446,6 +448,16 @@ export type GameEvent =
 
 // ---------- 对局配置与 API 结果 ----------
 
+// 远征(单人 roguelike)修正:关间宝物累积成这些,开局施加给对应座位。
+// 刻意做成结构化字段(而不是任意脚本):这样纯、可测、可复现,而且平衡好推。
+export interface RunModifiers {
+  startArmor?: number // 开局护甲
+  bonusHandSize?: number // 起手多抽几张
+  startTokens?: string[] // 开局场上的衍生物 defId
+  handCostDelta?: number // 起手全部手牌费用 +N(负=更便宜)
+  heroPowerCostDelta?: number // 主公技费用 +N(负=更便宜),整局有效
+}
+
 export interface GameConfig {
   seed: number
   heroIds: [string, string]
@@ -454,6 +466,8 @@ export interface GameConfig {
   // 可选:不给则无主公技、血量按 START_HP(旧测试与教学局走这条路)
   heroPowers?: [HeroPowerDef | undefined, HeroPowerDef | undefined]
   heroHps?: [number, number]
+  // 远征宝物修正,按座位。只有远征模式会给。
+  modifiers?: [RunModifiers | undefined, RunModifiers | undefined]
 }
 
 export type ApplyResult =

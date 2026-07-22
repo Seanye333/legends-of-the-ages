@@ -119,6 +119,7 @@ function player(over: Partial<PlayerState> = {}): PlayerState {
     overloadNext: 0,
     overloadLocked: 0,
     cardsPlayedThisTurn: 0,
+    heroPowerCostDelta: 0,
     ...over,
   }
 }

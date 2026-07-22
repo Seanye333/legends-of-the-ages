@@ -140,6 +140,7 @@ describe('一层前瞻(名将档)', () => {
     overloadNext: 0,
     overloadLocked: 0,
     cardsPlayedThisTurn: 0,
+    heroPowerCostDelta: 0,
   })
   const scene = (myHp: number): GameState =>
     ({

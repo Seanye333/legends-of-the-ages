@@ -67,7 +67,8 @@ function player(over: Partial<PlayerState> = {}): PlayerState {
     heroId: 'hero', heroHp: 30, heroMaxHp: 30, armor: 0, fatigue: 0,
     mana: { current: 10, max: 10 }, deck: [], hand: [], board: [], graveyard: [],
     mulliganDone: true, heroPowerUsed: false, secrets: [],
-    overloadNext: 0, overloadLocked: 0, cardsPlayedThisTurn: 0, ...over,
+    overloadNext: 0, overloadLocked: 0, cardsPlayedThisTurn: 0,
+    heroPowerCostDelta: 0, ...over,
   }
 }
 

@@ -97,7 +97,7 @@ export function legalCommands(state: GameState, player: PlayerIdx, lib: CardLibr
   }
 
   // 主公技(每回合一次)
-  if (p.heroPower && !p.heroPowerUsed && p.heroPower.cost <= p.mana.current) {
+  if (p.heroPower && !p.heroPowerUsed && Math.max(0, p.heroPower.cost + p.heroPowerCostDelta) <= p.mana.current) {
     if (requiresChosenTarget(p.heroPower.script)) {
       for (const target of chosenTargetPool(state, player, p.heroPower.script)) {
         commands.push({ type: 'UseHeroPower', target })

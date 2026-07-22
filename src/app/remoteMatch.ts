@@ -130,6 +130,7 @@ export function inflateRedacted(rs: RedactedState, mySeat: PlayerIdx): GameState
     graveyard: rs.self.graveyard,
     mulliganDone: rs.self.mulliganDone,
     heroPowerUsed: rs.self.heroPowerUsed,
+    heroPowerCostDelta: rs.self.heroPowerCostDelta ?? 0,
     heroPower: rs.self.heroPower,
     secrets: rs.self.secrets ?? [],
     overloadNext: rs.self.overloadNext ?? 0,
@@ -149,6 +150,7 @@ export function inflateRedacted(rs: RedactedState, mySeat: PlayerIdx): GameState
     graveyard: rs.opponent.graveyard,
     mulliganDone: rs.opponent.mulliganDone,
     heroPowerUsed: rs.opponent.heroPowerUsed,
+    heroPowerCostDelta: rs.opponent.heroPowerCostDelta ?? 0,
     heroPower: rs.opponent.heroPower,
     // 对手的伏兵只知道有几个、iid 是什么。defId 空串 = UI 渲染成「未知」,
     // 和对手手牌走的是同一条既有路径。

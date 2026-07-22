@@ -141,7 +141,9 @@ function useHeroPower(
   const power = p.heroPower
   if (!power) return 'no-hero-power'
   if (p.heroPowerUsed) return 'hero-power-used'
-  if (power.cost > p.mana.current) return 'not-enough-mana'
+  // 远征宝物可以让主公技更便宜(整局有效)
+  const powerCost = Math.max(0, power.cost + p.heroPowerCostDelta)
+  if (powerCost > p.mana.current) return 'not-enough-mana'
 
   const needsChosen = requiresChosenTarget(power.script)
   let chosen: TargetRef | undefined
@@ -158,14 +160,14 @@ function useHeroPower(
     chosen = target
   }
 
-  p.mana.current -= power.cost
+  p.mana.current -= powerCost
   p.heroPowerUsed = true
   events.push({
     type: 'HeroPowerUsed',
     player,
     heroId: p.heroId,
     powerId: power.id,
-    cost: power.cost,
+    cost: powerCost,
   })
   events.push({
     type: 'EffectTriggered',
