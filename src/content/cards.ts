@@ -16,6 +16,7 @@ import { PACK6_LEGEND_OVERRIDES } from './overrides/pack6-legends'
 import { PACK7_TOKENS, PACK7_CARDS, PACK7_OVERRIDES } from './overrides/pack7'
 import { PACK8_TOKENS, PACK8_CARDS, PACK8_OVERRIDES } from './overrides/pack8'
 import { FLAVOR_OVERRIDES } from './overrides/flavor'
+import { PACK9_CARDS, PACK9_OVERRIDES } from './overrides/pack9-neutral'
 
 // 全卡池 = (生成默认值 ⊕ 各卡包覆盖) + 手工锦囊 + 第二~六卡包
 // 覆盖顺序:后者赢。各覆盖表刻意不与签名集重叠(只挑签名之外的花名册)。
@@ -31,8 +32,9 @@ export const CARDS: CardDef[] = [
     const p6l = PACK6_LEGEND_OVERRIDES[card.id]
     const p7 = PACK7_OVERRIDES[card.id]
     const p8 = PACK8_OVERRIDES[card.id]
-    if (!fl && !sig && !p3 && !p4 && !p5 && !p6d && !p6c && !p6l && !p7 && !p8) return card
-    return { ...card, ...fl, ...sig, ...p3, ...p4, ...p5, ...p6d, ...p6c, ...p6l, ...p7, ...p8 }
+    const p9 = PACK9_OVERRIDES[card.id]
+    if (!fl && !sig && !p3 && !p4 && !p5 && !p6d && !p6c && !p6l && !p7 && !p8 && !p9) return card
+    return { ...card, ...fl, ...sig, ...p3, ...p4, ...p5, ...p6d, ...p6c, ...p6l, ...p7, ...p8, ...p9 }
   }),
   ...STRATAGEMS,
   ...PACK2_CARDS,
@@ -46,6 +48,7 @@ export const CARDS: CardDef[] = [
   ...PACK7_CARDS,
   ...PACK8_TOKENS,
   ...PACK8_CARDS,
+  ...PACK9_CARDS,
 ]
 
 export const CARDS_BY_ID: CardLibrary = Object.fromEntries(CARDS.map((c) => [c.id, c]))
