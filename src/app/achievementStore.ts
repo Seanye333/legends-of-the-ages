@@ -36,6 +36,9 @@ export type StatKey =
   | 'secretsSprung'
   | 'combosTriggered'
   | 'overloadLocked'
+  // ---- 第五卡包 ----
+  | 'chooseModes'
+  | 'discoveries'
   // ---- 模式类(靠 bump 记,不从事件流推) ----
   | 'campaignCleared'
   | 'onlineWins'
@@ -205,6 +208,25 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     merit: 110,
   },
 
+  // ---- 第五卡包:抉择 / 发现 ----
+  // 同样兼作「发现机制存在」的入口 —— 这两类卡不进预组,新玩家可能压根没见过。
+  ...tier(
+    'ach-choose',
+    'chooseModes',
+    { zh: '权衡', en: 'Deliberation' },
+    (n) => ({ zh: `做出 ${n} 次抉择`, en: `Make ${n} Choose One decisions` }),
+    [15, 80],
+    [70, 240],
+  ),
+  ...tier(
+    'ach-discover',
+    'discoveries',
+    { zh: '慧眼', en: 'Keen Eye' },
+    (n) => ({ zh: `完成 ${n} 次发现`, en: `Complete ${n} Discovers` }),
+    [10, 60],
+    [80, 260],
+  ),
+
   // ---- 冒险与联机:这两个模式此前一条成就都没有 ----
   ...tier(
     'ach-campaign',
@@ -318,6 +340,13 @@ export function tallyStats(events: GameEvent[], myHeroId: string): Stats {
         break
       case 'ManaLocked':
         if (ev.player === 0) add('overloadLocked', ev.amount)
+        break
+      // ---- 第五卡包 ----
+      case 'ChooseModePlayed':
+        if (ev.player === 0) add('chooseModes', 1)
+        break
+      case 'DiscoverPicked':
+        if (ev.player === 0) add('discoveries', 1)
         break
       default:
         break

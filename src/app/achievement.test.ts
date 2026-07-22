@@ -28,6 +28,8 @@ const SAMPLE_EVENTS: GameEvent[] = [
   { type: 'SecretRevealed', player: 0, iid: 6, defId: 'secret-da-cao-jing-she' },
   { type: 'ComboTriggered', player: 0, iid: 7, defId: 'strat-tou-liang-huan-zhu' },
   { type: 'ManaLocked', player: 0, amount: 2 },
+  { type: 'ChooseModePlayed', player: 0, defId: 'strat-choose-royal', mode: 0 },
+  { type: 'DiscoverPicked', player: 0, defId: 'guan-yu' },
 ]
 
 describe('achievement stats', () => {

@@ -17,6 +17,7 @@ export interface MatchStats {
   peakBoard: number // 我方场面同时在场的最大武将数
   secretsRevealed: number // 我方伏兵被触发的次数
   combosTriggered: number
+  discoveries: number // 我方完成的发现次数
   turns: number
 }
 
@@ -31,6 +32,7 @@ export const EMPTY_STATS: MatchStats = {
   peakBoard: 0,
   secretsRevealed: 0,
   combosTriggered: 0,
+  discoveries: 0,
   turns: 0,
 }
 
@@ -77,6 +79,9 @@ export function foldStats(
         break
       case 'ComboTriggered':
         if (ev.player === 0) s.combosTriggered += 1
+        break
+      case 'DiscoverPicked':
+        if (ev.player === 0) s.discoveries += 1
         break
       case 'TurnStarted':
         if (ev.player === 0) s.turns += 1

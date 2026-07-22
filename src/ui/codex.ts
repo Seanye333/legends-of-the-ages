@@ -174,6 +174,26 @@ export const CODEX: CodexSection[] = [
         example: (c) => (c.overload ?? 0) > 0,
       },
       {
+        id: 'choose',
+        term: { zh: '抉擇 Choose One', en: 'Choose One' },
+        rule: { zh: '一张牌两个模式,打出时当场选一个。', en: 'A card with two modes; pick one as you play it.' },
+        note: {
+          zh: '和連擊不同:連擊由「是不是第二张牌」自动决定,抉择永远是你现选。同样一张牌,选法不同,局势就不同。',
+          en: 'Unlike Combo (decided automatically by play order), Choose One is always your call — the same card plays differently depending on the mode.',
+        },
+        example: (c) => c.choose !== undefined,
+      },
+      {
+        id: 'discover',
+        term: { zh: '發現 Discover', en: 'Discover' },
+        rule: { zh: '亮出三张牌,挑一张加入手牌。', en: 'Reveal three cards; add one of them to your hand.' },
+        note: {
+          zh: '让每一局抽到的答案都不一样 —— 缺解场就找解场,缺大哥就找大哥。对手只看得到你在发现,看不到亮的是哪三张。',
+          en: 'Every game plays out differently: find the answer you need. The opponent sees that you are discovering, but not the three cards.',
+        },
+        example: (c) => JSON.stringify(c).includes('"discover"'),
+      },
+      {
         id: 'spellDamage',
         term: { zh: '法術傷害', en: 'Spell Damage' },
         rule: { zh: '在场时,我方锦囊造成的伤害增加。', en: 'While on the field, your stratagems deal extra damage.' },

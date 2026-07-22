@@ -43,6 +43,7 @@ export function ResultOverlay({
         ['耗费法力', 'Mana spent', stats.manaSpent],
         ['伏兵触发', 'Secrets sprung', stats.secretsRevealed],
         ['连击', 'Combos', stats.combosTriggered],
+        ['发现', 'Discovers', stats.discoveries],
         ['回合数', 'Turns', stats.turns],
       ]
     : []
