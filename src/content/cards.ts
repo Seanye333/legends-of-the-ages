@@ -6,8 +6,15 @@ import { PACK2_CARDS } from './overrides/pack2'
 import { PACK3_CARDS, PACK3_OVERRIDES } from './overrides/pack3'
 import { PACK4_CARDS, PACK4_OVERRIDES } from './overrides/pack4'
 import { PACK5_CARDS, PACK5_OVERRIDES } from './overrides/pack5'
+import {
+  PACK6_TOKENS,
+  PACK6_DYNASTY_CARDS,
+  PACK6_DYNASTY_OVERRIDES,
+} from './overrides/pack6-dynasty'
+import { PACK6_DOCTRINE_CARDS, PACK6_DOCTRINE_OVERRIDES } from './overrides/pack6-doctrine'
+import { PACK6_LEGEND_OVERRIDES } from './overrides/pack6-legends'
 
-// 全卡池 = (生成默认值 ⊕ 各卡包覆盖) + 手工锦囊 + 第二~五卡包
+// 全卡池 = (生成默认值 ⊕ 各卡包覆盖) + 手工锦囊 + 第二~六卡包
 // 覆盖顺序:后者赢。各覆盖表刻意不与签名集重叠(只挑签名之外的花名册)。
 export const CARDS: CardDef[] = [
   ...GENERATED_CARDS.map((card) => {
@@ -15,14 +22,20 @@ export const CARDS: CardDef[] = [
     const p3 = PACK3_OVERRIDES[card.id]
     const p4 = PACK4_OVERRIDES[card.id]
     const p5 = PACK5_OVERRIDES[card.id]
-    if (!sig && !p3 && !p4 && !p5) return card
-    return { ...card, ...sig, ...p3, ...p4, ...p5 }
+    const p6d = PACK6_DYNASTY_OVERRIDES[card.id]
+    const p6c = PACK6_DOCTRINE_OVERRIDES[card.id]
+    const p6l = PACK6_LEGEND_OVERRIDES[card.id]
+    if (!sig && !p3 && !p4 && !p5 && !p6d && !p6c && !p6l) return card
+    return { ...card, ...sig, ...p3, ...p4, ...p5, ...p6d, ...p6c, ...p6l }
   }),
   ...STRATAGEMS,
   ...PACK2_CARDS,
   ...PACK3_CARDS,
   ...PACK4_CARDS,
   ...PACK5_CARDS,
+  ...PACK6_TOKENS,
+  ...PACK6_DYNASTY_CARDS,
+  ...PACK6_DOCTRINE_CARDS,
 ]
 
 export const CARDS_BY_ID: CardLibrary = Object.fromEntries(CARDS.map((c) => [c.id, c]))
