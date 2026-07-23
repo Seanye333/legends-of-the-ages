@@ -191,6 +191,11 @@ const LIB: CardLibrary = Object.fromEntries(
       type: 'stratagem', cost: 3, attack: undefined, health: undefined,
       spell: { ops: [{ op: 'swapStats', target: 'chosenEnemyGeneral' }] },
     }),
+    // ---- 第十五卡包:施法触发 —— 每打出锦囊后自增益,踩板扫触发的路径 ----
+    def('f-spellcaster', {
+      cost: 2, attack: 1, health: 3,
+      onSpellCast: { ops: [{ op: 'buffStats', attack: 1, health: 0, target: 'self' }] },
+    }),
   ].map((d) => [d.id, d]),
 )
 

@@ -154,6 +154,16 @@ export const CODEX: CodexSection[] = [
         example: (c) => c.onAttack !== undefined,
       },
       {
+        id: 'onSpellCast',
+        term: { zh: '施法 On Spellcast', en: 'On Spellcast' },
+        rule: { zh: '你每打出一个锦囊,带此机制的友方武将各触发一次。', en: 'Each time you cast a stratagem, your generals with this trigger once.' },
+        note: {
+          zh: '法术流的引擎:堆一把廉价锦囊,一回合内反复喂 —— 通神越滚越大,纵火一片火雨。只吃**你自己**的锦囊,对手施法不触发。发现类锦囊(会挂起选择的)不触发,那次施法算没走完。',
+          en: 'The engine for spell decks: pile up cheap stratagems and feed them in a single turn. It only triggers on YOUR stratagems, not the opponent’s. A discover stratagem (which suspends for a choice) does not trigger it — that cast is not considered complete.',
+        },
+        example: (c) => c.onSpellCast !== undefined,
+      },
+      {
         id: 'aura',
         term: { zh: '光環 Aura', en: 'Aura' },
         rule: { zh: '只要来源在场,持续给范围内的武将加成。', en: 'A continuous buff to nearby generals while the source is on the field.' },

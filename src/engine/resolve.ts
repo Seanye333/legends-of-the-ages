@@ -352,6 +352,45 @@ export function destroyGeneral(
   })
 }
 
+// 「每打出一个锦囊后」触发器:施法方**自己**在场的、带 onSpellCast 的武将各触发一次
+// (法术流 payoff,像法力浮龙/legends 的「施法+攻」)。只在施法方的 PlayCard 里调,
+// 所以只吃自己的锦囊,不吃对手的。
+//
+// 先把「施法那一刻」在场的 iid 快照下来再逐个跑:触发脚本自己可能让单位进出场,
+// 拿实时 board 迭代会漏触发或重复触发。跑之前重取一次、校验还活着、没被沉默。
+export function fireOnSpellCast(
+  state: GameState,
+  events: GameEvent[],
+  lib: CardLibrary,
+  player: PlayerIdx,
+): void {
+  const iids = state.players[player].board
+    .filter((c) => lib[c.defId]?.onSpellCast && !c.silenced)
+    .map((c) => c.iid)
+  for (const iid of iids) {
+    const loc = findGeneral(state, iid)
+    if (!loc || loc.player !== player || loc.inst.health <= 0 || loc.inst.silenced) continue
+    const def = lib[loc.inst.defId]
+    if (!def?.onSpellCast) continue
+    events.push({
+      type: 'EffectTriggered',
+      player,
+      sourceIid: iid,
+      sourceDefId: loc.inst.defId,
+      kind: 'onSpellCast',
+    })
+    runScript(state, events, lib, def.onSpellCast, {
+      player,
+      sourceDefId: loc.inst.defId,
+      sourceIid: iid,
+      degradeChosen: true,
+      kind: 'onSpellCast',
+      depth: 1,
+    })
+    processDeaths(state, events, lib)
+  }
+}
+
 export function healGeneral(
   _state: GameState,
   loc: GeneralLoc,
@@ -635,6 +674,7 @@ export interface ScriptCtx {
     | 'startOfTurn'
     | 'onDamaged'
     | 'onAttack'
+    | 'onSpellCast'
     | 'heroPower'
     | 'secret'
     | 'combo'

@@ -229,6 +229,7 @@ export interface CardDef {
   startOfTurn?: EffectScript // 我方回合开始时
   onDamaged?: EffectScript // 自身受伤后(有递归深度上限)
   onAttack?: EffectScript // 本武将发起攻击并存活后(单挑不触发)
+  onSpellCast?: EffectScript // 我方每打出一个锦囊后,此武将触发(法术流 payoff)
   enrage?: number // 激怒:受伤(damage>0)时额外 +N 攻击,痊愈收回(派生自 refreshInstance)
   spellDamage?: number // 法术伤害加成(在场时为友方锦囊加伤)
   // ---- 第四卡包 ----
@@ -394,6 +395,7 @@ export type GameEvent =
         | 'startOfTurn'
         | 'onDamaged'
         | 'onAttack'
+        | 'onSpellCast'
         | 'heroPower'
         | 'combo'
     }

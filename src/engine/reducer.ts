@@ -18,6 +18,7 @@ import {
   effectiveCost,
   expireTemporaryEnchants,
   findGeneral,
+  fireOnSpellCast,
   makeBoardInstance,
   other,
   processDeaths,
@@ -374,6 +375,10 @@ function playCard(
       kind: 'spell',
     })
     p.graveyard.push(inst.defId)
+    // 法术流 payoff:锦囊结算后,自己在场的 onSpellCast 武将各触发一次。
+    // 若这张锦囊触发了发现(pendingChoice 挂起),就先不触发 —— 这次施法还没走完,
+    // 别在挂起态里再叠一层触发;等它罕见,牺牲这点边角换实现简单。
+    if (!state.pendingChoice) fireOnSpellCast(state, events, lib, player)
     // 锦囊伏兵在**结算之后**触发:对手先看到锦囊的效果,再被反制
     fireEnemySecret(state, events, lib, player, 'enemyStratagem')
   }
