@@ -44,6 +44,7 @@ const KIND_NAME = {
   endOfTurn: { zh: '回合结束', en: 'End of Turn' },
   startOfTurn: { zh: '回合开始', en: 'Start of Turn' },
   onDamaged: { zh: '受创', en: 'On Damaged' },
+  onAttack: { zh: '攻击后', en: 'On Attack' },
   heroPower: { zh: '主公技', en: 'Hero Power' },
   combo: { zh: '连击', en: 'Combo' },
 } as const

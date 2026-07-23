@@ -225,6 +225,7 @@ export interface CardDef {
   endOfTurn?: EffectScript // 我方回合结束时
   startOfTurn?: EffectScript // 我方回合开始时
   onDamaged?: EffectScript // 自身受伤后(有递归深度上限)
+  onAttack?: EffectScript // 本武将发起攻击并存活后(单挑不触发)
   spellDamage?: number // 法术伤害加成(在场时为友方锦囊加伤)
   // ---- 第四卡包 ----
   secret?: SecretDef // 伏兵:打出后进伏兵区,对手触发才翻开(仅锦囊)
@@ -388,6 +389,7 @@ export type GameEvent =
         | 'endOfTurn'
         | 'startOfTurn'
         | 'onDamaged'
+        | 'onAttack'
         | 'heroPower'
         | 'combo'
     }

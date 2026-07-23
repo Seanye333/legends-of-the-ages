@@ -16,6 +16,7 @@ import {
   healHero,
   other,
   processDeaths,
+  runScript,
   type GeneralLoc,
 } from './resolve'
 
@@ -41,6 +42,40 @@ function strike(
   if (hasKeyword(src.inst, 'poison') && dst.inst.health > 0) {
     damageGeneral(state, dst, dst.inst.health, events, lib)
   }
+}
+
+// 「攻击后」触发器:武将发起一次普通攻击、并在互击后仍存活时触发。
+// 只在 performAttack 里调用 —— 单挑(performDuel)是另一种交战,不算「攻击」。
+// 攻击者若在互击中阵亡,findGeneral 取不到就不触发;这是刻意的(死人不结算攻击后)。
+function fireOnAttack(
+  state: GameState,
+  events: GameEvent[],
+  lib: CardLibrary,
+  attackerIid: number,
+): void {
+  const loc = findGeneral(state, attackerIid)
+  if (!loc) return
+  const inst = loc.inst
+  if (inst.health <= 0 || inst.silenced) return
+  const def = lib[inst.defId]
+  if (!def?.onAttack) return
+  events.push({
+    type: 'EffectTriggered',
+    player: loc.player,
+    sourceIid: inst.iid,
+    sourceDefId: inst.defId,
+    kind: 'onAttack',
+  })
+  // depth:1 —— 攻击命令本身在 depth 0,脚本内再触发的伤害等由各自的深度上限兜底
+  runScript(state, events, lib, def.onAttack, {
+    player: loc.player,
+    sourceDefId: inst.defId,
+    sourceIid: inst.iid,
+    degradeChosen: true,
+    kind: 'onAttack',
+    depth: 1,
+  })
+  processDeaths(state, events, lib)
 }
 
 export function maxAttacksOf(inst: CardInstance): number {
@@ -154,6 +189,7 @@ export function performAttack(
     strike(state, events, lib, defLoc, loc, defender.attack)
   }
   processDeaths(state, events, lib)
+  fireOnAttack(state, events, lib, attackerIid)
   return null
 }
 

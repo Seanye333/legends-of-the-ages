@@ -131,6 +131,7 @@ describe('架构铁律 7:每个 GameEvent 都要能在 UI 里落地', () => {
       'endOfTurn',
       'startOfTurn',
       'onDamaged',
+      'onAttack',
       'heroPower',
     ] as const
     for (const kind of kinds) {

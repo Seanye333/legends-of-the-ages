@@ -171,6 +171,17 @@ const LIB: CardLibrary = Object.fromEntries(
       type: 'stratagem', cost: 2, attack: undefined, health: undefined,
       spell: { ops: [{ op: 'destroy', target: 'chosenFriendlyGeneral' }, { op: 'draw', count: 1 }] },
     }),
+    // ---- 第十一卡包:攻击后 onAttack —— 让 fuzz 踩到「交战后再跑一段脚本」的路径 ----
+    // 突袭身 + onAttack 抽牌:攻击→存活→抽牌,顺便测「攻击者战死则不触发」
+    def('f-vanguard', {
+      cost: 3, attack: 3, health: 4, keywords: ['rush'],
+      onAttack: { ops: [{ op: 'draw', count: 1 }] },
+    }),
+    // onAttack 自增益(self 目标在攻击后语境要能正确指到攻击者)
+    def('f-berserker', {
+      cost: 4, attack: 3, health: 5, keywords: ['rush'],
+      onAttack: { ops: [{ op: 'buffStats', attack: 1, health: 1, target: 'self' }] },
+    }),
   ].map((d) => [d.id, d]),
 )
 

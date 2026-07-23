@@ -134,6 +134,16 @@ export const CODEX: CodexSection[] = [
         example: (c) => c.deathrattle !== undefined,
       },
       {
+        id: 'onAttack',
+        term: { zh: '攻擊後 On Attack', en: 'On Attack' },
+        rule: { zh: '此武将发起一次攻击、并在互击后仍存活时触发。', en: 'Triggers after this general attacks — but only if it survives the exchange.' },
+        note: {
+          zh: '奖励「主动出手」,天生和衝鋒/突襲咬合:落地就能咬一口,咬完就有回报(抽牌、+1/+1、放血、铺场)。两个坑:被反击打死就不触发(死人不结算),单挑不算「攻击」也不触发。',
+          en: 'Rewards attacking, and pairs naturally with Charge/Rush — land, bite, and get paid (draw, +1/+1, chip damage, a token). Two catches: if the counter-attack kills it, nothing triggers; and a Duel is not an “attack”, so it does not fire it either.',
+        },
+        example: (c) => c.onAttack !== undefined,
+      },
+      {
         id: 'aura',
         term: { zh: '光環 Aura', en: 'Aura' },
         rule: { zh: '只要来源在场,持续给范围内的武将加成。', en: 'A continuous buff to nearby generals while the source is on the field.' },

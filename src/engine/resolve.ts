@@ -630,6 +630,7 @@ export interface ScriptCtx {
     | 'endOfTurn'
     | 'startOfTurn'
     | 'onDamaged'
+    | 'onAttack'
     | 'heroPower'
     | 'secret'
     | 'combo'
