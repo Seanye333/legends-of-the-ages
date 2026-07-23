@@ -11,6 +11,18 @@ const isTauri = !!(process.env.TAURI_ENV_PLATFORM ?? process.env.TAURI_PLATFORM)
 
 export default defineConfig({
   server: { port: 5174 },
+  build: {
+    rollupOptions: {
+      output: {
+        // 拆掉 1.4MB 的单一主 chunk:第三方库单独成块(稳定、可长缓存),
+        // 生成卡池(2261 张,体量最大)再单独一块 —— 应用代码改动不再让整包失效。
+        manualChunks(id) {
+          if (id.includes('node_modules')) return 'vendor'
+          if (id.includes('/content/generated/')) return 'content'
+        },
+      },
+    },
+  },
   plugins: [
     react(),
     ...(isTauri
