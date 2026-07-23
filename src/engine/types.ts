@@ -228,6 +228,7 @@ export interface CardDef {
   startOfTurn?: EffectScript // 我方回合开始时
   onDamaged?: EffectScript // 自身受伤后(有递归深度上限)
   onAttack?: EffectScript // 本武将发起攻击并存活后(单挑不触发)
+  enrage?: number // 激怒:受伤(damage>0)时额外 +N 攻击,痊愈收回(派生自 refreshInstance)
   spellDamage?: number // 法术伤害加成(在场时为友方锦囊加伤)
   // ---- 第四卡包 ----
   secret?: SecretDef // 伏兵:打出后进伏兵区,对手触发才翻开(仅锦囊)

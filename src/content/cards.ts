@@ -20,6 +20,7 @@ import { PACK9_CARDS, PACK9_OVERRIDES } from './overrides/pack9-neutral'
 import { PACK10_CARDS, PACK10_OVERRIDES } from './overrides/pack10'
 import { PACK11_CARDS, PACK11_OVERRIDES } from './overrides/pack11'
 import { PACK12_CARDS, PACK12_OVERRIDES } from './overrides/pack12'
+import { PACK13_CARDS, PACK13_OVERRIDES } from './overrides/pack13'
 import { CAMPAIGN_TOKENS } from './overrides/campaign-tokens'
 
 // 全卡池 = (生成默认值 ⊕ 各卡包覆盖) + 手工锦囊 + 第二~六卡包
@@ -40,9 +41,10 @@ export const CARDS: CardDef[] = [
     const p10 = PACK10_OVERRIDES[card.id]
     const p11 = PACK11_OVERRIDES[card.id]
     const p12 = PACK12_OVERRIDES[card.id]
-    if (!fl && !sig && !p3 && !p4 && !p5 && !p6d && !p6c && !p6l && !p7 && !p8 && !p9 && !p10 && !p11 && !p12)
+    const p13 = PACK13_OVERRIDES[card.id]
+    if (!fl && !sig && !p3 && !p4 && !p5 && !p6d && !p6c && !p6l && !p7 && !p8 && !p9 && !p10 && !p11 && !p12 && !p13)
       return card
-    return { ...card, ...fl, ...sig, ...p3, ...p4, ...p5, ...p6d, ...p6c, ...p6l, ...p7, ...p8, ...p9, ...p10, ...p11, ...p12 }
+    return { ...card, ...fl, ...sig, ...p3, ...p4, ...p5, ...p6d, ...p6c, ...p6l, ...p7, ...p8, ...p9, ...p10, ...p11, ...p12, ...p13 }
   }),
   ...STRATAGEMS,
   ...PACK2_CARDS,
@@ -60,6 +62,7 @@ export const CARDS: CardDef[] = [
   ...PACK10_CARDS,
   ...PACK11_CARDS,
   ...PACK12_CARDS,
+  ...PACK13_CARDS,
   ...CAMPAIGN_TOKENS,
 ]
 

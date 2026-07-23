@@ -279,6 +279,16 @@ export const CODEX: CodexSection[] = [
         example: (c) => (c.spellDamage ?? 0) > 0,
       },
       {
+        id: 'enrage',
+        term: { zh: '激怒 Enrage', en: 'Enrage' },
+        rule: { zh: '只要身上带伤,就获得额外攻击;治疗回满则收回。', en: 'Gains extra attack while damaged; healed back to full, it loses the bonus.' },
+        note: {
+          zh: '和「受创触发」不同:激怒是一个**持续状态**,跟着伤口在与不在,能反复开关,不是一次性触发。于是主动点自己一刀反而是收益 —— 越痛越猛。被沉默会一并抹掉;痊愈也会自动收回,别指望它一直挂着。',
+          en: 'Unlike an on-damaged trigger, Enrage is a persistent state tied to whether the wound is there — it toggles on and off, it is not one-shot. So chipping your own general can be upside: the more it hurts, the harder it hits. Silence removes it, and healing to full takes it back.',
+        },
+        example: (c) => (c.enrage ?? 0) > 0,
+      },
+      {
         id: 'silence',
         term: { zh: '沉默 Silence', en: 'Silence' },
         rule: { zh: '清空一名武将的所有附魔与关键词,并封印它的亡语与光环。', en: 'Strips all buffs, keywords, deathrattles and auras from a general.' },

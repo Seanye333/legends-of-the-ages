@@ -184,6 +184,8 @@ const LIB: CardLibrary = Object.fromEntries(
     }),
     // ---- 第十二卡包:碾压 —— 让 fuzz 踩到「攻击武将后溢出打脸」的路径 ----
     def('f-trampler', { cost: 5, attack: 6, health: 4, keywords: ['trample'] }),
+    // ---- 第十三卡包:激怒 —— 受伤/治疗都要正确开关派生攻击 ----
+    def('f-enrage', { cost: 4, attack: 2, health: 6, enrage: 3 }),
   ].map((d) => [d.id, d]),
 )
 

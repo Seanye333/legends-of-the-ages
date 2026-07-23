@@ -63,11 +63,15 @@ export function refreshInstance(inst: CardInstance, lib: CardLibrary): void {
   const stealthIdx = keywords.indexOf('stealth')
   if (inst.stealthBroken && stealthIdx >= 0) keywords.splice(stealthIdx, 1)
 
-  inst.attack = Math.max(0, attack)
   inst.maxHealth = Math.max(1, maxHealth)
   inst.damage = Math.max(0, inst.damage)
   inst.health = inst.maxHealth - inst.damage
   inst.keywords = keywords
+  // 激怒(Enrage):受伤时额外攻击,痊愈自动收回。派生在此,不记附魔 —— 所以
+  // 每次 refreshInstance(受伤/治疗都会调)都会重算,状态永远跟 damage 一致。
+  // 沉默会连同卡面机制一起抹掉激怒(与亡语/光环一致)。放在攻击定型的最后一步。
+  const enrage = inst.silenced ? 0 : (def?.enrage ?? 0)
+  inst.attack = Math.max(0, attack + (enrage > 0 && inst.damage > 0 ? enrage : 0))
 }
 
 // 挂一条附魔并广播增益事件。授予铁壁时重置消耗标记(相当于补一层新盾)。
