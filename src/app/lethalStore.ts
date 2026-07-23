@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { LETHAL_PUZZLES } from '../content/lethalPuzzles'
+import { daysBetween } from '../content/dailyPuzzle'
 import { useCollection } from './collectionStore'
 import { useAchievements } from './achievementStore'
 
@@ -24,6 +25,8 @@ interface LethalState {
   solved: string[] // 已解开的谜题 id
   completedRewardGiven: boolean // 全套通关奖是否已发(防重复)
   dailySolvedDate: string | null // 每日谜题最近一次解开的日期(YYYY-MM-DD)
+  dailyStreak: number // 当前连续解题天数
+  dailyBestStreak: number // 历史最长连续
   isSolved(id: string): boolean
   solvedCount(): number
   // 记一次成功。返回本次实际发放的奖励(幂等:重解返回 firstSolve:false、零奖励)
@@ -31,6 +34,8 @@ interface LethalState {
   isDailySolved(date: string): boolean
   // 记一次每日谜题成功。同一天重解幂等(firstSolve:false、零奖励)
   solveDaily(date: string): PuzzleReward
+  // 连击是否仍然连续(今天没解、但昨天解了 → 仍显示当前连击;隔了两天以上 → 已断)
+  streakAsOf(today: string): number
   reset(): void
 }
 
@@ -40,6 +45,8 @@ export const useLethal = create<LethalState>()(
       solved: [],
       completedRewardGiven: false,
       dailySolvedDate: null,
+      dailyStreak: 0,
+      dailyBestStreak: 0,
 
       isSolved(id) {
         return get().solved.includes(id)
@@ -49,11 +56,26 @@ export const useLethal = create<LethalState>()(
         return get().dailySolvedDate === date
       },
 
+      streakAsOf(today) {
+        const { dailySolvedDate, dailyStreak } = get()
+        if (!dailySolvedDate) return 0
+        const gap = daysBetween(dailySolvedDate, today)
+        // 今天已解(gap 0)或昨天解的(gap 1)→ 连击仍算数;隔两天以上 → 已断
+        return gap <= 1 ? dailyStreak : 0
+      },
+
       solveDaily(date) {
         if (get().dailySolvedDate === date) {
           return { firstSolve: false, merit: 0, packs: 0, allComplete: false }
         }
-        set({ dailySolvedDate: date })
+        // 连击:昨天刚解过则 +1,否则从 1 重新起
+        const prev = get().dailySolvedDate
+        const streak = prev && daysBetween(prev, date) === 1 ? get().dailyStreak + 1 : 1
+        set({
+          dailySolvedDate: date,
+          dailyStreak: streak,
+          dailyBestStreak: Math.max(get().dailyBestStreak, streak),
+        })
         useCollection.setState({ merit: useCollection.getState().merit + DAILY_MERIT })
         useAchievements.getState().bump('puzzlesSolved')
         return { firstSolve: true, merit: DAILY_MERIT, packs: 0, allComplete: false }
@@ -90,7 +112,13 @@ export const useLethal = create<LethalState>()(
       },
 
       reset() {
-        set({ solved: [], completedRewardGiven: false, dailySolvedDate: null })
+        set({
+          solved: [],
+          completedRewardGiven: false,
+          dailySolvedDate: null,
+          dailyStreak: 0,
+          dailyBestStreak: 0,
+        })
       },
     }),
     { name: 'qiangu-lethal' },

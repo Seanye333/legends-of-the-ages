@@ -11,7 +11,13 @@ const SECOND = LETHAL_PUZZLES[1].id
 describe('lethalStore', () => {
   beforeEach(() => {
     localStorage.clear()
-    useLethal.setState({ solved: [], completedRewardGiven: false, dailySolvedDate: null })
+    useLethal.setState({
+      solved: [],
+      completedRewardGiven: false,
+      dailySolvedDate: null,
+      dailyStreak: 0,
+      dailyBestStreak: 0,
+    })
     useCollection.setState({ merit: 0 })
     useAchievements.setState({ stats: {}, claimed: [] })
   })
@@ -93,6 +99,33 @@ describe('lethalStore', () => {
     const r = useLethal.getState().solveDaily('2026-07-24')
     expect(r.firstSolve).toBe(true)
     expect(useCollection.getState().merit).toBeGreaterThan(merit1)
+  })
+
+  it('每日连击:连续天数累加,记录最长', () => {
+    const L = () => useLethal.getState()
+    L().solveDaily('2026-07-20')
+    L().solveDaily('2026-07-21')
+    L().solveDaily('2026-07-22')
+    expect(L().dailyStreak).toBe(3)
+    expect(L().dailyBestStreak).toBe(3)
+  })
+
+  it('每日连击:断一天则从头起,但最长保留', () => {
+    const L = () => useLethal.getState()
+    L().solveDaily('2026-07-20')
+    L().solveDaily('2026-07-21') // streak 2
+    L().solveDaily('2026-07-24') // 隔了两天 → 重置为 1
+    expect(L().dailyStreak).toBe(1)
+    expect(L().dailyBestStreak).toBe(2)
+  })
+
+  it('streakAsOf:昨天解过今天没解仍显示连击,隔两天则归零', () => {
+    const L = () => useLethal.getState()
+    L().solveDaily('2026-07-22')
+    L().solveDaily('2026-07-23') // streak 2,最后解于 23 号
+    expect(L().streakAsOf('2026-07-23')).toBe(2) // 当天
+    expect(L().streakAsOf('2026-07-24')).toBe(2) // 昨天解的,连击还在
+    expect(L().streakAsOf('2026-07-25')).toBe(0) // 隔两天,已断
   })
 
   it('解谜计入永久成就进度 puzzlesSolved', () => {

@@ -21,11 +21,13 @@ export function LethalScreen({ onBack, onEnterMatch }: LethalScreenProps) {
   const pick = usePickText()
   const solved = useLethal((s) => s.solved)
   const dailySolvedDate = useLethal((s) => s.dailySolvedDate)
+  const streakAsOf = useLethal((s) => s.streakAsOf)
   const solvedSet = new Set(solved)
 
   const today = dayKey()
   const daily = dailyPuzzleFor(today)
   const dailyDone = dailySolvedDate === today
+  const streak = streakAsOf(today)
 
   const launch = (p: LethalPuzzle, extra?: { daily: boolean; dailyDate: string }) => {
     playSfx('duel')
@@ -79,6 +81,9 @@ export function LethalScreen({ onBack, onEnterMatch }: LethalScreenProps) {
           onClick={() => launch(daily, { daily: true, dailyDate: today })}
         >
           <div className={styles.dailyBadge}>{t('每日谜题', 'Daily')}</div>
+          {streak > 0 && (
+            <div className={styles.streak}>{t(`连续 ${streak} 天`, `${streak}-day streak`)}</div>
+          )}
           <div className={styles.portrait}>
             <Portrait
               id={daily.heroes[0]}

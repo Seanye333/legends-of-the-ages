@@ -35,6 +35,14 @@ export function dayKey(now = new Date()): string {
   return `${y}-${m}-${d}`
 }
 
+// 两个 YYYY-MM-DD 相差几天(用 UTC 解析避开时区/夏令时)。b 晚于 a 为正。
+export function daysBetween(a: string, b: string): number {
+  const pa = Date.parse(`${a}T00:00:00Z`)
+  const pb = Date.parse(`${b}T00:00:00Z`)
+  if (Number.isNaN(pa) || Number.isNaN(pb)) return NaN
+  return Math.round((pb - pa) / 86_400_000)
+}
+
 // 日期 → 池中一题(确定性,FNV-1a 哈希取模)。池空则返回 null。
 export function dailyPuzzleFor(dateStr: string): LethalPuzzle | null {
   if (DAILY_POOL.length === 0) return null
