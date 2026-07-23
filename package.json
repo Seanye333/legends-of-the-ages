@@ -18,7 +18,8 @@
     "tauri": "tauri",
     "sim-campaign": "node --import tsx scripts/sim-campaign.ts",
     "tune-campaign": "node --import tsx scripts/tune-campaign.ts",
-    "sim-hero-mirror": "node --import tsx scripts/sim-hero-mirror.ts"
+    "sim-hero-mirror": "node --import tsx scripts/sim-hero-mirror.ts",
+    "mine-puzzles": "node --import tsx scripts/mine-puzzles.ts"
   },
   "dependencies": {
     "react": "^19.0.0",

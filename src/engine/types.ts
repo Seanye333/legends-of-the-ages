@@ -507,6 +507,9 @@ export interface PuzzleSide {
 export interface PuzzleScenario {
   players: [PuzzleSide, PuzzleSide]
   activePlayer: PlayerIdx
+  // 生成类谜题(从真实对局挖出的残局)保留挖矿时的 rng,让随机效果的解法可复现。
+  // 不给则按 seed 起 rng —— 手搓题都避开随机,不需要它。
+  rng?: number
 }
 
 export interface GameConfig {

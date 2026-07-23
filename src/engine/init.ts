@@ -188,7 +188,8 @@ function createScenarioGame(
 
   return {
     seed: cfg.seed,
-    rng: seedRng(cfg.seed),
+    // 挖矿类残局带着原局的 rng(随机效果的解法才可复现);手搓题走 seed 起点
+    rng: sc.rng ?? seedRng(cfg.seed),
     turn: 1,
     activePlayer: sc.activePlayer,
     phase: 'main',
