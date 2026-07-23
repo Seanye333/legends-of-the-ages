@@ -23,6 +23,7 @@ import { PACK12_CARDS, PACK12_OVERRIDES } from './overrides/pack12'
 import { PACK13_CARDS, PACK13_OVERRIDES } from './overrides/pack13'
 import { PACK14_CARDS } from './overrides/pack14'
 import { PACK15_CARDS } from './overrides/pack15'
+import { PACK16_CARDS } from './overrides/pack16'
 import { CAMPAIGN_TOKENS } from './overrides/campaign-tokens'
 
 // 全卡池 = (生成默认值 ⊕ 各卡包覆盖) + 手工锦囊 + 第二~六卡包
@@ -67,6 +68,7 @@ export const CARDS: CardDef[] = [
   ...PACK13_CARDS,
   ...PACK14_CARDS,
   ...PACK15_CARDS,
+  ...PACK16_CARDS,
   ...CAMPAIGN_TOKENS,
 ]
 

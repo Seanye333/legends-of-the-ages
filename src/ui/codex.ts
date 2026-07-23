@@ -271,6 +271,16 @@ export const CODEX: CodexSection[] = [
         example: (c) => JSON.stringify(c).includes('transform'),
       },
       {
+        id: 'recruit',
+        term: { zh: '搜將 Recruit', en: 'Recruit' },
+        rule: { zh: '从你的牌库随机召唤武将直接上场。', en: 'Summon a random general straight from your deck.' },
+        note: {
+          zh: '越过费用曲线抢节奏:4 费可能拉出个 8 费大哥,也可能只拉个小兵 —— 高方差。所以它偏爱一副**武将密度高、身材扎实**的卡组,牌库越纯,搜出来越不亏。搜出来的牌从牌库里消失(不是复制)。',
+          en: 'A tempo swing that leaps up the curve: for 4 mana you might pull an 8-drop — or a small body. High variance, so it rewards a deck dense with solid generals. The recruited card leaves your deck (it is not a copy).',
+        },
+        example: (c) => JSON.stringify(c).includes('recruit'),
+      },
+      {
         id: 'resurrect',
         term: { zh: '復生 Resurrect', en: 'Resurrect' },
         rule: { zh: '从墓地随机召回死去的友方武将。', en: 'Return random friendly generals that have died to the field.' },

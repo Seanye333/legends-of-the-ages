@@ -106,6 +106,7 @@ export type EffectOp =
       duration?: 'endOfTurn'
     }
   | { op: 'swapStats'; target: EffectTarget } // 交换攻击与最大生命(移形换位)
+  | { op: 'recruit'; count: number } // 搜将:从我方牌库随机召唤 N 个武将上场
   | { op: 'summon'; defId: string; count: number }
   | { op: 'aoeDamage'; amount: number }
   | { op: 'destroy'; target: EffectTarget }

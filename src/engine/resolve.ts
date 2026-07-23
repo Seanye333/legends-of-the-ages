@@ -798,6 +798,33 @@ export function runScript(
         }
         break
       }
+      case 'recruit': {
+        // 搜将:从我方牌库随机拉武将上场(锦囊/衍生物不算)。牌库里那张被消耗掉。
+        // 每次都重扫牌库下标 —— 上一次抽走会让下标漂移;复用 GeneralSummoned,不新增事件。
+        const p = state.players[player]
+        for (let i = 0; i < op.count && p.board.length < BOARD_LIMIT; i++) {
+          const genIdx = p.deck
+            .map((c, idx) => ({ defId: c.defId, idx }))
+            .filter((x) => lib[x.defId]?.type === 'general')
+          if (genIdx.length === 0) break
+          const roll = rngInt(state.rng, genIdx.length)
+          state.rng = roll.next
+          const pick = genIdx[roll.value]
+          p.deck.splice(pick.idx, 1)
+          const inst = makeBoardInstance(state, pick.defId, lib)
+          p.board.push(inst)
+          events.push({
+            type: 'GeneralSummoned',
+            player,
+            iid: inst.iid,
+            defId: pick.defId,
+            position: p.board.length - 1,
+            attack: inst.attack,
+            health: inst.health,
+          })
+        }
+        break
+      }
       case 'summon':
       case 'summonForEnemy': {
         const def = lib[op.defId]

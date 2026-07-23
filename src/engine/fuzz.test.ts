@@ -196,6 +196,10 @@ const LIB: CardLibrary = Object.fromEntries(
       cost: 2, attack: 1, health: 3,
       onSpellCast: { ops: [{ op: 'buffStats', attack: 1, health: 0, target: 'self' }] },
     }),
+    // ---- 第十六卡包:搜将 —— 从牌库拉武将,空库/满场/无武将都要不炸 ----
+    def('f-recruit', {
+      cost: 4, battlecry: { ops: [{ op: 'recruit', count: 2 }] },
+    }),
   ].map((d) => [d.id, d]),
 )
 
