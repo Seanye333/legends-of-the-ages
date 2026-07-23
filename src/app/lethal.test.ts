@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useLethal } from './lethalStore'
 import { useCollection } from './collectionStore'
+import { useAchievements } from './achievementStore'
 import { LETHAL_PUZZLES } from '../content/lethalPuzzles'
 
 const FIRST = LETHAL_PUZZLES[0].id
@@ -12,6 +13,7 @@ describe('lethalStore', () => {
     localStorage.clear()
     useLethal.setState({ solved: [], completedRewardGiven: false, dailySolvedDate: null })
     useCollection.setState({ merit: 0 })
+    useAchievements.setState({ stats: {}, claimed: [] })
   })
 
   it('首解记进度并发功勋', () => {
@@ -91,5 +93,13 @@ describe('lethalStore', () => {
     const r = useLethal.getState().solveDaily('2026-07-24')
     expect(r.firstSolve).toBe(true)
     expect(useCollection.getState().merit).toBeGreaterThan(merit1)
+  })
+
+  it('解谜计入永久成就进度 puzzlesSolved', () => {
+    expect(useAchievements.getState().stats.puzzlesSolved ?? 0).toBe(0)
+    useLethal.getState().solve(FIRST) // 手搓首解 +1
+    useLethal.getState().solve(FIRST) // 重解不计
+    useLethal.getState().solveDaily('2026-07-23') // 每日首解 +1
+    expect(useAchievements.getState().stats.puzzlesSolved).toBe(2)
   })
 })

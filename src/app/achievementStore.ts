@@ -44,6 +44,7 @@ export type StatKey =
   | 'onlineWins'
   | 'flawlessWins'
   | 'expeditionWins'
+  | 'puzzlesSolved' // 斩杀谜题:每有奖励的解开(手搓首解 / 每日首解)+1
   | `won_${Doctrine}`
 
 export type Stats = Partial<Record<StatKey, number>>
@@ -262,6 +263,16 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     merit: 200,
     packs: 1,
   },
+
+  // ---- 斩杀谜题:把新模式接进永久进度 ----
+  ...tier(
+    'ach-puzzle',
+    'puzzlesSolved',
+    { zh: '解局', en: 'Tactician' },
+    (n) => ({ zh: `解开 ${n} 道斩杀谜题`, en: `Solve ${n} lethal puzzles` }),
+    [5, 20],
+    [80, 260],
+  ),
 
   // 六主义各一条:逼玩家把六套预组都摸一遍,这是最好的「教程之后的教程」
   ...(Object.keys(DOCTRINE_NAME) as (Doctrine | 'neutral')[])

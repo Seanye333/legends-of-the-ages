@@ -98,6 +98,7 @@ describe('achievement stats', () => {
       'onlineWins',
       'flawlessWins',
       'expeditionWins',
+      'puzzlesSolved', // 斩杀谜题解开时由 lethalStore bump
       // 六主义各一条,tally 只会产出当前主公那一个
       'won_hegemonic',
       'won_ritual',

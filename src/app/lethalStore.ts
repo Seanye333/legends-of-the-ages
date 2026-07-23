@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { LETHAL_PUZZLES } from '../content/lethalPuzzles'
 import { useCollection } from './collectionStore'
+import { useAchievements } from './achievementStore'
 
 // 斩杀谜题进度。只记「解开了哪几道」+「全套通关奖是否已发」。
 //
@@ -54,6 +55,7 @@ export const useLethal = create<LethalState>()(
         }
         set({ dailySolvedDate: date })
         useCollection.setState({ merit: useCollection.getState().merit + DAILY_MERIT })
+        useAchievements.getState().bump('puzzlesSolved')
         return { firstSolve: true, merit: DAILY_MERIT, packs: 0, allComplete: false }
       },
 
@@ -71,8 +73,9 @@ export const useLethal = create<LethalState>()(
         }
         const solved = [...get().solved, id]
         set({ solved })
-        // 首解功勋
+        // 首解功勋 + 永久进度
         useCollection.setState({ merit: useCollection.getState().merit + FIRST_SOLVE_MERIT })
+        useAchievements.getState().bump('puzzlesSolved')
         // 全套通关:再补一个卡包(只一次)
         let packs = 0
         let allComplete = false
