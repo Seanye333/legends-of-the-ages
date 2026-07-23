@@ -478,6 +478,37 @@ export interface RunModifiers {
   heroPowerCostDelta?: number // 主公技费用 +N(负=更便宜),整局有效
 }
 
+// ---------- 斩杀谜题:指定残局 ----------
+// 谜题模式需要一个**确定的残局**(而不是发牌洗牌开局):敌方场上有指定血量/受伤/buff
+// 的随从,你手里是指定的一手牌,双方指定 HP/护甲/法力。它只影响**初始构造**,
+// 产出的 GameState 形状与普通对局完全一致 —— 因此迁移/裁剪/回放/AI 全部无感。
+// 随机效果(随机目标等)按 seed 确定性结算,作者需为带随机的题挑好 seed。
+export interface PuzzleUnit {
+  defId: string
+  damage?: number // 已承受伤害;health = maxHealth - damage(会夹到至少留 1)
+  enchants?: Enchant[] // 预置附魔(+X/+X、临时关键词…)
+  exhausted?: boolean // 默认 false —— 谜题里我方单位默认是「回合开始已就绪、能攻击」
+  attacksUsed?: number
+  frozen?: boolean
+  silenced?: boolean
+}
+export interface PuzzleSide {
+  heroHp: number
+  heroMaxHp?: number // 默认 max(heroHp, START_HP)
+  armor?: number
+  mana: number // 本回合可用水晶(current 与 max 同时设为它)
+  board: PuzzleUnit[]
+  hand: string[] // 手牌 defId
+  deck?: string[] // 默认空 —— 谜题这回合就结束,通常不摸牌
+  secrets?: string[] // 预置伏兵 defId(敌方伏兵可作谜题元素)
+  heroPowerUsed?: boolean // 默认 false(本回合可用主公技)
+  heroPowerCostDelta?: number
+}
+export interface PuzzleScenario {
+  players: [PuzzleSide, PuzzleSide]
+  activePlayer: PlayerIdx
+}
+
 export interface GameConfig {
   seed: number
   heroIds: [string, string]
@@ -488,6 +519,8 @@ export interface GameConfig {
   heroHps?: [number, number]
   // 远征宝物修正,按座位。只有远征模式会给。
   modifiers?: [RunModifiers | undefined, RunModifiers | undefined]
+  // 斩杀谜题:给定则跳过发牌,按残局铺场(heroId/heroPower 仍走上面的字段)。
+  scenario?: PuzzleScenario
 }
 
 export type ApplyResult =
