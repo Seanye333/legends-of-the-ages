@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { Command, GameEvent, GameState } from '../engine/types'
 import { DECK_SIZE, START_HP } from '../engine/types'
-import type { CardDef, Doctrine, HeroPowerDef, RunModifiers } from '../engine/types'
+import type { CardDef, Doctrine, HeroPowerDef, PuzzleScenario, RunModifiers } from '../engine/types'
 import { CARDS, CARDS_BY_ID } from '../content/cards'
 import { HEROES_BY_ID } from '../content/overrides/heroes'
 import { LocalMatch } from './transport'
@@ -13,6 +13,7 @@ import { useArena } from './arenaStore'
 import { useAchievements } from './achievementStore'
 import { useCampaign } from './campaignStore'
 import { useExpedition } from './expeditionStore'
+import { useLethal, type PuzzleReward } from './lethalStore'
 import { reportWin } from './leaderboard'
 import type { EmoteId } from './protocol'
 import { EMPTY_STATS, foldStats, type MatchStats } from './matchStats'
@@ -41,6 +42,10 @@ export interface StartMatchArgs {
   // 远征(单人 roguelike):关间宝物合成的开局修正;胜负记进远征进度
   expedition?: boolean
   modifiersOverride?: [RunModifiers | undefined, RunModifiers | undefined]
+  // 斩杀谜题:给定残局 + 谜题 id。胜负走谜题进度,不记普通战绩/军令/成就
+  puzzle?: boolean
+  puzzleId?: string
+  scenario?: PuzzleScenario
 }
 
 export interface StartRemoteArgs {
@@ -63,6 +68,11 @@ interface MatchStoreState {
   arena: boolean
   campaign: boolean
   expedition: boolean
+  // 斩杀谜题态:puzzle 标识本局是谜题;puzzleResult 由 send 判定(赢/本回合结束未赢=输)
+  puzzle: boolean
+  puzzleId: string | null
+  puzzleResult: 'won' | 'lost' | null
+  puzzleReward: PuzzleReward | null
   match: LocalMatch | null
   remote: RemoteMatch | null
   remoteStatus: RemoteStatus | null
@@ -190,6 +200,10 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
   arena: false,
   campaign: false,
   expedition: false,
+  puzzle: false,
+  puzzleId: null,
+  puzzleResult: null,
+  puzzleReward: null,
   match: null,
   remote: null,
   remoteStatus: null,
@@ -229,19 +243,28 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
         heroHps:
           args.heroHpsOverride ?? [heroDefs[0]?.hp ?? START_HP, heroDefs[1]?.hp ?? START_HP],
         modifiers: args.modifiersOverride,
+        // 斩杀谜题:给定则 createGame 按残局铺场(跳过发牌)
+        scenario: args.scenario,
       },
       CARDS_BY_ID,
       ai,
     )
     const { state, events } = match.start()
-    beginReplayRecording('local')
-    recordReplayFrame(state, events)
+    // 谜题不进战报回放(会污染「最近 5 场」列表)
+    if (args.puzzle !== true) {
+      beginReplayRecording('local')
+      recordReplayFrame(state, events)
+    }
     set({
       mode: 'local',
       tutorial: args.tutorial === true,
       arena: args.arena === true,
       campaign: args.campaign === true,
       expedition: args.expedition === true,
+      puzzle: args.puzzle === true,
+      puzzleId: args.puzzleId ?? null,
+      puzzleResult: null,
+      puzzleReward: null,
       match,
       state,
       lastEvents: events,
@@ -286,6 +309,35 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       return
     }
     if (!match) return
+
+    // 斩杀谜题:自成一条路 —— 不记普通战绩/军令/成就/战报,胜负走谜题进度。
+    // 结束回合即判失败(斩杀只在本回合内成立),故不放行 EndTurn 让 AI 接管。
+    if (get().puzzle) {
+      if (get().puzzleResult) return // 已出结果,不再受理
+      if (cmd.type === 'EndTurn') {
+        set({ puzzleResult: 'lost' })
+        return
+      }
+      const pr = match.sendCommand(cmd)
+      if ('error' in pr) {
+        set({ error: pr.error })
+        return
+      }
+      const events = pr.updates.flatMap((u) => u.events)
+      const last = pr.updates[pr.updates.length - 1]
+      const nextStats = foldStats(get().stats, events, last.state)
+      let puzzleResult = get().puzzleResult
+      let puzzleReward = get().puzzleReward
+      if (last.state.phase === 'ended') {
+        const won = last.state.winner === 0
+        puzzleResult = won ? 'won' : 'lost'
+        const id = get().puzzleId
+        if (won && id) puzzleReward = useLethal.getState().solve(id)
+      }
+      set({ state: last.state, lastEvents: events, stats: nextStats, error: null, puzzleResult, puzzleReward })
+      return
+    }
+
     const r = match.sendCommand(cmd)
     if ('error' in r) {
       set({ error: r.error })
@@ -327,6 +379,10 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       arena: false,
       campaign: false,
       expedition: false,
+      puzzle: false,
+      puzzleId: null,
+      puzzleResult: null,
+      puzzleReward: null,
       match: null,
       remote: null,
       remoteStatus: null,

@@ -15,3 +15,11 @@ export function rematch(): boolean {
   store.startMatch({ heroIds: lastArgs.heroIds, deckIds: lastArgs.deckIds })
   return true
 }
+
+// 原样重开上一次开局(保留残局/谜题配置)—— 斩杀谜题的「重试」用它,
+// 不能走 rematch:那个只带 heroIds/deckIds,会把 scenario/puzzle 丢掉。
+export function retryLast(): boolean {
+  if (!lastArgs) return false
+  useMatch.getState().startMatch(lastArgs)
+  return true
+}
