@@ -13,6 +13,7 @@ import { useArena } from './arenaStore'
 import { useAchievements } from './achievementStore'
 import { useCampaign } from './campaignStore'
 import { useExpedition } from './expeditionStore'
+import { useDeckStats } from './deckStatsStore'
 import { reportWin } from './leaderboard'
 import type { EmoteId } from './protocol'
 import { EMPTY_STATS, foldStats, type MatchStats } from './matchStats'
@@ -41,6 +42,8 @@ export interface StartMatchArgs {
   // 远征(单人 roguelike):关间宝物合成的开局修正;胜负记进远征进度
   expedition?: boolean
   modifiersOverride?: [RunModifiers | undefined, RunModifiers | undefined]
+  // 卡组胜率:随便打时带上你这套卡组的内容哈希,终局按它记胜负
+  deckKey?: string
 }
 
 export interface StartRemoteArgs {
@@ -63,6 +66,7 @@ interface MatchStoreState {
   arena: boolean
   campaign: boolean
   expedition: boolean
+  deckKey: string | null
   match: LocalMatch | null
   remote: RemoteMatch | null
   remoteStatus: RemoteStatus | null
@@ -146,6 +150,18 @@ function settleMatch(
   if (ended.winner === 0) reportWin()
 }
 
+// 卡组胜率:只在随便打(带了 deckKey)且真正终局时记一次。
+// 竞技场/冒险/远征/教学/演武不传 deckKey,天然不进这里。
+function recordDeckResult(events: GameEvent[], deckKey: string | null): void {
+  if (!deckKey) return
+  const ended = events.find((e) => e.type === 'GameEnded')
+  if (!ended || ended.type !== 'GameEnded') return
+  useDeckStats.getState().record(
+    deckKey,
+    ended.winner === 'draw' ? 'draw' : ended.winner === 0 ? 'win' : 'loss',
+  )
+}
+
 // 联机回调统一在此落进 store;opponent-back 属瞬时提示,不覆盖 playing 状态
 type SetState = (partial: Partial<MatchStoreState>) => void
 // 联机回调只拿得到 set,而战绩要在旧值上累加 —— 所以额外传一个读取器进来
@@ -190,6 +206,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
   arena: false,
   campaign: false,
   expedition: false,
+  deckKey: null,
   match: null,
   remote: null,
   remoteStatus: null,
@@ -242,6 +259,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       arena: args.arena === true,
       campaign: args.campaign === true,
       expedition: args.expedition === true,
+      deckKey: args.deckKey ?? null,
       match,
       state,
       lastEvents: events,
@@ -295,6 +313,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
     const last = r.updates[r.updates.length - 1]
     settleMatch(events, get().arena, get().campaign, get().expedition)
     settleQuests(events, last.state)
+    recordDeckResult(events, get().deckKey)
     recordReplayFrame(last.state, events)
     const nextStats = foldStats(get().stats, events, last.state)
     settleWholeMatchAchievements(events, nextStats, false)
@@ -327,6 +346,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       arena: false,
       campaign: false,
       expedition: false,
+      deckKey: null,
       match: null,
       remote: null,
       remoteStatus: null,

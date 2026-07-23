@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { CARDS, CARDS_BY_ID, SIGNATURE_IDS } from '../../content/cards'
-import { PRECON_DECKS } from '../../content/decks'
+import { PRECON_DECKS, deckKey } from '../../content/decks'
+import { useDeckStats, winRate } from '../../app/deckStatsStore'
 import { HEROES } from '../../content/overrides/heroes'
 import type { CardDef, LocalizedText } from '../../engine/types'
 import { quickDeck, useMatch, type StartMatchArgs } from '../../app/matchStore'
@@ -70,6 +71,7 @@ function buildMatchArgs(decks: DeckList[], myDeckIndex: number): StartMatchArgs 
     return {
       heroIds: [mine.heroId, ai.heroId],
       deckIds: [mine.cardIds.slice(), ai.cardIds.slice()],
+      deckKey: deckKey(mine.heroId, mine.cardIds),
     }
   }
   return {
@@ -99,6 +101,7 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
     useSettings()
   const customDecks = useCollection((s) => s.customDecks)
   const packs = useCollection((s) => s.packs)
+  const deckRecords = useDeckStats((s) => s.records)
   const arenaLive = useArena((s) => s.phase !== 'idle')
   const campaignDone = useCampaign((s) => s.cleared.length)
   // 订阅 stats/claimed 而不是调 claimableCount() —— 后者不是响应式的
@@ -200,6 +203,24 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
           ))}
         </div>
       )}
+
+      {hasPrecons &&
+        (() => {
+          const sel = selectableDecks[deckIndex]
+          if (!sel) return null
+          const rec = deckRecords[deckKey(sel.heroId, sel.cardIds)] ?? { wins: 0, losses: 0, draws: 0 }
+          const wr = winRate(rec)
+          return (
+            <div className={styles.deckRecord}>
+              {wr === null
+                ? t('本套卡组:暂无战绩', 'This deck: no record yet')
+                : t(
+                    `本套卡组:${rec.wins} 胜 ${rec.losses} 负${rec.draws ? ` ${rec.draws} 平` : ''} · 胜率 ${wr}%`,
+                    `This deck: ${rec.wins}W ${rec.losses}L${rec.draws ? ` ${rec.draws}D` : ''} · ${wr}% win rate`,
+                  )}
+            </div>
+          )
+        })()}
 
       {offerTutorial && (
         <div className={styles.tutorialInvite}>
