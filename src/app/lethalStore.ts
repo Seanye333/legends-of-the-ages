@@ -78,6 +78,7 @@ export const useLethal = create<LethalState>()(
         })
         useCollection.setState({ merit: useCollection.getState().merit + DAILY_MERIT })
         useAchievements.getState().bump('puzzlesSolved')
+        useAchievements.getState().bump('bestPuzzleStreak', streak) // MAX 统计,记最长
         return { firstSolve: true, merit: DAILY_MERIT, packs: 0, allComplete: false }
       },
 

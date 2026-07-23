@@ -99,6 +99,7 @@ describe('achievement stats', () => {
       'flawlessWins',
       'expeditionWins',
       'puzzlesSolved', // 斩杀谜题解开时由 lethalStore bump
+      'bestPuzzleStreak', // 每日连击最长,由 lethalStore bump(MAX)
       // 六主义各一条,tally 只会产出当前主公那一个
       'won_hegemonic',
       'won_ritual',

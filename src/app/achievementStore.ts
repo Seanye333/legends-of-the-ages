@@ -45,6 +45,7 @@ export type StatKey =
   | 'flawlessWins'
   | 'expeditionWins'
   | 'puzzlesSolved' // 斩杀谜题:每有奖励的解开(手搓首解 / 每日首解)+1
+  | 'bestPuzzleStreak' // 每日谜题历史最长连续天数(取最大)
   | `won_${Doctrine}`
 
 export type Stats = Partial<Record<StatKey, number>>
@@ -273,6 +274,15 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     [5, 20],
     [80, 260],
   ),
+  {
+    id: 'ach-streak',
+    name: { zh: '篤志', en: 'Devotee' },
+    desc: { zh: '连续 7 天解开每日谜题', en: 'Solve the daily puzzle 7 days running' },
+    stat: 'bestPuzzleStreak',
+    goal: 7,
+    merit: 150,
+    packs: 1,
+  },
 
   // 六主义各一条:逼玩家把六套预组都摸一遍,这是最好的「教程之后的教程」
   ...(Object.keys(DOCTRINE_NAME) as (Doctrine | 'neutral')[])
@@ -381,7 +391,7 @@ export function tallyStats(events: GameEvent[], myHeroId: string): Stats {
 }
 
 // bestTurnDamage / arenaBestWins 是「取最大」而不是「累加」
-const MAX_STATS = new Set<StatKey>(['bestTurnDamage', 'arenaBestWins'])
+const MAX_STATS = new Set<StatKey>(['bestTurnDamage', 'arenaBestWins', 'bestPuzzleStreak'])
 
 export function mergeStats(base: Stats, delta: Stats): Stats {
   const out: Stats = { ...base }

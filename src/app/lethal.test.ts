@@ -135,4 +135,13 @@ describe('lethalStore', () => {
     useLethal.getState().solveDaily('2026-07-23') // 每日首解 +1
     expect(useAchievements.getState().stats.puzzlesSolved).toBe(2)
   })
+
+  it('连击最长进永久成就 bestPuzzleStreak(取最大)', () => {
+    const L = () => useLethal.getState()
+    L().solveDaily('2026-07-20')
+    L().solveDaily('2026-07-21')
+    L().solveDaily('2026-07-22') // streak 3
+    L().solveDaily('2026-07-24') // 断,streak 1
+    expect(useAchievements.getState().stats.bestPuzzleStreak).toBe(3) // 保留最大
+  })
 })
