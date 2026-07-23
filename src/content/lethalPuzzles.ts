@@ -218,6 +218,117 @@ export const LETHAL_PUZZLES: LethalPuzzle[] = [
       ],
     },
   },
+
+  // ---------- 第二批:更多招式 ----------
+  {
+    id: 'lp-massrush',
+    title: { zh: '雷霆突進', en: 'Thunder Advance' },
+    situation: { zh: '三员新募之将尚未缓过神,敌主帅 9 血。', en: 'Three freshly-mustered officers, not yet ready. Enemy at 9.' },
+    hint: { zh: '一道军令,让全军当场能战。', en: 'One command lets the whole line strike now.' },
+    difficulty: 2,
+    heroes: ['hist-laozi', 'sun-quan'],
+    scenario: {
+      activePlayer: 0,
+      players: [
+        {
+          heroHp: 20,
+          mana: 4,
+          board: [
+            { defId: 'yuan-shang', exhausted: true },
+            { defId: 'niu-fu', exhausted: true },
+            { defId: 'cai-mao', exhausted: true },
+          ],
+          hand: ['strat-hegemon-blitz'],
+        },
+        { heroHp: 9, mana: 0, board: [], hand: [] },
+      ],
+    },
+  },
+  {
+    id: 'lp-windping',
+    title: { zh: '風怒點殺', en: 'Windfury Finish' },
+    situation: { zh: '马超一骑,配上唯才是举的点杀 —— 敌主帅 13 血。', en: 'Ma Chao alone, plus a hero-power ping. Enemy at 13.' },
+    hint: { zh: '多打的那一下之外,还差一点点。', en: 'Even the extra swing leaves you just short.' },
+    difficulty: 3,
+    heroes: ['cao-cao', 'liu-bei'],
+    scenario: {
+      activePlayer: 0,
+      players: [
+        { heroHp: 20, mana: 4, board: [{ defId: 'ma-chao' }], hand: ['strat-jie-dongfeng'] },
+        { heroHp: 13, mana: 0, board: [], hand: [] },
+      ],
+    },
+  },
+  {
+    id: 'lp-pofu',
+    title: { zh: '破釜沉舟', en: 'Burn the Boats' },
+    situation: { zh: '赵云差三点,而你不惜代价 —— 敌主帅 9 血。', en: 'Zhao Yun is three short, and you will pay any price. Enemy at 9.' },
+    hint: { zh: '拼一把 —— 自伤换来的攻击也是攻击。', en: 'Go all in — attack bought with your own blood still kills.' },
+    difficulty: 2,
+    heroes: ['sun-quan', 'sima-yi'],
+    scenario: {
+      activePlayer: 0,
+      players: [
+        { heroHp: 20, mana: 3, board: [{ defId: 'zhao-yun' }], hand: ['strat-pofu-chenzhou'] },
+        { heroHp: 9, mana: 0, board: [], hand: [] },
+      ],
+    },
+  },
+  {
+    id: 'lp-beishui',
+    title: { zh: '背水一戰', en: 'Back to the River' },
+    situation: { zh: '高顺在场,一道锦囊能再添两分力 —— 敌主帅 9 血。', en: 'Gao Shun on board, one stratagem lends two more. Enemy at 9.' },
+    hint: { zh: '给他加上那两点。', en: 'Grant him the two attack he needs.' },
+    difficulty: 2,
+    heroes: ['guo-jia', 'cao-cao'],
+    scenario: {
+      activePlayer: 0,
+      players: [
+        { heroHp: 20, mana: 3, board: [{ defId: 'gao-shun' }], hand: ['strat-beishui-yizhan'] },
+        { heroHp: 9, mana: 0, board: [], hand: [] },
+      ],
+    },
+  },
+  {
+    id: 'lp-doubleburn',
+    title: { zh: '火上澆油', en: 'Twin Flames' },
+    situation: { zh: '手中两道火计,空无一兵 —— 敌主帅 7 血。', en: 'Two firebolts in hand, not a soldier in sight. Enemy at 7.' },
+    hint: { zh: '不靠场面 —— 两道锦囊足矣。', en: 'No board needed — two stratagems suffice.' },
+    difficulty: 2,
+    heroes: ['hist-laozi', 'liu-bei'],
+    scenario: {
+      activePlayer: 0,
+      players: [
+        { heroHp: 20, mana: 7, board: [], hand: ['strat-weiwei-jiuzhao', 'strat-andu-chencang'] },
+        { heroHp: 7, mana: 0, board: [], hand: [] },
+      ],
+    },
+  },
+  {
+    id: 'lp-gowide2',
+    title: { zh: '三軍壓城', en: 'The Host Descends' },
+    situation: { zh: '四员小将齐出,合力平平 —— 敌主帅 17 血。', en: 'Four minor officers, unremarkable alone. Enemy at 17.' },
+    hint: { zh: '一道军令,四人皆强。', en: 'One command lifts all four at once.' },
+    difficulty: 2,
+    heroes: ['sima-yi', 'hist-laozi'],
+    scenario: {
+      activePlayer: 0,
+      players: [
+        {
+          heroHp: 20,
+          mana: 3,
+          board: [
+            { defId: 'wu-pu' },
+            { defId: 'ruan-xian' },
+            { defId: 'hist-tian-pian' },
+            { defId: 'zuo-ci' },
+          ],
+          hand: ['strat-hao-ling'],
+        },
+        { heroHp: 17, mana: 0, board: [], hand: [] },
+      ],
+    },
+  },
 ]
 
 export const LETHAL_PUZZLES_BY_ID: Record<string, LethalPuzzle> = Object.fromEntries(
