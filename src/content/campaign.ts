@@ -5,8 +5,12 @@ import { CARDS_BY_ID, COLLECTIBLE_CARDS } from './cards'
 // 冒险模式「群雄逐鹿」。
 //
 // 此前单人内容只有「随便打一局 AI」和一场脚本化教程 —— 没有任何有终点的挑战。
-// 八场关底战,每一场是一个**规则不对称**的对手:更高的血量、一个比玩家更强的主公技、
-// 一套主题卡组。玩家用自己的卡组去打,所以它同时是构筑的试金石。
+// 现在是**两章共十六场**关底战,每一场是一个**规则不对称**的对手:更高的血量、
+// 一个比玩家更强的主公技、一套主题卡组。玩家用自己的卡组去打,所以它同时是构筑的试金石。
+//
+// 第一章「汉末群雄」张角→曹操,第二章「逐鹿千年」白起→徐达沿中华战史一路往下打。
+// 解锁是**全局线性**的(通了曹操才进白起),但难度按章各自成曲线:第二章开章时
+// 玩家已成军,不必再像张角那样友好。sim-campaign 按 chapter 分段校验每章的曲线。
 //
 // 为什么用「加血 + 强技能」而不是「给 Boss 作弊卡」:
 // 引擎是权威且对称的,给 Boss 特权卡等于要在引擎里开后门。
@@ -51,6 +55,19 @@ export interface BossDef {
   power: HeroPowerDef
   rewardMerit: number
   rewardPacks: number
+  chapter?: number // 章节归属(缺省=1)。解锁仍是全局线性,章节只用来分组与分段校验曲线
+}
+
+// 章节号,缺省视作第一章。sim-campaign 按它分段校验难度曲线,
+// CampaignScreen 按它插入章节分隔。
+export function bossChapter(b: BossDef): number {
+  return b.chapter ?? 1
+}
+
+// 章节标题:CampaignScreen 在每章第一关前插一条分隔。
+export const CHAPTER_TITLES: Record<number, LocalizedText> = {
+  1: { zh: '第一章 · 漢末群雄', en: 'Chapter I · Warlords of Han’s Fall' },
+  2: { zh: '第二章 · 逐鹿千年', en: 'Chapter II · A Thousand Years of Contenders' },
 }
 
 const power = (
@@ -252,6 +269,211 @@ export const BOSSES: BossDef[] = [
     ),
     rewardMerit: 400,
     rewardPacks: 3,
+  },
+
+  // ============================================================
+  // 第二章「逐鹿千年」—— 走出三国,沿着中华战史往下打。
+  // 八位横跨战国→楚汉→西汉→唐→两宋→明的名将,一条编年的登顶之路:
+  //   白起 · 項羽 · 韓信 · 霍去病 · 李世民 · 趙匡胤 · 岳飛 · 徐達。
+  // 解锁仍是全局线性(通了曹操才进白起),但难度是**一段新曲线**:
+  // 玩家此时已成军、有卡包,所以开章不必像张角那样友好(约 40%),再一路收紧到收官。
+  // 血量与战利延续第一章继续攀升(试金石越往后越重)。
+  // 选人只挑**有立绘**的:关底该是一张脸,不是一个首字兜底(见 high-visual-quality-bar)。
+  // deckTier 由 sim-campaign 分章校验、tune-campaign 二分搜出;tier→强度非单调,只能实测。
+  // ============================================================
+  {
+    id: 'boss-bai-qi',
+    heroId: 'hist-bai-qi',
+    name: { zh: '白起', en: 'Bai Qi' },
+    title: { zh: '人屠', en: 'The Butcher of Men' },
+    intro: {
+      zh: '長平一夜,四十萬降卒盡坑。人屠所至,從不留俘,也從不留路。',
+      en: 'In one night at Changping, four hundred thousand were buried. The Butcher takes no prisoners — and leaves no road back.',
+    },
+    doctrine: 'hegemonic',
+    hp: 52, // 与曹操持平(单调不破);白起要当开章软目标,血量这条弱旋钮也一并往下压
+    deckTier: 0.9, // 最软档:霸道深池太硬,开章需要它给到最弱
+    // 长平的「歼灭」本想给 3 点,但白起 = 霸道深池 + 每回合稳定点杀,实测哪怕最软卡组
+    // 玩家胜率也压不过 33%,当不成开章的软目标;降到 2 点(与董卓同机制)+ 最软档 ≈ 40%。
+    power: power(
+      'bp-changping',
+      { zh: '長平', en: 'Changping' },
+      { zh: '對隨機一名敵方武將造成 2 點傷害。', en: 'Deal 2 damage to a random enemy general.' },
+      2,
+      [{ op: 'damage', amount: 2, target: 'randomEnemyGeneral' }],
+    ),
+    rewardMerit: 450,
+    rewardPacks: 2,
+    chapter: 2,
+  },
+  {
+    id: 'boss-xiang-yu',
+    heroId: 'hist-xiang-yu',
+    name: { zh: '項羽', en: 'Xiang Yu' },
+    title: { zh: '力拔山兮', en: 'Might to Uproot Mountains' },
+    intro: {
+      zh: '力拔山兮氣蓋世。他從不守,只是一次次把你的陣線正面撞碎。',
+      en: 'His strength could uproot mountains. He never defends — he simply shatters your line head-on, again and again.',
+    },
+    doctrine: 'hegemonic',
+    hp: 56,
+    deckTier: 0.79,
+    power: power(
+      'bp-pofu',
+      { zh: '破釜沉舟', en: 'Burn the Boats' },
+      { zh: '使一名友方武將+2/+2。', en: 'Give a friendly general +2/+2.' },
+      2,
+      [{ op: 'buffStats', attack: 2, health: 2, target: 'chosenFriendlyGeneral' }],
+    ),
+    rewardMerit: 520,
+    rewardPacks: 2,
+    chapter: 2,
+  },
+  {
+    id: 'boss-han-xin',
+    heroId: 'hist-han-xin',
+    name: { zh: '韓信', en: 'Han Xin' },
+    title: { zh: '背水一戰', en: 'Battle with the River at His Back' },
+    intro: {
+      zh: '韓信將兵,多多益善。你清掉一波,他點出的下一波已在路上。',
+      en: 'Han Xin commands troops: the more the merrier. Clear one wave and the next he has already counted out is on its way.',
+    },
+    doctrine: 'hegemonic',
+    hp: 58,
+    deckTier: 0.79,
+    power: power(
+      'bp-duoduo',
+      { zh: '多多益善', en: 'The More the Merrier' },
+      { zh: '召喚一個 2/2 的鐵騎。', en: 'Summon a 2/2 Ironclad Cavalry.' },
+      2,
+      [{ op: 'summon', defId: 'token-tie-qi', count: 1 }],
+    ),
+    rewardMerit: 600,
+    rewardPacks: 3,
+    chapter: 2,
+  },
+  {
+    id: 'boss-huo-qubing',
+    heroId: 'hist-huo-qubing',
+    name: { zh: '霍去病', en: 'Huo Qubing' },
+    title: { zh: '封狼居胥', en: 'The Altar at Wolf Mountain' },
+    intro: {
+      zh: '匈奴未滅,何以家為。長驅二千里,他的刀鋒永遠越過你的前排,直取要害。',
+      en: 'Two thousand li in a single drive — his blade always sweeps past your front rank to the throat behind it.',
+    },
+    doctrine: 'hegemonic',
+    hp: 60,
+    deckTier: 0.7,
+    power: power(
+      'bp-fenglang',
+      { zh: '長驅直入', en: 'Deep Strike' },
+      { zh: '對敵方主公造成 2 點傷害。', en: 'Deal 2 damage to the enemy hero.' },
+      2,
+      [{ op: 'damage', amount: 2, target: 'enemyHero' }],
+    ),
+    rewardMerit: 700,
+    rewardPacks: 3,
+    chapter: 2,
+  },
+  {
+    id: 'boss-tang-taizong',
+    heroId: 'hist-tang-taizong',
+    name: { zh: '李世民', en: 'Emperor Taizong of Tang' },
+    title: { zh: '天可汗', en: 'The Heavenly Khan' },
+    intro: {
+      zh: '玄甲鐵騎,所向無前。他讓你選:讓開中路,還是被鑿穿中路。',
+      en: 'His black-armored horse smashes any line. He offers you a choice: yield the center, or be driven through it.',
+    },
+    doctrine: 'royal',
+    hp: 62,
+    deckTier: 0.03,
+    // 王道深池已到最强档(tier 0.03)仍只把玩家压到 ~44%,当不成第 13 关的坡度,
+    // 反成中段的凸点;把 +1/+1 提到 +2/+2(仍带冲锋)让它真能一波带走,回落到 ~34%。
+    power: power(
+      'bp-tiankehan',
+      { zh: '天可汗', en: 'The Heavenly Khan' },
+      { zh: '使一名友方武將+2/+2並獲得衝鋒。', en: 'Give a friendly general +2/+2 and Charge.' },
+      2,
+      [
+        { op: 'buffStats', attack: 2, health: 2, target: 'chosenFriendlyGeneral' },
+        { op: 'grantKeyword', keyword: 'charge', target: 'chosenFriendlyGeneral' },
+      ],
+    ),
+    rewardMerit: 820,
+    rewardPacks: 3,
+    chapter: 2,
+  },
+  {
+    id: 'boss-zhao-kuangyin',
+    heroId: 'hist-zhao-kuangyin',
+    name: { zh: '趙匡胤', en: 'Emperor Taizu of Song' },
+    title: { zh: '黃袍加身', en: 'The Yellow Robe' },
+    intro: {
+      zh: '陳橋一夜,黃袍加身。一條盤龍棍打下四百軍州 —— 他要的不是一場,是全盤。',
+      en: 'One night at Chenqiao, the yellow robe was thrown over him. With a single cudgel he won four hundred prefectures — he wants not a battle but the whole board.',
+    },
+    doctrine: 'royal',
+    hp: 64,
+    deckTier: 0.03,
+    power: power(
+      'bp-huangpao',
+      { zh: '黃袍加身', en: 'The Yellow Robe' },
+      { zh: '使所有友方武將+1/+0。', en: 'Give all friendly generals +1/+0.' },
+      2,
+      [{ op: 'buffStats', attack: 1, health: 0, target: 'allFriendlyGenerals' }],
+    ),
+    rewardMerit: 960,
+    rewardPacks: 4,
+    chapter: 2,
+  },
+  {
+    id: 'boss-yue-fei',
+    heroId: 'hist-yue-fei',
+    name: { zh: '岳飛', en: 'Yue Fei' },
+    title: { zh: '精忠報國', en: 'Utmost Loyalty to the Realm' },
+    intro: {
+      zh: '撼山易,撼岳家軍難。凍死不拆屋,餓死不擄掠 —— 你打不散一支沒有弱點的軍隊。',
+      en: 'Easier to move a mountain than the Yue army. Frozen, they tear down no home; starving, they loot nothing — you cannot break a host with no weakness.',
+    },
+    doctrine: 'royal',
+    hp: 66,
+    deckTier: 0.03,
+    power: power(
+      'bp-yuejiajun',
+      { zh: '岳家軍', en: 'The Yue Army' },
+      { zh: '使一名友方武將+0/+3並獲得守護。', en: 'Give a friendly general +0/+3 and Guard.' },
+      2,
+      [
+        { op: 'buffStats', attack: 0, health: 3, target: 'chosenFriendlyGeneral' },
+        { op: 'grantKeyword', keyword: 'guard', target: 'chosenFriendlyGeneral' },
+      ],
+    ),
+    rewardMerit: 1150,
+    rewardPacks: 4,
+    chapter: 2,
+  },
+  {
+    id: 'boss-xu-da',
+    heroId: 'hist-xu-da',
+    name: { zh: '徐達', en: 'Xu Da' },
+    title: { zh: '驅逐胡虜', en: 'Expel the Invaders' },
+    intro: {
+      zh: '驅逐胡虜,恢復中華。他從江南一路打到大都,十年不曾走錯一步。最後一戰,沒有僥倖。',
+      en: 'Expel the invaders, restore the realm. From the south he marched to the Yuan capital without a single misstep. The last battle allows no luck.',
+    },
+    doctrine: 'royal',
+    hp: 70,
+    deckTier: 0.03,
+    power: power(
+      'bp-beifa',
+      { zh: '北伐', en: 'The Northern Expedition' },
+      { zh: '召喚一個 3/3 的禁軍。', en: 'Summon a 3/3 Imperial Guard.' },
+      2,
+      [{ op: 'summon', defId: 'token-jin-jun', count: 1 }],
+    ),
+    rewardMerit: 1500,
+    rewardPacks: 5,
+    chapter: 2,
   },
 ]
 

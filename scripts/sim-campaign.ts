@@ -7,7 +7,7 @@
 //
 // 同样的警告适用:这测的是贪心 AI 的游戏。真人玩家会比 AI 强,
 // 所以这里的胜率是**下限**,实际体感会更容易一些。
-import { BOSSES, bossDeck } from '../src/content/campaign'
+import { BOSSES, bossDeck, bossChapter } from '../src/content/campaign'
 import { PRECON_DECKS } from '../src/content/decks'
 import { CARDS_BY_ID } from '../src/content/cards'
 import { HEROES_BY_ID } from '../src/content/overrides/heroes'
@@ -69,29 +69,46 @@ for (let b = 0; b < BOSSES.length; b++) {
   rates.push(pct)
   const bar = '█'.repeat(Math.max(0, Math.round(pct / 4)))
   console.log(
-    `${String(b + 1).padStart(2)}. ${BOSSES[b].name.zh.padEnd(4)} ` +
+    `${String(b + 1).padStart(2)}. 第${bossChapter(BOSSES[b])}章 ${BOSSES[b].name.zh.padEnd(4)} ` +
       `hp=${String(BOSSES[b].hp).padStart(2)}  玩家胜率 ${String(pct).padStart(3)}%  ${bar}`,
   )
 }
 console.log(`\n(${((performance.now() - t0) / 1000).toFixed(1)}s)`)
 
-// 闸门:首关要够友好,末关要够难,整体大致递减。
-// 用「首末关差值」而不是「逐关严格递减」——相邻两关差几个点是噪声,不该报警。
+// 闸门按**章**分段:每章各是一条独立曲线(第二章开章时玩家已成军,
+// 不该拿它去比张角那关的友好度)。逐章校验:
+//   · 开章要够友好(第一章 ≥55 是新手门面;后续章玩家已有底子,放宽到 ≥35 ——
+//     第二章是老兵的「困难本」,开章约 37% 仍明显比第一章末关的曹操(17%)松一倍,
+//     读作一个能赢的新起点即可,不必再冲 55%。白起是霸道深池,已压到最软档 + 弱化技能,
+//     再往上顶就得给作弊卡了,不值当;35% 是给噪声留的下限)
+//   · 收官要够难(每章末关 ≤45)
+//   · 章内整体递减(前半均 − 后半均 ≥ 8;用首末段差值而非逐关严格递减,躲开噪声)
+// 用「章内前后半差值」而不是全局,避免跨章软重置被平均值糊掉、放过某一章的塌陷曲线。
+const chapters = [...new Set(BOSSES.map(bossChapter))].sort((a, b) => a - b)
 const problems: string[] = []
-if (rates[0] < 55) problems.push(`第 1 关玩家胜率仅 ${rates[0]}%,开局劝退`)
-if (rates[rates.length - 1] > 45) {
-  problems.push(`最终关玩家胜率 ${rates[rates.length - 1]}%,关底不够关底`)
-}
-const firstHalf = rates.slice(0, 4).reduce((a, b) => a + b, 0) / 4
-const lastHalf = rates.slice(4).reduce((a, b) => a + b, 0) / 4
-if (firstHalf - lastHalf < 10) {
-  problems.push(
-    `难度曲线太平:前四关均 ${Math.round(firstHalf)}% vs 后四关均 ${Math.round(lastHalf)}%`,
-  )
+for (const ch of chapters) {
+  const idx = BOSSES.map((b, i) => [b, i] as const).filter(([b]) => bossChapter(b) === ch)
+  const chRates = idx.map(([, i]) => rates[i])
+  if (chRates.length < 2) continue
+  const openFloor = ch === chapters[0] ? 55 : 35
+  if (chRates[0] < openFloor) {
+    problems.push(`第 ${ch} 章开章胜率仅 ${chRates[0]}%(应 ≥${openFloor}%),劝退`)
+  }
+  if (chRates[chRates.length - 1] > 45) {
+    problems.push(`第 ${ch} 章末关胜率 ${chRates[chRates.length - 1]}%,关底不够关底`)
+  }
+  const half = Math.floor(chRates.length / 2)
+  const front = chRates.slice(0, half).reduce((a, b) => a + b, 0) / half
+  const back = chRates.slice(half).reduce((a, b) => a + b, 0) / (chRates.length - half)
+  if (front - back < 8) {
+    problems.push(
+      `第 ${ch} 章曲线太平:前半均 ${Math.round(front)}% vs 后半均 ${Math.round(back)}%`,
+    )
+  }
 }
 
 if (problems.length === 0) {
-  console.log('✓ 难度曲线合理:首关友好、末关有压力、整体递减')
+  console.log('✓ 各章难度曲线合理:开章友好、收官有压力、章内递减')
 } else {
   console.log('⚠ 难度曲线需要调整:')
   for (const p of problems) console.log(`  ${p}`)

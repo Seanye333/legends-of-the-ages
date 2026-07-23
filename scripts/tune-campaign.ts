@@ -19,8 +19,12 @@ import type { GameConfig, PlayerIdx, Winner } from '../src/engine/types'
 
 const GAMES = Number(process.env.GAMES ?? 48)
 
-// 目标曲线:第一关明显友好,末关明显吃力,中间平滑过渡。
-const TARGETS = [70, 63, 57, 50, 44, 37, 30, 22]
+// 目标曲线,按章各成一段:开章友好、收官吃力、中间平滑过渡。
+// 第二章开章时玩家已成军,所以它的「友好」定在 ~52% 而非第一章的 70%。
+const TARGETS = [
+  70, 63, 57, 50, 44, 37, 30, 22, // 第一章 汉末群雄
+  52, 46, 42, 37, 32, 27, 20, 12, // 第二章 逐鹿千年
+]
 
 function play(boss: BossDef, tier: number, deckIdx: number, seed: number, first: PlayerIdx): Winner {
   const mine = PRECON_DECKS[deckIdx]

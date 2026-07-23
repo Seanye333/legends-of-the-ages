@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import type { CSSProperties } from 'react'
-import { BOSSES, bossDeck, type BossDef } from '../../content/campaign'
+import { BOSSES, bossDeck, bossChapter, CHAPTER_TITLES, type BossDef } from '../../content/campaign'
 import { PRECON_DECKS } from '../../content/decks'
 import { useCampaign } from '../../app/campaignStore'
 import { HEROES_BY_ID } from '../../content/overrides/heroes'
@@ -90,7 +90,16 @@ export function CampaignScreen({ onBack, onEnterMatch }: CampaignScreenProps) {
         {BOSSES.map((b, i) => {
           const done = cleared.includes(b.id)
           const open = isUnlocked(b.id)
+          // 每章第一关前插一条分隔;第一关(i===0)也带上,让「第一章」有个抬头
+          const newChapter = i === 0 || bossChapter(b) !== bossChapter(BOSSES[i - 1])
+          const chapterTitle = CHAPTER_TITLES[bossChapter(b)]
           return (
+            <Fragment key={b.id}>
+            {newChapter && chapterTitle && (
+              <li className={styles.chapterHead} aria-hidden>
+                {pick(chapterTitle)}
+              </li>
+            )}
             <li
               key={b.id}
               className={`${styles.stage} ${done ? styles.done : ''} ${!open ? styles.locked : ''}`}
@@ -124,6 +133,7 @@ export function CampaignScreen({ onBack, onEnterMatch }: CampaignScreenProps) {
                 </span>
               </button>
             </li>
+            </Fragment>
           )
         })}
       </ol>
