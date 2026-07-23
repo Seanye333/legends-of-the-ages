@@ -6,7 +6,7 @@ import { CARDS, CARDS_BY_ID } from '../content/cards'
 import { HEROES_BY_ID } from '../content/overrides/heroes'
 import { LocalMatch } from './transport'
 import { AI_LEVELS, AI_NORMAL } from '../ai/greedy'
-import { useSettings } from './settingsStore'
+import { useSettings, type Difficulty } from './settingsStore'
 import { useCollection } from './collectionStore'
 import { useQuests } from './questStore'
 import { useArena } from './arenaStore'
@@ -49,6 +49,9 @@ export interface StartMatchArgs {
   // 每日谜题:胜利走「按天」奖励(solveDaily),而不是按谜题 id 的静态奖励
   daily?: boolean
   dailyDate?: string
+  // 演武场:自选双方 + 难度的自由练习,不记战绩/军令/成就/战报
+  practice?: boolean
+  difficultyOverride?: Difficulty
 }
 
 export interface StartRemoteArgs {
@@ -81,6 +84,7 @@ interface MatchStoreState {
   // 谜题撤销栈(每步前的快照)+ 是否看过解法(看过则不发奖)
   puzzleHistory: GameState[]
   puzzlePeeked: boolean
+  practice: boolean
   match: LocalMatch | null
   remote: RemoteMatch | null
   remoteStatus: RemoteStatus | null
@@ -218,6 +222,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
   dailyDate: null,
   puzzleHistory: [],
   puzzlePeeked: false,
+  practice: false,
   match: null,
   remote: null,
   remoteStatus: null,
@@ -240,7 +245,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
     // 教学局固定用最宽容的 AI,别让新手第一局就被打穿
     const ai = args.tutorial
       ? AI_LEVELS.recruit
-      : (AI_LEVELS[useSettings.getState().difficulty] ?? AI_NORMAL)
+      : (AI_LEVELS[args.difficultyOverride ?? useSettings.getState().difficulty] ?? AI_NORMAL)
     // 教学局不给主公技:第一局要先把「出牌—攻击—结束回合」讲明白,
     // 多一个每回合都亮的按钮只会分散注意力(教鞭也没有对应的步骤)。
     const heroDefs = args.heroIds.map((id) => HEROES_BY_ID[id])
@@ -264,8 +269,8 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       ai,
     )
     const { state, events } = match.start()
-    // 谜题不进战报回放(会污染「最近 5 场」列表)
-    if (args.puzzle !== true) {
+    // 谜题 / 演武场不进战报回放(会污染「最近 5 场」列表)
+    if (args.puzzle !== true && args.practice !== true) {
       beginReplayRecording('local')
       recordReplayFrame(state, events)
     }
@@ -283,6 +288,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       dailyDate: args.dailyDate ?? null,
       puzzleHistory: [],
       puzzlePeeked: false,
+      practice: args.practice === true,
       match,
       state,
       lastEvents: events,
@@ -370,6 +376,24 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       return
     }
 
+    // 演武场:自由练习,不记战绩/军令/成就/战报,只推状态
+    if (get().practice) {
+      const pr = match.sendCommand(cmd)
+      if ('error' in pr) {
+        set({ error: pr.error })
+        return
+      }
+      const events = pr.updates.flatMap((u) => u.events)
+      const last = pr.updates[pr.updates.length - 1]
+      set({
+        state: last.state,
+        lastEvents: events,
+        stats: foldStats(get().stats, events, last.state),
+        error: null,
+      })
+      return
+    }
+
     const r = match.sendCommand(cmd)
     if ('error' in r) {
       set({ error: r.error })
@@ -438,6 +462,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       dailyDate: null,
       puzzleHistory: [],
       puzzlePeeked: false,
+      practice: false,
       match: null,
       remote: null,
       remoteStatus: null,

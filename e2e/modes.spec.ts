@@ -13,6 +13,16 @@ test('brawl: title → pick ruleset → into a match', async ({ page }) => {
   await expect(page.getByRole('button', { name: /全部保留|确认/ })).toBeVisible()
 })
 
+test('practice: title → pick both sides + tier → into a match', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: '演武场' }).click()
+  await expect(page.getByRole('heading', { name: '演武场 · 自由对练' })).toBeVisible()
+  // 选名将档,开战
+  await page.getByRole('button', { name: '名将' }).click()
+  await page.getByRole('button', { name: /开战/ }).click()
+  await expect(page.getByRole('button', { name: /全部保留|确认/ })).toBeVisible()
+})
+
 test('expedition: title → set out → fight → into a match', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: '远征逐鹿' }).click()

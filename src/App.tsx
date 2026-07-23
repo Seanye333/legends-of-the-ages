@@ -35,6 +35,9 @@ const BrawlScreen = lazy(() =>
 const LethalScreen = lazy(() =>
   import('./ui/screens/LethalScreen').then((m) => ({ default: m.LethalScreen })),
 )
+const PracticeScreen = lazy(() =>
+  import('./ui/screens/PracticeScreen').then((m) => ({ default: m.PracticeScreen })),
+)
 
 export type Screen =
   | 'title'
@@ -49,6 +52,7 @@ export type Screen =
   | 'expedition'
   | 'brawl'
   | 'lethal'
+  | 'practice'
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('title')
@@ -132,6 +136,18 @@ export default function App() {
             onBack={back}
             onEnterMatch={() => {
               setAfterMatch('lethal')
+              setScreen('match')
+            }}
+          />
+        </Suspense>
+      )
+    case 'practice':
+      return (
+        <Suspense fallback={<ScreenFallback />}>
+          <PracticeScreen
+            onBack={back}
+            onEnterMatch={() => {
+              setAfterMatch('practice')
               setScreen('match')
             }}
           />
