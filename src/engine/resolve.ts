@@ -715,6 +715,21 @@ export function runScript(
         }
         break
       }
+      case 'damagePer': {
+        // 计数先定死再打(和 buffPer 同理)。amount×count 一次性算好,
+        // 免得「打死一个又少一个」这种边打边数的怪异结算。
+        const dmg = countFor(state, player, sourceDefId, lib, op.per) * op.amount
+        if (dmg > 0) {
+          for (const ref of refs(op.target)) {
+            if (ref.kind === 'hero') damageHero(state, ref.player, dmg, events)
+            else {
+              const loc = findGeneral(state, ref.iid)
+              if (loc) damageGeneral(state, loc, dmg, events, lib, depth)
+            }
+          }
+        }
+        break
+      }
       case 'summon':
       case 'summonForEnemy': {
         const def = lib[op.defId]

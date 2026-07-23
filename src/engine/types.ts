@@ -121,6 +121,10 @@ export type EffectOp =
   // 按计数来源缩放的增益:target 每满足一个计数,+attack/+health。
   // 例:「战吼:此牌 +1/+1 每有一个同势力友军」= buffPer per:friendlyDynasty self 1/1。
   | { op: 'buffPer'; per: CountSource; attack: number; health: number; target: EffectTarget }
+  // ---- 第十卡包:缩放伤害 ----
+  // 按计数缩放的伤害:对 target 造成 amount×count 点。go-wide 爆发终结的地基。
+  // 例:「对敌方主公造成伤害 = 你的武将数」= damagePer per:friendlyGenerals 1 enemyHero。
+  | { op: 'damagePer'; per: CountSource; amount: number; target: EffectTarget }
   // ---- 第五卡包 ----
   // 发现:亮 count 张(默认 3),玩家挑一张进手牌。**必须是脚本的最后一个 op** ——
   // 它会把对局停在 pendingChoice 上等玩家选,后面的 op 不会再跑(见 runScript)。

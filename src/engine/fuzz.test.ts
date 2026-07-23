@@ -162,6 +162,15 @@ const LIB: CardLibrary = Object.fromEntries(
       type: 'stratagem', cost: 5, attack: undefined, health: undefined,
       spell: { ops: [{ op: 'resurrect', count: 2 }] },
     }),
+    // ---- 第十卡包:缩放伤害 / 献祭 ----
+    def('f-warcry', {
+      type: 'stratagem', cost: 4, attack: undefined, health: undefined,
+      spell: { ops: [{ op: 'damagePer', per: { kind: 'friendlyGenerals' }, amount: 1, target: 'enemyHero' }] },
+    }),
+    def('f-sacrifice', {
+      type: 'stratagem', cost: 2, attack: undefined, health: undefined,
+      spell: { ops: [{ op: 'destroy', target: 'chosenFriendlyGeneral' }, { op: 'draw', count: 1 }] },
+    }),
   ].map((d) => [d.id, d]),
 )
 

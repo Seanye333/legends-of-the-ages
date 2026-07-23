@@ -214,6 +214,13 @@ export const CODEX: CodexSection[] = [
         example: (c) => JSON.stringify(c).includes('addToHand'),
       },
       {
+        id: 'damagePer',
+        term: { zh: '缩放伤害', en: 'Scaling Damage' },
+        rule: { zh: '有些爆发牌的伤害随你场上武将数(或某类)增长。', en: 'Some finishers deal damage that scales with how many generals you field.' },
+        note: { zh: '铺场流的终结:「对敌方主公造成伤害 = 你的武将数」。铺得越宽,一击越狠。', en: 'The go-wide payoff: the wider your board, the harder the blow.' },
+        example: (c) => JSON.stringify(c).includes('damagePer'),
+      },
+      {
         id: 'transform',
         term: { zh: '變形 Transform', en: 'Transform' },
         rule: { zh: '把一个武将原地变成另一张牌(通常是弱小的 1/1)。', en: 'Turn a general into something else (usually a weak 1/1) in place.' },
