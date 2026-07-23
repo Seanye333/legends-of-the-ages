@@ -62,4 +62,28 @@ export const BRAWLS: BrawlDef[] = [
     },
     modifiers: { heroPowerCostDelta: -2, startArmor: 5, bonusHandSize: 1 },
   },
+  {
+    id: 'brawl-ironcav',
+    name: { zh: '鐵騎洪流', en: 'Torrent of Iron' },
+    text: { zh: '双方开局各带两个 2/2 的铁骑。', en: 'Both players start with two 2/2 Ironclad Cavalry.' },
+    modifiers: { startTokens: ['token-tie-qi', 'token-tie-qi'] },
+  },
+  {
+    id: 'brawl-imperial',
+    name: { zh: '禁軍列陣', en: 'Guard in Formation' },
+    text: {
+      zh: '双方开局各带一个 3/3 禁军,并获得 5 点护甲。',
+      en: 'Both players start with a 3/3 Imperial Guard and 5 Armor.',
+    },
+    modifiers: { startTokens: ['token-jin-jun'], startArmor: 5 },
+  },
+  {
+    id: 'brawl-firestorm',
+    name: { zh: '開局即決', en: 'Decided at the Gate' },
+    text: {
+      zh: '双方主公技免费、起手多抽三张 —— 一上来就是高潮。',
+      en: 'Both Hero Powers are free and both draw three extra cards — it peaks from turn one.',
+    },
+    modifiers: { heroPowerCostDelta: -2, bonusHandSize: 3 },
+  },
 ]

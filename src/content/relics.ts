@@ -118,6 +118,50 @@ export const RELICS: RelicDef[] = [
     rarity: 'legendary',
     modifiers: { startArmor: 5, handCostDelta: -1 },
   },
+  // ---- 精锐开局:用第二章的铁骑/禁军衍生物,给远征更硬的起手场面 ----
+  {
+    id: 'relic-tunjia',
+    name: { zh: '屯甲練兵', en: 'Drilled and Armored' },
+    text: { zh: '每局开局 4 点护甲,并召唤一个 2/2 的铁骑。', en: 'Start each battle with 4 Armor and a 2/2 Ironclad Cavalry.' },
+    rarity: 'rare',
+    modifiers: { startArmor: 4, startTokens: ['token-tie-qi'] },
+  },
+  {
+    id: 'relic-tieqi',
+    name: { zh: '鐵騎營', en: 'Cavalry Camp' },
+    text: { zh: '每局开局召唤两个 2/2 的铁骑。', en: 'Start each battle with two 2/2 Ironclad Cavalry.' },
+    rarity: 'epic',
+    modifiers: { startTokens: ['token-tie-qi', 'token-tie-qi'] },
+  },
+  {
+    id: 'relic-qishi',
+    name: { zh: '奇士歸心', en: 'Talents Rally to You' },
+    text: { zh: '每局起手多抽一张牌,且手牌费用 -1。', en: 'Draw an extra opening card each battle, and opening-hand cards cost 1 less.' },
+    rarity: 'epic',
+    modifiers: { bonusHandSize: 1, handCostDelta: -1 },
+  },
+  {
+    id: 'relic-jinjun',
+    name: { zh: '禁軍護駕', en: 'The Imperial Guard' },
+    text: {
+      zh: '主公最大生命 +5,每局开局召唤一个 3/3 的禁军。',
+      en: '+5 maximum health, and start each battle with a 3/3 Imperial Guard.',
+    },
+    rarity: 'legendary',
+    bonusHp: 5,
+    modifiers: { startTokens: ['token-jin-jun'] },
+  },
+  {
+    id: 'relic-zhongzhicheng',
+    name: { zh: '眾志成城', en: 'A Wall of Wills' },
+    text: {
+      zh: '主公最大生命 +10,每局开局 4 点护甲、起手多抽一张。',
+      en: '+10 maximum health, and start each battle with 4 Armor and an extra opening card.',
+    },
+    rarity: 'legendary',
+    bonusHp: 10,
+    modifiers: { startArmor: 4, bonusHandSize: 1 },
+  },
 ]
 
 export const RELICS_BY_ID: Record<string, RelicDef> = Object.fromEntries(RELICS.map((r) => [r.id, r]))

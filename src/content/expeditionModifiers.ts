@@ -72,6 +72,32 @@ export const EXPEDITION_MODIFIERS: ExpeditionModifier[] = [
     boss: { bonusHandSize: 1, startArmor: 5 },
     bonusRelic: true,
   },
+  {
+    id: 'mod-ironwall',
+    name: { zh: '鐵騎壓陣', en: 'Cavalry Vanguard' },
+    text: { zh: '敌军开局带一个 2/2 铁骑和一个 3/3 禁军。', en: 'The enemy starts with a 2/2 Ironclad Cavalry and a 3/3 Imperial Guard.' },
+    weight: 3,
+    boss: { startTokens: ['token-tie-qi', 'token-jin-jun'] },
+  },
+  {
+    id: 'mod-warhorn',
+    name: { zh: '擂鼓助威', en: 'War Drums' },
+    text: { zh: '双方开局各带两个 1/1 的乡勇。', en: 'Both sides start with two 1/1 Village Levies.' },
+    weight: 3,
+    both: { startTokens: ['token-xiangyong', 'token-xiangyong'] },
+  },
+  {
+    id: 'mod-grandarmy',
+    name: { zh: '傾國之戰', en: 'The Whole Realm at War' },
+    text: {
+      zh: '敌方主公血量 +12,开局 6 护甲。通关多得一件宝物。',
+      en: 'The enemy hero has +12 health and starts with 6 Armor. Clear it for an extra relic.',
+    },
+    weight: 2,
+    bossHpBonus: 12,
+    boss: { startArmor: 6 },
+    bonusRelic: true,
+  },
 ]
 
 export const MODIFIERS_BY_ID: Record<string, ExpeditionModifier> = Object.fromEntries(
