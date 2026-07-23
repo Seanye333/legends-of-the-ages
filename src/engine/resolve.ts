@@ -700,6 +700,29 @@ export function runScript(
         }
         break
       }
+      case 'swapStats': {
+        for (const ref of refs(op.target)) {
+          if (ref.kind !== 'general') continue
+          const loc = findGeneral(state, ref.iid)
+          if (!loc) continue
+          const inst = loc.inst
+          // 交换**当前**攻击与最大生命,用一条附魔的 delta 完成 —— 复用附魔层与
+          // GeneralBuffed 事件,不需要新事件。伤害尽量保留:8/8 挨过 1 刀(现血 7)换完
+          // 仍带那道伤。但换位本身**不杀人** —— 旧伤若超过新的最大生命(拿 1/8 的墙换成
+          // 8/1),就把伤夹到存活(留 1 血),沿用沉默撤增益那套 clampAlive,别让「换个位置」
+          // 变成秒杀,那太反直觉、也会诱发自换自杀的坑。
+          const dAtk = inst.maxHealth - inst.attack
+          const dHp = inst.attack - inst.maxHealth
+          if (dAtk !== 0 || dHp !== 0) {
+            addEnchant(inst, lib, { attack: dAtk, health: dHp }, events, loc.player)
+            if (inst.health <= 0) {
+              inst.damage = Math.max(0, inst.maxHealth - 1)
+              refreshInstance(inst, lib)
+            }
+          }
+        }
+        break
+      }
       case 'buffPer': {
         // 计数在**施加前**定死:自己也在场时会被算进 friendlyGenerals/friendlyDynasty,
         // 但增益是同一批一次性加的,不会自我滚雪球(先数,再加)。

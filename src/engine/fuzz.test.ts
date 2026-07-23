@@ -186,6 +186,11 @@ const LIB: CardLibrary = Object.fromEntries(
     def('f-trampler', { cost: 5, attack: 6, health: 4, keywords: ['trample'] }),
     // ---- 第十三卡包:激怒 —— 受伤/治疗都要正确开关派生攻击 ----
     def('f-enrage', { cost: 4, attack: 2, health: 6, enrage: 3 }),
+    // ---- 第十四卡包:移形换位 —— 交换攻血,负 delta 附魔也要合法 ----
+    def('f-swap', {
+      type: 'stratagem', cost: 3, attack: undefined, health: undefined,
+      spell: { ops: [{ op: 'swapStats', target: 'chosenEnemyGeneral' }] },
+    }),
   ].map((d) => [d.id, d]),
 )
 

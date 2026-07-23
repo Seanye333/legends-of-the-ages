@@ -241,6 +241,16 @@ export const CODEX: CodexSection[] = [
         example: (c) => JSON.stringify(c).includes('damagePer'),
       },
       {
+        id: 'swapStats',
+        term: { zh: '移形換位 Swap', en: 'Swap Stats' },
+        rule: { zh: '交换一个武将的攻击与生命。', en: 'Swap a general’s Attack and Health.' },
+        note: {
+          zh: '两个用法:把敌方 8/1 的猛攻怪换成 1/8 拆掉它的牙;或把自己的 1/8 铁壁换成 8/1 突然拍脸。伤害会留着 —— 挨过刀的换完仍带伤。',
+          en: 'Two uses: turn an enemy 8/1 into a 1/8 to draw its fangs, or flip your own 1/8 wall into an 8/1 surprise. Existing damage stays — a wounded general is still wounded after the swap.',
+        },
+        example: (c) => JSON.stringify(c).includes('swapStats'),
+      },
+      {
         id: 'transform',
         term: { zh: '變形 Transform', en: 'Transform' },
         rule: { zh: '把一个武将原地变成另一张牌(通常是弱小的 1/1)。', en: 'Turn a general into something else (usually a weak 1/1) in place.' },

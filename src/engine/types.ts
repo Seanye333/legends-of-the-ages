@@ -105,6 +105,7 @@ export type EffectOp =
       target: EffectTarget
       duration?: 'endOfTurn'
     }
+  | { op: 'swapStats'; target: EffectTarget } // 交换攻击与最大生命(移形换位)
   | { op: 'summon'; defId: string; count: number }
   | { op: 'aoeDamage'; amount: number }
   | { op: 'destroy'; target: EffectTarget }
