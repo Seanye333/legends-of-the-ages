@@ -22,6 +22,7 @@ export const KEYWORD_BADGE: Record<Keyword, LocalizedText> = {
   poison: { zh: '毒', en: 'P' },
   divineShield: { zh: '壁', en: 'S' },
   stealth: { zh: '潜', en: 'H' },
+  trample: { zh: '碾', en: 'T' },
 }
 
 export const KEYWORD_NAME: Record<Keyword, LocalizedText> = {
@@ -34,6 +35,7 @@ export const KEYWORD_NAME: Record<Keyword, LocalizedText> = {
   poison: { zh: '剧毒', en: 'Poison' },
   divineShield: { zh: '铁壁', en: 'Divine Shield' },
   stealth: { zh: '潜行', en: 'Stealth' },
+  trample: { zh: '碾压', en: 'Trample' },
 }
 
 // 关键词规则图例(卡牌详情页)
@@ -64,6 +66,10 @@ export const KEYWORD_RULE: Record<Keyword, LocalizedText> = {
   stealth: {
     zh: '不能被敌方选为目标,也不能用守护逼迫对手;自身发起攻击后解除',
     en: 'Cannot be targeted by the enemy and does not force attacks with Guard. Lost when it attacks.',
+  },
+  trample: {
+    zh: '攻击武将时,超过其当前生命的伤害穿透到敌方主公;被铁壁挡下则无穿透',
+    en: 'When attacking a general, damage beyond its current health carries through to the enemy hero. A Divine Shield that absorbs the hit stops it.',
   },
 }
 

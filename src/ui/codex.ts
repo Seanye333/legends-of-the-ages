@@ -110,6 +110,16 @@ export const CODEX: CodexSection[] = [
         rule: { zh: '不能被攻击也不能被指定为目标,直到它自己出手。', en: 'Cannot be attacked or targeted until it attacks.' },
         example: kw('stealth'),
       },
+      {
+        id: 'trample',
+        term: { zh: '碾壓 Trample', en: 'Trample' },
+        rule: { zh: '攻击武将时,超过其当前生命的伤害穿透到敌方主公。', en: 'When attacking a general, damage beyond its current health carries through to the enemy hero.' },
+        note: {
+          zh: '大身材的终结器:守护挡得住攻击,挡不住溢出 —— 一个 8 攻的碾压怪打掉 3 血的守护,还有 5 点糊在脸上。两个坑:被铁壁完整挡下时不穿透(整下伤害都没了);剧毒不叠加穿透 —— 穿的是「你打了多少」,不是「它死没死」,1 攻剧毒秒杀 5 血也不会穿 4 点。',
+          en: 'A finisher for big bodies: Guard stops the attack, not the spillover — an 8-attack trampler into a 3-health Guard still lands 5 on the face. Two catches: a Divine Shield that absorbs the hit stops it entirely; and Poison does not stack with it — trample counts damage dealt, not whether the target died, so a 1-attack poisoner killing 5 health tramples nothing.',
+        },
+        example: kw('trample'),
+      },
     ],
   },
   {

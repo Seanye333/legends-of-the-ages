@@ -184,9 +184,19 @@ export function performAttack(
       damageToTarget: attackerNow.attack,
       damageToAttacker: defender.attack,
     })
+    // 碾压:溢出伤害穿透到敌方主公。必须在互击**之前**抓两样东西 ——
+    // 防守方挨打前的生命(算溢出的基准)、以及它有没有铁壁(挡下就没有穿透)。
+    // 用「攻击力 − 挨打前生命」而不是防守方死没死来算溢出:剧毒是把血截到 0,
+    // 不代表打出了那么多伤害,拿死亡当依据会让 1 攻剧毒也穿透一大片。
+    const defHealthBefore = defender.health
+    const defHadShield = hasKeyword(defender, 'divineShield')
     // 同时互击
     strike(state, events, lib, loc, defLoc, attackerNow.attack)
     strike(state, events, lib, defLoc, loc, defender.attack)
+    if (hasKeyword(attackerNow, 'trample') && !defHadShield && defender.health <= 0) {
+      const overkill = attackerNow.attack - defHealthBefore
+      if (overkill > 0) damageHero(state, other(player), overkill, events)
+    }
   }
   processDeaths(state, events, lib)
   fireOnAttack(state, events, lib, attackerIid)

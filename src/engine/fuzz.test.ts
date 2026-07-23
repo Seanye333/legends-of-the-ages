@@ -182,6 +182,8 @@ const LIB: CardLibrary = Object.fromEntries(
       cost: 4, attack: 3, health: 5, keywords: ['rush'],
       onAttack: { ops: [{ op: 'buffStats', attack: 1, health: 1, target: 'self' }] },
     }),
+    // ---- 第十二卡包:碾压 —— 让 fuzz 踩到「攻击武将后溢出打脸」的路径 ----
+    def('f-trampler', { cost: 5, attack: 6, health: 4, keywords: ['trample'] }),
   ].map((d) => [d.id, d]),
 )
 

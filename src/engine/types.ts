@@ -48,6 +48,8 @@ export type Keyword =
   // ---- 第三卡包「附魔与谋略」 ----
   | 'divineShield' // 铁壁:抵消下一次伤害
   | 'stealth' // 潜行:不能被敌方选为目标,自身攻击后解除
+  // ---- 第十二卡包「碾压」 ----
+  | 'trample' // 碾压:攻击武将时,溢出的伤害穿透到敌方主公
 export type Archetype = 'warrior' | 'strategist'
 
 export interface LocalizedText {
