@@ -11,6 +11,9 @@ import { HandFan } from '../components/HandFan'
 import { MulliganOverlay } from '../components/MulliganOverlay'
 import { DiscoverOverlay } from '../components/DiscoverOverlay'
 import { ResultOverlay } from '../components/ResultOverlay'
+import { PuzzleResultOverlay } from '../components/PuzzleResultOverlay'
+import { LETHAL_PUZZLES_BY_ID } from '../../content/lethalPuzzles'
+import { retryLast } from '../matchSetup'
 import { BattleLog } from '../components/BattleLog'
 import { cardName, formatEvent, heroName } from '../components/eventText'
 import { targetFloatKey } from '../components/floats'
@@ -66,7 +69,12 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
     retryConnection,
     stats,
     spectating,
+    puzzle,
+    puzzleId,
+    puzzleResult,
+    puzzleReward,
   } = useMatch()
+  const puzzleDef = puzzleId ? LETHAL_PUZZLES_BY_ID[puzzleId] : undefined
   const { soundEnabled, setSoundEnabled } = useSettings()
   const [selection, setSelection] = useState<Selection>(null)
   // 抉择卡的模式选择器(非空 = 正在选模式)
@@ -326,6 +334,13 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
   const handleExit = () => {
     reset()
     onExit()
+  }
+
+  // 谜题重试:原样重开同一残局(retryLast 保留 scenario;startMatch 内部会先 reset)
+  const handlePuzzleRetry = () => {
+    playSfx('buttonTap')
+    setLog([])
+    retryLast()
   }
 
   const floatsFor = (key: string) => anim.floats.filter((f) => f.targetKey === key)
@@ -670,7 +685,19 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
         </div>
       )}
 
-      {state.phase === 'ended' && !anim.holdResult && (
+      {/* 斩杀谜题:胜(对局结束)或负(本回合结束未斩杀)走专用面板 */}
+      {puzzle && puzzleResult && (puzzleResult === 'lost' || !anim.holdResult) && puzzleDef && (
+        <PuzzleResultOverlay
+          result={puzzleResult}
+          reward={puzzleReward}
+          title={puzzleDef.title}
+          hint={puzzleDef.hint}
+          onRetry={handlePuzzleRetry}
+          onExit={handleExit}
+        />
+      )}
+
+      {!puzzle && state.phase === 'ended' && !anim.holdResult && (
         <ResultOverlay
           winner={state.winner}
           canRematch={mode === 'local'}
