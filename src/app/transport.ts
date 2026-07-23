@@ -47,6 +47,15 @@ export class LocalMatch implements MatchTransport {
     return { state: this.state, events }
   }
 
+  // 斩杀谜题的撤销用:GameState 不可变(applyCommand 产出新对象),快照存引用即可。
+  // 只在谜题里用 —— 谜题 AI 从不行动,故 aiRng 无需回滚。
+  snapshot(): GameState {
+    return this.state
+  }
+  restore(s: GameState): void {
+    this.state = s
+  }
+
   sendCommand(cmd: Command): { error: string } | { updates: MatchUpdate[] } {
     const r = applyCommand(this.state, this.humanPlayer, cmd, this.lib)
     if (!r.ok) return { error: r.error }

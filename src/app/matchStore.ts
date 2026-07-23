@@ -78,6 +78,9 @@ interface MatchStoreState {
   puzzleReward: PuzzleReward | null
   daily: boolean
   dailyDate: string | null
+  // 谜题撤销栈(每步前的快照)+ 是否看过解法(看过则不发奖)
+  puzzleHistory: GameState[]
+  puzzlePeeked: boolean
   match: LocalMatch | null
   remote: RemoteMatch | null
   remoteStatus: RemoteStatus | null
@@ -102,6 +105,8 @@ interface MatchStoreState {
   sendEmote(emote: EmoteId): void
   requestRematch(): void
   retryConnection(): void
+  undoPuzzle(): void // 谜题:回退一步
+  markPuzzlePeeked(): void // 谜题:标记「已看解法」,此后本局判胜不发奖
   reset(): void
 }
 
@@ -211,6 +216,8 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
   puzzleReward: null,
   daily: false,
   dailyDate: null,
+  puzzleHistory: [],
+  puzzlePeeked: false,
   match: null,
   remote: null,
   remoteStatus: null,
@@ -274,6 +281,8 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       puzzleReward: null,
       daily: args.daily === true,
       dailyDate: args.dailyDate ?? null,
+      puzzleHistory: [],
+      puzzlePeeked: false,
       match,
       state,
       lastEvents: events,
@@ -327,6 +336,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
         set({ puzzleResult: 'lost' })
         return
       }
+      const preState = get().state // 走这步之前的快照,供撤销回退
       const pr = match.sendCommand(cmd)
       if ('error' in pr) {
         set({ error: pr.error })
@@ -340,14 +350,23 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       if (last.state.phase === 'ended') {
         const won = last.state.winner === 0
         puzzleResult = won ? 'won' : 'lost'
-        if (won) {
+        // 看过解法就不发奖(相当于看了答案)
+        if (won && !get().puzzlePeeked) {
           const st = get()
           // 每日谜题走「按天」奖励;其余走按题静态奖励
           if (st.daily && st.dailyDate) puzzleReward = useLethal.getState().solveDaily(st.dailyDate)
           else if (st.puzzleId) puzzleReward = useLethal.getState().solve(st.puzzleId)
         }
       }
-      set({ state: last.state, lastEvents: events, stats: nextStats, error: null, puzzleResult, puzzleReward })
+      set({
+        state: last.state,
+        lastEvents: events,
+        stats: nextStats,
+        error: null,
+        puzzleResult,
+        puzzleReward,
+        puzzleHistory: preState ? [...get().puzzleHistory, preState] : get().puzzleHistory,
+      })
       return
     }
 
@@ -382,6 +401,25 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
     get().remote?.retryNow()
   },
 
+  // 谜题:回退一步 —— 恢复上一帧快照到对局与 store
+  undoPuzzle() {
+    const { match, puzzleHistory } = get()
+    if (!match || puzzleHistory.length === 0) return
+    const prev = puzzleHistory[puzzleHistory.length - 1]
+    match.restore(prev)
+    set({
+      state: prev,
+      lastEvents: [],
+      puzzleHistory: puzzleHistory.slice(0, -1),
+      puzzleResult: null,
+      error: null,
+    })
+  },
+
+  markPuzzlePeeked() {
+    set({ puzzlePeeked: true })
+  },
+
   reset() {
     get().remote?.close()
     discardReplayRecording() // 未打完的对局不留战报
@@ -398,6 +436,8 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       puzzleReward: null,
       daily: false,
       dailyDate: null,
+      puzzleHistory: [],
+      puzzlePeeked: false,
       match: null,
       remote: null,
       remoteStatus: null,

@@ -13,6 +13,8 @@ import { DiscoverOverlay } from '../components/DiscoverOverlay'
 import { ResultOverlay } from '../components/ResultOverlay'
 import { PuzzleResultOverlay } from '../components/PuzzleResultOverlay'
 import { puzzleDefById } from '../../content/dailyPuzzle'
+import { solveLethal } from '../../ai/lethalSolver'
+import { describeSolution } from '../puzzleSolution'
 import { retryLast } from '../matchSetup'
 import { BattleLog } from '../components/BattleLog'
 import { cardName, formatEvent, heroName } from '../components/eventText'
@@ -73,8 +75,14 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
     puzzleId,
     puzzleResult,
     puzzleReward,
+    puzzleHistory,
+    puzzlePeeked,
+    undoPuzzle,
+    markPuzzlePeeked,
   } = useMatch()
   const puzzleDef = puzzleId ? puzzleDefById(puzzleId) : undefined
+  const [showHint, setShowHint] = useState(false)
+  const [solution, setSolution] = useState<string[] | null>(null)
   const { soundEnabled, setSoundEnabled } = useSettings()
   const [selection, setSelection] = useState<Selection>(null)
   // 抉择卡的模式选择器(非空 = 正在选模式)
@@ -340,7 +348,29 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
   const handlePuzzleRetry = () => {
     playSfx('buttonTap')
     setLog([])
+    setShowHint(false)
+    setSolution(null)
     retryLast()
+  }
+
+  const handlePuzzleUndo = () => {
+    playSfx('buttonTap')
+    setSolution(null)
+    setShowHint(false)
+    undoPuzzle()
+  }
+
+  // 展示解法:对当前局面跑求解器,列出必杀线的步骤;看过就不发奖(markPuzzlePeeked)
+  const handleShowSolution = () => {
+    playSfx('buttonTap')
+    if (!state) return
+    const res = solveLethal(state, 0, CARDS_BY_ID)
+    if (res && res.line.length > 0) {
+      setSolution(describeSolution(state, 0, res.line, CARDS_BY_ID, pickText, t))
+      markPuzzlePeeked()
+    } else {
+      setSolution([t('此局面已经无法斩杀了 —— 撤销一步或重来。', 'No lethal from here — undo a step or retry.')])
+    }
   }
 
   const floatsFor = (key: string) => anim.floats.filter((f) => f.targetKey === key)
@@ -685,11 +715,62 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
         </div>
       )}
 
+      {/* 斩杀谜题:对局中的工具条(提示 / 展示解法 / 撤销 / 重来) */}
+      {puzzle && !puzzleResult && state.phase !== 'ended' && (
+        <div className={styles.puzzleBar}>
+          <button className={styles.puzzleBtn} onClick={() => { playSfx('buttonTap'); setShowHint((v) => !v) }}>
+            {t('提示', 'Hint')}
+          </button>
+          <button className={styles.puzzleBtn} onClick={handleShowSolution}>
+            {t('展示解法', 'Solution')}
+          </button>
+          <button
+            className={styles.puzzleBtn}
+            onClick={handlePuzzleUndo}
+            disabled={puzzleHistory.length === 0}
+          >
+            {t('撤销', 'Undo')}
+          </button>
+          <button className={styles.puzzleBtn} onClick={handlePuzzleRetry}>
+            {t('重来', 'Restart')}
+          </button>
+        </div>
+      )}
+
+      {puzzle && showHint && puzzleDef && (
+        <div className={styles.puzzlePanel} onClick={() => setShowHint(false)}>
+          <div className={styles.panelCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.panelTitle}>{t('提示', 'Hint')}</div>
+            <p className={styles.panelHint}>{pickText(puzzleDef.hint)}</p>
+            <button className={styles.panelClose} onClick={() => setShowHint(false)}>
+              {t('知道了', 'Got it')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {puzzle && solution && (
+        <div className={styles.puzzlePanel} onClick={() => setSolution(null)}>
+          <div className={styles.panelCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.panelTitle}>{t('解法', 'Solution')}</div>
+            <ol className={styles.panelSteps}>
+              {solution.map((step, i) => (
+                <li key={i}>{step}</li>
+              ))}
+            </ol>
+            <button className={styles.panelClose} onClick={() => setSolution(null)}>
+              {t('关闭', 'Close')}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 斩杀谜题:胜(对局结束)或负(本回合结束未斩杀)走专用面板 */}
       {puzzle && puzzleResult && (puzzleResult === 'lost' || !anim.holdResult) && puzzleDef && (
         <PuzzleResultOverlay
           result={puzzleResult}
           reward={puzzleReward}
+          peeked={puzzlePeeked}
           title={puzzleDef.title}
           hint={puzzleDef.hint}
           onRetry={handlePuzzleRetry}

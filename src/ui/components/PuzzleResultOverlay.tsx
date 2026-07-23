@@ -6,6 +6,7 @@ import styles from './PuzzleResultOverlay.module.css'
 interface PuzzleResultOverlayProps {
   result: 'won' | 'lost'
   reward: PuzzleReward | null // 仅 won 时有意义
+  peeked?: boolean // 看过解法:胜利但不发奖
   title: LocalizedText
   hint: LocalizedText
   onRetry: () => void
@@ -17,6 +18,7 @@ interface PuzzleResultOverlayProps {
 export function PuzzleResultOverlay({
   result,
   reward,
+  peeked = false,
   title,
   hint,
   onRetry,
@@ -45,6 +47,9 @@ export function PuzzleResultOverlay({
             </div>
           )}
         </div>
+      )}
+      {won && !reward && peeked && (
+        <div className={styles.loot}>{t('看过解法 · 本次不计奖励', 'Solution viewed · no reward')}</div>
       )}
 
       {!won && (

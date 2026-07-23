@@ -60,6 +60,31 @@ describe('斩杀谜题 · matchStore 闭环', () => {
     expect(useLethal.getState().solvedCount()).toBe(0)
   })
 
+  it('撤销一步:回退到上一帧,清空历史', () => {
+    startPuzzle('lp-windfury')
+    const before = useMatch.getState().state!
+    const line = solveLethal(before, 0, CARDS_BY_ID)!.line
+    useMatch.getState().send(line[0])
+    expect(useMatch.getState().puzzleHistory.length).toBe(1)
+    expect(useMatch.getState().state).not.toBe(before)
+    useMatch.getState().undoPuzzle()
+    expect(useMatch.getState().puzzleHistory.length).toBe(0)
+    expect(useMatch.getState().state).toBe(before) // 恢复到起始帧引用
+  })
+
+  it('看过解法:仍判胜但不发奖、不记进度', () => {
+    startPuzzle('lp-windfury')
+    const meritBefore = useCollection.getState().merit
+    useMatch.getState().markPuzzlePeeked()
+    for (const cmd of solveLethal(useMatch.getState().state!, 0, CARDS_BY_ID)!.line) {
+      useMatch.getState().send(cmd)
+    }
+    expect(useMatch.getState().puzzleResult).toBe('won')
+    expect(useMatch.getState().puzzleReward).toBeNull()
+    expect(useLethal.getState().isSolved('lp-windfury')).toBe(false)
+    expect(useCollection.getState().merit).toBe(meritBefore)
+  })
+
   it('已解题重打 → 判胜但不再发功勋(幂等)', () => {
     startPuzzle('lp-windfury')
     for (const cmd of solveLethal(useMatch.getState().state!, 0, CARDS_BY_ID)!.line) {
