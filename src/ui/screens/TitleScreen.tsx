@@ -88,7 +88,7 @@ const DIFFICULTIES: { key: Difficulty; name: LocalizedText }[] = [
 interface TitleScreenProps {
   onStart?: () => void
   onNavigate?: (
-    screen: 'collection' | 'deckbuilder' | 'replays' | 'settings' | 'arena' | 'campaign' | 'codex' | 'expedition',
+    screen: 'collection' | 'deckbuilder' | 'replays' | 'settings' | 'arena' | 'campaign' | 'codex' | 'expedition' | 'brawl',
   ) => void
 }
 
@@ -273,6 +273,15 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
           }}
         >
           {t('远征逐鹿', 'Expedition')}
+        </button>
+        <button
+          className={styles.navBtn}
+          onClick={() => {
+            playSfx('buttonTap')
+            onNavigate?.('brawl')
+          }}
+        >
+          {t('群雄乱斗', 'Brawl')}
         </button>
         <button
           className={styles.navBtn}

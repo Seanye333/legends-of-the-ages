@@ -29,6 +29,9 @@ const CodexScreen = lazy(() =>
 const ExpeditionScreen = lazy(() =>
   import('./ui/screens/ExpeditionScreen').then((m) => ({ default: m.ExpeditionScreen })),
 )
+const BrawlScreen = lazy(() =>
+  import('./ui/screens/BrawlScreen').then((m) => ({ default: m.BrawlScreen })),
+)
 
 export type Screen =
   | 'title'
@@ -41,6 +44,7 @@ export type Screen =
   | 'campaign'
   | 'codex'
   | 'expedition'
+  | 'brawl'
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('title')
@@ -100,6 +104,18 @@ export default function App() {
             onBack={back}
             onEnterMatch={() => {
               setAfterMatch('expedition')
+              setScreen('match')
+            }}
+          />
+        </Suspense>
+      )
+    case 'brawl':
+      return (
+        <Suspense fallback={<ScreenFallback />}>
+          <BrawlScreen
+            onBack={back}
+            onEnterMatch={() => {
+              setAfterMatch('brawl')
               setScreen('match')
             }}
           />
