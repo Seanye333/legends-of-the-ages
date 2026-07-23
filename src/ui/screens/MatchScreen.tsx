@@ -12,7 +12,7 @@ import { MulliganOverlay } from '../components/MulliganOverlay'
 import { DiscoverOverlay } from '../components/DiscoverOverlay'
 import { ResultOverlay } from '../components/ResultOverlay'
 import { PuzzleResultOverlay } from '../components/PuzzleResultOverlay'
-import { LETHAL_PUZZLES_BY_ID } from '../../content/lethalPuzzles'
+import { puzzleDefById } from '../../content/dailyPuzzle'
 import { retryLast } from '../matchSetup'
 import { BattleLog } from '../components/BattleLog'
 import { cardName, formatEvent, heroName } from '../components/eventText'
@@ -74,7 +74,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
     puzzleResult,
     puzzleReward,
   } = useMatch()
-  const puzzleDef = puzzleId ? LETHAL_PUZZLES_BY_ID[puzzleId] : undefined
+  const puzzleDef = puzzleId ? puzzleDefById(puzzleId) : undefined
   const { soundEnabled, setSoundEnabled } = useSettings()
   const [selection, setSelection] = useState<Selection>(null)
   // 抉择卡的模式选择器(非空 = 正在选模式)

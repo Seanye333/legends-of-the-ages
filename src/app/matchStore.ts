@@ -46,6 +46,9 @@ export interface StartMatchArgs {
   puzzle?: boolean
   puzzleId?: string
   scenario?: PuzzleScenario
+  // 每日谜题:胜利走「按天」奖励(solveDaily),而不是按谜题 id 的静态奖励
+  daily?: boolean
+  dailyDate?: string
 }
 
 export interface StartRemoteArgs {
@@ -73,6 +76,8 @@ interface MatchStoreState {
   puzzleId: string | null
   puzzleResult: 'won' | 'lost' | null
   puzzleReward: PuzzleReward | null
+  daily: boolean
+  dailyDate: string | null
   match: LocalMatch | null
   remote: RemoteMatch | null
   remoteStatus: RemoteStatus | null
@@ -204,6 +209,8 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
   puzzleId: null,
   puzzleResult: null,
   puzzleReward: null,
+  daily: false,
+  dailyDate: null,
   match: null,
   remote: null,
   remoteStatus: null,
@@ -265,6 +272,8 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       puzzleId: args.puzzleId ?? null,
       puzzleResult: null,
       puzzleReward: null,
+      daily: args.daily === true,
+      dailyDate: args.dailyDate ?? null,
       match,
       state,
       lastEvents: events,
@@ -331,8 +340,12 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       if (last.state.phase === 'ended') {
         const won = last.state.winner === 0
         puzzleResult = won ? 'won' : 'lost'
-        const id = get().puzzleId
-        if (won && id) puzzleReward = useLethal.getState().solve(id)
+        if (won) {
+          const st = get()
+          // 每日谜题走「按天」奖励;其余走按题静态奖励
+          if (st.daily && st.dailyDate) puzzleReward = useLethal.getState().solveDaily(st.dailyDate)
+          else if (st.puzzleId) puzzleReward = useLethal.getState().solve(st.puzzleId)
+        }
       }
       set({ state: last.state, lastEvents: events, stats: nextStats, error: null, puzzleResult, puzzleReward })
       return
@@ -383,6 +396,8 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       puzzleId: null,
       puzzleResult: null,
       puzzleReward: null,
+      daily: false,
+      dailyDate: null,
       match: null,
       remote: null,
       remoteStatus: null,

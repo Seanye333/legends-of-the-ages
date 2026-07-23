@@ -10,7 +10,7 @@ const SECOND = LETHAL_PUZZLES[1].id
 describe('lethalStore', () => {
   beforeEach(() => {
     localStorage.clear()
-    useLethal.setState({ solved: [], completedRewardGiven: false })
+    useLethal.setState({ solved: [], completedRewardGiven: false, dailySolvedDate: null })
     useCollection.setState({ merit: 0 })
   })
 
@@ -64,8 +64,32 @@ describe('lethalStore', () => {
 
   it('reset 清空进度与通关奖标记', () => {
     for (const p of LETHAL_PUZZLES) useLethal.getState().solve(p.id)
+    useLethal.getState().solveDaily('2026-07-23')
     useLethal.getState().reset()
     expect(useLethal.getState().solvedCount()).toBe(0)
     expect(useLethal.getState().completedRewardGiven).toBe(false)
+    expect(useLethal.getState().dailySolvedDate).toBeNull()
+  })
+
+  it('每日谜题:当天首解发功勋、同天重解幂等', () => {
+    const before = useCollection.getState().merit
+    const r = useLethal.getState().solveDaily('2026-07-23')
+    expect(r.firstSolve).toBe(true)
+    expect(r.merit).toBeGreaterThan(0)
+    expect(useLethal.getState().isDailySolved('2026-07-23')).toBe(true)
+    const merit1 = useCollection.getState().merit
+    expect(merit1).toBe(before + r.merit)
+    // 同一天再解:不再发
+    const again = useLethal.getState().solveDaily('2026-07-23')
+    expect(again.firstSolve).toBe(false)
+    expect(useCollection.getState().merit).toBe(merit1)
+  })
+
+  it('每日谜题:换一天可再得奖', () => {
+    useLethal.getState().solveDaily('2026-07-23')
+    const merit1 = useCollection.getState().merit
+    const r = useLethal.getState().solveDaily('2026-07-24')
+    expect(r.firstSolve).toBe(true)
+    expect(useCollection.getState().merit).toBeGreaterThan(merit1)
   })
 })
