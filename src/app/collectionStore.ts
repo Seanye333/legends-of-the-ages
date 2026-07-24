@@ -13,6 +13,19 @@ export const PACK_SIZE = 5
 const MAX_COPIES = 2
 const MAX_COPIES_LEGENDARY = 1
 
+// 收藏里程碑:把「拥有多少不同卡 / 多少不同传说」同步进功名簿(MAX 统计,只增不减)。
+// 在每次真正增卡处调用(开包 / 合成)—— 分解只会减,而 MAX 语义天然保留历史峰值。
+function syncCollectionStats(owned: Record<string, number>): void {
+  const ids = Object.keys(owned)
+  let legendaries = 0
+  for (const id of ids) {
+    if (CARDS_BY_ID[id]?.rarity === 'legendary') legendaries++
+  }
+  const ach = useAchievements.getState()
+  ach.bump('collectionSize', ids.length)
+  ach.bump('legendariesOwned', legendaries)
+}
+
 // 开包稀有度权重(至少一张稀有以上由重roll保底)
 const RARITY_WEIGHTS: [Rarity, number][] = [
   ['common', 700],
@@ -187,6 +200,7 @@ export const useCollection = create<CollectionState>()(
           }
         }
         useAchievements.getState().bump('packsOpened')
+        syncCollectionStats(newOwned)
         const gotLegendary = cardIds.some((id) => CARDS_BY_ID[id]?.rarity === 'legendary')
         set((s) => ({
           packs: s.packs - 1,
@@ -223,6 +237,7 @@ export const useCollection = create<CollectionState>()(
           owned: { ...s.owned, [cardId]: (s.owned[cardId] ?? 0) + 1 },
         }))
         useAchievements.getState().bump('cardsCrafted')
+        syncCollectionStats(get().owned)
         return true
       },
 

@@ -44,6 +44,8 @@ export type StatKey =
   | 'onlineWins'
   | 'flawlessWins'
   | 'expeditionWins'
+  | 'collectionSize' // 收藏里程碑:拥有的**不同**卡牌数(取历史最大)
+  | 'legendariesOwned' // 拥有的不同传说卡数(取历史最大)
   | `won_${Doctrine}`
 
 export type Stats = Partial<Record<StatKey, number>>
@@ -263,6 +265,24 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     packs: 1,
   },
 
+  // ---- 收藏里程碑:集卡本身也是长期目标 ----
+  ...tier(
+    'ach-collect',
+    'collectionSize',
+    { zh: '藏珍', en: 'Curator' },
+    (n) => ({ zh: `收集 ${n} 张不同的卡牌`, en: `Collect ${n} distinct cards` }),
+    [100, 400, 900],
+    [80, 260, 700],
+  ),
+  ...tier(
+    'ach-legend',
+    'legendariesOwned',
+    { zh: '罗致群英', en: 'Legend Hunter' },
+    (n) => ({ zh: `集齐 ${n} 张不同的传说卡`, en: `Collect ${n} distinct legendaries` }),
+    [20, 80],
+    [120, 400],
+  ),
+
   // 六主义各一条:逼玩家把六套预组都摸一遍,这是最好的「教程之后的教程」
   ...(Object.keys(DOCTRINE_NAME) as (Doctrine | 'neutral')[])
     .filter((d): d is Doctrine => d !== 'neutral')
@@ -370,7 +390,12 @@ export function tallyStats(events: GameEvent[], myHeroId: string): Stats {
 }
 
 // bestTurnDamage / arenaBestWins 是「取最大」而不是「累加」
-const MAX_STATS = new Set<StatKey>(['bestTurnDamage', 'arenaBestWins'])
+const MAX_STATS = new Set<StatKey>([
+  'bestTurnDamage',
+  'arenaBestWins',
+  'collectionSize',
+  'legendariesOwned',
+])
 
 export function mergeStats(base: Stats, delta: Stats): Stats {
   const out: Stats = { ...base }
