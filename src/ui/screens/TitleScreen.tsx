@@ -17,6 +17,8 @@ import { useCollection } from '../../app/collectionStore'
 import { useArena } from '../../app/arenaStore'
 import { useCampaign } from '../../app/campaignStore'
 import { BOSSES } from '../../content/campaign'
+import { useHistory } from '../../app/historyStore'
+import { HISTORY_BATTLES } from '../../content/historyBattles'
 import { ACHIEVEMENTS, useAchievements } from '../../app/achievementStore'
 import { AchievementPanel } from '../components/AchievementPanel'
 import { StatsPanel } from '../components/StatsPanel'
@@ -90,7 +92,7 @@ const DIFFICULTIES: { key: Difficulty; name: LocalizedText }[] = [
 interface TitleScreenProps {
   onStart?: () => void
   onNavigate?: (
-    screen: 'collection' | 'deckbuilder' | 'replays' | 'settings' | 'arena' | 'campaign' | 'codex' | 'expedition' | 'brawl' | 'lethal' | 'practice',
+    screen: 'collection' | 'deckbuilder' | 'replays' | 'settings' | 'arena' | 'campaign' | 'history' | 'codex' | 'expedition' | 'brawl' | 'lethal' | 'practice',
   ) => void
 }
 
@@ -104,6 +106,7 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
   const deckRecords = useDeckStats((s) => s.records)
   const arenaLive = useArena((s) => s.phase !== 'idle')
   const campaignDone = useCampaign((s) => s.cleared.length)
+  const historyDone = useHistory((s) => s.cleared.length)
   // 订阅 stats/claimed 而不是调 claimableCount() —— 后者不是响应式的
   const achStats = useAchievements((s) => s.stats)
   const achClaimed = useAchievements((s) => s.claimed)
@@ -276,6 +279,17 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
           {campaignDone < BOSSES.length
             ? t(`群雄逐鹿 ${campaignDone}/${BOSSES.length}`, `Contenders ${campaignDone}/${BOSSES.length}`)
             : t('群雄逐鹿 ✦', 'Contenders ✦')}
+        </button>
+        <button
+          className={styles.navBtn}
+          onClick={() => {
+            playSfx('buttonTap')
+            onNavigate?.('history')
+          }}
+        >
+          {historyDone < HISTORY_BATTLES.length
+            ? t(`名局重现 ${historyDone}/${HISTORY_BATTLES.length}`, `Great Battles ${historyDone}/${HISTORY_BATTLES.length}`)
+            : t('名局重现 ✦', 'Great Battles ✦')}
         </button>
         <button
           className={`${styles.navBtn} ${arenaLive ? styles.navGlow : ''}`}

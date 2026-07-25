@@ -12,6 +12,7 @@ import { useQuests } from './questStore'
 import { useArena } from './arenaStore'
 import { useAchievements } from './achievementStore'
 import { useCampaign } from './campaignStore'
+import { useHistory } from './historyStore'
 import { useExpedition } from './expeditionStore'
 import { useLethal, type PuzzleReward } from './lethalStore'
 import { useDeckStats } from './deckStatsStore'
@@ -37,6 +38,7 @@ export interface StartMatchArgs {
   tutorial?: boolean // 教学对局:对战画面挂教鞭浮层
   arena?: boolean // 竞技场对局:胜负记进当前 run,而不是普通战绩
   campaign?: boolean // 关底战:胜负记进冒险进度,首通发奖
+  history?: boolean // 历史名战:胜负记进名战进度,首通发奖(与 campaign 同路,另存进度)
   // 关底战的不对称配置(Boss 血量与主公技由内容层给)
   heroPowersOverride?: [HeroPowerDef | undefined, HeroPowerDef | undefined]
   heroHpsOverride?: [number, number]
@@ -76,6 +78,7 @@ interface MatchStoreState {
   tutorial: boolean
   arena: boolean
   campaign: boolean
+  history: boolean
   expedition: boolean
   // 斩杀谜题态:puzzle 标识本局是谜题;puzzleResult 由 send 判定(赢/本回合结束未赢=输)
   puzzle: boolean
@@ -151,6 +154,7 @@ function settleMatch(
   arena: boolean,
   campaign: boolean,
   expedition: boolean,
+  history: boolean,
 ): void {
   const ended = events.find((e) => e.type === 'GameEnded')
   if (!ended || ended.type !== 'GameEnded') return
@@ -160,6 +164,10 @@ function settleMatch(
   }
   if (campaign) {
     useCampaign.getState().settle(ended.winner === 0)
+    return
+  }
+  if (history) {
+    useHistory.getState().settle(ended.winner === 0)
     return
   }
   if (arena) {
@@ -198,7 +206,7 @@ function remoteCallbacks(set: SetState, getStats: () => MatchStats) {
       opponentName?: string,
       turnDeadline?: number,
     ) => {
-      settleMatch(events, false, false, false)
+      settleMatch(events, false, false, false, false)
       settleQuests(events, state)
       recordReplayFrame(state, events, opponentName)
       const nextStats = foldStats(getStats(), events, state)
@@ -229,6 +237,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
   tutorial: false,
   arena: false,
   campaign: false,
+  history: false,
   expedition: false,
   puzzle: false,
   puzzleId: null,
@@ -296,6 +305,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       tutorial: args.tutorial === true,
       arena: args.arena === true,
       campaign: args.campaign === true,
+      history: args.history === true,
       expedition: args.expedition === true,
       puzzle: args.puzzle === true,
       puzzleId: args.puzzleId ?? null,
@@ -419,7 +429,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
     }
     const events = r.updates.flatMap((u) => u.events)
     const last = r.updates[r.updates.length - 1]
-    settleMatch(events, get().arena, get().campaign, get().expedition)
+    settleMatch(events, get().arena, get().campaign, get().expedition, get().history)
     settleQuests(events, last.state)
     recordDeckResult(events, get().deckKey)
     recordReplayFrame(last.state, events)
@@ -472,6 +482,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       tutorial: false,
       arena: false,
       campaign: false,
+      history: false,
       expedition: false,
       puzzle: false,
       puzzleId: null,

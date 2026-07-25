@@ -23,6 +23,9 @@ const ArenaScreen = lazy(() =>
 const CampaignScreen = lazy(() =>
   import('./ui/screens/CampaignScreen').then((m) => ({ default: m.CampaignScreen })),
 )
+const HistoryScreen = lazy(() =>
+  import('./ui/screens/HistoryScreen').then((m) => ({ default: m.HistoryScreen })),
+)
 const CodexScreen = lazy(() =>
   import('./ui/screens/CodexScreen').then((m) => ({ default: m.CodexScreen })),
 )
@@ -48,6 +51,7 @@ export type Screen =
   | 'settings'
   | 'arena'
   | 'campaign'
+  | 'history'
   | 'codex'
   | 'expedition'
   | 'brawl'
@@ -160,6 +164,18 @@ export default function App() {
             onBack={back}
             onEnterMatch={() => {
               setAfterMatch('campaign')
+              setScreen('match')
+            }}
+          />
+        </Suspense>
+      )
+    case 'history':
+      return (
+        <Suspense fallback={<ScreenFallback />}>
+          <HistoryScreen
+            onBack={back}
+            onEnterMatch={() => {
+              setAfterMatch('history')
               setScreen('match')
             }}
           />
