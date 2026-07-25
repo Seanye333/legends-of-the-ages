@@ -10,6 +10,19 @@ export interface DeckList {
   cardIds: string[]
 }
 
+// 卡组身份:主公 + 排序后的卡表的内容哈希。
+// 用内容哈希而非 id,是因为 DeckList 根本没有稳定 id(自组卡组在收藏里按 name.zh 认)——
+// 内容哈希无需加字段、无需存档迁移:改名仍是同一套(战绩延续),改牌则算新的一套(合理)。
+export function deckKey(heroId: string, cardIds: string[]): string {
+  const s = `${heroId}|${[...cardIds].sort().join(',')}`
+  let h = 2166136261
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i)
+    h = Math.imul(h, 16777619)
+  }
+  return (h >>> 0).toString(36)
+}
+
 const copies = (n: number, ...ids: string[]): string[] => ids.flatMap((id) => Array(n).fill(id) as string[])
 
 // 六套预组共用一张「骨架」,主义只决定填进插槽的卡,不决定卡组能不能开局。

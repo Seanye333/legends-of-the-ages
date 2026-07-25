@@ -100,6 +100,8 @@ describe('achievement stats', () => {
       'expeditionWins',
       'puzzlesSolved', // 斩杀谜题解开时由 lethalStore bump
       'bestPuzzleStreak', // 每日连击最长,由 lethalStore bump(MAX)
+      'collectionSize', // 收藏里程碑,由 collectionStore bump
+      'legendariesOwned',
       // 六主义各一条,tally 只会产出当前主公那一个
       'won_hegemonic',
       'won_ritual',

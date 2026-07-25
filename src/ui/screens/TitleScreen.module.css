@@ -719,3 +719,12 @@
   background: rgba(58, 42, 16, 0.8);
   color: var(--gold-bright);
 }
+
+/* 卡组胜率:随便打选中卡组下方的一行战绩 */
+.deckRecord {
+  margin-top: -4px;
+  font-size: 12.5px;
+  letter-spacing: 0.06em;
+  color: var(--parchment-faint, #9a8a6a);
+  font-variant-numeric: tabular-nums;
+}
