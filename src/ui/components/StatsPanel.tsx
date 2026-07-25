@@ -1,11 +1,17 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useAchievements } from '../../app/achievementStore'
 import { useCollection } from '../../app/collectionStore'
 import { useExpedition } from '../../app/expeditionStore'
+import { useDeckStats, winRate as deckWinRate } from '../../app/deckStatsStore'
+import { PRECON_DECKS, deckKey } from '../../content/decks'
+import { COLLECTIBLE_CARDS } from '../../content/cards'
 import { DOCTRINE_NAME } from '../doctrineColors'
 import type { Doctrine } from '../../engine/types'
 import { usePickText, useT } from '../i18n'
 import styles from './StatsPanel.module.css'
+
+const POOL_TOTAL = COLLECTIBLE_CARDS.length
+const LEGEND_TOTAL = COLLECTIBLE_CARDS.filter((c) => c.rarity === 'legendary').length
 
 interface StatsPanelProps {
   onClose: () => void
@@ -18,8 +24,27 @@ export function StatsPanel({ onClose }: StatsPanelProps) {
   const stats = useAchievements((s) => s.stats)
   const wins = useCollection((s) => s.wins)
   const losses = useCollection((s) => s.losses)
+  const customDecks = useCollection((s) => s.customDecks)
+  const deckRecords = useDeckStats((s) => s.records)
   const bestDepth = useExpedition((s) => s.bestDepth)
   const panelRef = useRef<HTMLDivElement>(null)
+
+  // 每套卡组的战绩(按内容哈希去重),只列打过的,按场次排序取前几
+  const deckRows = useMemo(() => {
+    const seen = new Set<string>()
+    const rows: { name: string; wins: number; losses: number; rate: number }[] = []
+    for (const d of [...PRECON_DECKS, ...customDecks]) {
+      const key = deckKey(d.heroId, d.cardIds)
+      if (seen.has(key)) continue
+      seen.add(key)
+      const rec = deckRecords[key]
+      if (!rec) continue
+      const played = rec.wins + rec.losses + rec.draws
+      if (played === 0) continue
+      rows.push({ name: pick(d.name), wins: rec.wins, losses: rec.losses, rate: deckWinRate(rec) ?? 0 })
+    }
+    return rows.sort((a, b) => b.wins + b.losses - (a.wins + a.losses)).slice(0, 6)
+  }, [customDecks, deckRecords, pick])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -76,6 +101,34 @@ export function StatsPanel({ onClose }: StatsPanelProps) {
               ))}
             </div>
           </div>
+
+          <div className={styles.section}>
+            <div className={styles.sectionTitle}>{t('收藏与磨练', 'Collection & Craft')}</div>
+            <div className={styles.grid}>
+              <Row label={t('收藏', 'Cards collected')} value={`${s('collectionSize')} / ${POOL_TOTAL}`} />
+              <Row label={t('传说', 'Legendaries')} value={`${s('legendariesOwned')} / ${LEGEND_TOTAL}`} />
+              <Row label={t('斩杀谜题', 'Lethal puzzles solved')} value={s('puzzlesSolved')} />
+              <Row label={t('每日连击最长', 'Best daily streak')} value={s('bestPuzzleStreak')} />
+            </div>
+          </div>
+
+          {deckRows.length > 0 && (
+            <div className={styles.section}>
+              <div className={styles.sectionTitle}>{t('卡组胜率', 'Deck Win Rates')}</div>
+              <div className={styles.grid}>
+                {deckRows.map((d) => (
+                  <Row
+                    key={d.name}
+                    label={d.name}
+                    value={t(
+                      `${d.wins}胜${d.losses}负 · ${d.rate}%`,
+                      `${d.wins}W ${d.losses}L · ${d.rate}%`,
+                    )}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className={styles.section}>
             <div className={styles.sectionTitle}>{t('机制', 'Mechanics')}</div>
