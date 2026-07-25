@@ -10,15 +10,24 @@ import { bossDeck } from './campaign'
 // 这正是 campaign 做不到、而残局/修正系统天生能做的「设定局」。
 //
 // **软版本,零引擎。** 胜负仍是「谁的主公先掉到 0」(reducer 只认这一条),没有
-// 「守 N 回合 / 斩指定将」这类特殊目标(那些要动引擎,见 content-roadmap)。
-// 难度沿用 campaign 三个旋钮里最强的那个:deckTier(卡组曲线)+ hp + 主公技,
-// **外加**双方开局修正。所以它复用 bossDeck / GameConfig.modifiers / heroPowers,
-// 一行引擎都不用碰。
+// 「守 N 回合 / 斩指定将」这类特殊目标(那些要动引擎)。难度沿用 campaign 三个旋钮里
+// 最强的那个:deckTier(卡组曲线)+ hp + 主公技,**外加**双方开局修正。所以它复用
+// bossDeck / GameConfig.modifiers / heroPowers,一行引擎都不用碰。
 //
-// ⚠️ 这里的 hp / deckTier 是**手估的起点,未过 sim-campaign**。上线前应像 campaign
-// 那样跑一遍平衡校验;原型阶段先验证「设定局」的手感对不对。
+// 八场按编年铺开:笠泽(春秋)→ 长平·番吾(战国)→ 垓下(楚汉)→ 官渡·赤壁(三国)
+// → 黄天荡(南宋)→ 鄱阳湖(元末)。不做线性解锁,想打哪场打哪场。
 //
-// 选人只挑**有立绘**的历史名将(heroId 必须在花名册里,否则关底是个首字兜底)。
+// **难度是用 `npm run sim-history` 调实的**(六套预组轮流去打,带开局态势):
+// 每场玩家胜率落在 35–68% 的「打得过但要认真打」带里(贪心 AI 基准尺,真人更松)。
+// 调参教训(与 balance-tuning-is-ai-shaped 一致):
+//   · deckTier 是强旋钮(0=最强/最快 … 1=最弱/最慢),tier 往 1 拨最能救「太难」;
+//   · **敌方 startTokens 是隐藏的大杠杆** —— 开局三名 2/2 就能把胜率打到个位数;
+//   · 每回合召 3/3 的主公技(鄱阳湖初版)= 强压制,降成召 2/2 才拉回带内;
+//   · 护甲/守护墙对贪心 AI 近乎无压制:韩世忠的 0/4 水寨墙初版反而 78% 太送,
+//     靠**压低 tier**(卡组更强)而不是加甲才压回来。
+// 改任何一场的 hp/tier/modifiers/主公技,都要重跑 sim-history。
+//
+// 选人只挑**有随包立绘**的历史名将(否则关底是个首字兜底,见 high-visual-quality-bar)。
 // 玩家用自己的卡组出战(和 campaign 一致),历史的一侧是 foe + 开局态势。
 
 // 敌方主公技:直接沿用 campaign 里同一位名将已调过的那一招(同 ops),不新造强度档。
@@ -49,6 +58,36 @@ export interface HistoryBattle {
 }
 
 export const HISTORY_BATTLES: HistoryBattle[] = [
+  // ---------- 春秋 · 前 478 ----------
+  {
+    id: 'hb-lize',
+    name: { zh: '笠澤之戰', en: 'The Battle of Lize' },
+    era: { zh: '春秋 · 周元王元年', en: 'Spring & Autumn · 478 BC' },
+    foeName: { zh: '勾踐', en: 'Goujian' },
+    foeTitle: { zh: '臥薪嘗膽', en: 'The Bitter Gall' },
+    intro: {
+      zh: '会稽之耻,一尝二十年。今日笠泽夹水而阵,越甲三千 —— 该雪的,总要雪。',
+      en: 'Twenty years he tasted gall for the shame of Kuaiji. Now the armies face off across the Lize — three thousand Yue blades, and a debt long overdue.',
+    },
+    situation: {
+      zh: '会稽雪耻:敌方主公开局披 2 甲(卧薪之积);你披 3 甲、多抽一张。',
+      en: 'The debt repaid: the enemy hero opens with 2 Armor; you take 3 Armor and draw a card.',
+    },
+    heroId: 'hist-goujian',
+    doctrine: 'separatist',
+    hp: 36,
+    deckTier: 0.85,
+    power: power(
+      'hbp-woxin',
+      { zh: '臥薪嘗膽', en: 'Sleeping on Brushwood' },
+      { zh: '召喚一個 0/4 的江東水寨(守護)。', en: 'Summon a 0/4 Jiangdong Stockade with Guard.' },
+      [{ op: 'summon', defId: 'token-shui-zhai', count: 1 }],
+    ),
+    enemyModifiers: { startArmor: 2 },
+    playerModifiers: { startArmor: 3, bonusHandSize: 1 },
+    rewardMerit: 160,
+    rewardPacks: 1,
+  },
   // ---------- 战国 · 前 260 ----------
   {
     id: 'hb-changping',
@@ -61,21 +100,55 @@ export const HISTORY_BATTLES: HistoryBattle[] = [
       en: 'The Qin have cut your supply lines; forty-six days without food. There is no retreat — the only way out is to break the encirclement before it closes for good.',
     },
     situation: {
-      zh: '秦军合围:敌方开局带两名 1/3 守护的丹阳兵,主公披 4 甲。',
-      en: 'Encircled: the enemy opens with two 1/3 Guard Danyang Levies and 4 Armor.',
+      zh: '秦军合围:敌方开局带一名 1/3 守护的丹阳兵、披 2 甲;你披 2 甲、多抽一张。',
+      en: 'Encircled: the enemy opens with a 1/3 Guard Danyang Levy and 2 Armor; you take 2 Armor and draw a card.',
     },
     heroId: 'hist-bai-qi',
     doctrine: 'hegemonic',
-    hp: 46,
-    deckTier: 0.6,
+    hp: 42,
+    deckTier: 0.8,
     power: power(
       'hbp-changping',
       { zh: '長平', en: 'Changping' },
       { zh: '對隨機一名敵方武將造成 2 點傷害。', en: 'Deal 2 damage to a random enemy general.' },
       [{ op: 'damage', amount: 2, target: 'randomEnemyGeneral' }],
     ),
-    enemyModifiers: { startTokens: ['token-danyang-bing', 'token-danyang-bing'], startArmor: 4 },
+    enemyModifiers: { startTokens: ['token-danyang-bing'], startArmor: 2 },
+    playerModifiers: { startArmor: 2, bonusHandSize: 1 },
     rewardMerit: 200,
+    rewardPacks: 1,
+  },
+  // ---------- 战国 · 前 232 ----------
+  {
+    id: 'hb-fanwu',
+    name: { zh: '番吾之戰', en: 'The Battle of Fanwu' },
+    era: { zh: '戰國 · 秦王政十五年', en: 'Warring States · 232 BC' },
+    foeName: { zh: '李牧', en: 'Li Mu' },
+    foeTitle: { zh: '趙之長城', en: 'The Wall of Zhao' },
+    intro: {
+      zh: '李牧在,秦师不敢东向。番吾一线,赵边骑坚阵以待 —— 你要碰的,是一堵会反击的墙。',
+      en: 'While Li Mu lived, Qin dared not march east. At Fanwu the border cavalry stand in tight array — you face a wall that strikes back.',
+    },
+    situation: {
+      zh: '赵边骑坚阵:敌方主公开局披 3 甲(坚壁);你多抽一张。',
+      en: 'The border array: the enemy hero opens with 3 Armor; you draw an extra card.',
+    },
+    heroId: 'hist-li-mu',
+    doctrine: 'hegemonic',
+    hp: 42,
+    deckTier: 0.82,
+    power: power(
+      'hbp-quexin',
+      { zh: '堅陣卻秦', en: 'The Unbroken Line' },
+      { zh: '使一名友方武將+0/+3並獲得守護。', en: 'Give a friendly general +0/+3 and Guard.' },
+      [
+        { op: 'buffStats', attack: 0, health: 3, target: 'chosenFriendlyGeneral' },
+        { op: 'grantKeyword', keyword: 'guard', target: 'chosenFriendlyGeneral' },
+      ],
+    ),
+    enemyModifiers: { startArmor: 3 },
+    playerModifiers: { bonusHandSize: 1 },
+    rewardMerit: 220,
     rewardPacks: 1,
   },
   // ---------- 楚汉 · 前 202 ----------
@@ -110,6 +183,36 @@ export const HISTORY_BATTLES: HistoryBattle[] = [
     rewardMerit: 260,
     rewardPacks: 1,
   },
+  // ---------- 三国 · 200 ----------
+  {
+    id: 'hb-guandu',
+    name: { zh: '官渡之戰', en: 'The Battle of Guandu' },
+    era: { zh: '三國 · 建安五年', en: 'Three Kingdoms · AD 200' },
+    foeName: { zh: '袁紹', en: 'Yuan Shao' },
+    foeTitle: { zh: '四世三公', en: 'Four Generations of Excellency' },
+    intro: {
+      zh: '袁绍带甲十万,粮草如山,列于官渡之北。你兵少粮尽 —— 唯有夜袭乌巢,一把火烧掉他的底气。',
+      en: 'Yuan Shao fields a hundred thousand and grain like mountains north of Guandu. You are few and near starving — the only stroke left is to burn Wuchao by night.',
+    },
+    situation: {
+      zh: '众寡悬殊 vs 奇袭乌巢:敌方开局带两名 1/1 门客、披 3 甲;你起手手牌费用 -1(抢节奏)。',
+      en: 'Outnumbered vs. the night raid: the enemy opens with two 1/1 Retainers and 3 Armor; your opening hand costs 1 less.',
+    },
+    heroId: 'yuan-shao',
+    doctrine: 'royal',
+    hp: 46,
+    deckTier: 0.55,
+    power: power(
+      'hbp-menke',
+      { zh: '門生故吏', en: 'Clients and Retainers' },
+      { zh: '召喚兩個 1/1 的門客。', en: 'Summon two 1/1 Retainers.' },
+      [{ op: 'summon', defId: 'token-si-shi', count: 2 }],
+    ),
+    enemyModifiers: { startTokens: ['token-si-shi', 'token-si-shi'], startArmor: 3 },
+    playerModifiers: { handCostDelta: -1 },
+    rewardMerit: 280,
+    rewardPacks: 1,
+  },
   // ---------- 三国 · 208 ----------
   {
     id: 'hb-chibi',
@@ -122,22 +225,84 @@ export const HISTORY_BATTLES: HistoryBattle[] = [
       en: 'The northern fleet lies chained together across the river, banners blotting the sky. Amid talk and laughter you wait on one thing only — the east wind. All else is ready.',
     },
     situation: {
-      zh: '铁索连舟 vs 借东风:敌方开局带三名 2/2 铁骑;你披 3 甲、多抽两张(火攻先机)。',
-      en: 'Chained fleet vs. the east wind: the enemy opens with three 2/2 Ironclad Cavalry; you take 3 Armor and draw two extra cards.',
+      zh: '铁索连舟 vs 借东风:敌方开局带一名 2/2 铁骑;你披 3 甲、多抽两张(火攻先机)。',
+      en: 'Chained fleet vs. the east wind: the enemy opens with a 2/2 Ironclad Cavalry; you take 3 Armor and draw two extra cards.',
     },
     heroId: 'cao-cao',
     doctrine: 'hegemonic',
-    hp: 44,
-    deckTier: 0.55,
+    hp: 40,
+    deckTier: 0.72,
     power: power(
       'hbp-weiwu',
       { zh: '魏武揮鞭', en: 'The Tyrant’s Lash' },
       { zh: '造成 3 點傷害。', en: 'Deal 3 damage.' },
       [{ op: 'damage', amount: 3, target: 'chosenAny' }],
     ),
-    enemyModifiers: { startTokens: ['token-tie-qi', 'token-tie-qi', 'token-tie-qi'] },
+    enemyModifiers: { startTokens: ['token-tie-qi'] },
     playerModifiers: { startArmor: 3, bonusHandSize: 2 },
     rewardMerit: 320,
+    rewardPacks: 2,
+  },
+  // ---------- 南宋 · 1130 ----------
+  {
+    id: 'hb-huangtiandang',
+    name: { zh: '黃天蕩之戰', en: 'The Battle of Huangtiandang' },
+    era: { zh: '南宋 · 建炎四年', en: 'Southern Song · AD 1130' },
+    foeName: { zh: '韓世忠', en: 'Han Shizhong' },
+    foeTitle: { zh: '中興名將', en: 'Savior of the Dynasty' },
+    intro: {
+      zh: '八千宋军,困你十万金骑于黄天荡四十八日。韩世忠据江死守 —— 你能凿穿这道水上长城吗?',
+      en: 'Eight thousand Song troops pinned your hundred thousand horse for forty-eight days. Han Shizhong holds the river to the death — can you break this wall of water?',
+    },
+    situation: {
+      zh: '据江死守:敌方开局带一座 0/4 守护水寨、披 4 甲 —— 一堵不还手却极难凿穿的墙。',
+      en: 'Holding the river: the enemy opens with a 0/4 Guard Stockade and 4 Armor — a wall that never strikes but scarcely breaks.',
+    },
+    heroId: 'hist-han-shizhong',
+    doctrine: 'royal',
+    hp: 52,
+    deckTier: 0.3,
+    power: power(
+      'hbp-jugu',
+      { zh: '據江死守', en: 'Hold the River' },
+      { zh: '使一名友方武將+0/+2並獲得守護。', en: 'Give a friendly general +0/+2 and Guard.' },
+      [
+        { op: 'buffStats', attack: 0, health: 2, target: 'chosenFriendlyGeneral' },
+        { op: 'grantKeyword', keyword: 'guard', target: 'chosenFriendlyGeneral' },
+      ],
+    ),
+    enemyModifiers: { startTokens: ['token-shui-zhai'], startArmor: 4 },
+    rewardMerit: 360,
+    rewardPacks: 2,
+  },
+  // ---------- 元末 · 1363 ----------
+  {
+    id: 'hb-poyang',
+    name: { zh: '鄱陽湖之戰', en: 'The Battle of Lake Poyang' },
+    era: { zh: '元末 · 至正二十三年', en: 'Late Yuan · AD 1363' },
+    foeName: { zh: '陳友諒', en: 'Chen Youliang' },
+    foeTitle: { zh: '漢王', en: 'King of Han' },
+    intro: {
+      zh: '陈友谅巨舰连江,楼船高十丈,甲士六十万。你舟小而捷 —— 又是一场以火破舰的赌局。',
+      en: 'Chen Youliang’s tower ships chain across the lake, ten zhang high, six hundred thousand aboard. Your boats are small and swift — another gamble to break a fleet by fire.',
+    },
+    situation: {
+      zh: '巨舰连江 vs 小舟火攻:敌方主公开局披 2 甲、每回合召来一名甲士;你披 3 甲、多抽一张。',
+      en: 'Tower ships vs. fireboats: the enemy opens with 2 Armor and summons a marine each turn; you take 3 Armor and draw an extra card.',
+    },
+    heroId: 'hist-chen-youliang',
+    doctrine: 'separatist',
+    hp: 44,
+    deckTier: 0.85,
+    power: power(
+      'hbp-loushi',
+      { zh: '樓船甲士', en: 'Tower-Ship Marines' },
+      { zh: '召喚一個 2/2 的甲士。', en: 'Summon a 2/2 marine.' },
+      [{ op: 'summon', defId: 'token-tie-qi', count: 1 }],
+    ),
+    enemyModifiers: { startArmor: 2 },
+    playerModifiers: { startArmor: 3, bonusHandSize: 1 },
+    rewardMerit: 420,
     rewardPacks: 2,
   },
 ]

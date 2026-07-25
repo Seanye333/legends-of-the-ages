@@ -68,9 +68,8 @@ describe('历史名战', () => {
     )
     expect(state.players[1].heroHp).toBe(chibi.hp)
     expect(state.players[1].heroPower?.id).toBe(chibi.power.id)
-    // 赤壁:敌方开局三名 2/2 铁骑(连环战船)—— 开局态势真的铺到了敌方场上
-    expect(state.players[1].board.length).toBeGreaterThanOrEqual(3)
-    // 我方开局借东风:3 甲
+    // 赤壁:敌方开局铁骑(连环战船)+ 我方借东风 3 甲 —— 双方开局态势都铺到了状态上
+    expect(state.players[1].board.length).toBeGreaterThanOrEqual(1)
     expect(state.players[0].armor).toBe(3)
   })
 
