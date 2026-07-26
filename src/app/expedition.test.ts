@@ -25,7 +25,42 @@ describe('远征 run 状态机', () => {
     const afterPick = useExpedition.getState().run!
     expect(afterPick.relics).toEqual([pick])
     expect(afterPick.offered).toBeNull()
-    expect(afterPick.stage).toBe(1) // 进第 2 关
+    // 选完宝物先进**选牌**(卡组在一趟里成长),选/跳过牌才真正进下一关
+    expect(afterPick.cardOffer).toHaveLength(3)
+    expect(afterPick.stage).toBe(0)
+
+    const card = afterPick.cardOffer![0]
+    useExpedition.getState().pickCard(card)
+    const afterCard = useExpedition.getState().run!
+    expect(afterCard.deck).toContain(card)
+    expect(afterCard.deck.length).toBe(afterPick.deck.length + 1)
+    expect(afterCard.cardOffer).toBeNull()
+    expect(afterCard.stage).toBe(1) // 进第 2 关
+  })
+
+  it('跳过选牌也能进下一关(卡组不变)', () => {
+    const exp = useExpedition.getState()
+    exp.start('liu-bei', Array(30).fill('c'))
+    exp.settle(true)
+    useExpedition.getState().pickRelic(useExpedition.getState().run!.offered![0])
+    const before = useExpedition.getState().run!.deck.length
+    useExpedition.getState().skipCard()
+    const after = useExpedition.getState().run!
+    expect(after.deck.length).toBe(before)
+    expect(after.stage).toBe(1)
+  })
+
+  it('精简军册:选牌阶段可删牌,但不许删到 20 张以下', () => {
+    const exp = useExpedition.getState()
+    exp.start('liu-bei', [...Array(21).fill('c'), 'x'])
+    exp.settle(true)
+    useExpedition.getState().pickRelic(useExpedition.getState().run!.offered![0])
+    useExpedition.getState().dropCard('x')
+    expect(useExpedition.getState().run!.deck).not.toContain('x') // 22 → 21,允许
+    useExpedition.getState().dropCard('c')
+    expect(useExpedition.getState().run!.deck.length).toBe(20) // 21 → 20,允许
+    useExpedition.getState().dropCard('c')
+    expect(useExpedition.getState().run!.deck.length).toBe(20) // 已到下限,拒绝
   })
 
   it('选宝物期间 settle 不生效(必须先选)', () => {
@@ -41,7 +76,8 @@ describe('远征 run 状态机', () => {
     const exp = useExpedition.getState()
     exp.start('liu-bei', Array(30).fill('c'))
     exp.settle(true)
-    useExpedition.getState().pickRelic(useExpedition.getState().run!.offered![0]) // 进第 2 关
+    useExpedition.getState().pickRelic(useExpedition.getState().run!.offered![0])
+    useExpedition.getState().skipCard() // 进第 2 关
     useExpedition.getState().settle(false) // 第 2 关败
     expect(useExpedition.getState().run).toBeNull()
     expect(useExpedition.getState().bestDepth).toBe(1) // 通了第 1 关
@@ -65,6 +101,7 @@ describe('远征 run 状态机', () => {
     expect(useExpedition.getState().run?.stageMod).toBeNull() // 第 1 关干净
     exp.settle(true)
     useExpedition.getState().pickRelic(useExpedition.getState().run!.offered![0])
+    useExpedition.getState().skipCard() // 选完牌才进第 2 关
     expect(useExpedition.getState().run?.stageMod).toBeTruthy() // 第 2 关有修饰符
   })
 

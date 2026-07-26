@@ -3,6 +3,8 @@ import { persist } from 'zustand/middleware'
 import { BOSSES } from '../content/campaign'
 import { RELICS, type RelicDef } from '../content/relics'
 import { MODIFIERS_BY_ID, rollModifier } from '../content/expeditionModifiers'
+import { offerCards } from '../content/expeditionDraft'
+import { HEROES_BY_ID } from '../content/overrides/heroes'
 import { useCollection } from './collectionStore'
 import { useAchievements } from './achievementStore'
 
@@ -24,6 +26,9 @@ export interface ExpeditionRun {
   stage: number // 0-based:当前要打(或刚打完)的 Boss 序号
   relics: string[] // 已收集的宝物 id
   offered: string[] | null // 通关后亮出的三选一(等玩家挑);null = 不在选宝物
+  // 选完宝物后亮出的三选一**卡牌**(加进卡组);null = 不在选牌。
+  // 可选字段:老存档没有它 → undefined → 当作 null,旧 run 不会卡住。
+  cardOffer?: string[] | null
   stageMod: string | null // 当前关的战场态势修饰符 id(第 1 关为 null)
   rngState: number // 宝物/修饰符随机的种子推进(可复现)
 }
@@ -35,6 +40,9 @@ interface ExpeditionState {
   start(heroId: string, deck: string[]): void
   settle(win: boolean): void // 一场打完
   pickRelic(id: string): void
+  pickCard(id: string): void // 把牌加进卡组并进下一关
+  skipCard(): void // 不加牌,直接进下一关
+  dropCard(id: string): void // 精简军册:从卡组里删掉一张(选牌阶段可用)
   abandon(): void
 }
 
@@ -119,18 +127,49 @@ export const useExpedition = create<ExpeditionState>()(
       pickRelic(id) {
         const run = get().run
         if (!run || !run.offered || !run.offered.includes(id)) return
-        // 进下一关:抽一个战场态势修饰符(可复现,推进 rngState)
+        // 选完宝物再选一张牌 —— 卡组在一趟远征里真正成长(roguelike 的核心黏性)
+        const doctrine = HEROES_BY_ID[run.heroId]?.doctrine
+        const { offered: cards, next } = offerCards(doctrine, run.rngState)
+        set({
+          run: { ...run, relics: [...run.relics, id], offered: null, cardOffer: cards, rngState: next },
+        })
+      },
+
+      // 选完牌(或跳过)才真正进下一关:抽战场态势修饰符,推进 stage
+      pickCard(id) {
+        const run = get().run
+        if (!run || !run.cardOffer || !run.cardOffer.includes(id)) return
         const { id: modId, next } = rollModifier(run.rngState)
         set({
           run: {
             ...run,
-            relics: [...run.relics, id],
-            offered: null,
+            deck: [...run.deck, id],
+            cardOffer: null,
             stage: run.stage + 1,
             stageMod: modId,
             rngState: next,
           },
         })
+      },
+
+      skipCard() {
+        const run = get().run
+        if (!run || !run.cardOffer) return
+        const { id: modId, next } = rollModifier(run.rngState)
+        set({
+          run: { ...run, cardOffer: null, stage: run.stage + 1, stageMod: modId, rngState: next },
+        })
+      },
+
+      // 精简军册:删掉一张(选牌阶段可用)。留一道下限,别把卡组删空。
+      dropCard(id) {
+        const run = get().run
+        if (!run || !run.cardOffer) return
+        const i = run.deck.indexOf(id)
+        if (i < 0 || run.deck.length <= 20) return
+        const deck = run.deck.slice()
+        deck.splice(i, 1)
+        set({ run: { ...run, deck } })
       },
 
       abandon() {

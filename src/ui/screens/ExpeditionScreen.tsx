@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { BOSSES, bossDeck } from '../../content/campaign'
 import { RELICS_BY_ID, combineRelics } from '../../content/relics'
+import { CARDS_BY_ID } from '../../content/cards'
 import { MODIFIERS_BY_ID } from '../../content/expeditionModifiers'
 import { PRECON_DECKS } from '../../content/decks'
 import { HEROES_BY_ID } from '../../content/overrides/heroes'
@@ -24,7 +25,7 @@ export function ExpeditionScreen({ onBack, onEnterMatch }: ExpeditionScreenProps
   const t = useT()
   const pick = usePickText()
   const customDecks = useCollection((s) => s.customDecks)
-  const { run, bestDepth, start, pickRelic, abandon } = useExpedition()
+  const { run, bestDepth, start, pickRelic, pickCard, skipCard, dropCard, abandon } = useExpedition()
   const [deckIndex, setDeckIndex] = useState(0)
   const myDecks = [...PRECON_DECKS, ...customDecks]
 
@@ -75,6 +76,84 @@ export function ExpeditionScreen({ onBack, onEnterMatch }: ExpeditionScreenProps
       </span>
     </header>
   )
+
+  // ---- 选牌(宝物之后):卡组在一趟远征里真正成长 ----
+  if (run && run.cardOffer) {
+    return (
+      <div className={styles.screen}>
+        {header}
+        <div className={styles.relicPrompt}>
+          {t(
+            `扩充军册 —— 择一入伍(现有 ${run.deck.length} 张)`,
+            `Recruit one (deck: ${run.deck.length})`,
+          )}
+        </div>
+        <div className={styles.relicRow}>
+          {run.cardOffer.map((id) => {
+            const c = CARDS_BY_ID[id]
+            if (!c) return null
+            return (
+              <button
+                key={id}
+                className={`${styles.relicCard} ${styles[c.rarity] ?? ''}`}
+                onClick={() => {
+                  playSfx('cardPlay')
+                  haptic('impact')
+                  pickCard(id)
+                }}
+              >
+                <div className={styles.relicName}>{pick(c.name)}</div>
+                <div className={styles.relicRarity}>
+                  {c.cost} {t('费', 'cost')} · {c.attack}/{c.health}
+                </div>
+                <div className={styles.relicText}>{c.text ? pick(c.text) : t('白板', 'Vanilla')}</div>
+              </button>
+            )
+          })}
+        </div>
+        <div className={styles.relicRow} style={{ marginTop: 4 }}>
+          <button
+            className={styles.relicCard}
+            onClick={() => {
+              playSfx('buttonTap')
+              skipCard()
+            }}
+          >
+            <div className={styles.relicName}>{t('不必扩军', 'Take none')}</div>
+            <div className={styles.relicText}>
+              {t('保持军册精炼,直接进军下一关。', 'Keep the deck lean and march on.')}
+            </div>
+          </button>
+        </div>
+        {run.deck.length > 20 && (
+          <details className={styles.trimBox}>
+            <summary className={styles.trimSummary}>
+              {t('精简军册(删一张)', 'Trim the roster (remove one)')}
+            </summary>
+            <div className={styles.trimList}>
+              {[...new Set(run.deck)].map((id) => {
+                const c = CARDS_BY_ID[id]
+                if (!c) return null
+                const n = run.deck.filter((x) => x === id).length
+                return (
+                  <button
+                    key={id}
+                    className={styles.trimItem}
+                    onClick={() => {
+                      playSfx('buttonTap')
+                      dropCard(id)
+                    }}
+                  >
+                    {pick(c.name)} · {c.cost}{t('费', '')}{n > 1 ? ` ×${n}` : ''}
+                  </button>
+                )
+              })}
+            </div>
+          </details>
+        )}
+      </div>
+    )
+  }
 
   // ---- 选宝物 ----
   if (run && run.offered) {
