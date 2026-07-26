@@ -69,3 +69,23 @@ describe('策反 seize', () => {
     expect(r.state.players[0].board).toHaveLength(BOARD_LIMIT)
   })
 })
+
+describe('离间 stealCard', () => {
+  it('对手手牌少一张、我方手牌多同一张(换手,不进墓地)', () => {
+    const s = game(['strat-fame-sow'], [])
+    s.players[1].hand = [{ iid: 900, defId: 'guan-yu' } as never]
+    const r = play(s, s.players[0].hand[0].iid)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.state.players[1].hand).toHaveLength(0)
+    expect(r.state.players[0].hand.map((c) => c.defId)).toContain('guan-yu')
+    expect(r.state.players[1].graveyard).not.toContain('guan-yu') // 换手,不是弃牌
+  })
+
+  it('对手空手时什么也不发生(不报错)', () => {
+    const s = game(['strat-fame-sow'], [])
+    s.players[1].hand = []
+    const r = play(s, s.players[0].hand[0].iid)
+    expect(r.ok).toBe(true)
+  })
+})

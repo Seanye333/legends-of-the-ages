@@ -993,6 +993,34 @@ export function runScript(
         }
         break
       }
+      case 'stealCard': {
+        // 离间:从对手手牌随机拿 N 张到我方手里。discardRandom 的镜像,但牌不进墓地 —— 换手。
+        //
+        // 不新增事件:对手侧发 CardDiscarded(他手里少一张),我方侧发 CardGenerated
+        // (我手里多一张,且该事件的 defId 本就对对手抹去)。UI 三处零改动。
+        // 我方手牌已满则那张**烧掉**(只发 CardDiscarded),与抽牌满手的处理一致 ——
+        // 不能让它留在对手手里,否则「离间」会变成一张什么都没发生的废牌。
+        const foe = state.players[other(player)]
+        const me = state.players[player]
+        for (let i = 0; i < op.count && foe.hand.length > 0; i++) {
+          const roll = rngInt(state.rng, foe.hand.length)
+          state.rng = roll.next
+          const [taken] = foe.hand.splice(roll.value, 1)
+          events.push({
+            type: 'CardDiscarded',
+            player: other(player),
+            iid: taken.iid,
+            defId: taken.defId,
+          })
+          if (me.hand.length >= HAND_LIMIT) {
+            events.push({ type: 'CardBurned', player, defId: taken.defId })
+            continue
+          }
+          me.hand.push(taken)
+          events.push({ type: 'CardGenerated', player, iid: taken.iid, defId: taken.defId })
+        }
+        break
+      }
       case 'discover': {
         beginDiscover(state, player, op.pool, op.count ?? 3, lib, events, sourceDefId)
         break

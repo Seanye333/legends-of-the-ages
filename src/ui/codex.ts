@@ -284,6 +284,19 @@ export const CODEX: CodexSection[] = [
         example: (c) => JSON.stringify(c).includes('seize'),
       },
       {
+        id: 'stealCard',
+        term: { zh: '反間 Steal a Card', en: 'Steal a Card' },
+        rule: {
+          zh: '从对手手牌里随机取走一张,收进你自己的手牌。',
+          en: "Take a random card from your opponent's hand into yours.",
+        },
+        note: {
+          zh: '走的是**牌差**而不是场面:对手 -1 张、你 +1 张,但当下的场面一点没变。拿到的是随机一张,可能正是他攒的关键牌,也可能是张废牌。你满手时那张会被烧掉 —— 但它照样离开了对手。',
+          en: "A card-advantage swing rather than a board swing: they lose one, you gain one, but the board is untouched. It is random — sometimes their key card, sometimes junk. If your hand is full it burns, but it still leaves their hand.",
+        },
+        example: (c) => JSON.stringify(c).includes('stealCard'),
+      },
+      {
         id: 'recruit',
         term: { zh: '搜將 Recruit', en: 'Recruit' },
         rule: { zh: '从你的牌库随机召唤武将直接上场。', en: 'Summon a random general straight from your deck.' },

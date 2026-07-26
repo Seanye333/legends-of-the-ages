@@ -14,8 +14,13 @@ import type { CardDef } from '../../engine/types'
 //   · 夺来的单位当回合不能动,否则等于附赠冲锋;
 //   · 伤害/附魔/消耗标记原样带走 —— 它还是那个单位,只是换了旗号。
 //
-// 主义归属:名利(权谋)与霸道(降将)各一路。名利拿全能版但贵,霸道拿廉价的限制版
-// (只夺 3 费以下的小兵,呼应「收编降卒」),两条线不撞车。
+// 主义归属:名利(权谋)与霸道(降将)各一路。名利拿全能版但贵,霸道拿随机的便宜版,
+// 两条线不撞车。
+//
+// 同包第二个新 opcode:**反间 stealCard** —— 从对手手牌随机拿一张过来。
+// 它不动场面,动的是**手牌资源**:对手少一张、你多一张,同样是差二,但走的是牌差轴
+// 而不是场面轴。刻意不新增事件(复用 CardDiscarded + CardGenerated,后者的 defId
+// 本就对对手抹去),所以 UI 三处零改动。
 
 export const PACK17_CARDS: CardDef[] = [
   {
@@ -79,6 +84,45 @@ export const PACK17_CARDS: CardDef[] = [
     text: {
       zh: '戰吼:隨機奪取一名敵方武將。',
       en: 'Battlecry: Take control of a random enemy general.',
+    },
+  },
+  {
+    id: 'strat-fame-sow',
+    collectorNo: 9989,
+    name: { zh: '竊書', en: 'Purloined Dispatch' },
+    type: 'stratagem',
+    doctrine: 'fame',
+    dynasty: 'qun',
+    rarity: 'rare',
+    archetype: 'strategist',
+    cost: 3,
+    keywords: [],
+    // 牌差轴的差二:对手 -1 张、你 +1 张。三费 —— 比场面的策反便宜得多,
+    // 因为拿到的是随机一张(可能是废牌),而且不解决当下的场面。
+    spell: { ops: [{ op: 'stealCard', count: 1 }] },
+    text: {
+      zh: '從對手手牌隨機取走一張,收入你的手牌。',
+      en: "Take a random card from your opponent's hand.",
+    },
+  },
+  {
+    id: 'gen-recl-spy',
+    collectorNo: 9990,
+    name: { zh: '間者', en: 'The Infiltrator' },
+    type: 'general',
+    doctrine: 'reclusion',
+    dynasty: 'qun',
+    rarity: 'epic',
+    archetype: 'strategist',
+    cost: 5,
+    attack: 3,
+    health: 4,
+    keywords: ['stealth'],
+    // 潜行 + 战吼偷牌:隐逸的路数是「不接触地占便宜」,潜行让它多活一轮。
+    battlecry: { ops: [{ op: 'stealCard', count: 1 }] },
+    text: {
+      zh: '潛行。戰吼:從對手手牌隨機取走一張。',
+      en: "Stealth. Battlecry: Take a random card from your opponent's hand.",
     },
   },
 ]
