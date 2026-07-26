@@ -7,6 +7,10 @@
 // 闸门也不同:名战是**可自由挑选的设定局**,不是线性阶梯,所以不校验「单调递减」,
 // 只校验每一场都落在「打得过、但要认真打」的带里(贪心 AI 基准尺 35%–68%)。
 // 同样的警告:这测的是贪心 AI 的游戏,真人更强,故这里的胜率是**下限**。
+//
+// **护送(protect)目标只观察、不闸门**:贪心 AI 不懂「守住 VIP」,不会为保它而清场,
+// 于是敌方总能把它秒了 → sim 恒为 0%,这是假阴性(真人会主动清威胁)。斩将(assassinate)
+// 反而能测:目标带守护逼 AI 必须啃穿它,斩将自然发生。所以只把 protect 排除在闸门外。
 import { HISTORY_BATTLES, battleDeck, battleModifiers } from '../src/content/historyBattles'
 import { PRECON_DECKS } from '../src/content/decks'
 import { CARDS_BY_ID } from '../src/content/cards'
@@ -65,8 +69,9 @@ for (let b = 0; b < HISTORY_BATTLES.length; b++) {
   }
   const pct = Math.round((wins / GAMES) * 100)
   rates.push(pct)
+  const observeOnly = HISTORY_BATTLES[b].objective?.kind === 'protect'
   const bar = '█'.repeat(Math.max(0, Math.round(pct / 4)))
-  const flag = pct < LOW ? ' ← 太难' : pct > HIGH ? ' ← 太送' : ''
+  const flag = observeOnly ? ' (护送·仅观察)' : pct < LOW ? ' ← 太难' : pct > HIGH ? ' ← 太送' : ''
   console.log(
     `${String(b + 1).padStart(2)}. ${HISTORY_BATTLES[b].name.zh.padEnd(6)} ` +
       `hp=${String(HISTORY_BATTLES[b].hp).padStart(2)} tier=${HISTORY_BATTLES[b].deckTier.toFixed(2)}  ` +
@@ -77,11 +82,12 @@ console.log(`\n(${((performance.now() - t0) / 1000).toFixed(1)}s)`)
 
 const problems: string[] = []
 for (let b = 0; b < HISTORY_BATTLES.length; b++) {
+  if (HISTORY_BATTLES[b].objective?.kind === 'protect') continue // 护送不闸门,见顶部注释
   if (rates[b] < LOW) problems.push(`${HISTORY_BATTLES[b].name.zh}:${rates[b]}% 太难(应 ≥${LOW}%)`)
   if (rates[b] > HIGH) problems.push(`${HISTORY_BATTLES[b].name.zh}:${rates[b]}% 太送(应 ≤${HIGH}%)`)
 }
 if (problems.length === 0) {
-  console.log(`✓ 每场都落在 ${LOW}–${HIGH}% 的「打得过但要认真打」带里`)
+  console.log(`✓ 每场都落在 ${LOW}–${HIGH}% 的「打得过但要认真打」带里(护送场仅观察)`)
 } else {
   console.log('⚠ 难度需要调整:')
   for (const p of problems) console.log(`  ${p}`)

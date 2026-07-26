@@ -51,12 +51,32 @@ describe('历史名战', () => {
     }
   })
 
-  it('特殊目标(若有)格式合法', () => {
+  it('特殊目标(若有)格式合法,且斩将/护送的目标单位真的在开局场上', () => {
+    const mine = PRECON_DECKS[0]
     for (const b of HISTORY_BATTLES) {
       if (!b.objective) continue
       if (b.objective.kind === 'survive') {
         expect(b.objective.turns, `${b.id} survive turns`).toBeGreaterThan(0)
+        continue
       }
+      // 斩将/护送:构造一局,断言 targetIid 真解析到了 —— targetSide/targetDefId 拼错
+      // 会让目标永不触发,tsc 兜不住(是运行时找不到),这条守着它。
+      const s = createGame(
+        {
+          seed: 1,
+          heroIds: [mine.heroId, b.heroId],
+          deckIds: [mine.cardIds.slice(), battleDeck(b)],
+          first: 0,
+          heroPowers: [HEROES_BY_ID[mine.heroId].power, b.power],
+          heroHps: [30, b.hp],
+          modifiers: battleModifiers(b),
+          objective: b.objective,
+        },
+        CARDS_BY_ID,
+      )
+      const obj = s.objective
+      const iid = obj && 'targetIid' in obj ? obj.targetIid : undefined
+      expect(iid, `${b.id} 目标 iid 未解析(targetSide/targetDefId 与开局态势对不上?)`).toBeDefined()
     }
   })
 

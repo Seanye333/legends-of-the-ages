@@ -20,8 +20,17 @@ import { bossDeck } from './campaign'
 // 最强的那个:deckTier(卡组曲线)+ hp + 主公技,**外加**双方开局修正。所以它复用
 // bossDeck / GameConfig.modifiers / heroPowers,一行引擎都不用碰。
 //
-// 八场按编年铺开:笠泽(春秋)→ 长平·番吾(战国)→ 垓下(楚汉)→ 官渡·赤壁(三国)
-// → 黄天荡(南宋)→ 鄱阳湖(元末)。不做线性解锁,想打哪场打哪场。
+// 十一场按编年铺开:笠泽(春秋)→ 长平·番吾(战国)→ 垓下(楚汉)→
+// 官渡·白马·赤壁·长坂坡(三国)→ 睢阳(唐)→ 黄天荡(南宋)→ 鄱阳湖(元末)。
+// 不做线性解锁,想打哪场打哪场。
+//
+// 三种胜负目标(objective,引擎在 checkGameEnd 判):
+//   · 普通:斩敌方主公(不给 objective);
+//   · 守成 survive:撑过 N 回合(睢阳);
+//   · 斩将 assassinate:阵斩敌方指定单位(白马·斩顏良,目标带守护逼你啃穿);
+//   · 护送 protect:我方指定单位不能死(长坂坡·护幼主,0 攻后排 VIP)。
+// **注意:斩将/护送的贪心 AI 不懂目标**,sim-history 只能观察不能当准绳(见该脚本注释),
+// 这俩的难度靠单位形态(守护/0攻)顺着 AI 的天性拱,外加人工试玩,别过度信 sim 数字。
 //
 // **难度是用 `npm run sim-history` 调实的**(六套预组轮流去打,带开局态势):
 // 每场玩家胜率落在 35–68% 的「打得过但要认真打」带里(贪心 AI 基准尺,真人更松)。
@@ -220,6 +229,44 @@ export const HISTORY_BATTLES: HistoryBattle[] = [
     rewardMerit: 280,
     rewardPacks: 1,
   },
+  // ---------- 三国 · 200(目标版:斩将)----------
+  // **斩将**样板:不斩敌方主公,而是阵斩其先锋顏良。顏良带守护 —— 逼你(与 sim 里的
+  // 贪心玩家)必须先啃穿它,斩将自然发生;敌方主公血厚难撼,断了「直接打脸」这条路。
+  {
+    id: 'hb-baima',
+    name: { zh: '白馬之戰', en: 'The Battle of Baima' },
+    era: { zh: '三國 · 建安五年', en: 'Three Kingdoms · AD 200' },
+    foeName: { zh: '袁紹', en: 'Yuan Shao' },
+    foeTitle: { zh: '河北之師', en: 'The Host of Hebei' },
+    intro: {
+      zh: '白马津头,颜良勒马阵前,河北军望之披靡。万军之中 —— 取其首级。',
+      en: 'At the Baima ford, Yan Liang reins in before his host and Hebei quails at the sight. Amid ten thousand blades — take his head.',
+    },
+    situation: {
+      zh: '斩将:阵斩敌方先锋顏良(3/7 守护)即胜。袁绍中军血厚难撼;你多抽一张。',
+      en: 'Slay the champion: kill Yan Liang (3/7 Guard) to win. Yuan Shao’s host is too thick to race; you draw an extra card.',
+    },
+    heroId: 'yuan-shao',
+    doctrine: 'hegemonic',
+    hp: 60,
+    deckTier: 0.5,
+    power: power(
+      'hbp-hebei',
+      { zh: '河北壓境', en: 'The Hebei Advance' },
+      { zh: '造成 2 點傷害。', en: 'Deal 2 damage.' },
+      [{ op: 'damage', amount: 2, target: 'chosenAny' }],
+    ),
+    enemyModifiers: { startTokens: ['token-yan-liang', 'token-tie-qi'] },
+    playerModifiers: { bonusHandSize: 1 },
+    objective: {
+      kind: 'assassinate',
+      targetSide: 1,
+      targetDefId: 'token-yan-liang',
+      targetName: { zh: '顏良', en: 'Yan Liang' },
+    },
+    rewardMerit: 300,
+    rewardPacks: 2,
+  },
   // ---------- 三国 · 208 ----------
   {
     id: 'hb-chibi',
@@ -248,6 +295,44 @@ export const HISTORY_BATTLES: HistoryBattle[] = [
     enemyModifiers: { startTokens: ['token-tie-qi'] },
     playerModifiers: { startArmor: 3, bonusHandSize: 2 },
     rewardMerit: 320,
+    rewardPacks: 2,
+  },
+  // ---------- 三国 · 208(目标版:护送)----------
+  // **护送**样板:正常击败敌军取胜,但**幼主(0/5)不能死**。幼主 0 攻会留在后排(贪心
+  // AI 不拿它送死),敌方追骑与「乱军中直取一人」的主公技可能够到它 —— 这就是护送的张力。
+  {
+    id: 'hb-changban',
+    name: { zh: '長坂坡之戰', en: 'The Battle of Changban' },
+    era: { zh: '三國 · 建安十三年', en: 'Three Kingdoms · AD 208' },
+    foeName: { zh: '曹操', en: 'Cao Cao' },
+    foeTitle: { zh: '虎豹追騎', en: 'The Tiger-Leopard Cavalry' },
+    intro: {
+      zh: '长坂坡前,曹军追骑漫野。赵云怀抱幼主,七进七出 —— 只要他还在,汉室就还在。',
+      en: 'At Changban the pursuing cavalry blanket the field. Zhao Yun rides through them clutching the young lord — while the child lives, Han lives.',
+    },
+    situation: {
+      zh: '护送:保住幼主(0/6)直到击败敌军。敌方追骑压上、每回合乱军中直取一人 —— 清掉威胁,别让他够到幼主。',
+      en: 'Escort: keep the Young Lord (0/6) alive until you win. Pursuers press in and a rider strikes someone each turn — clear the threats before they reach him.',
+    },
+    heroId: 'cao-cao',
+    doctrine: 'hegemonic',
+    hp: 44,
+    deckTier: 0.6,
+    power: power(
+      'hbp-zhuiqi',
+      { zh: '虎豹突陣', en: 'The Cavalry Charge' },
+      { zh: '對隨機一名敵方武將造成 2 點傷害。', en: 'Deal 2 damage to a random enemy general.' },
+      [{ op: 'damage', amount: 2, target: 'randomEnemyGeneral' }],
+    ),
+    enemyModifiers: { startTokens: ['token-tie-qi', 'token-tie-qi'] },
+    playerModifiers: { startTokens: ['token-you-zhu'], startArmor: 2 },
+    objective: {
+      kind: 'protect',
+      targetSide: 0,
+      targetDefId: 'token-you-zhu',
+      targetName: { zh: '幼主', en: 'The Young Lord' },
+    },
+    rewardMerit: 300,
     rewardPacks: 2,
   },
   // ---------- 唐 · 757(目标版:守成)----------

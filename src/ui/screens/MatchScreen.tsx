@@ -508,6 +508,16 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
             )}
           </div>
         )}
+        {state.objective?.kind === 'assassinate' && (
+          <div className={styles.objective}>
+            {t(`斩 ${pickText(state.objective.targetName)}`, `Slay ${pickText(state.objective.targetName)}`)}
+          </div>
+        )}
+        {state.objective?.kind === 'protect' && (
+          <div className={styles.objective}>
+            {t(`护 ${pickText(state.objective.targetName)}`, `Protect ${pickText(state.objective.targetName)}`)}
+          </div>
+        )}
         <button
           className={styles.endTurn}
           disabled={!canEndTurn}
