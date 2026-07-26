@@ -1,7 +1,7 @@
 // 内容导入管线:从姊妹仓库 ThreeKingdomMastersIOS(素材源头,只读)
 // 读取全部武将 → 套公式生成全卡池 → 输出 cards.gen.ts + 复制签名卡立绘。
 // 运行:npm run import-content(幂等,输出入 git,构建不依赖姊妹仓库)
-import { copyFileSync, existsSync, mkdirSync, statSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import sharp from 'sharp'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -22,6 +22,60 @@ import { HEROES } from '../src/content/overrides/heroes'
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(HERE, '..')
 const SIBLING = join(ROOT, '..', 'ThreeKingdomMastersIOS')
+
+// ---- 三国势力回填(魏 / 蜀 / 吴 / 群)----
+//
+// 姊妹仓库的 officer 记录**没有势力字段**,但整份 officers.ts 是**按势力分段注释**的
+// (`// Cao Wei circle` / `// Liu Bei circle (Shu)` / `// Sun Wu circle` / `// Yuan Shao force` …),
+// 那是源作者按三国志/演义整理的归属。此前只有 41 张签名卡手工标了魏蜀吴,
+// 其余 771 张一律落到「群」—— 于是「组一副纯蜀汉牌」根本不成立。
+//
+// 这里把段注释解析出来当势力真相来源:确定性、可复现、权威性来自源头而不是我们的记忆。
+// 两条判断原则:
+//   · 跨阵营者按**归宿**定(段注释本身已体现:姜維 在 Liu Bei circle → 蜀);
+//   · **真·群雄不硬塞**(黄巾/十常侍/南蛮/鲜卑/袁绍/董卓/刘表刘璋…)一律留「群」,
+//     那是正确归属,不是漏标。
+const OFFICER_SRC = join(SIBLING, 'src', 'game', 'data', 'officers.ts')
+
+function sectionByOfficerId(): Map<string, string> {
+  const out = new Map<string, string>()
+  let sec = ''
+  for (const ln of readFileSync(OFFICER_SRC, 'utf8').split('\n')) {
+    const m = ln.match(/^\s*\/\/\s*(.+?)\s*$/)
+    if (m && !/^@|eslint|prettier|TODO/.test(m[1])) {
+      sec = m[1]
+      continue
+    }
+    for (const x of ln.matchAll(/\bid:\s*.([a-z0-9-]+)./g)) out.set(x[1], sec)
+  }
+  return out
+}
+
+// 段名 → 势力。先排除明确不属魏蜀吴的势力,再认魏/蜀/吴关键词(顺序要紧:
+// 「Liu Biao / Liu Zhang region」含 Liu 但不是刘备,必须落「群」)。
+function factionFromSection(sec: string): DynastyTag {
+  const s = sec.toLowerCase()
+  const isWei = () => /\bwei\b|cao wei|cao clan|cao cao|cao shuang/.test(s)
+  const isShu = () => /\bshu\b|liu bei|shu han|zhuge/.test(s)
+  const isWu = () => /\bwu\b|sun wu|sun force|sun clan|sun heirs|sun extras|sun /.test(s)
+  if (
+    /yellow turban|ten attendants|eunuch|nanman|meng huo|xianbei|qiang|wuhuan|court|he jin|yuan shao|yuan shu|dong zhuo|lu bu|liu biao|liu zhang|gongsun|ma teng|han sui|zhang lu|warlord|outsider|scholar|misc|rounding out|phase/.test(
+      s,
+    )
+  ) {
+    if (isWei()) return 'wei'
+    if (isShu()) return 'shu'
+    if (isWu()) return 'wu'
+    return 'qun'
+  }
+  if (isWei()) return 'wei'
+  if (isShu()) return 'shu'
+  if (isWu()) return 'wu'
+  return 'qun'
+}
+
+const OFFICER_SECTION = sectionByOfficerId()
+
 const OUT_GEN = join(ROOT, 'src', 'content', 'generated')
 const OUT_PORTRAITS = join(ROOT, 'public', 'portraits')
 
@@ -481,11 +535,15 @@ function generateCard(
     ? { keywords: [], points: 0, textZh: [], textEn: [] }
     : seedMechanics(officer.id, s, archetype, rarity, kw)
   const [attack, health] = payFor(baseAttack, baseHealth, seeded.points)
-  // 三国武将默认「群」,魏/蜀/吴归属在 signature.ts 手工覆盖(Phase 1 从剧本势力预填)
+  // 势力:源数据显式给了就用显式的;三国武将否则按 officers.ts 的**势力分段注释**回填
+  //(见 factionFromSection)。签名卡在 signature.ts 里的手工覆盖仍然优先级更高 ——
+  // 那一层在 cards.ts 合并时才叠上去,不会被这里冲掉。
   if (officer.dynasty !== undefined && !VALID_DYNASTIES.has(officer.dynasty)) {
     throw new Error(`unknown dynasty "${officer.dynasty}" on officer ${officer.id} — 引擎 DynastyTag 需要同步`)
   }
-  const dynasty = (officer.dynasty ?? 'qun') as DynastyTag
+  const sec = OFFICER_SECTION.get(officer.id)
+  const dynasty = (officer.dynasty ??
+    (sec !== undefined ? factionFromSection(sec) : 'qun')) as DynastyTag
   const card: CardDef = {
     id: officer.id,
     collectorNo: CARD_INDEX[officer.id] ?? 0,
