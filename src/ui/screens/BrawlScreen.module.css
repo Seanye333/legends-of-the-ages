@@ -92,3 +92,19 @@
 .brawlGo { font-size: 13px; font-weight: 700; color: #e0b060; align-self: flex-end; }
 
 @media (prefers-reduced-motion: reduce) { .brawlCard { transition: none; } }
+
+/* 本周当值乱斗:高亮 + 角标(每周一换,给回访一个理由) */
+.weeklyCard {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px rgba(232, 200, 120, 0.25), 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+.weeklyTag {
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--gold);
+  color: #1b150c;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  vertical-align: 2px;
+}

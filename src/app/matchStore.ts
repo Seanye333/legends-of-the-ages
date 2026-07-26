@@ -20,6 +20,7 @@ import { useArena } from './arenaStore'
 import { useAchievements } from './achievementStore'
 import { useCampaign } from './campaignStore'
 import { useHistory } from './historyStore'
+import { useWeeklyBrawl } from './weeklyBrawlStore'
 import { useExpedition } from './expeditionStore'
 import { useLethal, type PuzzleReward } from './lethalStore'
 import { useDeckStats } from './deckStatsStore'
@@ -58,6 +59,8 @@ export interface StartMatchArgs {
   scenario?: PuzzleScenario
   // 名局特殊胜负目标(守 N 回合等);写进 GameState.objective 由引擎判
   objective?: BattleObjective
+  // 每周乱斗:传当值周键;胜利则按周发一次首胜功勋
+  weeklyBrawlWeek?: string
   // 每日谜题:胜利走「按天」奖励(solveDaily),而不是按谜题 id 的静态奖励
   daily?: boolean
   dailyDate?: string
@@ -89,6 +92,7 @@ interface MatchStoreState {
   campaign: boolean
   history: boolean
   expedition: boolean
+  weeklyBrawlWeek: string | null
   // 斩杀谜题态:puzzle 标识本局是谜题;puzzleResult 由 send 判定(赢/本回合结束未赢=输)
   puzzle: boolean
   puzzleId: string | null
@@ -248,6 +252,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
   campaign: false,
   history: false,
   expedition: false,
+  weeklyBrawlWeek: null,
   puzzle: false,
   puzzleId: null,
   puzzleResult: null,
@@ -318,6 +323,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       campaign: args.campaign === true,
       history: args.history === true,
       expedition: args.expedition === true,
+      weeklyBrawlWeek: args.weeklyBrawlWeek ?? null,
       puzzle: args.puzzle === true,
       puzzleId: args.puzzleId ?? null,
       puzzleResult: null,
@@ -441,6 +447,14 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
     const events = r.updates.flatMap((u) => u.events)
     const last = r.updates[r.updates.length - 1]
     settleMatch(events, get().arena, get().campaign, get().expedition, get().history)
+    // 每周乱斗首胜:按周发一次功勋(乱斗本身仍走普通战绩)
+    const wk = get().weeklyBrawlWeek
+    if (wk) {
+      const endedEv = events.find((e) => e.type === 'GameEnded')
+      if (endedEv?.type === 'GameEnded' && endedEv.winner === 0) {
+        useWeeklyBrawl.getState().settleWin(wk)
+      }
+    }
     settleQuests(events, last.state)
     recordDeckResult(events, get().deckKey)
     recordReplayFrame(last.state, events)
@@ -495,6 +509,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       campaign: false,
       history: false,
       expedition: false,
+      weeklyBrawlWeek: null,
       puzzle: false,
       puzzleId: null,
       puzzleResult: null,

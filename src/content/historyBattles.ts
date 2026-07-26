@@ -167,6 +167,39 @@ export const HISTORY_BATTLES: HistoryBattle[] = [
     rewardMerit: 220,
     rewardPacks: 1,
   },
+  // ---------- 战国 · 前 259 ----------
+  {
+    id: 'hb-handan',
+    name: { zh: '邯鄲之戰', en: 'The Siege of Handan' },
+    era: { zh: '戰國 · 秦昭襄王四十八年', en: 'Warring States · 259 BC' },
+    foeName: { zh: '廉頗', en: 'Lian Po' },
+    foeTitle: { zh: '趙之堅壁', en: 'The Bulwark of Zhao' },
+    intro: {
+      zh: '长平之后,赵国只剩一座邯郸。廉颇筑垒深壁,坚守不出 —— 你要撞开的是一位老将三十年的耐心。',
+      en: 'After Changping, Zhao has only Handan left. Lian Po digs in and refuses battle — what you must break is thirty years of an old general’s patience.',
+    },
+    situation: {
+      zh: '深壁坚守:敌方主公开局披 6 甲,并有一座 0/4 守护壁垒;你多抽一张。',
+      en: 'Dug in: the enemy hero opens with 6 Armor behind a 0/4 Guard rampart; you draw an extra card.',
+    },
+    heroId: 'hist-lian-po',
+    doctrine: 'hegemonic',
+    hp: 44,
+    deckTier: 0.8,
+    power: power(
+      'hbp-jianbi',
+      { zh: '堅壁清野', en: 'Fortify and Wait' },
+      { zh: '使一名友方武將+0/+3並獲得守護。', en: 'Give a friendly general +0/+3 and Guard.' },
+      [
+        { op: 'buffStats', attack: 0, health: 3, target: 'chosenFriendlyGeneral' },
+        { op: 'grantKeyword', keyword: 'guard', target: 'chosenFriendlyGeneral' },
+      ],
+    ),
+    enemyModifiers: { startArmor: 6, startTokens: ['token-shui-zhai'] },
+    playerModifiers: { bonusHandSize: 1 },
+    rewardMerit: 240,
+    rewardPacks: 1,
+  },
   // ---------- 楚汉 · 前 202 ----------
   {
     id: 'hb-gaixia',
@@ -196,6 +229,36 @@ export const HISTORY_BATTLES: HistoryBattle[] = [
       startTokens: ['token-xiangyong', 'token-xiangyong', 'token-xiangyong'],
       bonusHandSize: 1,
     },
+    rewardMerit: 260,
+    rewardPacks: 1,
+  },
+  // ---------- 新莽 · 23 ----------
+  {
+    id: 'hb-kunyang',
+    name: { zh: '昆陽之戰', en: 'The Battle of Kunyang' },
+    era: { zh: '新莽 · 地皇四年', en: 'Xin Dynasty · AD 23' },
+    foeName: { zh: '劉秀', en: 'Liu Xiu' },
+    foeTitle: { zh: '位面之子', en: 'Favored of Heaven' },
+    intro: {
+      zh: '四十二万新军围昆阳,城中不过八千。刘秀引三千敢死自城外突阵 —— 而后天雷助阵,风雨如晦。',
+      en: 'Four hundred thousand besiege Kunyang; eight thousand hold it. Liu Xiu charges from outside with three thousand — and then the storm itself takes his side.',
+    },
+    situation: {
+      zh: '以少击众:敌方虽少却锐,开局带一名 3/3 敢死;你众而钝,开局 5 甲、多抽一张。',
+      en: 'Few but fierce: the enemy opens with a 3/3; your host is many but slow — you take 5 Armor and an extra card.',
+    },
+    heroId: 'hist-liu-xiu',
+    doctrine: 'royal',
+    hp: 38,
+    deckTier: 0.88,
+    power: power(
+      'hbp-tianlei',
+      { zh: '天雷助陣', en: 'Heaven’s Own Thunder' },
+      { zh: '造成 2 點傷害。', en: 'Deal 2 damage.' },
+      [{ op: 'damage', amount: 2, target: 'chosenAny' }],
+    ),
+    enemyModifiers: { startTokens: ['token-jin-jun'] },
+    playerModifiers: { startArmor: 5, bonusHandSize: 1 },
     rewardMerit: 260,
     rewardPacks: 1,
   },
@@ -429,6 +492,39 @@ export const HISTORY_BATTLES: HistoryBattle[] = [
     enemyModifiers: { startArmor: 2 },
     playerModifiers: { startArmor: 3, bonusHandSize: 1 },
     rewardMerit: 420,
+    rewardPacks: 2,
+  },
+  // ---------- 明 · 1561 ----------
+  {
+    id: 'hb-taizhou',
+    name: { zh: '台州九捷', en: 'Nine Victories at Taizhou' },
+    era: { zh: '明 · 嘉靖四十年', en: 'Ming · AD 1561' },
+    foeName: { zh: '戚繼光', en: 'Qi Jiguang' },
+    foeTitle: { zh: '鴛鴦陣', en: 'The Mandarin Duck Formation' },
+    intro: {
+      zh: '倭寇纵横海上数十年,直到戚家军列出鸳鸯阵。长短相济,十二人如一人 —— 一月九战九捷。',
+      en: 'The raiders ruled the coast for decades — until the Qi army formed the Mandarin Duck. Long and short arms as one body: nine battles, nine victories, in a single month.',
+    },
+    situation: {
+      zh: '鸳鸯阵:敌方开局带两名 1/3 守护(长短相济、阵不可破);你多抽两张抢先手。',
+      en: 'The formation: the enemy opens with two 1/3 Guards; you draw two extra cards to strike first.',
+    },
+    heroId: 'hist-qi-jiguang',
+    doctrine: 'royal',
+    hp: 46,
+    deckTier: 0.75,
+    power: power(
+      'hbp-yuanyang',
+      { zh: '鴛鴦陣', en: 'Mandarin Duck Formation' },
+      { zh: '使一名友方武將+1/+1並獲得守護。', en: 'Give a friendly general +1/+1 and Guard.' },
+      [
+        { op: 'buffStats', attack: 1, health: 1, target: 'chosenFriendlyGeneral' },
+        { op: 'grantKeyword', keyword: 'guard', target: 'chosenFriendlyGeneral' },
+      ],
+    ),
+    enemyModifiers: { startTokens: ['token-danyang-bing', 'token-danyang-bing'] },
+    playerModifiers: { bonusHandSize: 2 },
+    rewardMerit: 460,
     rewardPacks: 2,
   },
 ]

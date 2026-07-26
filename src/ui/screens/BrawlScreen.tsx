@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { BRAWLS } from '../../content/brawls'
+import { WEEKLY_BRAWL_MERIT, weekKey, weeklyBrawlIndexFor } from '../../content/weeklyBrawl'
+import { useWeeklyBrawl } from '../../app/weeklyBrawlStore'
 import { PRECON_DECKS } from '../../content/decks'
 import { HEROES_BY_ID } from '../../content/overrides/heroes'
 import { START_HP } from '../../engine/types'
@@ -23,6 +25,10 @@ export function BrawlScreen({ onBack, onEnterMatch }: BrawlScreenProps) {
   const customDecks = useCollection((s) => s.customDecks)
   const [deckIndex, setDeckIndex] = useState(0)
   const myDecks = [...PRECON_DECKS, ...customDecks]
+  // 本周当值乱斗:首胜给一次功勋(每周一换,给回访一个理由)
+  const thisWeek = weekKey()
+  const weeklyIndex = weeklyBrawlIndexFor(thisWeek)
+  const weeklyWon = useWeeklyBrawl((s) => s.wonWeek) === thisWeek
 
   const fight = (brawlIndex: number) => {
     const brawl = BRAWLS[brawlIndex]
@@ -42,6 +48,8 @@ export function BrawlScreen({ onBack, onEnterMatch }: BrawlScreenProps) {
       heroPowersOverride: [myHero?.power, oppHero?.power],
       heroHpsOverride: [hp, hp],
       modifiersOverride: [brawl.modifiers, brawl.modifiers], // 规则双方同吃
+      // 只有当值那条算「本周乱斗」,胜了才发一次首胜功勋
+      weeklyBrawlWeek: brawlIndex === weeklyIndex ? thisWeek : undefined,
     })
     onEnterMatch()
   }
@@ -94,13 +102,31 @@ export function BrawlScreen({ onBack, onEnterMatch }: BrawlScreenProps) {
       </div>
 
       <div className={styles.brawlList}>
-        {BRAWLS.map((b, i) => (
-          <button key={b.id} className={styles.brawlCard} onClick={() => fight(i)}>
-            <div className={styles.brawlName}>{pick(b.name)}</div>
-            <div className={styles.brawlText}>{pick(b.text)}</div>
-            <div className={styles.brawlGo}>{t('开战 ›', 'Fight ›')}</div>
-          </button>
-        ))}
+        {BRAWLS.map((b, i) => {
+          const isWeekly = i === weeklyIndex
+          return (
+            <button
+              key={b.id}
+              className={`${styles.brawlCard} ${isWeekly ? styles.weeklyCard : ''}`}
+              onClick={() => fight(i)}
+            >
+              <div className={styles.brawlName}>
+                {pick(b.name)}
+                {isWeekly && (
+                  <span className={styles.weeklyTag}>{t('本周', 'This week')}</span>
+                )}
+              </div>
+              <div className={styles.brawlText}>{pick(b.text)}</div>
+              <div className={styles.brawlGo}>
+                {isWeekly
+                  ? weeklyWon
+                    ? t('开战 › (本周首胜已领)', 'Fight › (weekly bonus claimed)')
+                    : t(`开战 › 首胜 +${WEEKLY_BRAWL_MERIT} 功勋`, `Fight › +${WEEKLY_BRAWL_MERIT} merit`)
+                  : t('开战 ›', 'Fight ›')}
+              </div>
+            </button>
+          )
+        })}
       </div>
     </div>
   )
