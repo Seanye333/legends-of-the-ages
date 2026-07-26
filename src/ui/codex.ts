@@ -323,6 +323,19 @@ export const CODEX: CodexSection[] = [
         example: (c) => JSON.stringify(c).includes('banish'),
       },
       {
+        id: 'tutor',
+        term: { zh: '求賢 Tutor', en: 'Tutor' },
+        rule: {
+          zh: '从你的牌库里检索一张**指定类型**的牌(武将/锦囊/装备)进入手牌。',
+          en: 'Search your deck for a card of a given type (general / stratagem / equipment) and take it into hand.',
+        },
+        note: {
+          zh: '抽牌看天,求贤看你缺什么:缺解场就搜锦囊,缺身材就搜武将。和「搜将」的区别在落点 —— 搜将直接把人拉上场抢节奏,求贤只进手,换来的是选择权和一个回合的缓冲。手牌满了会烧掉。',
+          en: 'Drawing is luck; tutoring answers what you lack — a stratagem for removal, a general for a body. The difference from Recruit is where it lands: Recruit puts the unit straight onto the board for tempo, while Tutor puts the card in hand, buying choice instead. It burns if your hand is full.',
+        },
+        example: (c) => JSON.stringify(c).includes('tutor'),
+      },
+      {
         id: 'recruit',
         term: { zh: '搜將 Recruit', en: 'Recruit' },
         rule: { zh: '从你的牌库随机召唤武将直接上场。', en: 'Summon a random general straight from your deck.' },

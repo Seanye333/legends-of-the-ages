@@ -186,4 +186,43 @@ export const PACK17_CARDS: CardDef[] = [
       en: 'Banish an enemy general — no deathrattle, and it never reaches the graveyard.',
     },
   },
+  // ---- 第五个新 opcode:求贤 tutor ----
+  // 从牌库检索指定**类型**的牌进手。与抽牌的差别是确定性:缺解场就搜锦囊,
+  // 缺身材就搜武将。与 recruit 的差别:那个直接上场(tempo),这个进手(资源与选择权)。
+  {
+    id: 'strat-ritual-summons',
+    collectorNo: 9943,
+    name: { zh: '求賢詔', en: 'The Call for Worthies' },
+    type: 'stratagem',
+    doctrine: 'ritual',
+    dynasty: 'qun',
+    rarity: 'rare',
+    archetype: 'strategist',
+    cost: 2,
+    keywords: [],
+    spell: { ops: [{ op: 'tutor', kind: 'general', count: 1 }] },
+    text: {
+      zh: '從你的牌庫檢索一名武將進入手牌。',
+      en: 'Draw a general from your deck.',
+    },
+  },
+  {
+    id: 'gen-recl-archivist',
+    collectorNo: 9944,
+    name: { zh: '藏書閣', en: 'The Archive' },
+    type: 'general',
+    doctrine: 'reclusion',
+    dynasty: 'qun',
+    rarity: 'rare',
+    archetype: 'strategist',
+    cost: 3,
+    attack: 2,
+    health: 3,
+    keywords: [],
+    battlecry: { ops: [{ op: 'tutor', kind: 'stratagem', count: 1 }] },
+    text: {
+      zh: '戰吼:從你的牌庫檢索一張錦囊進入手牌。',
+      en: 'Battlecry: Draw a stratagem from your deck.',
+    },
+  },
 ]

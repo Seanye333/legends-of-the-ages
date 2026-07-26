@@ -128,3 +128,28 @@ describe('焚尸 banish', () => {
     expect(r.state.players[1].graveyard).not.toContain('guan-yu') // 不进墓地
   })
 })
+
+describe('求贤 tutor', () => {
+  it('只检索指定类型,牌从库进手', () => {
+    const s = game(['strat-ritual-summons'], [])
+    s.players[0].deck = [
+      { iid: 800, defId: 'strat-fame-defect' },
+      { iid: 801, defId: 'guan-yu' },
+    ] as never
+    const r = play(s, s.players[0].hand[0].iid)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    // 搜的是武将 → 只可能拿到 guan-yu,锦囊留在库里
+    expect(r.state.players[0].hand.map((c) => c.defId)).toContain('guan-yu')
+    expect(r.state.players[0].deck.map((c) => c.defId)).toEqual(['strat-fame-defect'])
+  })
+
+  it('库里没有该类型时什么都不发生(不报错)', () => {
+    const s = game(['strat-ritual-summons'], [])
+    s.players[0].deck = [{ iid: 800, defId: 'strat-fame-defect' }] as never
+    const r = play(s, s.players[0].hand[0].iid)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.state.players[0].deck).toHaveLength(1)
+  })
+})

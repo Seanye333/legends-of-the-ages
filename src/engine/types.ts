@@ -110,6 +110,7 @@ export type EffectOp =
   | { op: 'stealCard'; count: number } // 离间:从对手手牌随机抽 N 张到我方手里
   | { op: 'copyGeneral'; target: EffectTarget } // 疑兵:在我方场上复制一个武将(照卡面复制,不带伤与附魔)
   | { op: 'banish'; target: EffectTarget } // 焚尸:放逐一个武将 —— 不算死亡,不触发亡语、不进墓地
+  | { op: 'tutor'; kind: 'general' | 'stratagem' | 'equipment'; count: number } // 求贤:从牌库检索指定类型的牌进手
   | { op: 'recruit'; count: number } // 搜将:从我方牌库随机召唤 N 个武将上场
   | { op: 'summon'; defId: string; count: number }
   | { op: 'aoeDamage'; amount: number }

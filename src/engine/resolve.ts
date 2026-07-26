@@ -773,6 +773,32 @@ export function runScript(
         }
         break
       }
+      case 'tutor': {
+        // 求贤:从**牌库**里随机抽一张指定类型的牌进手(那张从库里消耗掉)。
+        //
+        // 与 draw 的差别是**确定性**:抽牌看天,求贤指定类别 —— 缺解场就搜锦囊,
+        // 缺身材就搜武将。这是第五条轴:不动场面、不动牌差总量,动的是**抽到什么**。
+        // 与 recruit 的差别:recruit 直接上场(tempo),tutor 进手(资源与选择权)。
+        // 复用 CardGenerated(defId 本就对对手抹),不新增事件。
+        const me = state.players[player]
+        for (let i = 0; i < op.count; i++) {
+          const pool = me.deck
+            .map((c, idx) => ({ defId: c.defId, idx }))
+            .filter((x) => lib[x.defId]?.type === op.kind)
+          if (pool.length === 0) break
+          const roll = rngInt(state.rng, pool.length)
+          state.rng = roll.next
+          const pick = pool[roll.value]
+          const [card] = me.deck.splice(pick.idx, 1)
+          if (me.hand.length >= HAND_LIMIT) {
+            events.push({ type: 'CardBurned', player, defId: card.defId })
+            continue
+          }
+          me.hand.push(card)
+          events.push({ type: 'CardGenerated', player, iid: card.iid, defId: card.defId })
+        }
+        break
+      }
       case 'banish': {
         // 焚尸(放逐):把武将直接移出战场 —— **不算死亡**。
         //
