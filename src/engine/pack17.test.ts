@@ -89,3 +89,28 @@ describe('离间 stealCard', () => {
     expect(r.ok).toBe(true)
   })
 })
+
+describe('疑兵 copyGeneral', () => {
+  it('照卡面复制 —— 复制品不带原件身上的伤', () => {
+    const s = game(['strat-royal-decoy'], [], ['guan-yu'])
+    const orig = s.players[0].board[0]
+    orig.damage = 2 // 原件带伤
+    const r = play(s, s.players[0].hand[0].iid, orig.iid)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.state.players[0].board).toHaveLength(2)
+    const copy = r.state.players[0].board[1]
+    expect(copy.defId).toBe('guan-yu')
+    expect(copy.damage).toBe(0) // 复制的是牌,不是残躯
+    expect(copy.iid).not.toBe(orig.iid)
+  })
+
+  it('满场则不复制', () => {
+    const full = Array(BOARD_LIMIT).fill('token-xiangyong')
+    const s = game(['strat-royal-decoy'], [], full)
+    const r = play(s, s.players[0].hand[0].iid, s.players[0].board[0].iid)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.state.players[0].board).toHaveLength(BOARD_LIMIT)
+  })
+})

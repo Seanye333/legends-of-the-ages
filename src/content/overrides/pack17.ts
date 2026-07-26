@@ -125,4 +125,44 @@ export const PACK17_CARDS: CardDef[] = [
       en: "Stealth. Battlecry: Take a random card from your opponent's hand.",
     },
   },
+  // ---- 第三个新 opcode:疑兵 copyGeneral ----
+  // 照**卡面**复制我方一个武将(不带伤、不带附魔)。第三条轴:既不是场面差二、
+  // 也不是牌差,而是**把你最好的那张牌再打一次** —— 天生鼓励「养一张大哥」的构筑,
+  // 与铺场流是两个方向。定价靠上限:复制出来的身材恒等于那张牌本身,不会滚雪球。
+  {
+    id: 'strat-royal-decoy',
+    collectorNo: 9940,
+    name: { zh: '疑兵', en: 'Decoy Ranks' },
+    type: 'stratagem',
+    doctrine: 'royal',
+    dynasty: 'qun',
+    rarity: 'rare',
+    archetype: 'strategist',
+    cost: 5,
+    keywords: [],
+    spell: { ops: [{ op: 'copyGeneral', target: 'chosenFriendlyGeneral' }] },
+    text: {
+      zh: '在你的場上複製一名友方武將(照卡面)。',
+      en: 'Summon a copy of a friendly general (base stats).',
+    },
+  },
+  {
+    id: 'gen-ritual-double',
+    collectorNo: 9941,
+    name: { zh: '影武者', en: 'The Body Double' },
+    type: 'general',
+    doctrine: 'ritual',
+    dynasty: 'qun',
+    rarity: 'epic',
+    archetype: 'strategist',
+    cost: 6,
+    attack: 3,
+    health: 3,
+    keywords: [],
+    battlecry: { ops: [{ op: 'copyGeneral', target: 'chosenFriendlyGeneral' }] },
+    text: {
+      zh: '戰吼:複製一名友方武將(照卡面)。',
+      en: 'Battlecry: Summon a copy of a friendly general (base stats).',
+    },
+  },
 ]

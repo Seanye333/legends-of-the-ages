@@ -297,6 +297,19 @@ export const CODEX: CodexSection[] = [
         example: (c) => JSON.stringify(c).includes('stealCard'),
       },
       {
+        id: 'copyGeneral',
+        term: { zh: '疑兵 Decoy', en: 'Decoy' },
+        rule: {
+          zh: '在你的场上复制一名友方武将,照**卡面**造(不带伤、不带增益)。',
+          en: 'Summon a copy of a friendly general at its printed stats — no damage, no buffs.',
+        },
+        note: {
+          zh: '第三条路:不换场面、不换牌差,而是把你最好的那张牌**再打一次**。照卡面复制是刻意的 —— 若连增益一起复制,「先 buff 再复制」就能无限滚雪球;照卡面则上限恒等于那张牌本身,好定价。你满场时不复制。',
+          en: 'A third axis: not a board swap or a card swap, but playing your best card twice. Copying base stats is deliberate — copying buffs too would let you buff-then-copy for a runaway snowball. If your board is full, nothing is summoned.',
+        },
+        example: (c) => JSON.stringify(c).includes('copyGeneral'),
+      },
+      {
         id: 'recruit',
         term: { zh: '搜將 Recruit', en: 'Recruit' },
         rule: { zh: '从你的牌库随机召唤武将直接上场。', en: 'Summon a random general straight from your deck.' },

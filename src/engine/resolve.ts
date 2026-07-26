@@ -773,6 +773,33 @@ export function runScript(
         }
         break
       }
+      case 'copyGeneral': {
+        // 疑兵:照**卡面**再造一个(不带伤、不带附魔)—— 复制的是那张牌,不是那个残躯。
+        // 理由:带附魔复制会把「buff 一个再复制」变成无限滚雪球,而照卡面复制的上限
+        // 恒等于那张牌本身的身材,好定价。复用 makeBoardInstance + GeneralSummoned,
+        // 不新增事件、不动 UI 三处。满场即停。
+        for (const ref of refs(op.target)) {
+          if (ref.kind !== 'general') continue
+          const loc = findGeneral(state, ref.iid)
+          if (!loc) continue
+          const p = state.players[player]
+          if (p.board.length >= BOARD_LIMIT) break
+          const def = lib[loc.inst.defId]
+          if (!def || def.type !== 'general') continue
+          const inst = makeBoardInstance(state, def.id, lib)
+          p.board.push(inst)
+          events.push({
+            type: 'GeneralSummoned',
+            player,
+            iid: inst.iid,
+            defId: def.id,
+            position: p.board.length - 1,
+            attack: inst.attack,
+            health: inst.health,
+          })
+        }
+        break
+      }
       case 'swapStats': {
         for (const ref of refs(op.target)) {
           if (ref.kind !== 'general') continue

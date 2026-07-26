@@ -108,6 +108,7 @@ export type EffectOp =
   | { op: 'swapStats'; target: EffectTarget } // 交换攻击与最大生命(移形换位)
   | { op: 'seize'; target: EffectTarget } // 策反:把敌方武将夺到我方场上(我方满场则无事发生)
   | { op: 'stealCard'; count: number } // 离间:从对手手牌随机抽 N 张到我方手里
+  | { op: 'copyGeneral'; target: EffectTarget } // 疑兵:在我方场上复制一个武将(照卡面复制,不带伤与附魔)
   | { op: 'recruit'; count: number } // 搜将:从我方牌库随机召唤 N 个武将上场
   | { op: 'summon'; defId: string; count: number }
   | { op: 'aoeDamage'; amount: number }
