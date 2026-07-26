@@ -350,9 +350,19 @@ export interface GameState {
 }
 
 // 历史名战的特殊胜负目标(座位 0 = 玩家视角)。引擎在 checkGameEnd 里判。
-// 先只有「守成」一种;斩指定将 / 护单位不死走同一个钩子扩展(需按 iid 标记单位)。
+// 三类共用一个钩子:守成看回合数;斩将/护送按 iid 标记一个单位,靠 GeneralDied 事件判死。
+// targetIid 由 createGame 解析(开局在 targetSide 场上找 targetDefId 的实例),内容层只给选择器。
 export type BattleObjective =
   | { kind: 'survive'; turns: number } // 座位 0 撑过第 `turns` 回合(含双方)即胜
+  | ({ kind: 'assassinate' } & ObjectiveUnit) // 斩掉敌方指定单位即胜(座位 0 胜)
+  | ({ kind: 'protect' } & ObjectiveUnit) // 我方指定单位阵亡即负(座位 0 负)
+
+export interface ObjectiveUnit {
+  targetSide: PlayerIdx // 目标单位所在座位
+  targetDefId: string // 目标单位的卡 id(开局态势 startTokens 放上场的那个)
+  targetName: LocalizedText // UI 显示用(斩「顏良」/ 护「幼主」)
+  targetIid?: number // createGame 解析出的实例 id;未解析到则该目标永不触发
+}
 
 // ---------- 命令(玩家意图) ----------
 

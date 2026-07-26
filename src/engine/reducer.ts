@@ -524,12 +524,21 @@ export function checkGameEnd(state: GameState, events: GameEvent[]): void {
     return
   }
   // 名局特殊目标(座位 0 = 玩家)。死亡判定优先 —— 撑不住先按普通规则判负。
-  // 「守成」在**玩家自己回合开始**判(beginTurn 里 turn 已 +1、activePlayer 已切):
-  // 敌方拿满 obj.turns 个回合来强杀,过了这个坎、轮到玩家时还活着,就算守住。
   const obj = state.objective
-  if (obj?.kind === 'survive' && state.activePlayer === 0 && state.turn > obj.turns) {
-    endGame(state, events, 0)
+  if (!obj) return
+  // 守成:在**玩家自己回合开始**判(beginTurn 里 turn 已 +1、activePlayer 已切),
+  // 敌方拿满 obj.turns 个回合来强杀,过了这个坎、轮到玩家时还活着,就算守住。
+  if (obj.kind === 'survive') {
+    if (state.activePlayer === 0 && state.turn > obj.turns) endGame(state, events, 0)
+    return
   }
+  // 斩将 / 护送:靠本批事件里的 GeneralDied 精确认「那个 iid 死了」。
+  // 用事件而非「离场」判 —— 弹回手牌/变形不算死,不能误伤(尤其护送)。
+  if (obj.targetIid == null) return
+  const targetDied = events.some((e) => e.type === 'GeneralDied' && e.iid === obj.targetIid)
+  if (!targetDied) return
+  if (obj.kind === 'assassinate') endGame(state, events, 0) // 斩将成功,玩家胜
+  else endGame(state, events, 1) // 护送失败,玩家负
 }
 
 function endGame(state: GameState, events: GameEvent[], winner: Winner): void {

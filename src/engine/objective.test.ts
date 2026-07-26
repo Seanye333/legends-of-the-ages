@@ -70,3 +70,55 @@ describe('名局目标:守成 (survive)', () => {
     expect(s.winner).toBeUndefined()
   })
 })
+
+// 斩将 / 护送:目标单位由开局态势放上场,createGame 解析出 iid,靠 GeneralDied 事件判死。
+function gameWithTarget(kind: 'assassinate' | 'protect', side: 0 | 1, tokenId: string) {
+  const cfg: GameConfig = {
+    seed: 1,
+    heroIds: [PRECON_DECKS[0].heroId, PRECON_DECKS[1].heroId],
+    deckIds: [PRECON_DECKS[0].cardIds.slice(), PRECON_DECKS[1].cardIds.slice()],
+    first: 0,
+    modifiers: side === 0 ? [{ startTokens: [tokenId] }, undefined] : [undefined, { startTokens: [tokenId] }],
+    objective: { kind, targetSide: side, targetDefId: tokenId, targetName: { zh: '目标', en: 'Target' } },
+  }
+  return createGame(cfg, CARDS_BY_ID)
+}
+
+function targetIidOf(s: ReturnType<typeof gameWithTarget>): number | undefined {
+  return s.objective && 'targetIid' in s.objective ? s.objective.targetIid : undefined
+}
+
+describe('名局目标:斩将 / 护送', () => {
+  it('createGame 把 targetIid 解析到开局那张具名 token', () => {
+    const s = gameWithTarget('protect', 0, 'token-you-zhu')
+    const unit = s.players[0].board.find((u) => u.defId === 'token-you-zhu')
+    expect(unit).toBeDefined()
+    expect(targetIidOf(s)).toBe(unit!.iid)
+  })
+
+  it('斩将:目标 GeneralDied → 玩家胜', () => {
+    const s = gameWithTarget('assassinate', 1, 'token-yan-liang')
+    const iid = targetIidOf(s)
+    expect(iid).toBeDefined()
+    const ev: GameEvent[] = [{ type: 'GeneralDied', player: 1, iid: iid!, defId: 'token-yan-liang' }]
+    checkGameEnd(s, ev)
+    expect(s.phase).toBe('ended')
+    expect(s.winner).toBe(0)
+  })
+
+  it('护送:目标 GeneralDied → 玩家负', () => {
+    const s = gameWithTarget('protect', 0, 'token-you-zhu')
+    const iid = targetIidOf(s)
+    const ev: GameEvent[] = [{ type: 'GeneralDied', player: 0, iid: iid!, defId: 'token-you-zhu' }]
+    checkGameEnd(s, ev)
+    expect(s.phase).toBe('ended')
+    expect(s.winner).toBe(1)
+  })
+
+  it('非目标单位死亡不触发', () => {
+    const s = gameWithTarget('assassinate', 1, 'token-yan-liang')
+    const ev: GameEvent[] = [{ type: 'GeneralDied', player: 1, iid: 999999, defId: 'token-tie-qi' }]
+    checkGameEnd(s, ev)
+    expect(s.phase).not.toBe('ended')
+  })
+})

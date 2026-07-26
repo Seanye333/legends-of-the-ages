@@ -1,4 +1,5 @@
 import type {
+  BattleObjective,
   CardInstance,
   CardLibrary,
   GameConfig,
@@ -10,6 +11,22 @@ import type {
 import { BOARD_LIMIT, DECK_SIZE, HAND_LIMIT, OPENING_HAND, SECRET_LIMIT, START_HP } from './types'
 import { rngShuffle, seedRng } from './rng'
 import { refreshInstance } from './resolve'
+
+// 斩将/护送目标:开局在指定座位场上找到那张具名 token,把它的 iid 钉进目标。
+// 内容层只给「哪一侧的哪张牌」,iid 在这里(棋盘刚铺好、iid 已分配)才拿得到。
+// 找不到 → targetIid 留空 → 该目标永不触发(内容闸门会断言它一定找得到)。
+function resolveObjective(
+  objective: BattleObjective | undefined,
+  players: [PlayerState, PlayerState],
+): BattleObjective | undefined {
+  if (!objective) return undefined
+  if (objective.kind === 'assassinate' || objective.kind === 'protect') {
+    if (objective.targetIid != null) return objective
+    const unit = players[objective.targetSide].board.find((u) => u.defId === objective.targetDefId)
+    return { ...objective, targetIid: unit?.iid }
+  }
+  return objective
+}
 
 // 卡牌实例工厂。派生字段一律由 refreshInstance 算,调用方不要手写 attack/health。
 export function createInstance(defId: string, iid: number, lib: CardLibrary): CardInstance {
@@ -107,7 +124,7 @@ export function createGame(cfg: GameConfig, lib: CardLibrary): GameState {
     phase: 'mulligan',
     players,
     nextIid,
-    objective: cfg.objective,
+    objective: resolveObjective(cfg.objective, players),
   }
 }
 
@@ -196,6 +213,6 @@ function createScenarioGame(
     phase: 'main',
     players,
     nextIid,
-    objective: cfg.objective,
+    objective: resolveObjective(cfg.objective, players),
   }
 }

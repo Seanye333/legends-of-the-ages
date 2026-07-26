@@ -25,6 +25,7 @@ import { PACK14_CARDS } from './overrides/pack14'
 import { PACK15_CARDS } from './overrides/pack15'
 import { PACK16_CARDS } from './overrides/pack16'
 import { CAMPAIGN_TOKENS } from './overrides/campaign-tokens'
+import { HISTORY_TOKENS } from './history-tokens'
 
 // 全卡池 = (生成默认值 ⊕ 各卡包覆盖) + 手工锦囊 + 第二~六卡包
 // 覆盖顺序:后者赢。各覆盖表刻意不与签名集重叠(只挑签名之外的花名册)。
@@ -70,6 +71,7 @@ export const CARDS: CardDef[] = [
   ...PACK15_CARDS,
   ...PACK16_CARDS,
   ...CAMPAIGN_TOKENS,
+  ...HISTORY_TOKENS,
 ]
 
 export const CARDS_BY_ID: CardLibrary = Object.fromEntries(CARDS.map((c) => [c.id, c]))
