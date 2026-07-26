@@ -773,6 +773,31 @@ export function runScript(
         }
         break
       }
+      case 'banish': {
+        // 焚尸(放逐):把武将直接移出战场 —— **不算死亡**。
+        //
+        // 它补的是卡池里一个真空:此前没有任何一张牌能解掉「亡语/复生」流派 ——
+        // 消灭只会把它送进墓地,正好喂给复生。放逐则彻底带走:
+        //   · 不发 GeneralDied,所以不触发亡语,也不会被「护送」类目标误判成阵亡;
+        //   · **不进墓地**,所以复生搜不到它。
+        // 代价是必须新增一个事件(UI 三处 + 覆盖样本已同步)。
+        for (const ref of refs(op.target)) {
+          if (ref.kind !== 'general') continue
+          const loc = findGeneral(state, ref.iid)
+          if (!loc) continue
+          const board = state.players[loc.player].board
+          const idx = board.findIndex((u) => u.iid === ref.iid)
+          if (idx < 0) continue
+          const [gone] = board.splice(idx, 1)
+          events.push({
+            type: 'GeneralBanished',
+            player: loc.player,
+            iid: gone.iid,
+            defId: gone.defId,
+          })
+        }
+        break
+      }
       case 'copyGeneral': {
         // 疑兵:照**卡面**再造一个(不带伤、不带附魔)—— 复制的是那张牌,不是那个残躯。
         // 理由:带附魔复制会把「buff 一个再复制」变成无限滚雪球,而照卡面复制的上限

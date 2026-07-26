@@ -165,4 +165,25 @@ export const PACK17_CARDS: CardDef[] = [
       en: 'Battlecry: Summon a copy of a friendly general (base stats).',
     },
   },
+  // ---- 第四个新 opcode:焚尸 banish ----
+  // 补的是卡池里一个真空:此前**没有任何一张牌能解掉亡语/复生流**——
+  // 消灭只会把目标送进墓地,正好喂给复生。放逐则彻底带走(不算死亡、不进墓地)。
+  // 定价比同效果的消灭贵一点:它是「精确解」,专治那一类卡组。
+  {
+    id: 'strat-heg-immolate',
+    collectorNo: 9942,
+    name: { zh: '焚屍揚灰', en: 'Ashes to the Wind' },
+    type: 'stratagem',
+    doctrine: 'hegemonic',
+    dynasty: 'qun',
+    rarity: 'rare',
+    archetype: 'warrior',
+    cost: 4,
+    keywords: [],
+    spell: { ops: [{ op: 'banish', target: 'chosenEnemyGeneral' }] },
+    text: {
+      zh: '放逐一名敵方武將 —— 不觸發亡語,也不入墓地。',
+      en: 'Banish an enemy general — no deathrattle, and it never reaches the graveyard.',
+    },
+  },
 ]

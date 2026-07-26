@@ -248,6 +248,8 @@ function line(ev: GameEvent, ctx: EventTextCtx, l: Lang): string {
       return zh
         ? `${side(ev.player)}发现:${dn(ev.defId)}`
         : `${side(ev.player)} discovered ${dn(ev.defId)}`
+    case 'GeneralBanished':
+      return zh ? `${dn(ev.defId)}被焚尸揚灰,不入輪迴` : `${dn(ev.defId)} was banished — no deathrattle, no grave`
     case 'GeneralSeized':
       return zh
         ? `${dn(ev.defId)}临阵倒戈,归于我方`

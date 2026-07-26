@@ -109,6 +109,7 @@ export type EffectOp =
   | { op: 'seize'; target: EffectTarget } // 策反:把敌方武将夺到我方场上(我方满场则无事发生)
   | { op: 'stealCard'; count: number } // 离间:从对手手牌随机抽 N 张到我方手里
   | { op: 'copyGeneral'; target: EffectTarget } // 疑兵:在我方场上复制一个武将(照卡面复制,不带伤与附魔)
+  | { op: 'banish'; target: EffectTarget } // 焚尸:放逐一个武将 —— 不算死亡,不触发亡语、不进墓地
   | { op: 'recruit'; count: number } // 搜将:从我方牌库随机召唤 N 个武将上场
   | { op: 'summon'; defId: string; count: number }
   | { op: 'aoeDamage'; amount: number }
@@ -484,6 +485,7 @@ export type GameEvent =
   | { type: 'CardCostChanged'; player: PlayerIdx; iid: number; cost: number } // 费用消减后的有效费
   | { type: 'CardGenerated'; player: PlayerIdx; iid: number; defId: string } // 生成进手牌(defId 对对手抹)
   // ---- 第八卡包 ----
+  | { type: 'GeneralBanished'; player: PlayerIdx; iid: number; defId: string }
   | {
       type: 'GeneralSeized'
       player: PlayerIdx // 夺取方

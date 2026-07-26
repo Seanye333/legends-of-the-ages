@@ -310,6 +310,19 @@ export const CODEX: CodexSection[] = [
         example: (c) => JSON.stringify(c).includes('copyGeneral'),
       },
       {
+        id: 'banish',
+        term: { zh: '放逐 Banish', en: 'Banish' },
+        rule: {
+          zh: '把一名武将移出战场。这**不算死亡**:不触发亡语,也不进墓地。',
+          en: 'Remove a general from play. This is not death — no deathrattle, and it never enters the graveyard.',
+        },
+        note: {
+          zh: '专治亡语与复生:普通的「消灭」会把目标送进墓地,正好喂给复生;放逐则彻底带走,搜不到、拉不回。对付没有亡语的普通身材,它并不比消灭更好 —— 贵那一点买的是「精确解」。',
+          en: 'The answer to deathrattles and resurrection: ordinary removal feeds the graveyard, which is exactly what those decks want. Banish takes the unit out of the game entirely. Against a plain body it is no better than destroy — the extra cost buys precision.',
+        },
+        example: (c) => JSON.stringify(c).includes('banish'),
+      },
+      {
         id: 'recruit',
         term: { zh: '搜將 Recruit', en: 'Recruit' },
         rule: { zh: '从你的牌库随机召唤武将直接上场。', en: 'Summon a random general straight from your deck.' },

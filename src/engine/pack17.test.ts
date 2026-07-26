@@ -114,3 +114,17 @@ describe('疑兵 copyGeneral', () => {
     expect(r.state.players[0].board).toHaveLength(BOARD_LIMIT)
   })
 })
+
+describe('焚尸 banish', () => {
+  it('放逐:离场、不发死亡事件、不进墓地(亡语与复生都够不着)', () => {
+    const s = game(['strat-heg-immolate'], ['guan-yu'])
+    const victim = s.players[1].board[0]
+    const r = play(s, s.players[0].hand[0].iid, victim.iid)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.state.players[1].board).toHaveLength(0)
+    expect(r.events.some((e) => e.type === 'GeneralBanished')).toBe(true)
+    expect(r.events.some((e) => e.type === 'GeneralDied')).toBe(false) // 不算死亡
+    expect(r.state.players[1].graveyard).not.toContain('guan-yu') // 不进墓地
+  })
+})

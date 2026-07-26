@@ -99,6 +99,7 @@ const SAMPLES: GameEvent[] = [
   { type: 'GeneralTransformed', player: 1, iid: 3, intoIid: 11, defId: 'token-xiangyong' },
   // ---- 第十七卡包:策反 ----
   { type: 'GeneralSeized', player: 0, iid: 12, defId: 'guan-yu', from: 1, position: 2 },
+  { type: 'GeneralBanished', player: 1, iid: 13, defId: 'guan-yu' },
   { type: 'GameEnded', winner: 0 },
 ]
 
