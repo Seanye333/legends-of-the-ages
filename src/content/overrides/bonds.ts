@@ -63,4 +63,64 @@ export const BOND_OVERRIDES: Record<string, Partial<CardDef>> = {
   'lu-su': {
     bond: { id: 'bond-siying', members: ['lu-xun'], attack: 1, health: 2 },
   },
+
+  // ============================================================
+  // 各时代块羁绊 —— 三国之外的朝代按「时代块」铺(单个朝代 37~161 张太薄,
+  // 合成先秦/秦汉/隋唐/宋元/明清五块才撑得起身份)。
+  // 同样是锚点 + 1~2 人,历史关系全部取自正史中最有名的那几对。
+  // ============================================================
+
+  // ---- 先秦 ----
+  // 將相和(廉頗 · 藺相如):负荆请罪,将相和而赵国安。
+  'hist-lian-po': {
+    bond: { id: 'bond-jiangxiang', members: ['hist-lin-xiangru'], attack: 1, health: 3 },
+  },
+  // 臥薪嘗膽(勾踐 · 范蠡):十年生聚,十年教训。
+  'hist-goujian': {
+    bond: { id: 'bond-woxin', members: ['hist-fan-li'], attack: 2, health: 1 },
+  },
+  // 孫吳兵法(孫武 · 孫臏):兵圣与其后世,兵家之祖孙同堂。
+  'hist-sun-wu': {
+    bond: { id: 'bond-sunwu', members: ['hist-sun-bin'], attack: 2, health: 2 },
+  },
+  // 商鞅變法(商鞅 · 秦孝公):君臣相得,秦法始行 —— 只加身板,变法靠的是根基。
+  'hist-shang-yang': {
+    bond: { id: 'bond-bianfa', members: ['hist-qin-xiaogong'], attack: 0, health: 4 },
+  },
+
+  // ---- 秦汉 ----
+  // 漢初開國(劉邦 · 樊噲):鸿门宴上挡在前面的那个人。
+  'hist-liu-bang': {
+    bond: { id: 'bond-hanchu', members: ['hist-fan-kuai'], attack: 2, health: 2 },
+  },
+
+  // ---- 隋唐 ----
+  // 凌煙閣(李世民 · 尉遲恭 · 秦瓊):二十四功臣里最能打的两位门神。
+  'hist-tang-taizong': {
+    bond: { id: 'bond-lingyan', members: ['hist-yuchi-gong', 'hist-qin-qiong'], attack: 2, health: 2 },
+  },
+  // 房謀杜斷(房玄齡 · 杜如晦):一个善谋,一个善断。
+  'hist-fang-xuanling': {
+    bond: { id: 'bond-fangdu', members: ['hist-du-ruhui'], attack: 1, health: 2 },
+  },
+
+  // ---- 宋元 ----
+  // 楊家將(楊業 · 楊延昭):父子守边,金沙滩上没回来的那一家。
+  'hist-yang-ye': {
+    bond: { id: 'bond-yangjia', members: ['hist-yang-yanzhao'], attack: 1, health: 3 },
+  },
+  // 岳家軍(岳飛 · 韓世忠):中兴四将里最硬的两位 —— 撼山易,撼岳家军难。
+  'hist-yue-fei': {
+    bond: { id: 'bond-yuejia', members: ['hist-han-shizhong'], attack: 2, health: 2 },
+  },
+
+  // ---- 明清 ----
+  // 開國元勳(徐達 · 常遇春):一个持重,一个先锋,朱元璋的左右手。
+  'hist-xu-da': {
+    bond: { id: 'bond-kaiguo', members: ['hist-chang-yuchun'], attack: 2, health: 2 },
+  },
+  // 戚家軍(戚繼光 · 俞大猷):抗倭双璧,鸳鸯阵与俞家棍。
+  'hist-qi-jiguang': {
+    bond: { id: 'bond-qijia', members: ['hist-yu-dayou'], attack: 1, health: 3 },
+  },
 }
