@@ -71,6 +71,14 @@ export const BOND_OVERRIDES: Record<string, Partial<CardDef>> = {
   // ============================================================
 
   // ---- 先秦 ----
+  // 管鮑之交(管仲 · 鮑叔牙):生我者父母,知我者鲍子也 —— 知遇之恩,天下第一交情。
+  'hist-guan-zhong': {
+    bond: { id: 'bond-guanbao', members: ['hist-bao-shuya'], attack: 1, health: 3 },
+  },
+  // 吳越爭霸(伍子胥 · 孫武):同佐吴王,一个复仇一个用兵,破楚入郢。
+  'hist-wu-zixu': {
+    bond: { id: 'bond-wuyue', members: ['hist-sun-wu'], attack: 2, health: 1 },
+  },
   // 將相和(廉頗 · 藺相如):负荆请罪,将相和而赵国安。
   'hist-lian-po': {
     bond: { id: 'bond-jiangxiang', members: ['hist-lin-xiangru'], attack: 1, health: 3 },
