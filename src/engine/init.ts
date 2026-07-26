@@ -107,6 +107,7 @@ export function createGame(cfg: GameConfig, lib: CardLibrary): GameState {
     phase: 'mulligan',
     players,
     nextIid,
+    objective: cfg.objective,
   }
 }
 
@@ -195,5 +196,6 @@ function createScenarioGame(
     phase: 'main',
     players,
     nextIid,
+    objective: cfg.objective,
   }
 }

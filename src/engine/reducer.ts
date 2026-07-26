@@ -518,9 +518,18 @@ export function checkGameEnd(state: GameState, events: GameEvent[]): void {
   if (state.phase === 'ended') return
   const dead0 = state.players[0].heroHp <= 0
   const dead1 = state.players[1].heroHp <= 0
-  if (!dead0 && !dead1) return
-  const winner: Winner = dead0 && dead1 ? 'draw' : dead0 ? 1 : 0
-  endGame(state, events, winner)
+  if (dead0 || dead1) {
+    const winner: Winner = dead0 && dead1 ? 'draw' : dead0 ? 1 : 0
+    endGame(state, events, winner)
+    return
+  }
+  // 名局特殊目标(座位 0 = 玩家)。死亡判定优先 —— 撑不住先按普通规则判负。
+  // 「守成」在**玩家自己回合开始**判(beginTurn 里 turn 已 +1、activePlayer 已切):
+  // 敌方拿满 obj.turns 个回合来强杀,过了这个坎、轮到玩家时还活着,就算守住。
+  const obj = state.objective
+  if (obj?.kind === 'survive' && state.activePlayer === 0 && state.turn > obj.turns) {
+    endGame(state, events, 0)
+  }
 }
 
 function endGame(state: GameState, events: GameEvent[], winner: Winner): void {

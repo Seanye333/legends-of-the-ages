@@ -33,6 +33,8 @@ export interface RedactedState {
   activePlayer: PlayerIdx
   phase: GameState['phase']
   winner?: GameState['winner']
+  // 名局目标是公开信息(双方都看得见「守 N 回合」),原样透传,无泄漏。
+  objective?: GameState['objective']
   self: RedactedSelf
   opponent: RedactedOpponent
   pendingChoice?: RedactedPendingChoice
@@ -61,6 +63,7 @@ export function redactState(state: GameState, viewer: PlayerIdx): RedactedState 
     activePlayer: state.activePlayer,
     phase: state.phase,
     winner: state.winner,
+    objective: state.objective,
     pendingChoice: redactPending(state.pendingChoice, viewer),
     self: {
       heroId: me.heroId,

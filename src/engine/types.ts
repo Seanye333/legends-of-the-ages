@@ -344,7 +344,15 @@ export interface GameState {
   nextIid: number
   // 非空时对局暂停,等 pendingChoice.player 发 ResolveChoice(见上)
   pendingChoice?: PendingChoice
+  // 名局特殊胜负目标(可选)。不给则走普通「主公归零」判定。
+  // **可选字段**是有意的:老存档/老战报没有它 → undefined → 普通判定,迁移零风险(铁律 6)。
+  objective?: BattleObjective
 }
+
+// 历史名战的特殊胜负目标(座位 0 = 玩家视角)。引擎在 checkGameEnd 里判。
+// 先只有「守成」一种;斩指定将 / 护单位不死走同一个钩子扩展(需按 iid 标记单位)。
+export type BattleObjective =
+  | { kind: 'survive'; turns: number } // 座位 0 撑过第 `turns` 回合(含双方)即胜
 
 // ---------- 命令(玩家意图) ----------
 
@@ -524,6 +532,8 @@ export interface GameConfig {
   modifiers?: [RunModifiers | undefined, RunModifiers | undefined]
   // 斩杀谜题:给定则跳过发牌,按残局铺场(heroId/heroPower 仍走上面的字段)。
   scenario?: PuzzleScenario
+  // 名局特殊胜负目标:给定则写进 GameState.objective,由 checkGameEnd 判。
+  objective?: BattleObjective
 }
 
 export type ApplyResult =
