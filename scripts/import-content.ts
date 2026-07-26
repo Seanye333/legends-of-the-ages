@@ -2,6 +2,7 @@
 // 读取全部武将 → 套公式生成全卡池 → 输出 cards.gen.ts + 复制签名卡立绘。
 // 运行:npm run import-content(幂等,输出入 git,构建不依赖姊妹仓库)
 import { copyFileSync, existsSync, mkdirSync, statSync, writeFileSync } from 'node:fs'
+import sharp from 'sharp'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
@@ -684,6 +685,32 @@ for (const id of signatureIds) {
   manifest[id] = { files, bytes }
   totalBytes += bytes
 }
+// ---- 缩略图层:让**每一位**武将都有脸 ----
+//
+// 签名卡随包的是全尺寸立绘(约 50MB / 233 张),其余两千余张此前只能靠 CDN;
+// 没配 VITE_PORTRAIT_CDN 时它们全部退化成首字兜底 —— 十张卡九张没脸,砸招牌。
+//
+// 现在给所有非签名武将再生成一层**缩略图**(宽 200、webp q70,单张约 6KB):
+// 全池约 12MB,包体从 50MB → 62MB,离 150MB 红线仍很远,却让列表/图鉴/牌桌上
+// 每张牌都是一张真脸。全尺寸立绘仍只随签名卡(详情大图才需要那个分辨率)。
+const THUMB_WIDTH = 200
+const THUMB_QUALITY = 70
+let thumbCount = 0
+let thumbBytes = 0
+const sigSet = new Set(signatureIds)
+for (const def of cards) {
+  if (def.type !== 'general' || sigSet.has(def.id)) continue
+  const src = join(SIBLING, 'public', 'portraits', `${def.id}.webp`)
+  if (!existsSync(src)) continue
+  const dest = join(OUT_PORTRAITS, `${def.id}.webp`)
+  const buf = await sharp(src).resize({ width: THUMB_WIDTH }).webp({ quality: THUMB_QUALITY }).toBuffer()
+  writeFileSync(dest, buf)
+  manifest[def.id] = { files: [`${def.id}.webp`], bytes: buf.length }
+  thumbCount++
+  thumbBytes += buf.length
+}
+totalBytes += thumbBytes
+
 writeFileSync(
   join(OUT_GEN, 'manifest.json'),
   JSON.stringify({ signatureIds, portraits: manifest, totalBytes }, null, 2) + '\n',
@@ -691,4 +718,8 @@ writeFileSync(
 console.log(
   `portraits: ${Object.values(manifest).reduce((n, m) => n + m.files.length, 0)} files, ` +
     `${(totalBytes / 1024 / 1024).toFixed(1)} MB (红线 150MB)`,
+)
+console.log(
+  `  其中缩略图 ${thumbCount} 张 / ${(thumbBytes / 1024 / 1024).toFixed(1)} MB ` +
+    `(非签名武将,宽 ${THUMB_WIDTH} q${THUMB_QUALITY})`,
 )
