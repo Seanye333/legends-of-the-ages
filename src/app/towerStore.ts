@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { towerFloor } from '../content/tower'
 import { useCollection } from './collectionStore'
+import { useAchievements } from './achievementStore'
 
 // 无尽爬塔进度:当前挑战到第几层、历史最高层。
 //
@@ -40,6 +41,7 @@ export const useTower = create<TowerState>()(
         if (newBest) {
           const merit = towerFloor(cleared).rewardMerit
           set({ best: cleared })
+          useAchievements.getState().bump('towerBest', cleared) // towerBest 在 MAX_STATS 里,取最大
           useCollection.setState({ merit: useCollection.getState().merit + merit })
           set({ floor: cleared + 1 })
           return { merit, floor: cleared, newBest: true }

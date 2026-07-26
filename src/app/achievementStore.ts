@@ -46,6 +46,8 @@ export type StatKey =
   | 'expeditionWins'
   | 'puzzlesSolved' // 斩杀谜题:每有奖励的解开(手搓首解 / 每日首解)+1
   | 'bestPuzzleStreak' // 每日谜题历史最长连续天数(取最大)
+  | 'towerBest' // 无尽爬塔历史最高层(取最大)
+  | 'historyCleared' // 历史名战通关场数
   | 'collectionSize' // 收藏里程碑:拥有的**不同**卡牌数(取历史最大)
   | 'legendariesOwned' // 拥有的不同传说卡数(取历史最大)
   | `won_${Doctrine}`
@@ -276,6 +278,22 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     [5, 20],
     [80, 260],
   ),
+  ...tier(
+    'ach-tower',
+    'towerBest',
+    { zh: '登樓', en: 'The Climb' },
+    (n) => ({ zh: `无尽爬塔登上第 ${n} 层`, en: `Reach floor ${n} of the Endless Tower` }),
+    [5, 12, 20],
+    [80, 200, 450],
+  ),
+  ...tier(
+    'ach-history',
+    'historyCleared',
+    { zh: '名局重現', en: 'Great Battles' },
+    (n) => ({ zh: `重现 ${n} 场历史名战`, en: `Win ${n} historical battles` }),
+    [3, 8, 14],
+    [90, 220, 500],
+  ),
   {
     id: 'ach-streak',
     name: { zh: '篤志', en: 'Devotee' },
@@ -412,6 +430,7 @@ export function tallyStats(events: GameEvent[], myHeroId: string): Stats {
 
 // bestTurnDamage / arenaBestWins 是「取最大」而不是「累加」
 const MAX_STATS = new Set<StatKey>([
+  'towerBest', // 爬塔最高层:取历史最大,不是累加
   'bestTurnDamage',
   'arenaBestWins',
   'bestPuzzleStreak',
