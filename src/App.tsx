@@ -26,6 +26,9 @@ const CampaignScreen = lazy(() =>
 const HistoryScreen = lazy(() =>
   import('./ui/screens/HistoryScreen').then((m) => ({ default: m.HistoryScreen })),
 )
+const TowerScreen = lazy(() =>
+  import('./ui/screens/TowerScreen').then((m) => ({ default: m.TowerScreen })),
+)
 const CodexScreen = lazy(() =>
   import('./ui/screens/CodexScreen').then((m) => ({ default: m.CodexScreen })),
 )
@@ -52,6 +55,7 @@ export type Screen =
   | 'arena'
   | 'campaign'
   | 'history'
+  | 'tower'
   | 'codex'
   | 'expedition'
   | 'brawl'
@@ -176,6 +180,18 @@ export default function App() {
             onBack={back}
             onEnterMatch={() => {
               setAfterMatch('history')
+              setScreen('match')
+            }}
+          />
+        </Suspense>
+      )
+    case 'tower':
+      return (
+        <Suspense fallback={<ScreenFallback />}>
+          <TowerScreen
+            onBack={back}
+            onEnterMatch={() => {
+              setAfterMatch('tower')
               setScreen('match')
             }}
           />

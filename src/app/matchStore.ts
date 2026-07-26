@@ -21,6 +21,7 @@ import { useAchievements } from './achievementStore'
 import { useCampaign } from './campaignStore'
 import { useHistory } from './historyStore'
 import { useWeeklyBrawl } from './weeklyBrawlStore'
+import { useTower } from './towerStore'
 import { useExpedition } from './expeditionStore'
 import { useLethal, type PuzzleReward } from './lethalStore'
 import { useDeckStats } from './deckStatsStore'
@@ -61,6 +62,8 @@ export interface StartMatchArgs {
   objective?: BattleObjective
   // 每周乱斗:传当值周键;胜利则按周发一次首胜功勋
   weeklyBrawlWeek?: string
+  // 无尽爬塔:胜负记进爬塔进度(通层上行 / 失败回第一层)
+  tower?: boolean
   // 每日谜题:胜利走「按天」奖励(solveDaily),而不是按谜题 id 的静态奖励
   daily?: boolean
   dailyDate?: string
@@ -93,6 +96,7 @@ interface MatchStoreState {
   history: boolean
   expedition: boolean
   weeklyBrawlWeek: string | null
+  tower: boolean
   // 斩杀谜题态:puzzle 标识本局是谜题;puzzleResult 由 send 判定(赢/本回合结束未赢=输)
   puzzle: boolean
   puzzleId: string | null
@@ -253,6 +257,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
   history: false,
   expedition: false,
   weeklyBrawlWeek: null,
+  tower: false,
   puzzle: false,
   puzzleId: null,
   puzzleResult: null,
@@ -324,6 +329,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       history: args.history === true,
       expedition: args.expedition === true,
       weeklyBrawlWeek: args.weeklyBrawlWeek ?? null,
+      tower: args.tower === true,
       puzzle: args.puzzle === true,
       puzzleId: args.puzzleId ?? null,
       puzzleResult: null,
@@ -447,6 +453,13 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
     const events = r.updates.flatMap((u) => u.events)
     const last = r.updates[r.updates.length - 1]
     settleMatch(events, get().arena, get().campaign, get().expedition, get().history)
+    // 无尽爬塔:胜则上一层(刷新最高层才发功勋),负则回第一层
+    if (get().tower) {
+      const tEnd = events.find((e) => e.type === 'GameEnded')
+      if (tEnd?.type === 'GameEnded' && tEnd.winner !== 'draw') {
+        useTower.getState().settle(tEnd.winner === 0)
+      }
+    }
     // 每周乱斗首胜:按周发一次功勋(乱斗本身仍走普通战绩)
     const wk = get().weeklyBrawlWeek
     if (wk) {
@@ -510,6 +523,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       history: false,
       expedition: false,
       weeklyBrawlWeek: null,
+      tower: false,
       puzzle: false,
       puzzleId: null,
       puzzleResult: null,

@@ -18,6 +18,7 @@ import { useArena } from '../../app/arenaStore'
 import { useCampaign } from '../../app/campaignStore'
 import { BOSSES } from '../../content/campaign'
 import { useHistory } from '../../app/historyStore'
+import { useTower } from '../../app/towerStore'
 import { HISTORY_BATTLES } from '../../content/historyBattles'
 import { ACHIEVEMENTS, useAchievements } from '../../app/achievementStore'
 import { AchievementPanel } from '../components/AchievementPanel'
@@ -95,7 +96,7 @@ const DIFFICULTIES: { key: Difficulty; name: LocalizedText }[] = [
 interface TitleScreenProps {
   onStart?: () => void
   onNavigate?: (
-    screen: 'collection' | 'deckbuilder' | 'replays' | 'settings' | 'arena' | 'campaign' | 'history' | 'codex' | 'expedition' | 'brawl' | 'lethal' | 'practice',
+    screen: 'collection' | 'deckbuilder' | 'replays' | 'settings' | 'arena' | 'campaign' | 'history' | 'tower' | 'codex' | 'expedition' | 'brawl' | 'lethal' | 'practice',
   ) => void
 }
 
@@ -110,6 +111,7 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
   const arenaLive = useArena((s) => s.phase !== 'idle')
   const campaignDone = useCampaign((s) => s.cleared.length)
   const historyDone = useHistory((s) => s.cleared.length)
+  const towerBest = useTower((s) => s.best)
   // 订阅 stats/claimed 而不是调 claimableCount() —— 后者不是响应式的
   const achStats = useAchievements((s) => s.stats)
   const achClaimed = useAchievements((s) => s.claimed)
@@ -305,6 +307,15 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
           }}
         >
           {arenaLive ? t('校场 · 进行中', 'Arena · in progress') : t('校场点将', 'Arena')}
+        </button>
+        <button
+          className={styles.navBtn}
+          onClick={() => {
+            playSfx('buttonTap')
+            onNavigate?.('tower')
+          }}
+        >
+          {towerBest > 0 ? t(`登楼 · ${towerBest} 层`, `Tower · ${towerBest}`) : t('登楼', 'Tower')}
         </button>
         <button
           className={styles.navBtn}
