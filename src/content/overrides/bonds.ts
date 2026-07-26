@@ -102,6 +102,15 @@ export const BOND_OVERRIDES: Record<string, Partial<CardDef>> = {
     bond: { id: 'bond-hanchu', members: ['hist-fan-kuai'], attack: 2, health: 2 },
   },
 
+  // 帝國雙璧(衛青 · 霍去病):舅甥同为大将军骠骑,漠北一役封狼居胥。
+  'hist-wei-qing': {
+    bond: { id: 'bond-shuangbi', members: ['hist-huo-qubing'], attack: 2, health: 2 },
+  },
+  // 蕭規曹隨(蕭何 · 曹參):萧何定的规矩,曹参一条不改 —— 清静而治,只加身板。
+  'hist-xiao-he': {
+    bond: { id: 'bond-xiaogui', members: ['hist-cao-can'], attack: 0, health: 4 },
+  },
+
   // ---- 隋唐 ----
   // 凌煙閣(李世民 · 尉遲恭 · 秦瓊):二十四功臣里最能打的两位门神。
   'hist-tang-taizong': {
@@ -110,6 +119,15 @@ export const BOND_OVERRIDES: Record<string, Partial<CardDef>> = {
   // 房謀杜斷(房玄齡 · 杜如晦):一个善谋,一个善断。
   'hist-fang-xuanling': {
     bond: { id: 'bond-fangdu', members: ['hist-du-ruhui'], attack: 1, health: 2 },
+  },
+
+  // 二李平陳(李靖 · 李勣):唐初两大军神,一个灭突厥一个平高丽。
+  'hist-li-jing': {
+    bond: { id: 'bond-erli', members: ['hist-li-ji'], attack: 2, health: 2 },
+  },
+  // 再造唐室(郭子儀 · 李光弼):安史之乱里把唐朝从悬崖边拉回来的两个人。
+  'hist-guo-ziyi': {
+    bond: { id: 'bond-zaizao', members: ['hist-li-guangbi'], attack: 1, health: 3 },
   },
 
   // ---- 宋元 ----
@@ -122,6 +140,15 @@ export const BOND_OVERRIDES: Record<string, Partial<CardDef>> = {
     bond: { id: 'bond-yuejia', members: ['hist-han-shizhong'], attack: 2, health: 2 },
   },
 
+  // 杯酒釋兵權(趙匡胤 · 趙普):一杯酒收了兵权 —— 谋在酒里,不在刀上。
+  'hist-zhao-kuangyin': {
+    bond: { id: 'bond-beijiu', members: ['hist-zhao-pu'], attack: 1, health: 2 },
+  },
+  // 宋末三傑(文天祥 · 陸秀夫):崖山之后,负帝投海的那两位 —— 只加血,守到最后一刻。
+  'hist-wen-tianxiang': {
+    bond: { id: 'bond-songmo', members: ['hist-lu-xiufu'], attack: 0, health: 4 },
+  },
+
   // ---- 明清 ----
   // 開國元勳(徐達 · 常遇春):一个持重,一个先锋,朱元璋的左右手。
   'hist-xu-da': {
@@ -130,5 +157,13 @@ export const BOND_OVERRIDES: Record<string, Partial<CardDef>> = {
   // 戚家軍(戚繼光 · 俞大猷):抗倭双璧,鸳鸯阵与俞家棍。
   'hist-qi-jiguang': {
     bond: { id: 'bond-qijia', members: ['hist-yu-dayou'], attack: 1, health: 3 },
+  },
+  // 帝師劉基(朱元璋 · 劉伯溫):三分天下诸葛亮,一统江山刘伯温。
+  'hist-zhu-yuanzhang': {
+    bond: { id: 'bond-dishi', members: ['hist-liu-bowen'], attack: 2, health: 2 },
+  },
+  // 鄭氏水師(鄭成功 · 鄭和):两代下西洋与收台湾的海上力量,同姓不同代,取其「水师」意象。
+  'hist-zheng-chenggong': {
+    bond: { id: 'bond-zhengshi', members: ['hist-zheng-he'], attack: 1, health: 3 },
   },
 }
