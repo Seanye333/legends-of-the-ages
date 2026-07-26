@@ -27,6 +27,9 @@ import { PackOpening } from '../components/PackOpening'
 import { LeaderboardPanel } from '../components/LeaderboardPanel'
 import { RemoteMatchPanel } from '../components/RemoteMatchPanel'
 import { QuestPanel } from '../components/QuestPanel'
+import { DailyGeneralPanel } from '../components/DailyGeneralPanel'
+import { useDailyGeneral } from '../../app/dailyGeneralStore'
+import { dayKey } from '../../content/dailyPuzzle'
 import { useQuests } from '../../app/questStore'
 import { shouldOfferTutorial, tutorialMatchArgs } from '../tutorial'
 import styles from './TitleScreen.module.css'
@@ -120,6 +123,9 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
   const [remoteOpen, setRemoteOpen] = useState(false)
   const [pendingSession] = useState(() => loadSession() !== null)
   const [questsOpen, setQuestsOpen] = useState(false)
+  const [dailyGenOpen, setDailyGenOpen] = useState(false)
+  const dailyGenSeen = useDailyGeneral((s) => s.lastSeen)
+  const dailyGenNew = dailyGenSeen !== dayKey()
   const [achOpen, setAchOpen] = useState(false)
   const [statsOpen, setStatsOpen] = useState(false)
   const [offerTutorial, setOfferTutorial] = useState(() => shouldOfferTutorial())
@@ -391,6 +397,15 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
           {t('战报回放', 'Replays')}
         </button>
         <button
+          className={`${styles.navBtn} ${dailyGenNew ? styles.navGlow : ''}`}
+          onClick={() => {
+            playSfx('buttonTap')
+            setDailyGenOpen(true)
+          }}
+        >
+          {dailyGenNew ? t('每日一将 ●', 'Daily General ●') : t('每日一将', 'Daily General')}
+        </button>
+        <button
           className={`${styles.navBtn} ${claimable > 0 ? styles.navGlow : ''}`}
           onClick={() => {
             playSfx('buttonTap')
@@ -488,6 +503,7 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
       </div>
 
       {questsOpen && <QuestPanel onClose={() => setQuestsOpen(false)} />}
+      {dailyGenOpen && <DailyGeneralPanel onClose={() => setDailyGenOpen(false)} />}
       {achOpen && <AchievementPanel onClose={() => setAchOpen(false)} />}
       {statsOpen && <StatsPanel onClose={() => setStatsOpen(false)} />}
       {packsOpen && <PackOpening onClose={() => setPacksOpen(false)} />}
