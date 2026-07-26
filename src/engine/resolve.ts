@@ -155,6 +155,21 @@ export function refreshAuras(state: GameState, lib: CardLibrary): void {
         refreshInstance(inst, lib)
       }
     }
+    // 羁绊:同侧场上凑齐 members(锚点自己已在场)才生效,增益发给锚点 + 全体成员。
+    // 蹭的是光环这条路 —— 上面那轮已经把所有 auraFrom 附魔撤干净了,所以
+    // 「成员被杀/被策反/回手」羁绊会自动断裂并收回增益,不需要任何反向登记。
+    const board = state.players[player].board
+    for (const source of board) {
+      if (source.silenced) continue
+      const bond = lib[source.defId]?.bond
+      if (!bond) continue
+      if (!bond.members.every((m) => board.some((u) => u.defId === m))) continue
+      for (const inst of board) {
+        if (inst.iid !== source.iid && !bond.members.includes(inst.defId)) continue
+        inst.enchants.push({ attack: bond.attack, health: bond.health, auraFrom: source.iid })
+        refreshInstance(inst, lib)
+      }
+    }
   }
 }
 

@@ -231,6 +231,10 @@ export interface CardDef {
   token?: boolean // 衍生物:只能被召唤,不进卡包、不可构筑
   // ---- 第三卡包:触发器与光环 ----
   aura?: AuraDef
+  // 羁绊(结义/君臣/师徒):**同一侧场上**同时有 members 里全部的卡时,
+  // 锚点自己与这些成员一起获得增益。定义放在卡面上(与 aura 同源)—— 引擎只读 lib,
+  // 不 import 内容层(铁律 1)。走光环的附魔路径,成员一死增益自动收回。
+  bond?: BondDef
   endOfTurn?: EffectScript // 我方回合结束时
   startOfTurn?: EffectScript // 我方回合开始时
   onDamaged?: EffectScript // 自身受伤后(有递归深度上限)
@@ -542,6 +546,14 @@ export interface PuzzleScenario {
   // 生成类谜题(从真实对局挖出的残局)保留挖矿时的 rng,让随机效果的解法可复现。
   // 不给则按 seed 起 rng —— 手搓题都避开随机,不需要它。
   rng?: number
+}
+
+// 羁绊定义:挂在「锚点」卡上。members 是**除锚点之外**还需在场的卡 id。
+export interface BondDef {
+  id: string // 羁绊 id(桃園結義…),UI 与测试用
+  members: string[]
+  attack: number
+  health: number
 }
 
 export interface GameConfig {

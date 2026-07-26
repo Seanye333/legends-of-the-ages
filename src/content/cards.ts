@@ -25,6 +25,7 @@ import { PACK14_CARDS } from './overrides/pack14'
 import { PACK15_CARDS } from './overrides/pack15'
 import { PACK16_CARDS } from './overrides/pack16'
 import { PACK17_CARDS } from './overrides/pack17'
+import { BOND_OVERRIDES } from './overrides/bonds'
 import { CAMPAIGN_TOKENS } from './overrides/campaign-tokens'
 import { HISTORY_TOKENS } from './history-tokens'
 
@@ -47,9 +48,10 @@ export const CARDS: CardDef[] = [
     const p11 = PACK11_OVERRIDES[card.id]
     const p12 = PACK12_OVERRIDES[card.id]
     const p13 = PACK13_OVERRIDES[card.id]
-    if (!fl && !sig && !p3 && !p4 && !p5 && !p6d && !p6c && !p6l && !p7 && !p8 && !p9 && !p10 && !p11 && !p12 && !p13)
+    const bd = BOND_OVERRIDES[card.id]
+    if (!fl && !sig && !p3 && !p4 && !p5 && !p6d && !p6c && !p6l && !p7 && !p8 && !p9 && !p10 && !p11 && !p13 && !p12 && !bd)
       return card
-    return { ...card, ...fl, ...sig, ...p3, ...p4, ...p5, ...p6d, ...p6c, ...p6l, ...p7, ...p8, ...p9, ...p10, ...p11, ...p12, ...p13 }
+    return { ...card, ...fl, ...sig, ...p3, ...p4, ...p5, ...p6d, ...p6c, ...p6l, ...p7, ...p8, ...p9, ...p10, ...p11, ...p12, ...p13, ...bd }
   }),
   ...STRATAGEMS,
   ...PACK2_CARDS,
