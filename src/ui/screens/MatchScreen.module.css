@@ -137,6 +137,16 @@
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
 }
 
+/* 名局目标(守成 X/N):比回合号更亮一点,提示这局不是普通斩杀 */
+.objective {
+  font-family: var(--font-display);
+  font-size: clamp(10px, 1.7vh, 13px);
+  color: #e6c878;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+}
+
 /* 结束回合:鎏金令牌 */
 .endTurn {
   position: relative;

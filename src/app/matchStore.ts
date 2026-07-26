@@ -1,7 +1,14 @@
 import { create } from 'zustand'
 import type { Command, GameEvent, GameState } from '../engine/types'
 import { DECK_SIZE, START_HP } from '../engine/types'
-import type { CardDef, Doctrine, HeroPowerDef, PuzzleScenario, RunModifiers } from '../engine/types'
+import type {
+  BattleObjective,
+  CardDef,
+  Doctrine,
+  HeroPowerDef,
+  PuzzleScenario,
+  RunModifiers,
+} from '../engine/types'
 import { CARDS, CARDS_BY_ID } from '../content/cards'
 import { HEROES_BY_ID } from '../content/overrides/heroes'
 import { LocalMatch } from './transport'
@@ -49,6 +56,8 @@ export interface StartMatchArgs {
   puzzle?: boolean
   puzzleId?: string
   scenario?: PuzzleScenario
+  // 名局特殊胜负目标(守 N 回合等);写进 GameState.objective 由引擎判
+  objective?: BattleObjective
   // 每日谜题:胜利走「按天」奖励(solveDaily),而不是按谜题 id 的静态奖励
   daily?: boolean
   dailyDate?: string
@@ -290,6 +299,8 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
         modifiers: args.modifiersOverride,
         // 斩杀谜题:给定则 createGame 按残局铺场(跳过发牌)
         scenario: args.scenario,
+        // 名局特殊胜负目标(守成等)
+        objective: args.objective,
       },
       CARDS_BY_ID,
       ai,

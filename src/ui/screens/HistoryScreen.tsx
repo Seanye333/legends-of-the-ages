@@ -55,6 +55,7 @@ export function HistoryScreen({ onBack, onEnterMatch }: HistoryScreenProps) {
       heroPowersOverride: [myHero?.power, battle.power],
       heroHpsOverride: [myHero?.hp ?? START_HP, battle.hp],
       modifiersOverride: battleModifiers(battle),
+      objective: battle.objective,
     })
     onEnterMatch()
   }

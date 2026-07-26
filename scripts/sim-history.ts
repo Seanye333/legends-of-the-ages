@@ -36,6 +36,7 @@ function play(battleIdx: number, playerDeckIdx: number, seed: number, first: Pla
     heroPowers: [myHero?.power, battle.power],
     heroHps: [myHero?.hp ?? START_HP, battle.hp],
     modifiers: battleModifiers(battle), // ← 名战的灵魂:开局态势
+    objective: battle.objective, // 目标版(守成等);普通场为 undefined
   }
   let state = createGame(cfg, CARDS_BY_ID)
   const rngs: [number, number] = [seed ^ 0xa1, seed ^ 0xb2]

@@ -500,6 +500,14 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
       {/* 右缘:回合数 + 结束回合 */}
       <div className={styles.endTurnBox} onClick={(e) => e.stopPropagation()}>
         <div className={styles.turnNo}>{t(`第 ${state.turn} 回合`, `Turn ${state.turn}`)}</div>
+        {state.objective?.kind === 'survive' && (
+          <div className={styles.objective}>
+            {t(
+              `守成 ${Math.min(state.turn, state.objective.turns)}/${state.objective.turns}`,
+              `Hold ${Math.min(state.turn, state.objective.turns)}/${state.objective.turns}`,
+            )}
+          </div>
+        )}
         <button
           className={styles.endTurn}
           disabled={!canEndTurn}

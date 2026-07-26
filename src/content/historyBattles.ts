@@ -1,4 +1,10 @@
-import type { Doctrine, HeroPowerDef, LocalizedText, RunModifiers } from '../engine/types'
+import type {
+  BattleObjective,
+  Doctrine,
+  HeroPowerDef,
+  LocalizedText,
+  RunModifiers,
+} from '../engine/types'
 import { CARDS_BY_ID } from './cards'
 import { bossDeck } from './campaign'
 
@@ -53,6 +59,7 @@ export interface HistoryBattle {
   power: HeroPowerDef // 敌方主公技
   playerModifiers?: RunModifiers // 我方开局态势(座位 0)
   enemyModifiers?: RunModifiers // 敌方开局态势(座位 1)
+  objective?: BattleObjective // 特殊胜负目标(可选;不给=普通「主公归零」)
   rewardMerit: number
   rewardPacks: number
 }
@@ -241,6 +248,40 @@ export const HISTORY_BATTLES: HistoryBattle[] = [
     enemyModifiers: { startTokens: ['token-tie-qi'] },
     playerModifiers: { startArmor: 3, bonusHandSize: 2 },
     rewardMerit: 320,
+    rewardPacks: 2,
+  },
+  // ---------- 唐 · 757(目标版:守成)----------
+  // 这一场是**目标版胜负条件**的样板:不是斩杀敌方主公,而是「撑过约定回合数」。
+  // 张巡以数千守睢阳孤城,敌方每回合直取城头 —— 你只需活到援军北上。
+  // 敌方血厚(难以斩杀)+ 高压制,逼你真去守而不是拼刀。survive 回合数由 sim-history 调实。
+  {
+    id: 'hb-suiyang',
+    name: { zh: '睢陽之戰', en: 'The Siege of Suiyang' },
+    era: { zh: '唐 · 至德二載', en: 'Tang · AD 757' },
+    foeName: { zh: '安祿山', en: 'An Lushan' },
+    foeTitle: { zh: '燕帝', en: 'The Rebel Emperor' },
+    intro: {
+      zh: '睢阳弹尽粮绝,张巡犹守。城在人在 —— 只要撑到江淮援军北上,你就赢了。',
+      en: 'Suiyang is out of arrows and grain, yet Zhang Xun holds. Hold the city until relief marches from the south, and you have won.',
+    },
+    situation: {
+      zh: '守成:撑过 14 回合即胜。敌方每回合直取城头 2 点、血厚难斩;你据城墙(0/4 守护)、披 4 甲。',
+      en: 'Endure: survive 14 turns to win. The enemy strikes the walls for 2 each turn and is hard to kill; you hold a 0/4 Guard rampart and 4 Armor.',
+    },
+    heroId: 'hist-an-lushan',
+    doctrine: 'hegemonic',
+    hp: 55,
+    deckTier: 0.35,
+    power: power(
+      'hbp-yashan',
+      { zh: '叛軍壓城', en: 'The Rebel Host' },
+      { zh: '對敵方主公造成 2 點傷害。', en: 'Deal 2 damage to the enemy hero.' },
+      [{ op: 'damage', amount: 2, target: 'enemyHero' }],
+    ),
+    enemyModifiers: { startTokens: ['token-tie-qi', 'token-tie-qi'] },
+    playerModifiers: { startTokens: ['token-shui-zhai'], startArmor: 4 },
+    objective: { kind: 'survive', turns: 14 },
+    rewardMerit: 340,
     rewardPacks: 2,
   },
   // ---------- 南宋 · 1130 ----------

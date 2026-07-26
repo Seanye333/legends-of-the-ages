@@ -51,6 +51,15 @@ describe('历史名战', () => {
     }
   })
 
+  it('特殊目标(若有)格式合法', () => {
+    for (const b of HISTORY_BATTLES) {
+      if (!b.objective) continue
+      if (b.objective.kind === 'survive') {
+        expect(b.objective.turns, `${b.id} survive turns`).toBeGreaterThan(0)
+      }
+    }
+  })
+
   it('一场名战真的能被引擎构造出来,且不对称配置与开局态势都落到了状态上', () => {
     const mine = PRECON_DECKS[0]
     const chibi = HISTORY_BATTLES.find((b) => b.id === 'hb-chibi')!
