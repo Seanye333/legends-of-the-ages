@@ -34,4 +34,33 @@ export const BOND_OVERRIDES: Record<string, Partial<CardDef>> = {
   'hist-zhang-liang': {
     bond: { id: 'bond-sanjie', members: ['hist-xiao-he', 'hist-han-xin'], attack: 2, health: 2 },
   },
+
+  // ============================================================
+  // 三国势力羁绊 —— 势力标签回填(魏 192 / 蜀 119 / 吴 144)之后才立得住:
+  // 从前魏蜀吴各只有十来张,凑不出任何一条势力主题。
+  //
+  // 刻意都设计成**两名成员**(锚点 + 2 人 = 场上三人)。三人已是很硬的条件
+  // (要抽到、要活着、要同时在场);再往上加人就只剩「赢了才凑得齐」的废卡。
+  // ============================================================
+
+  // 五虎上將(蜀):关张已在桃园结义,这条给另外三虎 —— 赵马黄。
+  'zhao-yun': {
+    bond: { id: 'bond-wuhu', members: ['ma-chao', 'huang-zhong'], attack: 2, health: 2 },
+  },
+  // 五子良將(魏):张辽 · 徐晃 · 于禁(乐进/张郃 不在池中或已归群)。
+  'zhang-liao': {
+    bond: { id: 'bond-wuzi', members: ['xu-huang', 'yu-jin'], attack: 2, health: 1 },
+  },
+  // 虎癡與惡來(魏):许褚 · 典韦,曹操的两大保镖 —— 只加身板,不加攻。
+  'xu-chu': {
+    bond: { id: 'bond-huchi', members: ['dian-wei'], attack: 0, health: 3 },
+  },
+  // 江東虎臣(吴):程普 · 黄盖 · 韩当,孙氏三代老臣。
+  'cheng-pu': {
+    bond: { id: 'bond-hucheng', members: ['huang-gai', 'han-dang'], attack: 1, health: 3 },
+  },
+  // 江東四英(吴):周瑜已在二乔,这条接周瑜之后的三任大都督 —— 鲁肃 · 陆逊。
+  'lu-su': {
+    bond: { id: 'bond-siying', members: ['lu-xun'], attack: 1, health: 2 },
+  },
 }
