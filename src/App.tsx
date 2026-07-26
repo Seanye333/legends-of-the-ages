@@ -29,6 +29,9 @@ const HistoryScreen = lazy(() =>
 const TowerScreen = lazy(() =>
   import('./ui/screens/TowerScreen').then((m) => ({ default: m.TowerScreen })),
 )
+const LoreScreen = lazy(() =>
+  import('./ui/screens/LoreScreen').then((m) => ({ default: m.LoreScreen })),
+)
 const CodexScreen = lazy(() =>
   import('./ui/screens/CodexScreen').then((m) => ({ default: m.CodexScreen })),
 )
@@ -56,6 +59,7 @@ export type Screen =
   | 'campaign'
   | 'history'
   | 'tower'
+  | 'lore'
   | 'codex'
   | 'expedition'
   | 'brawl'
@@ -93,6 +97,12 @@ export default function App() {
       return (
         <Suspense fallback={<ScreenFallback />}>
           <SettingsScreen onBack={back} />
+        </Suspense>
+      )
+    case 'lore':
+      return (
+        <Suspense fallback={<ScreenFallback />}>
+          <LoreScreen onBack={back} />
         </Suspense>
       )
     case 'codex':
