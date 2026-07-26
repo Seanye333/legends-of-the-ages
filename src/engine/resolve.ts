@@ -740,6 +740,39 @@ export function runScript(
         }
         break
       }
+      case 'seize': {
+        // 策反:把敌方武将夺到我方场上。三国最有味道的一手 —— 阵前倒戈。
+        //
+        // 规则取炉石「精神控制」那一套,但有三条本作特有的处理:
+        //   · **我方满场则无事发生**(不是把它杀掉),避免「打出去反而少一个单位」的坑;
+        //   · 夺过来的单位**当回合不能动**(exhausted),否则等于附赠一次冲锋;
+        //   · 潜行/铁壁等消耗标记原样带走 —— 它还是那个单位,只是换了旗号。
+        // 伤害与附魔全部保留:附魔层是唯一写入路径,这里只搬运实例,不重算数值。
+        for (const ref of refs(op.target)) {
+          if (ref.kind !== 'general') continue
+          const loc = findGeneral(state, ref.iid)
+          if (!loc) continue
+          if (loc.player === player) continue // 只夺敌方的
+          const mine = state.players[player]
+          if (mine.board.length >= BOARD_LIMIT) break // 满场:整条效果到此为止
+          const from = state.players[loc.player]
+          const idx = from.board.findIndex((u) => u.iid === ref.iid)
+          if (idx < 0) continue
+          const [inst] = from.board.splice(idx, 1)
+          inst.exhausted = true
+          inst.attacksUsed = 0
+          mine.board.push(inst)
+          events.push({
+            type: 'GeneralSeized',
+            player,
+            iid: inst.iid,
+            defId: inst.defId,
+            from: loc.player,
+            position: mine.board.length - 1,
+          })
+        }
+        break
+      }
       case 'swapStats': {
         for (const ref of refs(op.target)) {
           if (ref.kind !== 'general') continue

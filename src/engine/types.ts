@@ -106,6 +106,7 @@ export type EffectOp =
       duration?: 'endOfTurn'
     }
   | { op: 'swapStats'; target: EffectTarget } // 交换攻击与最大生命(移形换位)
+  | { op: 'seize'; target: EffectTarget } // 策反:把敌方武将夺到我方场上(我方满场则无事发生)
   | { op: 'recruit'; count: number } // 搜将:从我方牌库随机召唤 N 个武将上场
   | { op: 'summon'; defId: string; count: number }
   | { op: 'aoeDamage'; amount: number }
@@ -481,6 +482,14 @@ export type GameEvent =
   | { type: 'CardCostChanged'; player: PlayerIdx; iid: number; cost: number } // 费用消减后的有效费
   | { type: 'CardGenerated'; player: PlayerIdx; iid: number; defId: string } // 生成进手牌(defId 对对手抹)
   // ---- 第八卡包 ----
+  | {
+      type: 'GeneralSeized'
+      player: PlayerIdx // 夺取方
+      iid: number
+      defId: string
+      from: PlayerIdx // 原属方
+      position: number
+    }
   | { type: 'GeneralTransformed'; player: PlayerIdx; iid: number; intoIid: number; defId: string }
   | { type: 'GameEnded'; winner: Winner }
 

@@ -271,6 +271,19 @@ export const CODEX: CodexSection[] = [
         example: (c) => JSON.stringify(c).includes('transform'),
       },
       {
+        id: 'seize',
+        term: { zh: '策反 Seize', en: 'Seize' },
+        rule: {
+          zh: '把一名敌方武将夺到你的场上,归你指挥。',
+          en: 'Take control of an enemy general — it joins your side.',
+        },
+        note: {
+          zh: '场面差二的一手:敌方少一个、你多一个,所以定价很贵。夺来的单位**当回合不能动**(不附赠冲锋),身上的伤与增益原样带走。**你满场时策反不会发生**,目标留在原处 —— 别指望用它当解场。',
+          en: 'A two-body swing — they lose one, you gain one, which is why it costs so much. The seized unit cannot act this turn, and keeps its damage and buffs. If your board is full, nothing happens and the target stays put — do not count on it as removal.',
+        },
+        example: (c) => JSON.stringify(c).includes('seize'),
+      },
+      {
         id: 'recruit',
         term: { zh: '搜將 Recruit', en: 'Recruit' },
         rule: { zh: '从你的牌库随机召唤武将直接上场。', en: 'Summon a random general straight from your deck.' },

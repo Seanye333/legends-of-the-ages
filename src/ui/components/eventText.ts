@@ -248,6 +248,10 @@ function line(ev: GameEvent, ctx: EventTextCtx, l: Lang): string {
       return zh
         ? `${side(ev.player)}发现:${dn(ev.defId)}`
         : `${side(ev.player)} discovered ${dn(ev.defId)}`
+    case 'GeneralSeized':
+      return zh
+        ? `${dn(ev.defId)}临阵倒戈,归于我方`
+        : `${dn(ev.defId)} defected and joined your side`
     case 'GeneralTransformed':
       return zh
         ? `${n(ev.iid)}被变为${dn(ev.defId)}`

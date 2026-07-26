@@ -24,6 +24,7 @@ import { PACK13_CARDS, PACK13_OVERRIDES } from './overrides/pack13'
 import { PACK14_CARDS } from './overrides/pack14'
 import { PACK15_CARDS } from './overrides/pack15'
 import { PACK16_CARDS } from './overrides/pack16'
+import { PACK17_CARDS } from './overrides/pack17'
 import { CAMPAIGN_TOKENS } from './overrides/campaign-tokens'
 import { HISTORY_TOKENS } from './history-tokens'
 
@@ -70,6 +71,7 @@ export const CARDS: CardDef[] = [
   ...PACK14_CARDS,
   ...PACK15_CARDS,
   ...PACK16_CARDS,
+  ...PACK17_CARDS,
   ...CAMPAIGN_TOKENS,
   ...HISTORY_TOKENS,
 ]
