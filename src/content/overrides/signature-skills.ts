@@ -22,10 +22,24 @@ import type { CardDef } from '../../engine/types'
 // 3. **别撞车。** 同一种效果最多给两个人,而且要给它最贴的那两个。
 //
 // 【暂不动的】
-// · **预组骨架 18 张**(张飞、张辽、孙策、许褚、颜真卿…):那批身材是跨很多轮
-//   sim-balance 手调出来的,改一张颜真卿的血就把矩阵打出闸门(见 import-content 注释)。
-//   给它们写技能是下一件事,得连着 decks.ts 的插槽一起重调。
 // · 乐进、廖化:斩杀谜题 lp-heropower 的盘面钉在这两张的身材上,改了谜题就无解。
+//   (其余谜题的守将已经全部挪到衍生物上,见 lethalPuzzles.ts 的 lp-twowalls。)
+//
+// 【预组骨架 18 张:定价规则和上面那批不一样】
+// 这批(张飞、张辽、孙策、许褚、颜真卿、王平、程普…)是六套预组的骨架,
+// 定价不能照白板曲线算,只能**照矩阵反推** —— sim-balance 是唯一的验收标准。
+// 实测踩到的两条:
+//
+// 1. **贪心 AI 换算不了效果。** 照曲线老老实实扣身材,魏武四张骨架同时被削,
+//    总胜率从 47.4% 掉到 31.6%;而隐逸吃到「法术伤害+1」×2,在法术组里是乘法,
+//    直接冲到 71.4%。给预组卡发效果,只能发**上场即改变场面**的那类
+//    (点杀 / 铺场 / 加攻 / 激怒),而且要少扣身材。
+// 2. **「共用骨架」根本不共用。** 王平/程普/陈到出现在 5 套预组各 2 张,
+//    但**魏武只用了 2 个骨架卡位,鹰视用了 8 个** —— 给骨架发免费效果不是「一起平移」,
+//    是精准补贴用得多的那几套、精准饿死魏武。所以骨架照价扣,补贴打在各主义自家卡上。
+//
+// 调完的矩阵:47.4 / 47.4 / 49.4 / 51.0 / 51.6 / 53.2,最极端对位 36%
+// —— 比动手前(45.6~59.0)还紧。
 export const SIGNATURE_SKILLS: Record<string, Partial<CardDef>> = {
   // ══════════════════ 先秦 ══════════════════
   // 兵法之祖。「其疾如风」——全军提速正是《孙子》的第一课。
@@ -853,4 +867,208 @@ export const SIGNATURE_SKILLS: Record<string, Partial<CardDef>> = {
       en: 'Battlecry: Discover a general. A lacquerer’s apprentice who spent ten years on a single scroll — the colours still look wet.',
     },
   },
+
+  // ══════════════════ 预组骨架 18 张 ══════════════════
+  //
+  // 这批是六套预组共用的骨架,身材是跨很多轮 sim-balance 手调出来的 ——
+  // 从前的做法是**一律不碰**(改一张颜真卿的血就把矩阵打出闸门)。
+  // 现在动它们,是因为「张飞、张辽、孙策、许褚是白板」这件事本身就说不过去。
+  //
+  // 动它们的三条纪律:
+  // 1. **只发贪心 AI 用得上的效果** —— 上场即改变场面的那类(点杀 / 铺场 / 加攻 / 激怒)。
+  //    治疗、护甲、发现、检索在 AI 手里近乎白板(见 balance sim 的老结论),
+  //    给预组卡发这些 = 白扣身材,矩阵必然塌一角。
+  // 2. **中立骨架发小的**。王平出现在 5 套预组各 2 张、程普/陈到 4-5 套 ——
+  //    动它们是同时动所有卡组,只发 ≤1.5 点的小效果,让六套一起平移而不是相对错位。
+  // 3. **主义专属的那 7 张是精准旋钮**,顺手用来拉平矩阵:
+  //    礼家(46.2%)与割据(45.6%)偏弱,给净场面收益;名利(59.0%)偏强,给等价交换。
+  //
+  // 改完必跑 `npm run sim-balance`,矩阵是唯一的验收标准。
+
+  // ---- 中立骨架:六套一起平移 ----
+  // 街亭断后,平生谨慎 —— 大军退了,他的人还在。
+  'wang-ping': {
+    attack: 4,
+    health: 5,
+    deathrattle: { ops: [{ op: 'summon', defId: 'token-xiangyong', count: 1 }] },
+    text: {
+      zh: '守護。亡語:召喚一個 1/1 的鄉勇。街亭斷後,鳴鼓自持,魏軍疑有伏而不敢逼。',
+      en: 'Guard. Deathrattle: Summon a 1/1 Militia. He beat his drums at Jieting and the Wei army, fearing ambush, let the retreat pass.',
+    },
+  },
+  // 江表虎臣之首,历事三主 —— 倒下之前还要还一手。
+  'cheng-pu': {
+    attack: 5,
+    health: 6,
+    deathrattle: { ops: [{ op: 'damage', amount: 2, target: 'randomEnemyGeneral' }] },
+    text: {
+      zh: '守護。亡語:對隨機一名敵方武將造成 2 點傷害。江表虎臣之首,歷事三主,程公未嘗後人。',
+      en: 'Guard. Deathrattle: Deal 2 damage to a random enemy general. First of the Tiger Officers of Jiangbiao, he served three lords and never lagged behind.',
+    },
+  },
+  // 名位常亚赵云,所领白毦兵为西方上兵。
+  'chen-dao': {
+    attack: 4,
+    health: 6,
+    battlecry: { ops: [{ op: 'summon', defId: 'token-baimao-bing', count: 1 }] },
+    text: {
+      zh: '守護。戰吼:召喚一個 2/2 的白毦兵。名位常亞趙雲,所領白毦,西方上兵。',
+      en: 'Guard. Battlecry: Summon a 2/2 White-Plume Guard. Ranked ever just below Zhao Yun; his White Plumes were the finest troops of the west.',
+    },
+  },
+  // 身被数十创,肤如刻画 —— 伤越多,越不肯退。
+  'zhou-tai': {
+    attack: 5,
+    health: 6,
+    enrage: 3,
+    text: {
+      zh: '守護。激怒:受傷時+3/+0。身被數十創,膚如刻畫;孫權為之流涕。',
+      en: 'Guard. Enrage: +3/+0 while damaged. Dozens of scars carved his skin; Sun Quan wept to see them.',
+    },
+  },
+  // 河北名将,与颜良齐名 —— 先出手的那一个。
+  'wen-chou': {
+    attack: 5,
+    health: 4,
+    battlecry: { ops: [{ op: 'damage', amount: 2, target: 'randomEnemyGeneral' }] },
+    text: {
+      zh: '突襲。戰吼:對隨機一名敵方武將造成 2 點傷害。河北名將,與顏良齊名。',
+      en: 'Rush. Battlecry: Deal 2 damage to a random enemy general. Hebei’s champion, spoken of in the same breath as Yan Liang.',
+    },
+  },
+  // 子午谷奇谋:不打关隘,直取长安。
+  'wei-yan': {
+    attack: 5,
+    health: 4,
+    battlecry: { ops: [{ op: 'damage', amount: 2, target: 'enemyHero' }] },
+    text: {
+      zh: '衝鋒。戰吼:對敵方主公造成 2 點傷害。子午谷奇謀:願得精兵五千,十日到長安。',
+      en: 'Charge. Battlecry: Deal 2 damage to the enemy hero. Give me five thousand picked men and I will be at Chang’an in ten days.',
+    },
+  },
+
+  // ---- 主义专属:精准旋钮 ----
+  // 当阳桥头一声断喝,曹军人马俱惊,无一敢近。
+  'zhang-fei': {
+    attack: 5,
+    health: 4,
+    battlecry: { ops: [{ op: 'freeze', target: 'allEnemyGenerals' }] },
+    text: {
+      zh: '守護。戰吼:凍結所有敵方武將。當陽橋頭一聲斷喝,曹軍人馬俱驚,無一敢近。',
+      en: 'Guard. Battlecry: Freeze all enemy generals. One roar at Changban Bridge, and not a man of Cao’s army dared come on.',
+    },
+  },
+  // 八百破十万,威震逍遥津 —— 直冲中军。
+  'zhang-liao': {
+    attack: 6,
+    health: 5,
+    battlecry: { ops: [{ op: 'damage', amount: 3, target: 'enemyHero' }] },
+    text: {
+      zh: '衝鋒。戰吼:對敵方主公造成 3 點傷害。八百破十萬,威震逍遙津。',
+      en: 'Charge. Battlecry: Deal 3 damage to the enemy hero. Eight hundred broke a hundred thousand at Xiaoyao Ford.',
+    },
+  },
+  // 虎痴。裸衣斗马超,力拔千钧。
+  'xu-chu': {
+    attack: 6,
+    health: 5,
+    battlecry: { ops: [{ op: 'damage', amount: 3, target: 'randomEnemyGeneral' }] },
+    text: {
+      zh: '守護。戰吼:對隨機一名敵方武將造成 3 點傷害。虎痴裸衣,鬥馬超於渭南。',
+      en: 'Guard. Battlecry: Deal 3 damage to a random enemy general. The Tiger Fool stripped to the waist and fought Ma Chao at Weinan.',
+    },
+  },
+  // 鸿门宴闯帐,生啖彘肩 —— 越是刀架在脖子上,越站得直。
+  'hist-fan-kuai': {
+    attack: 5,
+    health: 7,
+    enrage: 2,
+    text: {
+      zh: '守護。激怒:受傷時+2/+0。鴻門宴上闖帳,立飲斗酒,生啖彘肩。',
+      en: 'Guard. Enrage: +2/+0 while damaged. He forced his way into the Hongmen feast, downed a gallon of wine, and ate a raw shoulder of pork.',
+    },
+  },
+  // 细柳营:军中闻将军令,不闻天子之诏。
+  'hist-zhou-yafu': {
+    attack: 5,
+    health: 7,
+    aura: { scope: 'friendlyOthers', attack: 0, health: 1 },
+    text: {
+      zh: '守護。你的其他武將+0/+1。細柳營中,聞將軍令,不聞天子之詔。',
+      en: 'Guard. Your other generals have +0/+1. In the Xiliu camp they heeded the general’s orders, not the emperor’s.',
+    },
+  },
+  // 安史之乱,河北二十四郡独平原不下 —— 一纸檄文,十七郡响应。
+  'hist-yan-zhenqing': {
+    attack: 4,
+    health: 6,
+    battlecry: { ops: [{ op: 'summon', defId: 'token-tie-qi', count: 1 }] },
+    text: {
+      zh: '守護。戰吼:召喚一個 2/2 的鐵騎。河北二十四郡皆陷,獨平原城守具備;檄書一出,十七郡同日歸之。',
+      en: 'Guard. Battlecry: Summon a 2/2 Ironclad Rider. Twenty-four commanderies fell; only Pingyuan stood ready — and seventeen answered his call in a single day.',
+    },
+  },
+  // 越国公。治军严酷,临阵有不用命者,立斩以徇。
+  'hist-yang-su': {
+    attack: 5,
+    health: 5,
+    battlecry: { ops: [{ op: 'damage', amount: 2, target: 'randomEnemyGeneral' }] },
+    text: {
+      zh: '突襲。戰吼:對隨機一名敵方武將造成 2 點傷害。越國公治軍,臨陣有不用命者,立斬以徇。',
+      en: 'Rush. Battlecry: Deal 2 damage to a random enemy general. The Duke of Yue kept order by beheading, on the spot, any man who failed him.',
+    },
+  },
+  // 转斗千里,尽有江东 —— 兵是一路打出来的。
+  'sun-ce': {
+    attack: 6,
+    health: 5,
+    battlecry: { ops: [{ op: 'summon', defId: 'token-danyang-bing', count: 1 }] },
+    text: {
+      zh: '衝鋒。戰吼:召喚一個 1/3 的丹陽兵(守護)。轉鬥千里,盡有江東。二十六歲,已經來不及慢慢打了。',
+      en: 'Charge. Battlecry: Summon a 1/3 Danyang Levy with Guard. A thousand li of running battle won him all of Jiangdong. At twenty-six, there was no time to be slow.',
+    },
+  },
+  // 西凉马腾,受衣带诏 —— 铁骑随行。
+  'ma-teng': {
+    attack: 5,
+    health: 6,
+    battlecry: { ops: [{ op: 'summon', defId: 'token-tie-qi', count: 1 }] },
+    text: {
+      zh: '守護。戰吼:召喚一個 2/2 的鐵騎。西涼馬騰,受衣帶詔,率鐵騎入關。',
+      en: 'Guard. Battlecry: Summon a 2/2 Ironclad Rider. Ma Teng of Liang took the girdle edict and rode his ironclads through the pass.',
+    },
+  },
+  // 与诸葛亮、崔州平、孟建游学,各言其志。
+  'shi-tao': {
+    attack: 2,
+    health: 3,
+    battlecry: { ops: [{ op: 'draw', count: 1 }] },
+    text: {
+      zh: '戰吼:抽一張牌。與諸葛亮、崔州平、孟公威俱遊學,四人各言其志。',
+      en: 'Battlecry: Draw a card. He studied alongside Zhuge Liang, Cui Zhouping and Meng Gongwei — each declaring his own ambition.',
+    },
+  },
+  // 竹林七贤。善弹琵琶,妙解音律,任性不羁。
+  'ruan-xian': {
+    attack: 2,
+    health: 2,
+    battlecry: { ops: [{ op: 'gainMana', amount: 1, temporary: true }] },
+    text: {
+      zh: '戰吼:本回合獲得 1 點法力。竹林七賢之一,妙解音律,縱情越禮。',
+      en: 'Battlecry: Gain 1 Mana this turn only. One of the Seven Sages of the Bamboo Grove — a master of music who cared nothing for propriety.',
+    },
+  },
+  // 北天师道,以符箓传世。
+  'hist-kou-qianzhi': {
+    attack: 4,
+    health: 4,
+    battlecry: {
+      ops: [{ op: 'grantKeyword', keyword: 'divineShield', target: 'chosenFriendlyGeneral' }],
+    },
+    text: {
+      zh: '守護。戰吼:使一名友方武將獲得鐵壁。清整道教,除去三張偽法;太武帝親受符籙。',
+      en: 'Guard. Battlecry: Give a friendly general Divine Shield. He purged the Daoist canon of the Zhangs’ false rites; the emperor himself took his talismans.',
+    },
+  },
+
 }

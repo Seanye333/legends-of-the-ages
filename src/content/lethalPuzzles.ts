@@ -161,9 +161,13 @@ export const LETHAL_PUZZLES: LethalPuzzle[] = [
   {
     id: 'lp-twowalls',
     title: { zh: '雙牆夾擊', en: 'Two Walls' },
-    // 守将刻意选**预组骨架卡**(王平 4/6、周泰 5/7):那批是压平的白板,
-    // 身材不会被内容层挪动 —— 谜题盘面钉在会变的卡上,内容一动就无解。
-    situation: { zh: '王平与周泰两道守护,身后主帅只剩 5 血。', en: 'Two guards, Wang Ping and Zhou Tai; 5 HP behind them.' },
+    // 守将用**衍生物**(水寨 0/4、丹阳兵 1/3)。
+    //
+    // 上一版用的是预组骨架卡,理由是「那批是压平的白板,身材不会被内容层挪动」——
+    // 这个理由撑了一轮就塌了:预组名将也要写专属技,王平/周泰的身材照样会变。
+    // 真正不会变的只有衍生物:它们不进卡包、不可构筑,没有任何平衡旋钮会去动它们。
+    // 以后摆谜题盘面,守将优先选 token-*。
+    situation: { zh: '两道营寨横在阵前,身后主帅只剩 8 血。', en: 'Two stockades bar the way; 8 HP behind them.' },
     hint: { zh: '算清谁去拆墙、谁去登门。', en: 'Decide who breaks the walls and who breaks through.' },
     difficulty: 3,
     heroes: ['hist-laozi', 'liu-bei'],
@@ -177,9 +181,9 @@ export const LETHAL_PUZZLES: LethalPuzzle[] = [
           hand: [],
         },
         {
-          heroHp: 5,
+          heroHp: 8,
           mana: 0,
-          board: [{ defId: 'wang-ping' }, { defId: 'zhou-tai' }],
+          board: [{ defId: 'token-shui-zhai' }, { defId: 'token-danyang-bing' }],
           hand: [],
         },
       ],

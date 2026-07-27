@@ -31,11 +31,15 @@ import { CARDS_BY_ID, COLLECTIBLE_CARDS } from './cards'
 // 这一行以前写的是「固定用名将」,那是错的,一直没人对过。
 //
 // 曲线是拿 sim-campaign 的基准尺(AI_NORMAL,双方同档)调出来的:
-//   第一章 77 / 57 / 67 / 48 / 47 / 45 / 20 / 20 %
-//   第二章 53 / 37 / 43 / 42 / 37 / 32 / 25 / 17 %
+//   第一章 70 / 58 / 67 / 50 / 30 / 35 / 28 / 27 %
+//   第二章 72 / 60 / 52 / 52 / 30 / 38 / 20 / 15 %
 // 真人玩家强于贪心 AI,所以这组数字是**下限**,实际体感会更松一些。
 //
-// 这套 tier 是**机制播种重做之后重搜的**。播种重做把带效果的卡从 55% 提到 80%,
+// 这套 tier 重搜过两轮:一轮是机制播种重做,一轮是**预组骨架名将补专属技**
+// (张飞、张辽、孙策、许褚…)。后者尤其要留神:预组卡同时也在 bossDeck 的抽取池里,
+// 所以改预组会**同时**动 sim-balance 的矩阵和 sim-campaign 的曲线,两个都得重跑。
+//
+// 播种重做把带效果的卡从 55% 提到 80%,
 // 而效果是从身材里买的 —— Boss 抽到的卡整体变软,旧的一组 tier 直接失效
 // (趙匡胤从 32% 飙到 87%、李世民从 20% 到 53%)。这不是 bug:
 // **卡池一动,冒险曲线就得重调**,sim-campaign 就是干这个的。
@@ -120,7 +124,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'hegemonic',
     hp: 34,
-    deckTier: 0.75,
+    deckTier: 0.45,
     power: power(
       'bp-fenjing',
       { zh: '焚城', en: 'Raze' },
@@ -300,7 +304,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'hegemonic',
     hp: 52, // 与曹操持平(单调不破);白起要当开章软目标,血量这条弱旋钮也一并往下压
-    deckTier: 0.0,
+    deckTier: 0.15,
     // 长平的「歼灭」本想给 3 点,但白起 = 霸道深池 + 每回合稳定点杀,实测哪怕最软卡组
     // 玩家胜率也压不过 33%,当不成开章的软目标;降到 2 点(与董卓同机制)+ 最软档 ≈ 40%。
     power: power(
@@ -325,7 +329,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'hegemonic',
     hp: 56,
-    deckTier: 0.0,
+    deckTier: 0.15,
     power: power(
       'bp-pofu',
       { zh: '破釜沉舟', en: 'Burn the Boats' },
@@ -348,7 +352,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'hegemonic',
     hp: 58,
-    deckTier: 0.45,
+    deckTier: 0.0,
     power: power(
       'bp-duoduo',
       { zh: '多多益善', en: 'The More the Merrier' },
@@ -394,7 +398,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'royal',
     hp: 62,
-    deckTier: 0.0,
+    deckTier: 0.3,
     // 王道深池已到最强档(tier 0.03)仍只把玩家压到 ~44%,当不成第 13 关的坡度,
     // 反成中段的凸点;把 +1/+1 提到 +2/+2(仍带冲锋)让它真能一波带走,回落到 ~34%。
     power: power(
@@ -422,7 +426,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'royal',
     hp: 64,
-    deckTier: 0.6,
+    deckTier: 0.3,
     power: power(
       'bp-huangpao',
       { zh: '黃袍加身', en: 'The Yellow Robe' },
@@ -445,7 +449,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'royal',
     hp: 66,
-    deckTier: 0.6,
+    deckTier: 0.45,
     power: power(
       'bp-yuejiajun',
       { zh: '岳家軍', en: 'The Yue Army' },
@@ -471,7 +475,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'royal',
     hp: 70,
-    deckTier: 0.6,
+    deckTier: 0.45,
     power: power(
       'bp-beifa',
       { zh: '北伐', en: 'The Northern Expedition' },
