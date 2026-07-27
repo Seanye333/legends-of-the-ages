@@ -185,7 +185,7 @@ export const HISTORY_BATTLES: HistoryBattle[] = [
     heroId: 'hist-lian-po',
     doctrine: 'hegemonic',
     hp: 44,
-    deckTier: 0.8,
+    deckTier: 0.9,
     power: power(
       'hbp-jianbi',
       { zh: '堅壁清野', en: 'Fortify and Wait' },
@@ -218,7 +218,7 @@ export const HISTORY_BATTLES: HistoryBattle[] = [
     heroId: 'hist-xiang-yu',
     doctrine: 'hegemonic',
     hp: 52,
-    deckTier: 0.75,
+    deckTier: 0.5,
     power: power(
       'hbp-pofu',
       { zh: '破釜沉舟', en: 'Burn the Boats' },
@@ -482,7 +482,7 @@ export const HISTORY_BATTLES: HistoryBattle[] = [
     heroId: 'hist-chen-youliang',
     doctrine: 'separatist',
     hp: 44,
-    deckTier: 0.85,
+    deckTier: 0.9,
     power: power(
       'hbp-loushi',
       { zh: '樓船甲士', en: 'Tower-Ship Marines' },

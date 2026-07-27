@@ -36,7 +36,7 @@ export const LETHAL_PUZZLES: LethalPuzzle[] = [
   {
     id: 'lp-windfury',
     title: { zh: '風助火勢', en: 'Fan the Flames' },
-    situation: { zh: '夏侯惇孤军压境,敌主帅尚有 12 血。', en: 'Xiahou Dun stands alone; the enemy has 12 HP.' },
+    situation: { zh: '夏侯惇孤军压境,敌主帅尚有 10 血。', en: 'Xiahou Dun stands alone; the enemy has 10 HP.' },
     hint: { zh: '一次攻击不够 —— 让它打两次。', en: 'One swing is not enough — let it strike twice.' },
     difficulty: 1,
     heroes: ['liu-bei', 'cao-cao'],
@@ -44,7 +44,7 @@ export const LETHAL_PUZZLES: LethalPuzzle[] = [
       activePlayer: 0,
       players: [
         { heroHp: 20, mana: 2, board: [{ defId: 'xiahou-dun' }], hand: ['strat-jie-dongfeng'] },
-        { heroHp: 12, mana: 0, board: [], hand: [] },
+        { heroHp: 10, mana: 0, board: [], hand: [] },
       ],
     },
   },
@@ -98,7 +98,7 @@ export const LETHAL_PUZZLES: LethalPuzzle[] = [
   {
     id: 'lp-buffreach',
     title: { zh: '偷天換日', en: 'Steal the Sky' },
-    situation: { zh: '马超差两点就能一击致命,敌主帅 8 血。', en: 'Ma Chao is two short of lethal. Enemy at 8.' },
+    situation: { zh: '马超差两点就能一击致命,敌主帅 7 血。', en: 'Ma Chao is two short of lethal. Enemy at 7.' },
     hint: { zh: '给他补上那两点攻击。', en: 'Lend him the two attack he lacks.' },
     difficulty: 2,
     heroes: ['sun-quan', 'guo-jia'],
@@ -106,7 +106,7 @@ export const LETHAL_PUZZLES: LethalPuzzle[] = [
       activePlayer: 0,
       players: [
         { heroHp: 20, mana: 3, board: [{ defId: 'ma-chao' }], hand: ['strat-tou-liang-huan-zhu'] },
-        { heroHp: 8, mana: 0, board: [], hand: [] },
+        { heroHp: 7, mana: 0, board: [], hand: [] },
       ],
     },
   },
@@ -161,7 +161,9 @@ export const LETHAL_PUZZLES: LethalPuzzle[] = [
   {
     id: 'lp-twowalls',
     title: { zh: '雙牆夾擊', en: 'Two Walls' },
-    situation: { zh: '刘璋与段干木两道守护,身后主帅只剩 5 血。', en: 'Two guards, Liu Zhang and Duangan Mu; 5 HP behind them.' },
+    // 守将刻意选**预组骨架卡**(王平 4/6、周泰 5/7):那批是压平的白板,
+    // 身材不会被内容层挪动 —— 谜题盘面钉在会变的卡上,内容一动就无解。
+    situation: { zh: '王平与周泰两道守护,身后主帅只剩 5 血。', en: 'Two guards, Wang Ping and Zhou Tai; 5 HP behind them.' },
     hint: { zh: '算清谁去拆墙、谁去登门。', en: 'Decide who breaks the walls and who breaks through.' },
     difficulty: 3,
     heroes: ['hist-laozi', 'liu-bei'],
@@ -177,7 +179,7 @@ export const LETHAL_PUZZLES: LethalPuzzle[] = [
         {
           heroHp: 5,
           mana: 0,
-          board: [{ defId: 'liu-zhang' }, { defId: 'hist-duangan-mu' }],
+          board: [{ defId: 'wang-ping' }, { defId: 'zhou-tai' }],
           hand: [],
         },
       ],
@@ -250,7 +252,7 @@ export const LETHAL_PUZZLES: LethalPuzzle[] = [
   {
     id: 'lp-windping',
     title: { zh: '風怒點殺', en: 'Windfury Finish' },
-    situation: { zh: '马超一骑,配上唯才是举的点杀 —— 敌主帅 13 血。', en: 'Ma Chao alone, plus a hero-power ping. Enemy at 13.' },
+    situation: { zh: '马超一骑,配上唯才是举的点杀 —— 敌主帅 11 血。', en: 'Ma Chao alone, plus a hero-power ping. Enemy at 11.' },
     hint: { zh: '多打的那一下之外,还差一点点。', en: 'Even the extra swing leaves you just short.' },
     difficulty: 3,
     heroes: ['cao-cao', 'liu-bei'],
@@ -258,7 +260,7 @@ export const LETHAL_PUZZLES: LethalPuzzle[] = [
       activePlayer: 0,
       players: [
         { heroHp: 20, mana: 4, board: [{ defId: 'ma-chao' }], hand: ['strat-jie-dongfeng'] },
-        { heroHp: 13, mana: 0, board: [], hand: [] },
+        { heroHp: 11, mana: 0, board: [], hand: [] },
       ],
     },
   },
@@ -280,7 +282,7 @@ export const LETHAL_PUZZLES: LethalPuzzle[] = [
   {
     id: 'lp-beishui',
     title: { zh: '背水一戰', en: 'Back to the River' },
-    situation: { zh: '高顺在场,一道锦囊能再添两分力 —— 敌主帅 9 血。', en: 'Gao Shun on board, one stratagem lends two more. Enemy at 9.' },
+    situation: { zh: '高顺在场,一道锦囊能再添两分力 —— 敌主帅 8 血。', en: 'Gao Shun on board, one stratagem lends two more. Enemy at 8.' },
     hint: { zh: '给他加上那两点。', en: 'Grant him the two attack he needs.' },
     difficulty: 2,
     heroes: ['guo-jia', 'cao-cao'],
@@ -288,7 +290,7 @@ export const LETHAL_PUZZLES: LethalPuzzle[] = [
       activePlayer: 0,
       players: [
         { heroHp: 20, mana: 3, board: [{ defId: 'gao-shun' }], hand: ['strat-beishui-yizhan'] },
-        { heroHp: 9, mana: 0, board: [], hand: [] },
+        { heroHp: 8, mana: 0, board: [], hand: [] },
       ],
     },
   },

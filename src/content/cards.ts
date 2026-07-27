@@ -1,6 +1,7 @@
 import type { CardDef, CardLibrary } from '../engine/types'
 import { GENERATED_CARDS } from './generated/cards.gen'
 import { SIGNATURE_OVERRIDES } from './overrides/signature'
+import { SIGNATURE_SKILLS } from './overrides/signature-skills'
 import { STRATAGEMS } from './overrides/stratagems'
 import { PACK2_CARDS } from './overrides/pack2'
 import { PACK3_CARDS, PACK3_OVERRIDES } from './overrides/pack3'
@@ -91,6 +92,7 @@ export const CARDS: CardDef[] = [
   ...GENERATED_CARDS.map((card) => {
     const fl = FLAVOR_OVERRIDES[card.id]
     const sig = SIGNATURE_OVERRIDES[card.id]
+    const sk = SIGNATURE_SKILLS[card.id]
     const p3 = PACK3_OVERRIDES[card.id]
     const p4 = PACK4_OVERRIDES[card.id]
     const p5 = PACK5_OVERRIDES[card.id]
@@ -105,9 +107,9 @@ export const CARDS: CardDef[] = [
     const p12 = PACK12_OVERRIDES[card.id]
     const p13 = PACK13_OVERRIDES[card.id]
     const bd = BOND_OVERRIDES[card.id]
-    if (!fl && !sig && !p3 && !p4 && !p5 && !p6d && !p6c && !p6l && !p7 && !p8 && !p9 && !p10 && !p11 && !p13 && !p12 && !bd)
+    if (!fl && !sig && !sk && !p3 && !p4 && !p5 && !p6d && !p6c && !p6l && !p7 && !p8 && !p9 && !p10 && !p11 && !p13 && !p12 && !bd)
       return card
-    const ov = { ...fl, ...sig, ...p3, ...p4, ...p5, ...p6d, ...p6c, ...p6l, ...p7, ...p8, ...p9, ...p10, ...p11, ...p12, ...p13, ...bd }
+    const ov = { ...fl, ...sig, ...sk, ...p3, ...p4, ...p5, ...p6d, ...p6c, ...p6l, ...p7, ...p8, ...p9, ...p10, ...p11, ...p12, ...p13, ...bd }
     return reconcileExclusive({ ...card, ...ov }, ov)
   }),
   ...STRATAGEMS,
