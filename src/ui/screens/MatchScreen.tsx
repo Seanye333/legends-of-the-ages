@@ -591,6 +591,18 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
         </div>
       )}
 
+      {/* 战场环境:挂在牌桌上而不是某个角色上的规则,双方同吃 —— 必须一直可见 */}
+      {state.field && (
+        <div className={styles.fieldBanner} title={pickText(state.field.rule.text)}>
+          <span className={styles.fieldName}>{pickText(state.field.rule.name)}</span>
+          {state.field.turnsLeft !== undefined && (
+            <span className={styles.fieldTurns}>
+              {t(`剩 ${state.field.turnsLeft} 回合`, `${state.field.turnsLeft} turns left`)}
+            </span>
+          )}
+        </div>
+      )}
+
       {/* 关底 Boss 的战场台词 —— 十六个历史人物打起来之后不该再是同一个沉默的机器 */}
       <BossVoice bossId={bossId} state={state} events={lastEvents} />
 

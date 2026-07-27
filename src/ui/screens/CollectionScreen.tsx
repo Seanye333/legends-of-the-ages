@@ -8,8 +8,10 @@ import type {
   Keyword,
   LocalizedText,
   Rarity,
+  TroopType,
 } from '../../engine/types'
 import { COLLECTIBLE_CARDS } from '../../content/cards'
+import { TROOP_NAME } from '../../content/troops'
 import { useCollection } from '../../app/collectionStore'
 import { DOCTRINE_COLORS, DYNASTY_NAME } from '../doctrineColors'
 import { CardFace } from '../components/CardFace'
@@ -143,6 +145,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
   const [costBand, setCostBand] = useState<'all' | '0-3' | '4-6' | '7+'>('all')
   const [dynasty, setDynasty] = useState<DynastyTag | 'all'>('all')
   const [mech, setMech] = useState<MechKey | 'all'>('all')
+  const [troop, setTroop] = useState<TroopType | 'all'>('all')
   const [sortKey, setSortKey] = useState<SortKey>('rarity')
   const [limit, setLimit] = useState(PAGE)
   const [inspect, setInspect] = useState<CardDef | null>(null)
@@ -159,6 +162,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
       if (costBand === '0-3' && c.cost > 3) return false
       if (costBand === '4-6' && (c.cost < 4 || c.cost > 6)) return false
       if (costBand === '7+' && c.cost < 7) return false
+      if (troop !== 'all' && c.troop !== troop) return false
       if (dynasty !== 'all' && c.dynasty !== dynasty) return false
       if (mech !== 'all' && !hasMechanic(c, mech)) return false
       if (q && !c.name.zh.includes(deferredQuery.trim()) && !c.name.en.toLowerCase().includes(q))
@@ -320,6 +324,21 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
             {DYNASTIES_IN_POOL.map((d) => (
               <option key={d} value={d}>
                 {pick(DYNASTY_NAME[d] ?? { zh: d, en: d })}
+              </option>
+            ))}
+          </select>
+          {/* 兵种筛选:「我要一队骑兵」是构筑兵种流的第一个动作,
+              没有这个下拉就只能一张张翻 2000 多张卡 */}
+          <select
+            className={styles.select}
+            value={troop}
+            aria-label={t('按兵种筛选', 'Filter by troop')}
+            onChange={(e) => setTroop(e.target.value as TroopType | 'all')}
+          >
+            <option value="all">{t('全部兵种', 'All troops')}</option>
+            {(Object.keys(TROOP_NAME) as TroopType[]).map((k) => (
+              <option key={k} value={k}>
+                {pick(TROOP_NAME[k])}
               </option>
             ))}
           </select>

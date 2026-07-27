@@ -55,6 +55,15 @@ const SAMPLES: GameEvent[] = [
   { type: 'KeywordGranted', player: 0, iid: 2, keyword: 'guard' },
   { type: 'GeneralDied', player: 1, iid: 3, defId: 'guan-yu' },
   {
+    type: 'FieldChanged',
+    rule: {
+      id: 'field-test',
+      name: { zh: '測試戰場', en: 'Test Field' },
+      text: { zh: '測試', en: 'Test' },
+      turnDamageAll: 1,
+    },
+  },
+  {
     type: 'AttackResolved',
     attacker: 0,
     attackerIid: 2,

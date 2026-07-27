@@ -28,7 +28,9 @@ import { PACK16_CARDS } from './overrides/pack16'
 import { PACK17_CARDS } from './overrides/pack17'
 import { BOND_OVERRIDES } from './overrides/bonds'
 import { RIVAL_OVERRIDES } from './overrides/rivals'
+import { deriveTroop } from './troops'
 import { PACK18_CARDS } from './overrides/pack18'
+import { PACK19_CARDS } from './overrides/pack19'
 import { CAMPAIGN_TOKENS } from './overrides/campaign-tokens'
 import { HISTORY_TOKENS } from './history-tokens'
 
@@ -185,6 +187,7 @@ const MERGED_CARDS: CardDef[] = [
   ...PACK16_CARDS,
   ...PACK17_CARDS,
   ...PACK18_CARDS,
+  ...PACK19_CARDS,
   ...CAMPAIGN_TOKENS,
   ...HISTORY_TOKENS,
 ].map(withKeywordText)
@@ -193,7 +196,23 @@ const NAME_BY_ID: Record<string, LocalizedText> = Object.fromEntries(
   MERGED_CARDS.map((c) => [c.id, c.name]),
 )
 
-export const CARDS: CardDef[] = MERGED_CARDS.map((c) => withBondRivalText(c, NAME_BY_ID))
+// 环境锦囊的卡面文案**从规则本身生成**。
+// 规则里已经写清楚了它干什么(FieldRule.text),再让卡面单独写一遍,
+// 就多出一处会和规则走样的地方 —— 上一版羁绊/宿敌吃过一模一样的亏。
+function withFieldText(card: CardDef): CardDef {
+  const op = card.spell?.ops.find((o) => o.op === 'setField')
+  if (!op || op.op !== 'setField') return card
+  if (card.text?.zh) return card
+  return { ...card, text: op.rule.text }
+}
+
+// 兵种在**最后**派生:它读的是最终卡面(关键词与效果都合并完了)。
+// 放在前面的话,pack 覆盖给的冲锋/守护就还没进来,推出来的兵种和卡面对不上。
+export const CARDS: CardDef[] = MERGED_CARDS.map((c) => {
+  const withText = withFieldText(withBondRivalText(c, NAME_BY_ID))
+  const troop = deriveTroop(withText)
+  return troop ? { ...withText, troop } : withText
+})
 
 export const CARDS_BY_ID: CardLibrary = Object.fromEntries(CARDS.map((c) => [c.id, c]))
 

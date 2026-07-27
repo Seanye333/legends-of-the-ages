@@ -174,6 +174,45 @@ export const CODEX: CodexSection[] = [
         example: (c) => c.aura !== undefined,
       },
       {
+        id: 'troop',
+        term: { zh: '兵種 Troop', en: 'Troop' },
+        rule: {
+          zh: '每名武将都属于一个兵种:騎兵 / 步卒 / 弓弩 / 水軍 / 器械 / 謀士。',
+          en: 'Every general belongs to one troop type: Cavalry, Infantry, Archers, Navy, Siege, or Advisor.',
+        },
+        note: {
+          zh: '势力与主义回答「他是谁那边的」,兵种回答「他在战场上干什么」。兵种由卡面自己决定(带冲锋的是骑兵、带守护的是步卒、开场就能打人的是远程),同一张卡永远是同一个兵种。池中占比:骑兵 25% · 谋士 26% · 步卒 16% · 弓弩 13% · 器械 10% · 水军 9% —— 稀有的兵种,协同卡给的倍率也更高。',
+          en: 'Faction and doctrine say whose side a general is on; troop says what they do on the field. It is derived from the card itself and never changes. Rarer troops get stronger payoffs.',
+        },
+        example: (c) => c.troop === 'navy',
+      },
+      {
+        id: 'formation',
+        term: { zh: '陣型 Formation', en: 'Formation' },
+        rule: {
+          zh: '只作用于**左右紧邻**的两名友军的光环。',
+          en: 'An aura that affects only the allies immediately to the left and right.',
+        },
+        note: {
+          zh: '这是全游戏唯一让「摆在哪儿」有意义的机制 —— 别的效果都不看出场顺序。所以阵型卡有两层决策:先想清楚谁站它旁边,再防着对手把中间那个杀掉(阵型来源一死,两边的增益立刻收回,可能连着死人)。',
+          en: 'The only mechanic where board position matters. Plan who stands beside it — and remember that killing the source withdraws the buff from both neighbours at once.',
+        },
+        example: (c) => c.aura?.scope === 'adjacent',
+      },
+      {
+        id: 'field',
+        term: { zh: '戰場 Field', en: 'Field' },
+        rule: {
+          zh: '布在战场上的持续规则(天时地利),**双方同吃**,同时只有一片。',
+          en: 'A lasting rule laid on the battlefield itself. It applies to BOTH players, and only one can be active.',
+        },
+        note: {
+          zh: '战场不是你的技能,是这一局的天气与地形 —— 你布下赤壁烈焰,烧的是双方全场。所以它本身不是优势,是**赌局**:收益来自「我这套牌不怕烧,你那套怕」。后布的战场直接覆盖前一片,包括对手布的。',
+          en: 'A field is weather and terrain, not a spell you own: the fires burn both sides. The value comes from your deck minding it less than theirs. A new field replaces the old one, whoever laid it.',
+        },
+        example: (c) => (c.spell?.ops ?? []).some((o) => o.op === 'setField'),
+      },
+      {
         id: 'bond',
         term: { zh: '羈絆 Bond', en: 'Bond' },
         rule: {

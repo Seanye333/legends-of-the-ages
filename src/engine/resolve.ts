@@ -140,12 +140,20 @@ export function refreshAuras(state: GameState, lib: CardLibrary): void {
     }
   }
   for (const player of [0, 1] as const) {
-    for (const source of state.players[player].board) {
+    const roster = state.players[player].board
+    for (let si = 0; si < roster.length; si++) {
+      const source = roster[si]
       if (source.silenced) continue
       const aura = lib[source.defId]?.aura
       if (!aura) continue
-      for (const inst of state.players[player].board) {
+      for (let i = 0; i < roster.length; i++) {
+        const inst = roster[i]
         if (aura.scope === 'friendlyOthers' && inst.iid === source.iid) continue
+        // 陣型:只给左右紧邻的两名友军(自己不吃)。
+        // 用**下标**而不是 iid 判相邻 —— board 数组的顺序就是战场从左到右的顺序,
+        // 一个单位死掉/入场都会让邻居关系当场改变,而 refreshAuras 每次场面变动
+        // 都会整轮重算,所以这里不需要任何额外的失效登记。
+        if (aura.scope === 'adjacent' && Math.abs(i - si) !== 1) continue
         inst.enchants.push({
           attack: aura.attack,
           health: aura.health,
@@ -171,6 +179,28 @@ export function refreshAuras(state: GameState, lib: CardLibrary): void {
       }
     }
   }
+  // 战场环境:双方全体(或某个兵种)吃一份增益。
+  // 走光环的附魔路径 —— 环境消散(turnsLeft 归零或被下一片覆盖)时增益自动收回。
+  // auraFrom 用 -1:场上不会有 iid 为负的单位,所以它天然不会和任何来源撞车,
+  // 而上面那轮「撤掉所有 auraFrom 附魔」照样会把它清干净。
+  const field = state.field?.rule
+  if (field && (field.bothStats || field.troopBonus)) {
+    for (const player of [0, 1] as const) {
+      for (const inst of state.players[player].board) {
+        const bonus = field.bothStats
+        if (bonus) {
+          inst.enchants.push({ attack: bonus.attack, health: bonus.health, auraFrom: -1 })
+          refreshInstance(inst, lib)
+        }
+        const tb = field.troopBonus
+        if (tb && lib[inst.defId]?.troop === tb.troop) {
+          inst.enchants.push({ attack: tb.attack, health: tb.health, auraFrom: -1 })
+          refreshInstance(inst, lib)
+        }
+      }
+    }
+  }
+
   // 宿敌:羁绊的镜面 —— 条件从「同侧凑齐」变成「敌方场上有那个人」,
   // 而增益**双方一起吃**(历史上真打过的两个人在牌桌上重逢)。
   //
@@ -603,6 +633,8 @@ function countFor(
       const dynasty = lib[sourceDefId]?.dynasty
       return board.filter((c) => lib[c.defId]?.dynasty === dynasty).length
     }
+    case 'friendlyTroop':
+      return board.filter((c) => lib[c.defId]?.troop === per.troop).length
   }
 }
 
@@ -1198,6 +1230,14 @@ export function runScript(
             health: inst.health,
           })
         }
+        break
+      }
+      case 'setField': {
+        // 同时只有一片战场:后布的直接覆盖前一片(包括对手布的)。
+        // 规则整份存进 state —— 引擎不查内容表(见 types.ts FieldRule 的说明)。
+        state.field = { rule: op.rule, turnsLeft: op.turns }
+        events.push({ type: 'FieldChanged', rule: op.rule })
+        refreshAuras(state, lib)
         break
       }
       default: {

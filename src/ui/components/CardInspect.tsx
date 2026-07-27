@@ -13,6 +13,7 @@ import {
 import { exportCardImage, probeCardArt } from '../cardExport'
 import { LORE } from '../../content/generated/lore.gen'
 import { bondsOf, bondRoster, cardName, rivalsOf, rivalLore } from '../../content/relations'
+import { TROOP_NAME } from '../../content/troops'
 import { Portrait } from './Portrait'
 import { usePickCompact, usePickText, useT } from '../i18n'
 import { playSfx } from '../sound'
@@ -114,6 +115,7 @@ export function CardInspect({ def, onClose, forge = false }: CardInspectProps) {
                 ],
               )}
             </span>
+            {def.troop && <span>{pickCompact(TROOP_NAME[def.troop])}</span>}
             <span className={styles.collector}>№{def.collectorNo}</span>
           </div>
           {def.text && <p className={styles.text}>{pick(def.text)}</p>}

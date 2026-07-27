@@ -52,6 +52,11 @@ export type Keyword =
   | 'trample' // 碾压:攻击武将时,溢出的伤害穿透到敌方主公
 export type Archetype = 'warrior' | 'strategist'
 
+// 兵种 —— 势力/主义回答「他是谁那边的」,兵种回答「他在战场上干什么」。
+// 值由内容层的 deriveTroop 从已有字段推出(见 content/troops.ts),
+// 引擎只读不算:它是 CardDef 上的一个普通标签,和 dynasty 一个待遇。
+export type TroopType = 'cavalry' | 'infantry' | 'archer' | 'navy' | 'siege' | 'advisor'
+
 export interface LocalizedText {
   zh: string
   en: string
@@ -92,6 +97,7 @@ export type CountSource =
   | { kind: 'friendlyDynasty' } // 与来源卡同势力的友方武将(不含自己更直观 → 见 resolve 注释)
   | { kind: 'friendlyKeyword'; keyword: Keyword } // 带某关键词的友方武将
   | { kind: 'friendlyGenerals' } // 友方武将总数
+  | { kind: 'friendlyTroop'; troop: TroopType } // 某兵种的友方武将(军师不入列,见 content/troops.ts)
 
 export type EffectOp =
   | { op: 'damage'; amount: number; target: EffectTarget }
@@ -149,6 +155,9 @@ export type EffectOp =
   | { op: 'transform'; target: EffectTarget; into: string }
   // 复生:从墓地随机召回 count 个死去的**友方武将**(按卡面复生)。亡语流的顶点。
   | { op: 'resurrect'; count: number }
+  // ---- 第十九卡包:战场环境 ----
+  // 布下一片战场环境(天时地利)。**双方同吃**,覆盖当前环境(同时只有一片战场)。
+  | { op: 'setField'; rule: FieldRule; turns?: number }
 
 export interface EffectScript {
   ops: EffectOp[]
@@ -204,7 +213,10 @@ export interface SecretDef {
 // 光环:只要来源在场,持续作用于范围内武将。实现为「来源标记的附魔」,
 // 每次场面变动重算(refreshAuras),来源离场即自动撤销。
 export interface AuraDef {
-  scope: 'friendlyOthers' | 'friendlyAll'
+  // adjacent(陣型):只作用于**左右紧邻**的两名友军。
+  // 这是全游戏第一个让「摆在哪儿」有意义的语义 —— 在此之前 board 的顺序
+  // 只是一个渲染下标,把牌放最左还是最右完全等价。
+  scope: 'friendlyOthers' | 'friendlyAll' | 'adjacent'
   attack: number
   health: number
   keywords?: Keyword[]
@@ -219,6 +231,8 @@ export interface CardDef {
   dynasty: DynastyTag
   rarity: Rarity
   archetype: Archetype
+  // 兵种(仅武将,军师与衍生物没有)。在 cards.ts 合并层派生 —— 生成层不存这个字段。
+  troop?: TroopType
   cost: number
   // 武将:攻/血;装备:攻血加成值(keywords 为授予的关键词)
   attack?: number
@@ -358,6 +372,39 @@ export interface GameState {
   // 名局特殊胜负目标(可选)。不给则走普通「主公归零」判定。
   // **可选字段**是有意的:老存档/老战报没有它 → undefined → 普通判定,迁移零风险(铁律 6)。
   objective?: BattleObjective
+  // 战场环境(天时地利)。同上,**可选**是有意的 —— 老存档没有它就是「没有环境」。
+  field?: FieldState
+}
+
+// ---------- 战场环境(天时地利)----------
+//
+// 引擎里此前的一切都挂在**角色**上:武将有光环,主公有技能,牌有效果。
+// 没有任何东西挂在「战场」本身 —— 于是「赤壁在烧」「大雪封路」「平原利骑」
+// 这类古代战争最基本的场景变量,一条都表达不出来。
+//
+// 设计上抄主公技那条经验:**规则整份存在 state 里,不查表**。
+// 引擎必须状态自足、可序列化 —— 存了 id 再去内容层查表,服务端权威对局和
+// 回放就会依赖内容版本,老战报一改卡池就解释不出来了。
+//
+// 三种作用方式,刻意都做成**双方同吃**:环境是战场的属性,不是谁的技能。
+//   · turnDamageAll —— 每个回合开始时烧全场(赤壁、火烧连营)
+//   · bothStats     —— 双方全体武将 ±X/±Y(隆冬、瘴气)
+//   · troopBonus    —— 只加某个兵种(平原利骑、江河利舟)
+// 前者走伤害路径(会死人),后两者走**光环的附魔路径**,因此环境一消失
+// 增益自动收回,不需要任何反向登记。
+export interface FieldRule {
+  id: string
+  name: LocalizedText
+  text: LocalizedText
+  turnDamageAll?: number
+  bothStats?: { attack: number; health: number }
+  troopBonus?: { troop: TroopType; attack: number; health: number }
+}
+
+export interface FieldState {
+  rule: FieldRule
+  // 还剩几个回合(含双方的回合)。undefined = 整局有效。
+  turnsLeft?: number
 }
 
 // 历史名战的特殊胜负目标(座位 0 = 玩家视角)。引擎在 checkGameEnd 里判。
@@ -439,6 +486,8 @@ export type GameEvent =
       health: number
     }
   | { type: 'KeywordGranted'; player: PlayerIdx; iid: number; keyword: Keyword }
+  // 战场环境布下 / 消散(rule 为 undefined 表示消散)
+  | { type: 'FieldChanged'; rule?: FieldRule }
   | { type: 'GeneralDied'; player: PlayerIdx; iid: number; defId: string }
   | {
       type: 'AttackResolved'

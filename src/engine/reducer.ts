@@ -14,6 +14,8 @@ import { rngShuffle } from './rng'
 import {
   addEnchant,
   chosenTargetPool,
+  damageGeneral,
+  refreshAuras,
   drawCards,
   effectiveCost,
   expireTemporaryEnchants,
@@ -489,6 +491,33 @@ function beginTurn(state: GameState, events: GameEvent[], lib: CardLibrary): voi
     turn: state.turn,
     mana: p.mana.max,
   })
+  // 战场环境:每个回合开始烧一次全场,然后倒计时。
+  //
+  // 放在 TurnStarted **之后**、startOfTurn 触发**之前**:
+  // 环境是这一回合的既定条件,武将的回合开始效果应当在它之上结算
+  // (「回合开始时治疗自己」要能救回被火烧掉的血,顺序反了就救不到)。
+  if (state.field) {
+    const burn = state.field.rule.turnDamageAll ?? 0
+    if (burn > 0) {
+      for (const side of [0, 1] as const) {
+        // slice() 先快照:烧死的单位会在 processDeaths 里被移出 board
+        const snapshot = state.players[side].board.slice()
+        for (const unit of snapshot) {
+          const loc = findGeneral(state, unit.iid)
+          if (loc) damageGeneral(state, loc, burn, events, lib)
+        }
+      }
+      processDeaths(state, events, lib)
+    }
+    if (state.field.turnsLeft !== undefined) {
+      state.field.turnsLeft -= 1
+      if (state.field.turnsLeft <= 0) {
+        state.field = undefined
+        events.push({ type: 'FieldChanged' })
+        refreshAuras(state, lib)
+      }
+    }
+  }
   for (const unit of p.board.slice()) {
     if (unit.silenced) continue
     const def = lib[unit.defId]

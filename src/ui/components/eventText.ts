@@ -150,6 +150,14 @@ function line(ev: GameEvent, ctx: EventTextCtx, l: Lang): string {
         : `${n(ev.iid)} gained [${KEYWORD_NAME[ev.keyword].en}]`
     case 'GeneralDied':
       return zh ? `${n(ev.iid)}阵亡` : `${n(ev.iid)} fell in battle`
+    case 'FieldChanged':
+      return ev.rule
+        ? zh
+          ? `战场化作【${ev.rule.name.zh}】`
+          : `The field becomes [${ev.rule.name.en}]`
+        : zh
+          ? '战场恢复如常'
+          : 'The field settles back to normal'
     case 'AttackResolved': {
       if (zh) {
         const back = ev.damageToAttacker > 0 ? `,反受 ${ev.damageToAttacker}` : ''
