@@ -174,6 +174,32 @@ export const CODEX: CodexSection[] = [
         example: (c) => c.aura !== undefined,
       },
       {
+        id: 'bond',
+        term: { zh: '羈絆 Bond', en: 'Bond' },
+        rule: {
+          zh: '几位有真实历史渊源的名将同时在场时,他们一起获得加成。',
+          en: 'When several historically connected generals share the field, they all gain a buff.',
+        },
+        note: {
+          zh: '走的是光环那条路 —— 所以有人被杀、被策反、被弹回手牌,羁绊立刻断,加成也立刻收回(可能因此死人)。构筑器的羁绊面板会告诉你还差谁。**六套预组一条都凑不齐**,羁绊是留给自组卡组的奖励。',
+          en: 'It runs on the aura path: kill, seize, or bounce one member and the bond breaks at once, taking the buff with it (which can be lethal). The deck builder tells you who is missing. None of the six preconstructed decks completes one — bonds are a reward for building your own.',
+        },
+        example: (c) => c.bond !== undefined,
+      },
+      {
+        id: 'rival',
+        term: { zh: '宿敵 Rival', en: 'Rival' },
+        rule: {
+          zh: '历史上真打过的两个人分处敌我两侧时,**双方**都获得加成。',
+          en: 'When two historical adversaries face each other across the field, BOTH of them gain a buff.',
+        },
+        note: {
+          zh: '羁绊的镜面:羁绊问「谁和谁是一伙的」,宿敌问「谁和谁真的打过」。加成给双方,所以它本身不是优势 —— 是一场戏。同一对人可以既是羁绊又是宿敌:孙膑与庞涓同侧是同门,异侧是马陵道。',
+          en: 'The mirror of a bond. Bonds ask who stood together; rivals ask who actually fought. Both sides gain, so it is drama rather than advantage. The same pair can be both: Sun Bin and Pang Juan are fellow students on one side of the field, and the road at Maling on opposite sides.',
+        },
+        example: (c) => c.rival !== undefined,
+      },
+      {
         id: 'secret',
         term: { zh: '伏兵 Secret', en: 'Secret' },
         rule: { zh: '打出后不结算,埋在主帅面板旁;由对手的动作触发才翻开。', en: 'Played face-down beside your hero. It resolves only when the opponent does something specific.' },

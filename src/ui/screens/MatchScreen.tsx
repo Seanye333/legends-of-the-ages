@@ -79,6 +79,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
     puzzlePeeked,
     undoPuzzle,
     markPuzzlePeeked,
+    practice,
   } = useMatch()
   const puzzleDef = puzzleId ? puzzleDefById(puzzleId) : undefined
   const [showHint, setShowHint] = useState(false)
@@ -370,6 +371,30 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
       markPuzzlePeeked()
     } else {
       setSolution([t('此局面已经无法斩杀了 —— 撤销一步或重来。', 'No lethal from here — undo a step or retry.')])
+    }
+  }
+
+  // 军师(演武场):对**当前**局面跑同一个求解器,回答「这回合有没有斩杀线」。
+  //
+  // 求解器写好很久了,却只服务谜题验证与「展示解法」。它回答的恰恰是贪心玩家
+  // 最常错过的那个问题 —— 场面看着不占优,其实这一回合就能带走。
+  // 只开在演武场:那是练习模式,不记战绩/军令/成就,给答案不影响任何东西。
+  const handleAdvise = () => {
+    playSfx('buttonTap')
+    if (!state) return
+    const res = solveLethal(state, 0, CARDS_BY_ID)
+    if (res && res.line.length > 0) {
+      setSolution([
+        t('本回合有斩杀线:', 'There is lethal this turn:'),
+        ...describeSolution(state, 0, res.line, CARDS_BY_ID, pickText, t),
+      ])
+    } else {
+      setSolution([
+        t(
+          '本回合没有斩杀线 —— 按场面价值走,别硬开。',
+          'No lethal this turn — play for board value instead.',
+        ),
+      ])
     }
   }
 
@@ -767,10 +792,19 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
         </div>
       )}
 
-      {puzzle && solution && (
+      {/* 演武场:军师 —— 问一句「这回合有没有斩杀」 */}
+      {practice && state.phase === 'main' && state.activePlayer === 0 && (
+        <div className={styles.puzzleBar}>
+          <button className={styles.puzzleBtn} onClick={handleAdvise}>
+            {t('军师', 'Advisor')}
+          </button>
+        </div>
+      )}
+
+      {solution && (
         <div className={styles.puzzlePanel} onClick={() => setSolution(null)}>
           <div className={styles.panelCard} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.panelTitle}>{t('解法', 'Solution')}</div>
+            <div className={styles.panelTitle}>{puzzle ? t('解法', 'Solution') : t('军师', 'Advisor')}</div>
             <ol className={styles.panelSteps}>
               {solution.map((step, i) => (
                 <li key={i}>{step}</li>

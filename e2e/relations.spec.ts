@@ -26,3 +26,15 @@ test('图鉴详情:关羽看得到自己属于桃园结义', async ({ page }) =>
   await page.locator('[class*="cardBtn"], [class*="card"]').first().click()
   await expect(page.getByText(/羈絆 · 桃園結義/)).toBeVisible()
 })
+
+test('演武场:军师能回答「这回合有没有斩杀」', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: /演武场|Training/ }).click()
+  await page.getByRole('button', { name: /开战|Fight/ }).click()
+  // 调度之后才进主阶段
+  await expect(page.getByRole('heading', { name: '调度' })).toBeVisible()
+  await page.getByRole('button', { name: /全部保留|确认/ }).click()
+  const advisor = page.getByRole('button', { name: /^军师$|^Advisor$/ })
+  await advisor.click()
+  await expect(page.getByText(/斩杀线|lethal/i).first()).toBeVisible()
+})
