@@ -202,6 +202,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
               { k: 'recruit', zh: '新兵', en: 'Recruit', d: { zh: '常有失误,看不见多步斩杀', en: 'Blunders often; misses multi-step lethal' } },
               { k: 'veteran', zh: '宿将', en: 'Veteran', d: { zh: '偶尔失误', en: 'Occasional blunders' } },
               { k: 'general', zh: '名将', en: 'Legend', d: { zh: '零失误,必算斩杀', en: 'No blunders; always finds lethal' } },
+              { k: 'marshal', zh: '军神', en: 'Marshal', d: { zh: '规划整个回合,看得见先亏后赚的组合', en: 'Plans the whole turn; sees setups that lose tempo to win value' } },
             ] as const
           ).map((o) => (
             <button
@@ -223,7 +224,8 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
               { zh: '新兵', en: 'Recruit' },
               { zh: '宿将', en: 'Veteran' },
               { zh: '名将', en: 'Legend' },
-            ][['recruit', 'veteran', 'general'].indexOf(s.difficulty)] ?? { zh: '', en: '' },
+              { zh: '军神', en: 'Marshal' },
+            ][['recruit', 'veteran', 'general', 'marshal'].indexOf(s.difficulty)] ?? { zh: '', en: '' },
           )}
           {' — '}
           {pick(
@@ -231,7 +233,8 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
               { zh: '常有失误,且看不见多步斩杀线', en: 'Blunders often and cannot see multi-step lethal' },
               { zh: '偶尔失误', en: 'Blunders occasionally' },
               { zh: '零失误,每回合先算一遍斩杀', en: 'No blunders; checks for lethal every turn' },
-            ][['recruit', 'veteran', 'general'].indexOf(s.difficulty)] ?? { zh: '', en: '' },
+              { zh: '规划整个回合 —— 会为了后面赚回来而先走一步亏分的', en: 'Plans the entire turn, including moves that lose value now to gain more later' },
+            ][['recruit', 'veteran', 'general', 'marshal'].indexOf(s.difficulty)] ?? { zh: '', en: '' },
           )}
         </p>
       </section>

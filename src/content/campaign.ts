@@ -7,6 +7,7 @@ import type {
   RunModifiers,
 } from '../engine/types'
 import { DECK_SIZE } from '../engine/types'
+import type { EvalWeights } from '../ai/greedy'
 import { CARDS_BY_ID, COLLECTIBLE_CARDS } from './cards'
 
 // 冒险模式「群雄逐鹿」。
@@ -810,4 +811,47 @@ export const TRIALS: Record<string, TrialDef> = {
 
 export function bossTrial(bossId: string): TrialDef | undefined {
   return TRIALS[bossId]
+}
+
+// ============================================================
+// Boss 性格 —— 同一套 AI,不同的「什么叫局面好」。
+//
+// 关底战此前只有三个旋钮:血更厚、主公技更强、卡组更好。三样都是**数值**,
+// 于是十六个对手的打法完全一样:一律按贪心分数换场面。打到第八关时,
+// 玩家面对的其实还是第一关那个对手,只是数字大了一圈。
+//
+// 性格改的是 AI 评分的权重(ai/greedy.ts 的 EvalWeights),不是规则:
+// 引擎照旧对称,Boss 一张特权卡都没有,变的只是它眼里什么算赚。
+//   · board 高 → 压场,宁可亏血也要清干净(曹操、白起)
+//   · foeHp 高 / myHp 低 → 不换场面只顾打脸,自己掉血无所谓(吕布、项羽)
+//   · myHp 高 → 苟,先把自己摘干净(赵匡胤、徐达)
+//   · hand 高 → 惜牌,愿意为资源让一步场面(诸葛亮、韩信)
+//
+// **偏移刻意控制在 ±0.25 以内**:再大就不是性格而是难度了,
+// 而难度曲线是 tune-campaign 网格扫出来的,不该被性格顺手改掉。
+// 改完必须重跑 sim-campaign —— 权重会影响胜率,只是幅度小于 deckTier。
+export const BOSS_PERSONALITIES: Record<string, Partial<EvalWeights>> = {
+  // 第一章 · 汉末群雄
+  'boss-zhang-jiao': { board: 1.2, foeHp: 0.45 }, // 蚁附而进 —— 只管铺满场面
+  'boss-dong-zhuo': { foeHp: 0.8, myHp: 0.45 }, // 暴虐 —— 不在乎自己掉多少血
+  'boss-lu-bu': { foeHp: 0.85, myHp: 0.4, board: 0.85 }, // 有勇无谋 —— 见脸就打
+  'boss-yuan-shao': { board: 1.2, hand: 0.55 }, // 四世三公 —— 兵多粮足,靠资源碾
+  'boss-sun-ce': { foeHp: 0.8, myHp: 0.5 }, // 小霸王 —— 抢攻
+  'boss-zhou-yu': { board: 1.15, hand: 0.5 }, // 谈笑破敌 —— 先把场面理干净
+  'boss-zhuge-liang': { hand: 0.6, board: 1.1, myHp: 0.7 }, // 谋定后动 —— 惜牌、稳
+  'boss-cao-cao': { board: 1.15, hand: 0.55 }, // 挟天子 —— 场面与资源双吃
+
+  // 第二章 · 逐鹿千年
+  'boss-bai-qi': { board: 1.25, foeHp: 0.45 }, // 人屠 —— 只求歼灭,不急着推脸
+  'boss-xiang-yu': { foeHp: 0.9, myHp: 0.4, board: 0.85 }, // 力拔山兮 —— 一路平推
+  'boss-han-xin': { hand: 0.55, board: 1.1 }, // 兵仙 —— 精算,什么都要一点
+  'boss-huo-qubing': { foeHp: 0.85, myHp: 0.5 }, // 长驱直入 —— 闪击
+  'boss-tang-taizong': { board: 1.1, myHp: 0.65, hand: 0.5 }, // 天策上将 —— 全面
+  'boss-zhao-kuangyin': { myHp: 0.85, board: 1.05 }, // 杯酒释兵权 —— 先立于不败
+  'boss-yue-fei': { board: 1.15, myHp: 0.7 }, // 岳家军 —— 阵不乱
+  'boss-xu-da': { myHp: 0.75, board: 1.1 }, // 持重 —— 稳扎稳打
+}
+
+export function bossPersonality(bossId: string): Partial<EvalWeights> | undefined {
+  return BOSS_PERSONALITIES[bossId]
 }

@@ -3,7 +3,10 @@ import { persist } from 'zustand/middleware'
 import type { Language } from '../ui/i18n'
 
 // 单机 AI 难度。名字取自兵法典故,对应 greedy.ts 的失误概率。
-export type Difficulty = 'recruit' | 'veteran' | 'general'
+// 四档:新兵 / 宿将 / 名将 / 军神。
+// 军神在名将之上多一层**整回合规划**(ai/planner.ts)——
+// 实测 120 局对打 71.7% 胜率,不是换皮。
+export type Difficulty = 'recruit' | 'veteran' | 'general' | 'marshal'
 
 interface SettingsState {
   language: Language

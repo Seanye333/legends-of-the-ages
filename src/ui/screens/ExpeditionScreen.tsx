@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BOSSES, bossDeck } from '../../content/campaign'
+import { BOSSES, bossDeck, bossPersonality } from '../../content/campaign'
 import { RELICS_BY_ID, combineRelics } from '../../content/relics'
 import { CARDS_BY_ID } from '../../content/cards'
 import { MODIFIERS_BY_ID } from '../../content/expeditionModifiers'
@@ -56,6 +56,7 @@ export function ExpeditionScreen({ onBack, onEnterMatch }: ExpeditionScreenProps
       heroHpsOverride: [(myHero?.hp ?? START_HP) + bonusHp, boss.hp + (mod?.bossHpBonus ?? 0)],
       modifiersOverride: [playerMods, bossMods],
       objective: mod?.objective,
+      aiWeights: bossPersonality(boss.id),
     })
     onEnterMatch()
   }

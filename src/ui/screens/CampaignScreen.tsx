@@ -5,6 +5,7 @@ import {
   bossDeck,
   bossChapter,
   bossTrial,
+  bossPersonality,
   CHAPTER_TITLES,
   type BossDef,
   type TrialDef,
@@ -61,6 +62,8 @@ export function CampaignScreen({ onBack, onEnterMatch }: CampaignScreenProps) {
       heroHpsOverride: [myHero?.hp ?? START_HP, boss.hp],
       objective: trial?.objective,
       modifiersOverride: trial ? [trial.playerModifiers, trial.bossModifiers] : undefined,
+      // 性格:同一个难度档,不同的「什么叫局面好」
+      aiWeights: bossPersonality(boss.id),
     })
     onEnterMatch()
   }

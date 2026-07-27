@@ -19,6 +19,7 @@ const DIFFS: { key: Difficulty; zh: string; en: string }[] = [
   { key: 'recruit', zh: '新兵', en: 'Recruit' },
   { key: 'veteran', zh: '宿将', en: 'Veteran' },
   { key: 'general', zh: '名将', en: 'Legend' },
+  { key: 'marshal', zh: '军神', en: 'Marshal' },
 ]
 
 // 演武场:自选双方主公/卡组 + AI 难度,自由对练。不计战绩/军令/成就 —— 纯练手、试阵、学对位。

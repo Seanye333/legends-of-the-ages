@@ -7,7 +7,7 @@
 //
 // 同样的警告适用:这测的是贪心 AI 的游戏。真人玩家会比 AI 强,
 // 所以这里的胜率是**下限**,实际体感会更容易一些。
-import { BOSSES, bossDeck, bossChapter } from '../src/content/campaign'
+import { BOSSES, bossDeck, bossChapter, bossPersonality } from '../src/content/campaign'
 import { PRECON_DECKS } from '../src/content/decks'
 import { CARDS_BY_ID } from '../src/content/cards'
 import { HEROES_BY_ID } from '../src/content/overrides/heroes'
@@ -47,7 +47,9 @@ function play(bossIdx: number, playerDeckIdx: number, seed: number, first: Playe
     const actor: PlayerIdx =
       state.phase === 'mulligan' ? (state.players[0].mulliganDone ? 1 : 0) : state.activePlayer
     // 模拟的「玩家」恒用 AI_NORMAL 当基准尺;Boss 侧可以换档(见 BOSS_AI)
-    const step = aiStep(state, actor, CARDS_BY_ID, rngs[actor], actor === 1 ? BOSS_AI : AI_NORMAL)
+    // Boss 侧带上性格权重 —— 否则量的不是玩家真正面对的那个对手
+    const bossCfg = { ...BOSS_AI, weights: bossPersonality(boss.id) }
+    const step = aiStep(state, actor, CARDS_BY_ID, rngs[actor], actor === 1 ? bossCfg : AI_NORMAL)
     rngs[actor] = step.rng
     const r = applyCommand(state, actor, step.cmd, CARDS_BY_ID)
     if (!r.ok) throw new Error(`AI illegal command (${r.error}) vs ${boss.name.zh}`)

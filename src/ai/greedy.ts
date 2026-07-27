@@ -23,6 +23,7 @@ import { applyCommand } from '../engine/reducer'
 import { legalCommands } from '../engine/legal'
 import { canAttackNow, maxAttacksOf } from '../engine/combat'
 import { rngNext } from '../engine/rng'
+import { plannedStep } from './planner'
 
 export interface AiConfig {
   // 失误概率:以该概率选次优解(难度调节)
@@ -32,18 +33,29 @@ export interface AiConfig {
   // 一层前瞻:评分时把「对手下回合能打我多少」算进去。见 incomingFaceDamage。
   // 只给最高难度开 —— 它是三档之间**最大**的一处差别,也是最像人的那一处。
   foresight?: boolean
+  // 整回合规划(planner.ts):不再一次只看一步,而是对整个回合的命令空间做 DFS,
+  // 挑「收手时局面最好」的那条线。只给军神档开 —— 它比贪心贵一个量级。
+  planner?: boolean
+  // 评分权重覆盖:同一套引擎、不同的性格(见 evaluate 的 weights 参数)。
+  weights?: Partial<EvalWeights>
 }
 
 export const AI_NORMAL: AiConfig = { blunderChance: 0, lethalSearch: true }
 export const AI_EASY: AiConfig = { blunderChance: 0.25, lethalSearch: false }
 
-// 三档难度(UI 用兵法称谓:新兵/宿将/名将)。
-// 三档的差别不只是失误率:新兵完全看不见多步斩杀,宿将偶尔失误,
-// 名将零失误、必算斩杀,而且**会看对手下一回合**(foresight)。
+// 四档难度(UI 用兵法称谓:新兵/宿将/名将/军神)。
+// 差别不只是失误率:新兵完全看不见多步斩杀,宿将偶尔失误,
+// 名将零失误、必算斩杀、会看对手下一回合(foresight),
+// 军神在名将之上再加**整回合规划** —— 它能看见「先亏一步再赚回来」的组合,
+// 那是贪心结构上永远看不见的一类。
+//
+// **AI_NORMAL 仍然是基准尺**:sim-balance / sim-campaign 的历史数字全是拿它量的,
+// 换掉就没法和过去比(见 ARCHITECTURE 铁律 9)。军神只服务真人玩家。
 export const AI_LEVELS = {
   recruit: { blunderChance: 0.35, lethalSearch: false },
   veteran: { blunderChance: 0.12, lethalSearch: false },
   general: { blunderChance: 0, lethalSearch: true, foresight: true },
+  marshal: { blunderChance: 0, lethalSearch: true, foresight: true, planner: true },
 } as const satisfies Record<string, AiConfig>
 
 // ---------- 估值 ----------
@@ -129,12 +141,32 @@ function incomingFaceDamage(state: GameState, player: PlayerIdx): number {
   return Math.max(0, swing - guardHp)
 }
 
+// 评分权重 —— 同一套引擎,不同的性格。
+//
+// 关底 Boss 从前只有「血更厚 + 主公技更强 + 卡组更好」三个旋钮,
+// 十六个对手的**打法**是同一个:一律按贪心分数换场面。
+// 权重让曹操压场、司马懿苟血、项羽只顾打脸 —— 引擎对称性一点没破,
+// 变的只是那一侧 AI 眼里「什么叫局面好」。
+//
+// 默认值与调平衡时那套常数**逐字相同**:不传 weights 的调用点行为一字不变,
+// sim-balance / sim-campaign 的历史数字继续可比。
+export interface EvalWeights {
+  board: number // 场面身材
+  myHp: number // 自己的血(越高越苟)
+  foeHp: number // 敌方的血(越高越凶)
+  hand: number // 手牌资源
+}
+
+export const DEFAULT_WEIGHTS: EvalWeights = { board: 1, myHp: 0.6, foeHp: 0.6, hand: 0.4 }
+
 export function evaluate(
   state: GameState,
   player: PlayerIdx,
   lib: CardLibrary,
   foresight = false,
+  weights: Partial<EvalWeights> = {},
 ): number {
+  const w = { ...DEFAULT_WEIGHTS, ...weights }
   if (state.phase === 'ended') {
     if (state.winner === player) return 1e9
     if (state.winner === 'draw') return 0
@@ -143,17 +175,17 @@ export function evaluate(
   const me = state.players[player]
   const foe = state.players[player === 0 ? 1 : 0]
 
-  let score = sideValue(me, lib) - sideValue(foe, lib)
+  let score = (sideValue(me, lib) - sideValue(foe, lib)) * w.board
 
   const myHp = me.heroHp + me.armor
   const foeHp = foe.heroHp + foe.armor
-  score += myHp * 0.6 - foeHp * 0.6
+  score += myHp * w.myHp - foeHp * w.foeHp
   // 血线非线性:掉到 10 以下时每一点都金贵,防止 AI 为了一点场面优势把自己送进斩杀线
   if (myHp <= 10) score -= (10 - myHp) * 1.2
   if (foeHp <= 10) score += (10 - foeHp) * 1.2
 
   // 手牌 = 资源;牌库见底则疲劳会自己咬自己
-  score += me.hand.length * 0.4 - foe.hand.length * 0.4
+  score += (me.hand.length - foe.hand.length) * w.hand
   if (me.deck.length === 0) score -= 2
   if (foe.deck.length === 0) score += 2
 
@@ -287,6 +319,18 @@ export function aiStep(
     return { cmd: { type: 'ResolveChoice', index: best }, rng }
   }
 
+  // 军神:整回合规划。斩杀是它的一个特例(赢 = 1e9,自然是最大值),
+  // 所以这里不再单独跑 findLethal —— 跑了也只是重复一遍它已经会算的东西。
+  if (config.planner) {
+    return {
+      cmd: plannedStep(state, player, lib, {
+        foresight: config.foresight === true,
+        weights: config.weights,
+      }),
+      rng,
+    }
+  }
+
   if (config.lethalSearch) {
     const lethal = findLethal(state, player, lib)
     if (lethal) return { cmd: lethal, rng }
@@ -298,7 +342,7 @@ export function aiStep(
   const scored = commands.map((cmd) => {
     const r = applyCommand(state, player, cmd, lib)
     if (!r.ok) return { cmd, score: -Infinity }
-    let score = evaluate(r.state, player, lib, config.foresight === true)
+    let score = evaluate(r.state, player, lib, config.foresight === true, config.weights)
     if (cmd.type === 'EndTurn') {
       // 浮费惩罚:结束回合时每点没花掉的法力都是白扔的。
       // 没有这一项,AI 会因为「出牌会掉一点手牌分」而攥着牌过回合。

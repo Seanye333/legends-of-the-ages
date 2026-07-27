@@ -6,7 +6,7 @@ import {
   listReplays,
   type SavedReplay,
 } from '../../app/replayStore'
-import { usePickCompact, useT } from '../i18n'
+import { usePickCompact, usePickText, useT } from '../i18n'
 import { HeroPlate } from '../components/HeroPlate'
 import { GeneralToken } from '../components/GeneralToken'
 import { HandFan } from '../components/HandFan'
@@ -16,6 +16,8 @@ import { cardName, formatEvent, heroName } from '../components/eventText'
 import { useEventAnimations } from '../useEventAnimations'
 import { playSfx } from '../sound'
 import type { CardDef } from '../../engine/types'
+import { scanReplayAsync, type MissedLethal } from '../../app/coach'
+import { describeSolution } from '../puzzleSolution'
 import styles from './ReplayScreen.module.css'
 
 const EMPTY_SET: ReadonlySet<number> = new Set()
@@ -97,6 +99,7 @@ export function ReplayScreen({ onBack }: ReplayScreenProps) {
 
 function ReplayPlayer({ replay, onExit }: { replay: SavedReplay; onExit: () => void }) {
   const t = useT()
+  const pickText = usePickText()
   const [idx, setIdx] = useState(0)
   const [playing, setPlaying] = useState(true)
   const [speed, setSpeed] = useState(1)
@@ -104,6 +107,10 @@ function ReplayPlayer({ replay, onExit }: { replay: SavedReplay; onExit: () => v
   const [inspect, setInspect] = useState<CardDef | null>(null)
   const namesRef = useRef(new Map<number, string>())
   const doneRef = useRef<GameEvent[] | null>(null)
+  // 军师复盘:扫全场「我方回合开始」帧,找出你当时能赢却没赢的那几个回合
+  const [coach, setCoach] = useState<MissedLethal[] | null>(null)
+  const [coachBusy, setCoachBusy] = useState<number | null>(null)
+  const [coachDetail, setCoachDetail] = useState<{ turn: number; steps: string[] } | null>(null)
 
   const frame = replay.frames[Math.min(idx, replay.frames.length - 1)]
   const state = frame.state
@@ -244,11 +251,12 @@ function ReplayPlayer({ replay, onExit }: { replay: SavedReplay; onExit: () => v
         >
           ⏭
         </button>
+        {/* 倍速 1→2→4:一局三十回合的战报,只有 2x 时想快进到某一手仍然要等 */}
         <button
-          className={speed === 2 ? styles.ctrlActive : styles.ctrlBtn}
-          onClick={() => setSpeed((s) => (s === 1 ? 2 : 1))}
+          className={speed > 1 ? styles.ctrlActive : styles.ctrlBtn}
+          onClick={() => setSpeed((s) => (s === 1 ? 2 : s === 2 ? 4 : 1))}
         >
-          2x
+          {speed}x
         </button>
         {/* 进度条:此前只能从头顺着播,想回看某一手只能重播一遍 */}
         <input
@@ -263,10 +271,95 @@ function ReplayPlayer({ replay, onExit }: { replay: SavedReplay; onExit: () => v
             setIdx(Number(e.target.value))
           }}
         />
+        <button
+          className={styles.plainBtn}
+          disabled={coachBusy !== null}
+          onClick={async () => {
+            playSfx('buttonTap')
+            setPlaying(false)
+            setCoachBusy(0)
+            const found = await scanReplayAsync(replay, {
+              onProgress: (done, total) => setCoachBusy(total ? Math.round((100 * done) / total) : 100),
+            })
+            setCoachBusy(null)
+            setCoach(found)
+          }}
+          title={t('扫描全场,找出你当时能赢却没赢的回合', 'Scan for turns where you had lethal')}
+        >
+          {coachBusy !== null ? `${coachBusy}%` : t('军师复盘', 'Review')}
+        </button>
         <button className={styles.plainBtn} onClick={onExit}>
           {t('退出回放', 'Exit')}
         </button>
       </div>
+
+      {/* 复盘结果:点一条跳到那一帧,并列出当时那条斩杀线的每一步 */}
+      {coach && (
+        <div className={styles.coachPanel} onClick={() => setCoach(null)}>
+          <div className={styles.coachCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.coachTitle}>{t('军师复盘', 'Advisor Review')}</div>
+            {coach.length === 0 ? (
+              <p className={styles.coachEmpty}>
+                {t(
+                  '这一局没有错过的斩杀 —— 每个回合的最优解你都走到了。',
+                  'No missed lethal this game — you took every winning line that existed.',
+                )}
+              </p>
+            ) : (
+              <ol className={styles.coachList}>
+                {coach.map((m) => (
+                  <li key={m.frameIndex}>
+                    <button
+                      className={styles.coachItem}
+                      onClick={() => {
+                        setIdx(m.frameIndex)
+                        setCoachDetail({
+                          turn: m.turn,
+                          steps: describeSolution(
+                            replay.frames[m.frameIndex].state,
+                            0,
+                            m.line,
+                            CARDS_BY_ID,
+                            pickText,
+                            t,
+                          ),
+                        })
+                        setCoach(null)
+                      }}
+                    >
+                      {t(
+                        `第 ${m.turn} 回合 —— ${m.steps} 步可斩杀`,
+                        `Turn ${m.turn} — lethal in ${m.steps}`,
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            )}
+            <button className={styles.plainBtn} onClick={() => setCoach(null)}>
+              {t('关闭', 'Close')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {coachDetail && (
+        <div className={styles.coachPanel} onClick={() => setCoachDetail(null)}>
+          <div className={styles.coachCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.coachTitle}>
+              {t(`第 ${coachDetail.turn} 回合的斩杀线`, `Lethal line on turn ${coachDetail.turn}`)}
+            </div>
+            <ol className={styles.coachSteps}>
+              {coachDetail.steps.map((s, i) => (
+                <li key={i}>{s}</li>
+              ))}
+            </ol>
+            <button className={styles.plainBtn} onClick={() => setCoachDetail(null)}>
+              {t('关闭', 'Close')}
+            </button>
+          </div>
+        </div>
+      )}
 
       <BattleLog entries={log} />
       {inspect && <CardInspect def={inspect} onClose={() => setInspect(null)} />}

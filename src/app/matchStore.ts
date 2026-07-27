@@ -12,7 +12,7 @@ import type {
 import { CARDS, CARDS_BY_ID } from '../content/cards'
 import { HEROES_BY_ID } from '../content/overrides/heroes'
 import { LocalMatch } from './transport'
-import { AI_LEVELS, AI_NORMAL } from '../ai/greedy'
+import { AI_LEVELS, AI_NORMAL, type EvalWeights } from '../ai/greedy'
 import { useSettings, type Difficulty } from './settingsStore'
 import { useCollection } from './collectionStore'
 import { useQuests } from './questStore'
@@ -70,6 +70,9 @@ export interface StartMatchArgs {
   // 演武场:自选双方 + 难度的自由练习,不记战绩/军令/成就/战报
   practice?: boolean
   difficultyOverride?: Difficulty
+  // 对手性格:覆盖 AI 的评分权重(关底 Boss 用 —— 曹操压场、司马懿苟血、项羽只顾打脸)。
+  // 难度档不变,变的只是那一侧「什么叫局面好」。
+  aiWeights?: Partial<EvalWeights>
   // 卡组胜率:随便打时带上你这套卡组的内容哈希,终局按它记胜负
   deckKey?: string
 }
@@ -288,9 +291,11 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
     const seed = args.seed ?? Math.floor(Math.random() * 0x7fffffff)
     const first = (seed & 1) as 0 | 1
     // 教学局固定用最宽容的 AI,别让新手第一局就被打穿
-    const ai = args.tutorial
+    const tier = args.tutorial
       ? AI_LEVELS.recruit
       : (AI_LEVELS[args.difficultyOverride ?? useSettings.getState().difficulty] ?? AI_NORMAL)
+    // 性格只改权重,不改档位 —— 玩家选的难度必须还是那个难度
+    const ai = args.aiWeights ? { ...tier, weights: args.aiWeights } : tier
     // 教学局不给主公技:第一局要先把「出牌—攻击—结束回合」讲明白,
     // 多一个每回合都亮的按钮只会分散注意力(教鞭也没有对应的步骤)。
     const heroDefs = args.heroIds.map((id) => HEROES_BY_ID[id])

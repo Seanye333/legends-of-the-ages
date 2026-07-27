@@ -86,11 +86,13 @@ function buildMatchArgs(decks: DeckList[], myDeckIndex: number): StartMatchArgs 
   }
 }
 
-// 单机 AI 三档,称谓取自军中资历
+// 单机 AI 四档,称谓取自军中资历。
+// 军神多一层整回合规划,能看见「先亏一步再赚回来」的组合 —— 对名将实测 71.7%。
 const DIFFICULTIES: { key: Difficulty; name: LocalizedText }[] = [
   { key: 'recruit', name: { zh: '新兵', en: 'Recruit' } },
   { key: 'veteran', name: { zh: '宿将', en: 'Veteran' } },
   { key: 'general', name: { zh: '名将', en: 'Legend' } },
+  { key: 'marshal', name: { zh: '军神', en: 'Marshal' } },
 ]
 
 interface TitleScreenProps {
