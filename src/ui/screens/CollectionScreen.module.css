@@ -210,3 +210,80 @@
   font-size: 12px;
   opacity: 0.6;
 }
+
+/* ---- 收藏度 ---- */
+/* 折叠起来:它是「想看才看」的东西,不该占掉筛选栏上方的固定空间 */
+.goalBox {
+  width: min(96vw, 1080px);
+  border-radius: 8px;
+  border: 1px solid rgba(122, 100, 58, 0.3);
+  background: rgba(12, 10, 7, 0.5);
+  padding: 6px 10px;
+}
+
+.goalSummary {
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: var(--parchment-faint);
+}
+
+.goalDot {
+  margin-left: 8px;
+  color: #7ae87a;
+  font-size: 11px;
+}
+
+.goalList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.goalRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--parchment);
+}
+
+.goalName {
+  width: 68px;
+  flex: none;
+}
+
+.goalBar {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.goalFill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold-dark), var(--gold-bright));
+}
+
+.goalNum {
+  width: 74px;
+  flex: none;
+  text-align: right;
+  color: var(--parchment-faint);
+}
+
+.goalClaim {
+  margin-top: 4px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-family: var(--font-display);
+  color: #1a1206;
+  background: linear-gradient(180deg, #d4a84a, #8a6c26);
+  border: none;
+  cursor: pointer;
+}

@@ -4,6 +4,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { CardDef, LocalizedText, Rarity } from '../engine/types'
 import { CARDS_BY_ID, COLLECTIBLE_CARDS } from '../content/cards'
+import { claimableGoals } from '../content/collectionGoals'
 import { PRECON_DECKS, validateDeckDetailed, type DeckList } from '../content/decks'
 import { deckViolationText } from '../content/deckErrorText'
 import { HEROES_BY_ID } from '../content/overrides/heroes'
@@ -141,6 +142,9 @@ interface CollectionState {
   wins: number
   losses: number
   customDecks: DeckList[]
+  // 收藏度奖励已领取的档位 id(见 content/collectionGoals.ts)。
+  // 可选式默认 [] —— 老存档没有这个键,persist 的浅合并会保留初始值。
+  collectionClaimed: string[]
   // 对局结束时调用一次;胜利得一包,失败得安慰功勋
   recordResult(win: boolean): void
   recordDraw(): void
@@ -151,6 +155,8 @@ interface CollectionState {
   saveDeck(deck: DeckList): LocalizedText[] // 返回校验错误;空数组=成功
   deleteDeck(name: string): void
   ownedCount(cardId: string): number
+  // 领取一档收藏度奖励。重复领取返回 0。
+  claimCollectionGoal(id: string): number
 }
 
 export const useCollection = create<CollectionState>()(
@@ -163,6 +169,7 @@ export const useCollection = create<CollectionState>()(
       wins: 0,
       losses: 0,
       customDecks: [],
+      collectionClaimed: [],
 
       recordResult(win) {
         set((s) => ({
@@ -272,6 +279,17 @@ export const useCollection = create<CollectionState>()(
 
       ownedCount(cardId) {
         return get().owned[cardId] ?? 0
+      },
+
+      claimCollectionGoal(id) {
+        const { owned, collectionClaimed } = get()
+        const goal = claimableGoals(owned, collectionClaimed).find((g) => g.id === id)
+        if (!goal) return 0
+        set({
+          collectionClaimed: [...collectionClaimed, id],
+          merit: get().merit + goal.merit,
+        })
+        return goal.merit
       },
     }),
     { name: 'qiangu-collection' },

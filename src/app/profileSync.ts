@@ -31,6 +31,9 @@ export interface ProfileData {
   quests: unknown[]
   achievementStats: Record<string, number>
   achievementsClaimed: string[]
+  // 收藏度奖励已领档位。**加了就要同时改 snapshot() 与 adopt()** ——
+  // 只改一边的表现是「换设备后这个字段悄悄归零」,而且不报错。
+  collectionClaimed: string[]
 }
 
 interface Envelope {
@@ -100,6 +103,7 @@ export function snapshot(): ProfileData {
     wins: c.wins,
     losses: c.losses,
     customDecks: c.customDecks,
+    collectionClaimed: c.collectionClaimed,
     questDate: q.date,
     quests: q.quests,
     achievementStats: a.stats as Record<string, number>,
@@ -118,6 +122,7 @@ function adopt(data: ProfileData): void {
     wins: data.wins ?? 0,
     losses: data.losses ?? 0,
     customDecks: (data.customDecks ?? []) as never,
+    collectionClaimed: data.collectionClaimed ?? [],
   })
   if (data.questDate && Array.isArray(data.quests)) {
     useQuests.setState({ date: data.questDate, quests: data.quests as never })

@@ -12,6 +12,7 @@ import type {
 } from '../../engine/types'
 import { COLLECTIBLE_CARDS } from '../../content/cards'
 import { TROOP_NAME } from '../../content/troops'
+import { claimableGoals, eraProgress } from '../../content/collectionGoals'
 import { useCollection } from '../../app/collectionStore'
 import { DOCTRINE_COLORS, DYNASTY_NAME } from '../doctrineColors'
 import { CardFace } from '../components/CardFace'
@@ -149,6 +150,13 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
   const [sortKey, setSortKey] = useState<SortKey>('rarity')
   const [limit, setLimit] = useState(PAGE)
   const [inspect, setInspect] = useState<CardDef | null>(null)
+  const collectionClaimed = useCollection((s) => s.collectionClaimed)
+  const claimGoal = useCollection((s) => s.claimCollectionGoal)
+  const progress = useMemo(() => eraProgress(owned), [owned])
+  const claimable = useMemo(
+    () => claimableGoals(owned, collectionClaimed),
+    [owned, collectionClaimed],
+  )
 
   // 搜索防抖:每次按键都全量过滤 2000+ 张卡会明显掉帧
   const deferredQuery = useDeferredValue(query)
@@ -246,6 +254,50 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
           )}
         </span>
       </header>
+
+      {/* 收藏度:卡池有两千三百张,而收藏系统此前只回答「这张你有没有」——
+          没有任何东西回答「你收了多少」。于是开包的唯一价值是「能不能组出更强的牌」,
+          而绝大多数卡永远进不了任何一副牌组,对玩家等于不存在。
+          按时代块(6 块,每块二百到六百张)而不是朝代(18 个,太细)或主义(6 个,太粗)。 */}
+      <details className={styles.goalBox}>
+        <summary className={styles.goalSummary}>
+          {t('收藏度', 'Collection progress')}
+          {claimable.length > 0 && (
+            <span className={styles.goalDot}>●{claimable.length}</span>
+          )}
+        </summary>
+        <div className={styles.goalList}>
+          {progress.map((p) => (
+            <div key={p.era} className={styles.goalRow}>
+              <span className={styles.goalName}>{pick(p.name)}</span>
+              <span className={styles.goalBar}>
+                <span
+                  className={styles.goalFill}
+                  style={{ width: `${Math.round(p.ratio * 100)}%` }}
+                />
+              </span>
+              <span className={styles.goalNum}>
+                {p.owned}/{p.total}
+              </span>
+            </div>
+          ))}
+          {claimable.map((g) => (
+            <button
+              key={g.id}
+              className={styles.goalClaim}
+              onClick={() => {
+                playSfx('stratagemCast')
+                claimGoal(g.id)
+              }}
+            >
+              {t(
+                `${pick(g.name)} ${pick(g.tierLabel)} —— 领 ${g.merit} 功勋`,
+                `${pick(g.name)} ${pick(g.tierLabel)} — claim ${g.merit} merit`,
+              )}
+            </button>
+          ))}
+        </div>
+      </details>
 
       <div className={styles.filters}>
         <div className={styles.tabs}>
