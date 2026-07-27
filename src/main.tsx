@@ -2,6 +2,12 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
 import { ErrorBoundary } from './ui/components/ErrorBoundary'
+import { recordCrash } from './app/telemetry'
+
+// 错误边界只抓**渲染期**异常。事件回调、定时器、Promise 里的抛错它一概看不见 ——
+// 而联机与音频那两块恰恰全是异步的。这两个监听补上那半边。
+window.addEventListener('error', (e) => recordCrash(e.error ?? e.message, 'window.onerror'))
+window.addEventListener('unhandledrejection', (e) => recordCrash(e.reason, 'unhandledrejection'))
 import { startProfileSync } from './app/profileSync'
 import { initSound, setMasterVolume, setMusicVolume, stopMusic } from './ui/sound'
 import { useSettings } from './app/settingsStore'

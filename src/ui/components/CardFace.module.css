@@ -322,3 +322,16 @@
   color: #6fe08a;
   text-shadow: 0 0 6px rgba(80, 220, 130, 0.8);
 }
+
+/* 主义符号:形状 + 颜色双编码,给色觉异常的玩家第二条辨认线索 */
+.doctrineGlyph {
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--doctrine);
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.9);
+  pointer-events: none;
+  z-index: 3;
+}

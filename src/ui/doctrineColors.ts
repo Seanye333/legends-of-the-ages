@@ -11,6 +11,22 @@ export const DOCTRINE_COLORS: Record<CardDef['doctrine'], string> = {
   neutral: '#8a8a8a',
 }
 
+// 主义符号 —— **色盲可用性**。
+//
+// 六个主义此前**只靠颜色区分**:王道金、霸道赤、礼教蓝、名利褐金、割据土、隐逸绿。
+// 金(#d4a84a)与名利(#c19a3b)本来就近,红绿色觉异常的人还要再丢掉霸道与隐逸的对比 ——
+// 也就是说有相当一部分玩家在牌桌上分不清自己在打什么主义的牌。
+// 给每个主义一个**形状符号**,和颜色一起用:颜色没了也认得出。
+export const DOCTRINE_GLYPH: Record<CardDef['doctrine'], string> = {
+  royal: '◆', // 王道:玉
+  hegemonic: '▲', // 霸道:锋
+  ritual: '⬟', // 礼教:礼器
+  fame: '★', // 名利:声名
+  separatist: '⬢', // 割据:城
+  reclusion: '☯', // 隐逸:无为
+  neutral: '●',
+}
+
 // 词条徽章(中文单字 / 英文单字母)—— 用 pickCompact 取,'both' 跟随中文。
 export const KEYWORD_BADGE: Record<Keyword, LocalizedText> = {
   charge: { zh: '冲', en: 'C' },

@@ -2,7 +2,7 @@ import type { CSSProperties, MouseEvent } from 'react'
 import type { CardInstance } from '../../engine/types'
 import { CARDS_BY_ID, needsDynastyTag } from '../../content/cards'
 import { useSettings } from '../../app/settingsStore'
-import { DOCTRINE_COLORS, dynastyName } from '../doctrineColors'
+import { DOCTRINE_COLORS, DOCTRINE_GLYPH, dynastyName } from '../doctrineColors'
 import { Portrait } from './Portrait'
 import { useLongPress } from '../useLongPress'
 import styles from './CardFace.module.css'
@@ -111,6 +111,11 @@ export function CardFace({ inst, playable, selected, large, onClick, onInspect }
         {subName && <div className={styles.sub}>{subName}</div>}
       </div>
       <span className={`${styles.rarity} ${styles[def.rarity]}`} />
+      {/* 主义符号:六个主义原来只靠颜色区分,金与名利本来就近,
+          红绿色觉异常的人还要再丢掉霸道与隐逸的对比。形状 + 颜色双编码。 */}
+      <span className={styles.doctrineGlyph} aria-hidden="true">
+        {DOCTRINE_GLYPH[def.doctrine]}
+      </span>
       {def.type === 'general' ? (
         <>
           <span className={styles.atk}>{inst.attack}</span>

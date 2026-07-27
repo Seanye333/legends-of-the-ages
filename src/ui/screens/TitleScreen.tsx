@@ -7,6 +7,7 @@ import type { CardDef, LocalizedText } from '../../engine/types'
 import { quickDeck, useMatch, type StartMatchArgs } from '../../app/matchStore'
 import type { Difficulty } from '../../app/settingsStore'
 import { loadSession } from '../../app/remoteMatch'
+import { countMode, type ModeKey } from '../../app/telemetry'
 import { usePickText, useT } from '../i18n'
 import { useSettings } from '../../app/settingsStore'
 import { DOCTRINE_COLORS } from '../doctrineColors'
@@ -283,6 +284,7 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
           className={styles.navBtn}
           onClick={() => {
             playSfx('buttonTap')
+            countMode('campaign' as ModeKey)
             onNavigate?.('campaign')
           }}
         >
@@ -294,6 +296,7 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
           className={styles.navBtn}
           onClick={() => {
             playSfx('buttonTap')
+            countMode('history' as ModeKey)
             onNavigate?.('history')
           }}
         >
@@ -305,6 +308,7 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
           className={`${styles.navBtn} ${arenaLive ? styles.navGlow : ''}`}
           onClick={() => {
             playSfx('buttonTap')
+            countMode('arena' as ModeKey)
             onNavigate?.('arena')
           }}
         >
@@ -314,6 +318,7 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
           className={styles.navBtn}
           onClick={() => {
             playSfx('buttonTap')
+            countMode('tower' as ModeKey)
             onNavigate?.('tower')
           }}
         >
@@ -323,6 +328,7 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
           className={styles.navBtn}
           onClick={() => {
             playSfx('buttonTap')
+            countMode('expedition' as ModeKey)
             onNavigate?.('expedition')
           }}
         >
@@ -332,6 +338,7 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
           className={styles.navBtn}
           onClick={() => {
             playSfx('buttonTap')
+            countMode('brawl' as ModeKey)
             onNavigate?.('brawl')
           }}
         >
@@ -341,6 +348,7 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
           className={styles.navBtn}
           onClick={() => {
             playSfx('buttonTap')
+            countMode('lethal' as ModeKey)
             onNavigate?.('lethal')
           }}
         >
@@ -350,6 +358,7 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
           className={styles.navBtn}
           onClick={() => {
             playSfx('buttonTap')
+            countMode('practice' as ModeKey)
             onNavigate?.('practice')
           }}
         >
@@ -359,6 +368,7 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
           className={styles.navBtn}
           onClick={() => {
             playSfx('buttonTap')
+            countMode('lore' as ModeKey)
             onNavigate?.('lore')
           }}
         >
@@ -368,6 +378,7 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
           className={styles.navBtn}
           onClick={() => {
             playSfx('buttonTap')
+            countMode('quiz' as ModeKey)
             onNavigate?.('quiz')
           }}
         >
@@ -377,6 +388,7 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
           className={styles.navBtn}
           onClick={() => {
             playSfx('buttonTap')
+            countMode('codex' as ModeKey)
             onNavigate?.('codex')
           }}
         >
@@ -386,6 +398,7 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
           className={styles.navBtn}
           onClick={() => {
             playSfx('buttonTap')
+            countMode('collection' as ModeKey)
             onNavigate?.('collection')
           }}
         >
@@ -395,6 +408,7 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
           className={styles.navBtn}
           onClick={() => {
             playSfx('buttonTap')
+            countMode('deckbuilder' as ModeKey)
             onNavigate?.('deckbuilder')
           }}
         >
@@ -422,6 +436,7 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
           className={styles.navBtn}
           onClick={() => {
             playSfx('buttonTap')
+            countMode('replays' as ModeKey)
             onNavigate?.('replays')
           }}
         >

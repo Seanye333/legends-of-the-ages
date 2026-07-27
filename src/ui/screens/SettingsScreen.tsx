@@ -5,6 +5,7 @@ import { getSyncStatus, onSyncStatus, syncNow, type SyncStatus } from '../../app
 import { getPlayerId } from '../../app/leaderboard'
 import { COLLECTIBLE_CARDS } from '../../content/cards'
 import { useT, usePickText } from '../i18n'
+import { clearDiagnostics, crashes, diagnosticsText } from '../../app/telemetry'
 import { playSfx, setMasterVolume, setMusicVolume, startMusic, stopMusic } from '../sound'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import styles from './SettingsScreen.module.css'
@@ -28,6 +29,8 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
   const t = useT()
   const pick = usePickText()
   const s = useSettings()
+  const [diagCopied, setDiagCopied] = useState(false)
+  const [crashCount, setCrashCount] = useState(() => crashes().length)
   const wins = useCollection((c) => c.wins)
   const losses = useCollection((c) => c.losses)
   const packs = useCollection((c) => c.packs)
@@ -191,6 +194,47 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
             onChange={(e) => s.setReducedMotion(e.target.checked)}
           />
         </label>
+      </section>
+
+      {/* ---- 诊断信息 ---- */}
+      {/* 客户端此前没有任何崩溃留档:错误边界显示一次,刷新就永远没了,
+          而玩家往往第二天才来说「昨天闪退过」。这一层只落 localStorage、
+          不上报任何服务器 —— 要不要交出去由玩家点那一下决定(见 app/telemetry.ts)。 */}
+      <section className={styles.card}>
+        <h3 className={styles.sectionTitle}>{t('诊断信息', 'Diagnostics')}</h3>
+        <p className={styles.hint}>
+          {t(
+            `记录在本机:模式使用次数、最近 ${crashCount} 次错误。不会发送到任何服务器。`,
+            `Kept on this device: mode usage and the last ${crashCount} errors. Never sent anywhere.`,
+          )}
+        </p>
+        <div className={styles.chipRow}>
+          <button
+            className={styles.chip}
+            onClick={async () => {
+              playSfx('buttonTap')
+              try {
+                await navigator.clipboard.writeText(diagnosticsText())
+                setDiagCopied(true)
+                window.setTimeout(() => setDiagCopied(false), 1600)
+              } catch {
+                // 剪贴板被拒(iOS 非用户手势等):不做提示,按钮保持原样
+              }
+            }}
+          >
+            {diagCopied ? t('已复制', 'Copied') : t('复制诊断信息', 'Copy diagnostics')}
+          </button>
+          <button
+            className={styles.chip}
+            onClick={() => {
+              playSfx('buttonTap')
+              clearDiagnostics()
+              setCrashCount(0)
+            }}
+          >
+            {t('清空', 'Clear')}
+          </button>
+        </div>
       </section>
 
       {/* ---- 难度 ---- */}

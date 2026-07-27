@@ -1,5 +1,6 @@
 import { Component } from 'react'
 import type { ErrorInfo, ReactNode } from 'react'
+import { recordCrash } from '../../app/telemetry'
 import styles from './ErrorBoundary.module.css'
 
 interface Props {
@@ -27,6 +28,9 @@ export class ErrorBoundary extends Component<Props, State> {
     // 保留组件栈 —— 只有 message 的话经常定位不到是哪一屏炸的
     this.setState({ info: info.componentStack ?? '' })
     console.error('[qiangu] render error', error, info)
+    // 落盘留档:刷新之后这一屏就没了,而玩家往往是**第二天**才来说「昨天闪退过」。
+    // 只写 localStorage,不上报(见 app/telemetry.ts 的说明)。
+    recordCrash(error, info.componentStack?.split('\n')[1]?.trim())
   }
 
   private report(): string {
