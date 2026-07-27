@@ -171,6 +171,28 @@ export function refreshAuras(state: GameState, lib: CardLibrary): void {
       }
     }
   }
+  // 宿敌:羁绊的镜面 —— 条件从「同侧凑齐」变成「敌方场上有那个人」,
+  // 而增益**双方一起吃**(历史上真打过的两个人在牌桌上重逢)。
+  //
+  // 放在单独一轮而不是塞进上面的 player 循环里:它要同时读两侧的场面,
+  // 而上面那轮的语义是「只看自己这半边」。两个方向都扫,所以一条声明就够了 ——
+  // 无论项羽在我这边还是在对面,「项羽 ⇄ 韩信」都成立。
+  for (const player of [0, 1] as const) {
+    const mine = state.players[player].board
+    const theirs = state.players[other(player)].board
+    for (const source of mine) {
+      if (source.silenced) continue
+      const rival = lib[source.defId]?.rival
+      if (!rival) continue
+      const foes = theirs.filter((u) => u.defId === rival.foe)
+      if (foes.length === 0) continue
+      // 锚点只吃一份(对面摆两个宿敌不该让它翻倍),每个宿敌各吃一份
+      for (const inst of [source, ...foes]) {
+        inst.enchants.push({ attack: rival.attack, health: rival.health, auraFrom: source.iid })
+        refreshInstance(inst, lib)
+      }
+    }
+  }
 }
 
 export function silenceGeneral(

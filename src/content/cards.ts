@@ -1,4 +1,4 @@
-import type { CardDef, CardLibrary } from '../engine/types'
+import type { CardDef, CardLibrary, LocalizedText } from '../engine/types'
 import { GENERATED_CARDS } from './generated/cards.gen'
 import { SIGNATURE_OVERRIDES } from './overrides/signature'
 import { SIGNATURE_SKILLS } from './overrides/signature-skills'
@@ -27,6 +27,7 @@ import { PACK15_CARDS } from './overrides/pack15'
 import { PACK16_CARDS } from './overrides/pack16'
 import { PACK17_CARDS } from './overrides/pack17'
 import { BOND_OVERRIDES } from './overrides/bonds'
+import { RIVAL_OVERRIDES } from './overrides/rivals'
 import { PACK18_CARDS } from './overrides/pack18'
 import { CAMPAIGN_TOKENS } from './overrides/campaign-tokens'
 import { HISTORY_TOKENS } from './history-tokens'
@@ -86,9 +87,58 @@ function withKeywordText(card: CardDef): CardDef {
   }
 }
 
+// 羁绊与宿敌**在卡面上是隐形的** —— 它们不是关键词,也没有哪一层覆盖会去写文案。
+// 上线时 31 条羁绊全都只在结算里生效,玩家从卡面上一个字都看不到;
+// 而这两条机制的全部意义就是「让人看见历史关系」,看不见等于没做。
+//
+// 所以在合并之后统一补一段。和 withKeywordText 同一个思路:
+// **补在合并处**,而不是要求每张覆盖表自己写 —— 覆盖是整段替换 text,
+// 谁后写谁就会把前面那层的说明抹掉(memory: override-merge-hazards)。
+//
+// 成员名要查全卡池,所以这一步必须在数组建好之后跑,不能塞进 map 链的前面。
+function statText(attack: number, health: number): { zh: string; en: string } {
+  if (attack !== 0 && health !== 0) return { zh: `+${attack}/+${health}`, en: `+${attack}/+${health}` }
+  if (health === 0) return { zh: `+${attack} 攻擊`, en: `+${attack} Attack` }
+  return { zh: `+${health} 生命`, en: `+${health} Health` }
+}
+
+function withBondRivalText(card: CardDef, nameOf: Record<string, LocalizedText>): CardDef {
+  const lines: { zh: string; en: string }[] = []
+  const label = (id: string, lang: 'zh' | 'en') => nameOf[id]?.[lang] ?? id
+  if (card.bond) {
+    const b = card.bond
+    const s = statText(b.attack, b.health)
+    lines.push({
+      zh: `羈絆 · ${b.name.zh}:與${b.members.map((m) => label(m, 'zh')).join('、')}同時在場時,各 ${s.zh}。`,
+      en: `Bond · ${b.name.en}: while ${b.members.map((m) => label(m, 'en')).join(' and ')} are also on the field, each gains ${s.en}.`,
+    })
+  }
+  if (card.rival) {
+    const r = card.rival
+    const s = statText(r.attack, r.health)
+    lines.push({
+      zh: `宿敵 · ${r.name.zh}:敵方場上有${label(r.foe, 'zh')}時,雙方各 ${s.zh}。`,
+      en: `Rival · ${r.name.en}: while ${label(r.foe, 'en')} is on the enemy field, both gain ${s.en}.`,
+    })
+  }
+  if (lines.length === 0) return card
+  const zh = card.text?.zh ?? ''
+  const en = card.text?.en ?? ''
+  // 幂等:已经补过就不再补(卡池在测试里会被反复构造)
+  const fresh = lines.filter((l) => !zh.includes(l.zh))
+  if (fresh.length === 0) return card
+  return {
+    ...card,
+    text: {
+      zh: [zh, ...fresh.map((l) => l.zh)].filter(Boolean).join(''),
+      en: [en, ...fresh.map((l) => l.en)].filter(Boolean).join(' '),
+    },
+  }
+}
+
 // 全卡池 = (生成默认值 ⊕ 各卡包覆盖) + 手工锦囊 + 第二~六卡包
 // 覆盖顺序:后者赢。各覆盖表刻意不与签名集重叠(只挑签名之外的花名册)。
-export const CARDS: CardDef[] = [
+const MERGED_CARDS: CardDef[] = [
   ...GENERATED_CARDS.map((card) => {
     const fl = FLAVOR_OVERRIDES[card.id]
     const sig = SIGNATURE_OVERRIDES[card.id]
@@ -107,9 +157,10 @@ export const CARDS: CardDef[] = [
     const p12 = PACK12_OVERRIDES[card.id]
     const p13 = PACK13_OVERRIDES[card.id]
     const bd = BOND_OVERRIDES[card.id]
-    if (!fl && !sig && !sk && !p3 && !p4 && !p5 && !p6d && !p6c && !p6l && !p7 && !p8 && !p9 && !p10 && !p11 && !p13 && !p12 && !bd)
+    const rv = RIVAL_OVERRIDES[card.id]
+    if (!fl && !sig && !sk && !p3 && !p4 && !p5 && !p6d && !p6c && !p6l && !p7 && !p8 && !p9 && !p10 && !p11 && !p13 && !p12 && !bd && !rv)
       return card
-    const ov = { ...fl, ...sig, ...sk, ...p3, ...p4, ...p5, ...p6d, ...p6c, ...p6l, ...p7, ...p8, ...p9, ...p10, ...p11, ...p12, ...p13, ...bd }
+    const ov = { ...fl, ...sig, ...sk, ...p3, ...p4, ...p5, ...p6d, ...p6c, ...p6l, ...p7, ...p8, ...p9, ...p10, ...p11, ...p12, ...p13, ...bd, ...rv }
     return reconcileExclusive({ ...card, ...ov }, ov)
   }),
   ...STRATAGEMS,
@@ -137,6 +188,12 @@ export const CARDS: CardDef[] = [
   ...CAMPAIGN_TOKENS,
   ...HISTORY_TOKENS,
 ].map(withKeywordText)
+
+const NAME_BY_ID: Record<string, LocalizedText> = Object.fromEntries(
+  MERGED_CARDS.map((c) => [c.id, c.name]),
+)
+
+export const CARDS: CardDef[] = MERGED_CARDS.map((c) => withBondRivalText(c, NAME_BY_ID))
 
 export const CARDS_BY_ID: CardLibrary = Object.fromEntries(CARDS.map((c) => [c.id, c]))
 

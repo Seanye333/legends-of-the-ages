@@ -235,6 +235,8 @@ export interface CardDef {
   // 锚点自己与这些成员一起获得增益。定义放在卡面上(与 aura 同源)—— 引擎只读 lib,
   // 不 import 内容层(铁律 1)。走光环的附魔路径,成员一死增益自动收回。
   bond?: BondDef
+  // 宿敌:与 bond 同源的镜面 —— `foe` 在**敌方**场上时,双方一起获得增益。
+  rival?: RivalDef
   endOfTurn?: EffectScript // 我方回合结束时
   startOfTurn?: EffectScript // 我方回合开始时
   onDamaged?: EffectScript // 自身受伤后(有递归深度上限)
@@ -551,7 +553,21 @@ export interface PuzzleScenario {
 // 羁绊定义:挂在「锚点」卡上。members 是**除锚点之外**还需在场的卡 id。
 export interface BondDef {
   id: string // 羁绊 id(桃園結義…),UI 与测试用
+  name: LocalizedText // 羁绊名 —— 卡面文案与图鉴都读它
   members: string[]
+  attack: number
+  health: number
+}
+
+// 宿敌定义:羁绊的镜面。挂在锚点卡上,`foe` 在**敌方**场上时才成立,
+// 且**双方一起**吃增益 —— 历史上真打过的人在牌桌上重逢,谁都不吃亏。
+//
+// 只在一侧声明即可:引擎两个方向都扫(见 resolve.refreshAuras),
+// 所以「我方项羽 vs 敌方韩信」与「我方韩信 vs 敌方项羽」都会触发同一条。
+export interface RivalDef {
+  id: string
+  name: LocalizedText
+  foe: string // 敌方场上需要出现的卡 id
   attack: number
   health: number
 }

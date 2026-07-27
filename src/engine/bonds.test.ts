@@ -38,6 +38,14 @@ describe('羁绊 bond', () => {
     }
   })
 
+  // 上线时这 31 条在卡面上一个字都没有 —— 机制只活在结算里,玩家永远发现不了。
+  it('卡面写了羁绊 —— 机制不能只活在结算里', () => {
+    for (const [anchor, ov] of Object.entries(BOND_OVERRIDES)) {
+      expect(CARDS_BY_ID[anchor].bond?.id, anchor).toBe(ov.bond!.id)
+      expect(CARDS_BY_ID[anchor].text?.zh, anchor).toContain(ov.bond!.name.zh)
+    }
+  })
+
   it('凑不齐不生效 —— 只有刘关没有张飞,谁都不加', () => {
     const s = board(['liu-bei', 'guan-yu'])
     const base = CARDS_BY_ID['liu-bei']
