@@ -30,6 +30,61 @@ import { PACK18_CARDS } from './overrides/pack18'
 import { CAMPAIGN_TOKENS } from './overrides/campaign-tokens'
 import { HISTORY_TOKENS } from './history-tokens'
 
+// 抉择 ⊥ 战吼/锦囊/连击 —— reducer 的脚本优先级依赖这条互斥(见 content.test 那两条闸门)。
+//
+// 覆盖是**浅合并**,于是两层可以各出一半:生成层播了 `choose`、手写层给了 `combo`,
+// 合并完两个都在,互斥就破了。真出过 —— 荆轲(播 choose + 手写 combo)、
+// 钟会(手写 choose + 播 battlecry)。
+//
+// 判给手写层:签名卡的效果与定价是手调出来的,生成层那一半必须让位。
+// 只清互斥组这三个字段,不动其余覆盖语义(有些卡包就是刻意在生成效果之上叠光环的)。
+function reconcileExclusive(merged: CardDef, ov: Partial<CardDef>): CardDef {
+  const drop = (card: CardDef, fields: (keyof CardDef)[]): CardDef => {
+    const out = { ...card }
+    for (const f of fields) delete out[f]
+    return out
+  }
+  if (ov.choose) return drop(merged, ['battlecry', 'spell', 'combo'])
+  if ((ov.battlecry || ov.spell || ov.combo) && merged.choose) return drop(merged, ['choose'])
+  return merged
+}
+
+// 卡面文本 = 关键词 + 效果 + 风味,是个**合成串**;而覆盖是整段替换 `text`。
+// 于是靠后的层一改文案,靠前的层给的关键词就从卡面上消失了 —— 关键词还在,只是没人看得见:
+//   · 張郃 —— pack3 给「鐵壁」并写进文本,pack6 换成冲锋流文案,鐵壁 从卡面蒸发;
+//   · 秦穆公 / 曹參 / 王猛 —— flavor.ts 用纯风味句覆盖,守護/突襲 一起没了。
+// 这是**合并层**的毛病,不是哪个文件写错了:没有哪一层有义务知道别层加了什么关键词。
+//
+// 所以在合并之后重新补一遍关键词前缀 —— 最终卡面带哪些关键词,文本开头就写哪些。
+// 幂等(已写过就不再写),顺序跟 Keyword 声明序,读起来稳定。
+const KEYWORD_LABEL: Record<string, { zh: string; en: string }> = {
+  charge: { zh: '衝鋒', en: 'Charge' },
+  rush: { zh: '突襲', en: 'Rush' },
+  guard: { zh: '守護', en: 'Guard' },
+  windfury: { zh: '連擊', en: 'Windfury' },
+  duel: { zh: '單挑', en: 'Duel' },
+  lifesteal: { zh: '吸血', en: 'Lifesteal' },
+  poison: { zh: '劇毒', en: 'Poisonous' },
+  divineShield: { zh: '鐵壁', en: 'Divine Shield' },
+  stealth: { zh: '潛行', en: 'Stealth' },
+  trample: { zh: '碾壓', en: 'Trample' },
+}
+
+function withKeywordText(card: CardDef): CardDef {
+  if (card.keywords.length === 0) return card
+  const zh = card.text?.zh ?? ''
+  const en = card.text?.en ?? ''
+  const missing = card.keywords.filter((k) => KEYWORD_LABEL[k] && !zh.includes(KEYWORD_LABEL[k].zh))
+  if (missing.length === 0) return card
+  return {
+    ...card,
+    text: {
+      zh: `${missing.map((k) => `${KEYWORD_LABEL[k].zh}。`).join('')}${zh}`,
+      en: `${missing.map((k) => `${KEYWORD_LABEL[k].en}.`).join(' ')}${en ? ` ${en}` : ''}`,
+    },
+  }
+}
+
 // 全卡池 = (生成默认值 ⊕ 各卡包覆盖) + 手工锦囊 + 第二~六卡包
 // 覆盖顺序:后者赢。各覆盖表刻意不与签名集重叠(只挑签名之外的花名册)。
 export const CARDS: CardDef[] = [
@@ -52,7 +107,8 @@ export const CARDS: CardDef[] = [
     const bd = BOND_OVERRIDES[card.id]
     if (!fl && !sig && !p3 && !p4 && !p5 && !p6d && !p6c && !p6l && !p7 && !p8 && !p9 && !p10 && !p11 && !p13 && !p12 && !bd)
       return card
-    return { ...card, ...fl, ...sig, ...p3, ...p4, ...p5, ...p6d, ...p6c, ...p6l, ...p7, ...p8, ...p9, ...p10, ...p11, ...p12, ...p13, ...bd }
+    const ov = { ...fl, ...sig, ...p3, ...p4, ...p5, ...p6d, ...p6c, ...p6l, ...p7, ...p8, ...p9, ...p10, ...p11, ...p12, ...p13, ...bd }
+    return reconcileExclusive({ ...card, ...ov }, ov)
   }),
   ...STRATAGEMS,
   ...PACK2_CARDS,
@@ -78,7 +134,7 @@ export const CARDS: CardDef[] = [
   ...PACK18_CARDS,
   ...CAMPAIGN_TOKENS,
   ...HISTORY_TOKENS,
-]
+].map(withKeywordText)
 
 export const CARDS_BY_ID: CardLibrary = Object.fromEntries(CARDS.map((c) => [c.id, c]))
 

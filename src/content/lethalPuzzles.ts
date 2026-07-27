@@ -223,7 +223,10 @@ export const LETHAL_PUZZLES: LethalPuzzle[] = [
   {
     id: 'lp-massrush',
     title: { zh: '雷霆突進', en: 'Thunder Advance' },
-    situation: { zh: '三员新募之将尚未缓过神,敌主帅 9 血。', en: 'Three freshly-mustered officers, not yet ready. Enemy at 9.' },
+    // 敌主帅血量跟着这三张卡的身材走(2+2+2)。它们是**生成卡**,
+    // 重跑 import-content 调了播种就会变 —— 上面那条 lethalContent 闸门会当场抓到,
+    // 改这里的 heroHp 对齐即可,别去改卡。
+    situation: { zh: '三员新募之将尚未缓过神,敌主帅 6 血。', en: 'Three freshly-mustered officers, not yet ready. Enemy at 6.' },
     hint: { zh: '一道军令,让全军当场能战。', en: 'One command lets the whole line strike now.' },
     difficulty: 2,
     heroes: ['hist-laozi', 'sun-quan'],
@@ -240,7 +243,7 @@ export const LETHAL_PUZZLES: LethalPuzzle[] = [
           ],
           hand: ['strat-hegemon-blitz'],
         },
-        { heroHp: 9, mana: 0, board: [], hand: [] },
+        { heroHp: 6, mana: 0, board: [], hand: [] },
       ],
     },
   },

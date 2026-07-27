@@ -18,6 +18,15 @@ import type { CardDef, DynastyTag, Rarity } from '../src/engine/types'
 import { SIGNATURE_OVERRIDES } from '../src/content/overrides/signature'
 import { PRECON_DECKS } from '../src/content/decks'
 import { HEROES } from '../src/content/overrides/heroes'
+import {
+  ERA_OF,
+  KEYWORD_POINTS,
+  hash01,
+  seedKeyword,
+  seedMechanics,
+  type Seeded,
+  type Stats,
+} from './seed-mechanics'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(HERE, '..')
@@ -84,14 +93,6 @@ const OUT_PORTRAITS = join(ROOT, 'public', 'portraits')
 const clamp = (lo: number, hi: number, v: number) => Math.max(lo, Math.min(hi, Math.round(v)))
 // 同上但不取整(比例用)
 const clamp2 = (lo: number, hi: number, v: number) => Math.max(lo, Math.min(hi, v))
-
-interface Stats {
-  leadership: number
-  war: number
-  intelligence: number
-  politics: number
-  charisma: number
-}
 
 function fame(s: Stats): number {
   const values = [s.leadership, s.war, s.intelligence, s.politics, s.charisma]
@@ -215,27 +216,9 @@ function widenedDoctrine(s: Stats, id: string): ReturnType<typeof deriveDoctrine
 // 预组用到的全部卡 id(见 generateCard 里为什么要保护它们)
 const PRECON_CARD_IDS = new Set(PRECON_DECKS.flatMap((d) => d.cardIds))
 
-// FNV-1a:同一个 (id, salt) 永远得到同一个 [0,1)
-function hash01(id: string, salt: string): number {
-  let h = 0x811c9dc5
-  const s = `${id}#${salt}`
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i)
-    h = Math.imul(h, 0x01000193) >>> 0
-  }
-  return h / 0x100000000
-}
-
-// 关键词/效果的身材点数报价
-const KEYWORD_POINTS: Record<string, number> = {
-  charge: 2,
-  rush: 1,
-  guard: 1.5,
-  windfury: 2,
-  lifesteal: 1.5,
-  stealth: 1,
-  duel: 2,
-}
+// 播种形状统计:跑完打一张分布表。这不是装饰 —— 从前那 268 张「戰吼:抽一張牌」
+// 就是因为没人看得见分布才躺了那么久。任何一种形状占比过高,这张表会当场暴露。
+const SHAPE_TALLY = new Map<string, number>()
 
 // 从身材里扣点数:优先扣血(单点价值低),攻血都不低于 1
 function payFor(attack: number, health: number, points: number): [number, number] {
@@ -252,216 +235,6 @@ function payFor(attack: number, health: number, points: number): [number, number
     } else break
   }
   return [atk, hp]
-}
-
-interface Seeded {
-  keywords: string[]
-  battlecry?: { ops: unknown[] }
-  deathrattle?: { ops: unknown[] }
-  spellDamage?: number
-  points: number
-  textZh: string[]
-  textEn: string[]
-}
-
-// 属性画像 → 至多一个关键词。候选按「属性信号强度」排序,逐个过哈希闸门,
-// 命中即停 —— 这样强信号的武将更可能拿到关键词,而不是全池平摊。
-function seedKeyword(id: string, s: Stats, archetype: string, rarity: Rarity): string | null {
-  const gate = (p: number, salt: string) => hash01(id, salt) < p
-  const candidates: [string, boolean, number][] = [
-    // [关键词, 属性条件, 命中概率]
-    ['duel', rarity !== 'common' && s.war >= 92 && archetype === 'warrior', 0.5],
-    // 连击放在冲锋之前:纯武力型(高武低智)是它唯一的画像,
-    // 排在冲锋后面会被高武条件先吃光,实测会一张都发不出去。
-    ['windfury', s.war >= 86 && s.intelligence < 66, 0.35],
-    ['charge', s.war >= 88 && archetype === 'warrior', 0.5],
-    ['guard', s.leadership >= 85, 0.45],
-    ['stealth', archetype === 'strategist' && s.intelligence >= 80 && s.politics < 70, 0.4],
-    ['lifesteal', s.charisma >= 88, 0.35],
-    ['rush', s.war >= 78 && archetype === 'warrior', 0.35],
-    ['guard', s.leadership >= 76, 0.25],
-  ]
-  for (let i = 0; i < candidates.length; i++) {
-    const [kw, cond, p] = candidates[i]
-    if (cond && gate(p, `kw${i}`)) return kw
-  }
-  return null
-}
-
-function seedMechanics(
-  id: string,
-  s: Stats,
-  archetype: string,
-  rarity: Rarity,
-  hasKeyword: string | null,
-): Seeded {
-  const out: Seeded = { keywords: [], points: 0, textZh: [], textEn: [] }
-  if (hasKeyword) {
-    out.keywords.push(hasKeyword)
-    out.points += KEYWORD_POINTS[hasKeyword] ?? 1
-    out.textZh.push(KEYWORD_TEXT[hasKeyword].zh)
-    out.textEn.push(KEYWORD_TEXT[hasKeyword].en)
-  }
-
-  // 战吼:带了关键词的卡再给战吼容易变成「什么都会」,概率减半。
-  const bcGate = hasKeyword ? 0.5 : 1
-  const roll = hash01(id, 'bc')
-  const mag = hash01(id, 'mag') // 同一种效果的量级抖动,避免整池只有一个数字
-
-  const add = (
-    kind: 'battlecry' | 'deathrattle',
-    ops: unknown[],
-    points: number,
-    zh: string,
-    en: string,
-  ) => {
-    if (kind === 'battlecry') out.battlecry = { ops }
-    else out.deathrattle = { ops }
-    out.points += points
-    out.textZh.push(zh)
-    out.textEn.push(en)
-  }
-
-  // 谋士线:点杀 / 抽牌 / 法伤 / 冻结 / 弃牌 / 回复 / 蓄力
-  if (archetype === 'strategist') {
-    if (s.intelligence >= 88 && roll < 0.22 * bcGate) {
-      const dmg = mag < 0.25 ? 3 : 2
-      add(
-        'battlecry',
-        [{ op: 'damage', amount: dmg, target: 'chosenEnemyGeneral' }],
-        dmg * 1.5,
-        `戰吼:對一名敵方武將造成 ${dmg} 點傷害。`,
-        `Battlecry: Deal ${dmg} damage to an enemy general.`,
-      )
-    } else if (s.intelligence >= 86 && roll < 0.3 * bcGate) {
-      add(
-        'battlecry',
-        [{ op: 'freeze', target: 'chosenEnemyGeneral' }],
-        1.5,
-        '戰吼:凍結一名敵方武將。',
-        'Battlecry: Freeze an enemy general.',
-      )
-    } else if (s.intelligence >= 82 && rarity !== 'common' && roll < 0.4 * bcGate) {
-      out.spellDamage = 1
-      out.points += 1.5
-      out.textZh.push('法術傷害+1。')
-      out.textEn.push('Spell Damage +1.')
-    } else if (s.intelligence >= 78 && roll < 0.58 * bcGate) {
-      const n = s.intelligence >= 92 && mag < 0.2 ? 2 : 1
-      add(
-        'battlecry',
-        [{ op: 'draw', count: n }],
-        n * 2,
-        `戰吼:抽 ${n} 張牌。`,
-        `Battlecry: Draw ${n === 1 ? 'a card' : `${n} cards`}.`,
-      )
-    } else if (s.politics >= 84 && roll < 0.68 * bcGate) {
-      add(
-        'battlecry',
-        [{ op: 'gainMana', amount: 1, temporary: true }],
-        1.5,
-        '戰吼:本回合獲得 1 點法力。',
-        'Battlecry: Gain 1 Mana this turn only.',
-      )
-    } else if (s.politics >= 78 && roll < 0.8 * bcGate) {
-      const n = mag < 0.4 ? 4 : 3
-      add(
-        'battlecry',
-        [{ op: 'heal', amount: n, target: 'friendlyHero' }],
-        1,
-        `戰吼:你的主公恢復 ${n} 點生命。`,
-        `Battlecry: Restore ${n} Health to your hero.`,
-      )
-    } else if (s.intelligence >= 74 && roll < 0.76 * bcGate) {
-      add(
-        'battlecry',
-        [{ op: 'discardRandom', count: 1 }],
-        1.5,
-        '戰吼:對手隨機棄一張牌。',
-        'Battlecry: Your opponent discards a random card.',
-      )
-    }
-  } else {
-    // 武将线:上场点杀 / 号令 / 护甲 / 自我加成 / 招募
-    if (s.war >= 85 && roll < 0.22 * bcGate) {
-      const dmg = mag < 0.3 ? 3 : 2
-      add(
-        'battlecry',
-        [{ op: 'damage', amount: dmg, target: 'randomEnemyGeneral' }],
-        dmg,
-        `戰吼:對隨機一名敵方武將造成 ${dmg} 點傷害。`,
-        `Battlecry: Deal ${dmg} damage to a random enemy general.`,
-      )
-    } else if (s.charisma >= 82 && roll < 0.4 * bcGate) {
-      add(
-        'battlecry',
-        [{ op: 'buffStats', attack: 1, health: 1, target: 'allFriendlyOthers' }],
-        2,
-        '戰吼:其他友方武將+1/+1。',
-        'Battlecry: Give your other generals +1/+1.',
-      )
-    } else if (s.leadership >= 84 && roll < 0.55 * bcGate) {
-      add(
-        'battlecry',
-        [{ op: 'summon', defId: 'token-si-shi', count: 1 }],
-        1.5,
-        '戰吼:召喚一個 1/1 的死士。',
-        'Battlecry: Summon a 1/1 Retainer.',
-      )
-    } else if (s.leadership >= 78 && roll < 0.7 * bcGate) {
-      const n = mag < 0.35 ? 4 : 3
-      add(
-        'battlecry',
-        [{ op: 'gainArmor', amount: n }],
-        n * 0.5,
-        `戰吼:你的主公獲得 ${n} 點護甲。`,
-        `Battlecry: Your hero gains ${n} Armor.`,
-      )
-    } else if (s.war >= 76 && roll < 0.72 * bcGate) {
-      add(
-        'battlecry',
-        [{ op: 'buffStats', attack: 2, health: 0, target: 'self', duration: 'endOfTurn' }],
-        1,
-        '戰吼:本回合此武將+2/+0。',
-        'Battlecry: This general has +2/+0 this turn.',
-      )
-    }
-  }
-
-  // 亡语:只给稀有以上,且比例克制 —— 亡语铺满全池会让战场噪声过大、结算变慢
-  if (!out.battlecry && rarity !== 'common' && hash01(id, 'dr') < 0.35) {
-    if (s.war >= 78) {
-      add(
-        'deathrattle',
-        [{ op: 'damage', amount: 2, target: 'randomEnemyGeneral' }],
-        1.5,
-        '亡語:對隨機一名敵方武將造成 2 點傷害。',
-        'Deathrattle: Deal 2 damage to a random enemy general.',
-      )
-    } else if (s.leadership >= 76) {
-      add(
-        'deathrattle',
-        [{ op: 'summon', defId: 'token-si-shi', count: 1 }],
-        1,
-        '亡語:召喚一個 1/1 的死士。',
-        'Deathrattle: Summon a 1/1 Retainer.',
-      )
-    } else if (s.intelligence >= 76) {
-      add('deathrattle', [{ op: 'draw', count: 1 }], 1.5, '亡語:抽一張牌。', 'Deathrattle: Draw a card.')
-    }
-  }
-
-  return out
-}
-
-const KEYWORD_TEXT: Record<string, { zh: string; en: string }> = {
-  charge: { zh: '衝鋒。', en: 'Charge.' },
-  rush: { zh: '突襲。', en: 'Rush.' },
-  guard: { zh: '守護。', en: 'Guard.' },
-  windfury: { zh: '連擊。', en: 'Windfury.' },
-  lifesteal: { zh: '吸血。', en: 'Lifesteal.' },
-  stealth: { zh: '潛行。', en: 'Stealth.' },
-  duel: { zh: '單挑。', en: 'Duel.' },
 }
 
 function generateCard(
@@ -524,26 +297,46 @@ function generateCard(
         : widenedDoctrine(s, officer.id)
       : deriveDoctrine(s, officer.id)
 
-  // 预组用到的卡**完全不参与播种**。
-  // 这批卡是六套预组共用的骨架,身材与曲线是跨很多轮 sim-balance 手调出来的
-  // (decks.ts 里那三条经验就是这么来的)。给它们随机播种关键词并扣身材,
-  // 实测直接把矩阵打成 70% / 33%,而这些卡本来就已经是策划过的 —— 没有任何收益。
-  // 代价:约 100 张卡保持白板。但预组骨架本来就是刻意压平的白板骨架。
-  const inPrecon = PRECON_CARD_IDS.has(officer.id)
-  const kw = inPrecon ? null : seedKeyword(officer.id, s, archetype, rarity)
-  const seeded = inPrecon
-    ? { keywords: [], points: 0, textZh: [], textEn: [] }
-    : seedMechanics(officer.id, s, archetype, rarity, kw)
-  const [attack, health] = payFor(baseAttack, baseHealth, seeded.points)
   // 势力:源数据显式给了就用显式的;三国武将否则按 officers.ts 的**势力分段注释**回填
   //(见 factionFromSection)。签名卡在 signature.ts 里的手工覆盖仍然优先级更高 ——
   // 那一层在 cards.ts 合并时才叠上去,不会被这里冲掉。
+  //
+  // 必须算在播种**之前** —— 播种要按时代分风味(先秦多谋略、宋元多城防…),
+  // 势力/朝代就是时代的唯一来源。
   if (officer.dynasty !== undefined && !VALID_DYNASTIES.has(officer.dynasty)) {
     throw new Error(`unknown dynasty "${officer.dynasty}" on officer ${officer.id} — 引擎 DynastyTag 需要同步`)
   }
   const sec = OFFICER_SECTION.get(officer.id)
   const dynasty = (officer.dynasty ??
     (sec !== undefined ? factionFromSection(sec) : 'qun')) as DynastyTag
+
+  // 不播种的两类卡:
+  //
+  // 1. **预组骨架**:身材与曲线是跨很多轮 sim-balance 手调出来的,随机播种实测
+  //    直接把胜率矩阵打成 70%/33%。
+  // 2. **签名卡**:效果与文本全是手写的。233 张里有 **102 张刻意不带效果**
+  //    (關羽、張飛、孫武、衛青、李靖、戚繼光…),而覆盖是浅合并 ——
+  //    播下去的战吼/光环会从手写文本底下漏上来,变成**卡面没写却真的会触发**的技能。
+  //    高順就这么背了一道看不见的光环、廖化背了一条看不见的「交换攻血」。
+  //    手写的就该完全手写,这是铁律 3 的直接推论。
+  const handAuthored = PRECON_CARD_IDS.has(officer.id) || SIGNATURE_OVERRIDES[officer.id] !== undefined
+  const era = ERA_OF[dynasty]
+  const kw = handAuthored ? null : seedKeyword(officer.id, s, archetype, rarity, era, dynasty)
+  const empty: Seeded = { keywords: [], points: 0, textZh: [], textEn: [], shape: null }
+  const seeded = handAuthored
+    ? empty
+    : seedMechanics(officer.id, s, archetype, rarity, kw, era, dynasty, cost, budget)
+  // 签名卡不播种,但**覆盖里声明的关键词照样要付账** —— 否则它白拿一个关键词还留着满额身材。
+  // (233 张里有 16 张没在覆盖里钉死攻血,吃的是这里算出来的身材;
+  //  廖化就是其中之一,不收这笔钱它会从 3/3 变成 4/3,凭空强一档。)
+  //
+  // **预组骨架除外**:那 75 张是跨很多轮 sim-balance 手调出来的,一点都不能动。
+  // 收过一次:颜真卿从 4/6 削成 4/4,礼家预组当场掉到 38.4%、割据涨到 61.2% ——
+  // 一张守护骨架掉 2 血就能把矩阵打出闸门,可见这批卡有多敏感。
+  const sigKeywords = PRECON_CARD_IDS.has(officer.id) ? undefined : SIGNATURE_OVERRIDES[officer.id]?.keywords
+  if (sigKeywords) for (const k of sigKeywords) seeded.points += KEYWORD_POINTS[k] ?? 1
+  SHAPE_TALLY.set(seeded.shape ?? '—', (SHAPE_TALLY.get(seeded.shape ?? '—') ?? 0) + 1)
+  const [attack, health] = payFor(baseAttack, baseHealth, seeded.points)
   const card: CardDef = {
     id: officer.id,
     collectorNo: CARD_INDEX[officer.id] ?? 0,
@@ -560,6 +353,16 @@ function generateCard(
   }
   if (seeded.battlecry) card.battlecry = seeded.battlecry as CardDef['battlecry']
   if (seeded.deathrattle) card.deathrattle = seeded.deathrattle as CardDef['deathrattle']
+  if (seeded.endOfTurn) card.endOfTurn = seeded.endOfTurn as CardDef['endOfTurn']
+  if (seeded.startOfTurn) card.startOfTurn = seeded.startOfTurn as CardDef['startOfTurn']
+  if (seeded.onAttack) card.onAttack = seeded.onAttack as CardDef['onAttack']
+  if (seeded.onDamaged) card.onDamaged = seeded.onDamaged as CardDef['onDamaged']
+  if (seeded.onSpellCast) card.onSpellCast = seeded.onSpellCast as CardDef['onSpellCast']
+  if (seeded.combo) card.combo = seeded.combo as CardDef['combo']
+  if (seeded.choose) card.choose = seeded.choose as CardDef['choose']
+  if (seeded.aura) card.aura = seeded.aura
+  if (seeded.enrage) card.enrage = seeded.enrage
+  if (seeded.overload) card.overload = seeded.overload
   if (seeded.spellDamage) card.spellDamage = seeded.spellDamage
   if (seeded.textZh.length > 0) {
     card.text = { zh: seeded.textZh.join(''), en: seeded.textEn.join(' ') }
@@ -619,6 +422,24 @@ for (const c of cards) {
 }
 console.log('rarity:', JSON.stringify(rarityCount))
 console.log('doctrine:', JSON.stringify(doctrineCount))
+
+// 播种分布:占比最高的十种形状 + 白板率。任何一种超过 8% 就该去调权重了。
+{
+  const total = cards.length
+  const rows = [...SHAPE_TALLY.entries()].sort((a, b) => b[1] - a[1])
+  const blank = SHAPE_TALLY.get('—') ?? 0
+  console.log(
+    `seeding: ${rows.length - 1} 种效果形状,白板 ${blank}(${((blank / total) * 100).toFixed(1)}%)`,
+  )
+  console.log(
+    '  top:',
+    rows
+      .filter(([k]) => k !== '—')
+      .slice(0, 10)
+      .map(([k, n]) => `${k} ${((n / total) * 100).toFixed(1)}%`)
+      .join('  '),
+  )
+}
 
 mkdirSync(OUT_GEN, { recursive: true })
 // 以 JSON 字符串形式内嵌:2,211 个对象字面量会让 tsc 类型推导爆炸 (TS2590),
