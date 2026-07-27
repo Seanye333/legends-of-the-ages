@@ -3,6 +3,7 @@ import type { Command, GameEvent, GameState } from '../engine/types'
 import { DECK_SIZE, START_HP } from '../engine/types'
 import type {
   BattleObjective,
+  FieldState,
   CardDef,
   Doctrine,
   HeroPowerDef,
@@ -61,6 +62,8 @@ export interface StartMatchArgs {
   scenario?: PuzzleScenario
   // 名局特殊胜负目标(守 N 回合等);写进 GameState.objective 由引擎判
   objective?: BattleObjective
+  // 开局就存在的战场环境(关底战的「地利」)
+  field?: FieldState
   // 每周乱斗:传当值周键;胜利则按周发一次首胜功勋
   weeklyBrawlWeek?: string
   // 无尽爬塔:胜负记进爬塔进度(通层上行 / 失败回第一层)
@@ -320,6 +323,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
         scenario: args.scenario,
         // 名局特殊胜负目标(守成等)
         objective: args.objective,
+        field: args.field,
       },
       CARDS_BY_ID,
       ai,

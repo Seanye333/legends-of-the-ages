@@ -6,6 +6,7 @@ import {
   bossChapter,
   bossTrial,
   bossPersonality,
+  bossField,
   CHAPTER_TITLES,
   type BossDef,
   type TrialDef,
@@ -65,6 +66,8 @@ export function CampaignScreen({ onBack, onEnterMatch }: CampaignScreenProps) {
       modifiersOverride: trial ? [trial.playerModifiers, trial.bossModifiers] : undefined,
       // 性格:同一个难度档,不同的「什么叫局面好」
       aiWeights: bossPersonality(boss.id),
+      // 地利:有些仗的地形本身就是那一仗(赤壁在烧、漠北利骑)
+      field: bossField(boss.id),
     })
     onEnterMatch()
   }

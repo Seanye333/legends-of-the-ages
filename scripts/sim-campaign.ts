@@ -7,7 +7,7 @@
 //
 // 同样的警告适用:这测的是贪心 AI 的游戏。真人玩家会比 AI 强,
 // 所以这里的胜率是**下限**,实际体感会更容易一些。
-import { BOSSES, bossDeck, bossChapter, bossPersonality } from '../src/content/campaign'
+import { BOSSES, bossDeck, bossChapter, bossPersonality, bossField } from '../src/content/campaign'
 import { PRECON_DECKS } from '../src/content/decks'
 import { CARDS_BY_ID } from '../src/content/cards'
 import { HEROES_BY_ID } from '../src/content/overrides/heroes'
@@ -38,6 +38,8 @@ function play(bossIdx: number, playerDeckIdx: number, seed: number, first: Playe
     first,
     heroPowers: [myHero?.power, boss.power],
     heroHps: [myHero?.hp ?? START_HP, boss.hp],
+    // 地利也要进模拟 —— 环境双方同吃,但不是中性的(烈焰惩罚铺场、平原奖励骑兵)
+    field: bossField(boss.id),
   }
   let state = createGame(cfg, CARDS_BY_ID)
   const rngs: [number, number] = [seed ^ 0xa1, seed ^ 0xb2]

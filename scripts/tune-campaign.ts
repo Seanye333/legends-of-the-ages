@@ -6,7 +6,7 @@
 // 原因是贪心 AI 的胜负主要由场面交换决定,主帅血量只在最后几回合才成为瓶颈。
 // Boss 技能之间强度也差得离谱(每回合铺两个 1/1 远强于每回合 3 点伤害),
 // 单靠人手试八个数值、每次等 20 秒,不如让机器二分。
-import { BOSSES, bossDeck } from '../src/content/campaign'
+import { BOSSES, bossDeck, bossPersonality, bossField } from '../src/content/campaign'
 import { PRECON_DECKS } from '../src/content/decks'
 import { CARDS_BY_ID } from '../src/content/cards'
 import { HEROES_BY_ID } from '../src/content/overrides/heroes'
@@ -18,6 +18,10 @@ import type { BossDef } from '../src/content/campaign'
 import type { GameConfig, PlayerIdx, Winner } from '../src/engine/types'
 
 const GAMES = Number(process.env.GAMES ?? 48)
+
+// 只搜指定的几关:`ONLY=boss-sun-ce,boss-zhou-yu npm run tune-campaign`。
+// 全扫是 16 关 × 7 档 × 48 局,十分钟起步;而多数时候只有动过的那几关需要重搜。
+const ONLY = (process.env.ONLY ?? '').split(',').map((s) => s.trim()).filter(Boolean)
 
 // 目标曲线,按章各成一段:开章友好、收官吃力、中间平滑过渡。
 // 第二章开章时玩家已成军,所以它的「友好」定在 ~52% 而非第一章的 70%。
@@ -36,6 +40,8 @@ function play(boss: BossDef, tier: number, deckIdx: number, seed: number, first:
     first,
     heroPowers: [myHero?.power, boss.power],
     heroHps: [myHero?.hp ?? START_HP, boss.hp],
+    // 性格与地利都必须进搜索 —— 否则搜出来的 tier 对应的是一个玩家碰不到的对手
+    field: bossField(boss.id),
   }
   let state = createGame(cfg, CARDS_BY_ID)
   const rngs: [number, number] = [seed ^ 0xa1, seed ^ 0xb2]
@@ -44,7 +50,7 @@ function play(boss: BossDef, tier: number, deckIdx: number, seed: number, first:
     if (++guard > 5000) return 'draw'
     const actor: PlayerIdx =
       state.phase === 'mulligan' ? (state.players[0].mulliganDone ? 1 : 0) : state.activePlayer
-    const step = aiStep(state, actor, CARDS_BY_ID, rngs[actor], AI_NORMAL)
+    const step = aiStep(state, actor, CARDS_BY_ID, rngs[actor], actor === 1 ? { ...AI_NORMAL, weights: bossPersonality(boss.id) } : AI_NORMAL)
     rngs[actor] = step.rng
     const r = applyCommand(state, actor, step.cmd, CARDS_BY_ID)
     if (!r.ok) throw new Error(r.error)
@@ -77,9 +83,11 @@ const GRID = [0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9]
 console.log(`tune-campaign: 每次测量 ${GAMES} 局,扫描 ${GRID.length} 档卡组分位 tier\n`)
 const t0 = performance.now()
 const suggested: number[] = []
+const suggestedFor = new Map<string, number>()
 
 for (let i = 0; i < BOSSES.length; i++) {
   const boss = BOSSES[i]
+  if (ONLY.length > 0 && !ONLY.includes(boss.id)) continue
   const target = TARGETS[i] ?? 40
   const rates = GRID.map((t) => winRate(boss, t))
   let best = GRID[0]
@@ -92,6 +100,7 @@ for (let i = 0; i < BOSSES.length; i++) {
     }
   })
   suggested.push(best)
+  suggestedFor.set(boss.id, best)
   console.log(
     `${String(i + 1).padStart(2)}. ${boss.name.zh.padEnd(4)} 目标 ${String(target).padStart(2)}%  ` +
       `建议 tier ${best.toFixed(2)}(当前 ${boss.deckTier})  偏差 ±${Math.round(bestErr)}%\n` +
@@ -101,4 +110,8 @@ for (let i = 0; i < BOSSES.length; i++) {
 
 console.log(`\n(${((performance.now() - t0) / 1000).toFixed(1)}s)`)
 console.log('\n把这组 deckTier 填回 src/content/campaign.ts,再跑 npm run sim-campaign 验收:')
-console.log(suggested.map((t, i) => `  ${BOSSES[i].name.zh}: deckTier ${t.toFixed(2)}`).join('\n'))
+console.log(
+  [...suggestedFor.entries()]
+    .map(([id, t]) => `  ${BOSSES.find((b) => b.id === id)!.name.zh}: deckTier ${t.toFixed(2)}`)
+    .join('\n'),
+)

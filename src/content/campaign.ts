@@ -1,8 +1,12 @@
+// 只 import 真正用到的那一片 —— 其余三片留给玩家在对战里自己打出来(见 BOSS_FIELDS 的说明)
+import { FIELD_SNOW } from './overrides/pack19'
 import type {
   BattleObjective,
   CardDef,
   Doctrine,
   HeroPowerDef,
+  FieldRule,
+  FieldState,
   LocalizedText,
   RunModifiers,
 } from '../engine/types'
@@ -854,4 +858,40 @@ export const BOSS_PERSONALITIES: Record<string, Partial<EvalWeights>> = {
 
 export function bossPersonality(bossId: string): Partial<EvalWeights> | undefined {
   return BOSS_PERSONALITIES[bossId]
+}
+
+// ============================================================
+// 關底戰場(地利)—— 有些仗的地形本身就是那一仗。
+//
+// 第十九卡包把「战场环境」做成了引擎的一层(GameState.field),
+// 冒险因此可以给关卡配地形,而**不违反「不给 Boss 特权卡」的铁律**:
+// 环境双方同吃,引擎照旧对称 —— 变的是这一局的天时地利,不是谁的规则。
+//
+// 【最后只留了一关。这是实测的结论,不是偷懒 —— 记下来免得下次再试一遍。】
+//
+// 第一版给五关配了地形(赤壁烈焰 / 江河天險 / 平原走馬 ×2 / 大雪封山),
+// sim-campaign 量出来的失真远超预期:
+//   孫策 32%→20%   周瑜 40%→58%   霍去病 43%→18%   徐達 15%→5%   岳飛 22%→28%
+//
+// 原因不是「环境不对称」——它对双方一字不差。原因是**双方卡组的构成本来就不对称**:
+// Boss 的牌是 bossDeck 从全池按曲线切出来的(骑兵占池 25%),
+// 而六套预组是跨很多轮 sim-balance 手搭的、骑兵极少。于是
+// **兵种加成型战场系统性偏袒 Boss** —— 平原走馬 一片就把霍去病从 43% 压到 18%。
+// 烈焰是另一个方向:它惩罚铺场,而 Boss 的高费大身材比玩家的小怪更耐烧,
+// 结果反而是玩家占便宜(周瑜 +18 个点)。
+//
+// tune-campaign 重搜过一轮,但 tier→胜率本来就非单调,叠上地形之后曲线更乱
+// (孫策 0.15 档 78%、0.30 档 14%),搜出来的建议不可信。
+//
+// 所以只留下失真落在噪声内(±6%)的那一关:岳飛的大雪封山 —— 它是**全体同吃**的
+// 数值型环境,不挑兵种,双方卡组构成的差异吃不进去。
+// 兵种加成型战场留给**玩家自己打出来**(第十九卡包那四张锦囊):
+// 在对战里它是双方现算的赌局,不像关底那样固定偏向一边。
+export const BOSS_FIELDS: Record<string, FieldRule> = {
+  'boss-yue-fei': FIELD_SNOW, // 朱仙镇:天寒难进,却也难破
+}
+
+export function bossField(bossId: string): FieldState | undefined {
+  const rule = BOSS_FIELDS[bossId]
+  return rule ? { rule } : undefined
 }

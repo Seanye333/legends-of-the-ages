@@ -125,6 +125,7 @@ export function createGame(cfg: GameConfig, lib: CardLibrary): GameState {
     players,
     nextIid,
     objective: resolveObjective(cfg.objective, players),
+    field: cfg.field,
   }
 }
 
@@ -214,5 +215,6 @@ function createScenarioGame(
     players,
     nextIid,
     objective: resolveObjective(cfg.objective, players),
+    field: cfg.field,
   }
 }

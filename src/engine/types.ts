@@ -635,6 +635,8 @@ export interface GameConfig {
   scenario?: PuzzleScenario
   // 名局特殊胜负目标:给定则写进 GameState.objective,由 checkGameEnd 判。
   objective?: BattleObjective
+  // 开局就存在的战场环境(关底战的「地利」)。与 objective 同样是可选字段。
+  field?: FieldState
 }
 
 export type ApplyResult =
