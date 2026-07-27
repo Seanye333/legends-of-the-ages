@@ -98,6 +98,9 @@ export type CountSource =
   | { kind: 'friendlyKeyword'; keyword: Keyword } // 带某关键词的友方武将
   | { kind: 'friendlyGenerals' } // 友方武将总数
   | { kind: 'friendlyTroop'; troop: TroopType } // 某兵种的友方武将(军师不入列,见 content/troops.ts)
+  // 我方墓地里的**武将**数(锦囊装备不算)。亡语/复生流缺的就是这个计数 ——
+  // 此前只有「复生一个」这种一次性效果,没法表达「死得越多越强」。
+  | { kind: 'friendlyGraveyard' }
 
 export type EffectOp =
   | { op: 'damage'; amount: number; target: EffectTarget }
@@ -233,6 +236,9 @@ export interface CardDef {
   archetype: Archetype
   // 兵种(仅武将,军师与衍生物没有)。在 cards.ts 合并层派生 —— 生成层不存这个字段。
   troop?: TroopType
+  // 傳承(仅装备):持有者阵亡时,这件装备改挂到另一名友军身上。
+  // 名将的兵器不该跟着主人一起进土 —— 青龙偃月刀後來在關平手裡,方天畫戟落到別人手上。
+  heirloom?: boolean
   cost: number
   // 武将:攻/血;装备:攻血加成值(keywords 为授予的关键词)
   attack?: number
@@ -295,6 +301,11 @@ export interface Enchant {
   keywords?: Keyword[]
   duration?: 'endOfTurn'
   auraFrom?: number // 光环来源 iid;由 refreshAuras 全权管理
+  // 傳承(heirloom):持有者阵亡时,这条附魔改挂到另一名友方武将身上。
+  // 值是装备的 defId —— 战报要说清「青龍偃月刀傳給了誰」。
+  // 只有装备会带它,而装备本来就是一条附魔,所以这是**零新概念**的实现:
+  // 死亡处理里把附魔搬个家,不需要「装备槽」这种新状态。
+  heirloom?: string
 }
 
 // attack / health / maxHealth / keywords 是**派生字段**:

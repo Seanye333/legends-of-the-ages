@@ -501,6 +501,28 @@ export function processDeaths(state: GameState, events: GameEvent[], lib: CardLi
     for (const d of dead) {
       events.push({ type: 'GeneralDied', player: d.player, iid: d.inst.iid, defId: d.inst.defId })
     }
+    // 傳承:阵亡者身上带 heirloom 的附魔(装备)改挂到另一名友军身上。
+    //
+    // 放在亡语**之前**:亡语可能召唤新单位,而「刀应该传给谁」讲的是
+    // 这个人倒下的那一刻场上还站着谁 —— 让亡语召出来的新兵接刀,时序上不对。
+    // 被沉默的单位不传承(沉默连装备一起抹掉了,它身上已经没有那条附魔)。
+    // 收刀的人选:场上**最左**的友军(board 顺序 = 战场从左到右),确定性优先于花哨。
+    for (const d of dead) {
+      const passed = d.inst.enchants.filter((e) => e.heirloom !== undefined)
+      if (passed.length === 0) continue
+      const heir = state.players[d.player].board[0]
+      if (!heir) continue
+      for (const e of passed) {
+        heir.enchants.push({ ...e })
+        events.push({
+          type: 'EquipmentAttached',
+          player: d.player,
+          targetIid: heir.iid,
+          defId: e.heirloom!,
+        })
+      }
+      refreshInstance(heir, lib)
+    }
     for (const d of dead) {
       // 被沉默的单位不触发亡语
       if (d.inst.silenced) continue
@@ -635,6 +657,8 @@ function countFor(
     }
     case 'friendlyTroop':
       return board.filter((c) => lib[c.defId]?.troop === per.troop).length
+    case 'friendlyGraveyard':
+      return state.players[player].graveyard.filter((id) => lib[id]?.type === 'general').length
   }
 }
 

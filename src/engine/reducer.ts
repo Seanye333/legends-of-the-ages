@@ -352,6 +352,8 @@ function playCard(
           attack: def.attack ?? 0,
           health: def.health ?? 0,
           keywords: def.keywords.length > 0 ? def.keywords.slice() : undefined,
+          // 傳承装备:持有者阵亡时这条附魔会改挂给另一名友军(见 processDeaths)
+          heirloom: def.heirloom ? def.id : undefined,
         },
         events,
         loc.player,

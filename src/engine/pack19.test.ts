@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createGame } from './init'
 import { applyCommand } from './reducer'
-import { refreshAuras } from './resolve'
+import { processDeaths, refreshAuras, refreshInstance } from './resolve'
 import { CARDS_BY_ID } from '../content/cards'
 import type { CardDef, CardLibrary, FieldRule, GameConfig, GameState } from './types'
 
@@ -231,5 +231,90 @@ describe('戰場環境', () => {
     s.field = { rule: snow }
     refreshAuras(s, lib)
     expect(s.field.rule.id).toBe('field-snow')
+  })
+})
+
+// ---- 第二十卡包:傳承 / 塚中 ----
+describe('傳承 heirloom', () => {
+  const blade = { ...CARDS_BY_ID['eq-heirloom-blade'] }
+
+  it('持有者阵亡,装备改挂给另一名友军', () => {
+    const lib = libWith([base({ id: 'test-h1', health: 1 }), base({ id: 'test-h2' })])
+    const cfg: GameConfig = {
+      seed: 8,
+      heroIds: ['liu-bei', 'cao-cao'],
+      deckIds: [[], []],
+      first: 0,
+      scenario: {
+        activePlayer: 0,
+        players: [
+          { heroHp: 30, mana: 10, board: [{ defId: 'test-h2' }, { defId: 'test-h1' }], hand: ['eq-heirloom-blade'] },
+          { heroHp: 30, mana: 10, board: [], hand: [] },
+        ],
+      },
+    }
+    const g = createGame(cfg, lib)
+    const eq = g.players[0].hand[0]
+    const holder = g.players[0].board[1]
+    const r = applyCommand(g, 0, {
+      type: 'PlayCard',
+      iid: eq.iid,
+      target: { kind: 'general', iid: holder.iid },
+    }, lib)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    const armed = r.state.players[0].board.find((u) => u.iid === holder.iid)!
+    expect(armed.attack).toBe((blade.attack ?? 0) + (base({}).attack ?? 0))
+
+    // 打死持有者:刀应该落到剩下那位手里
+    const s2 = structuredClone(r.state)
+    const target = s2.players[0].board.find((u) => u.iid === holder.iid)!
+    // health 是**派生**字段:只改 damage 不 refresh,processDeaths 看到的还是旧血量
+    target.damage = 99
+    refreshInstance(target, lib)
+    const events: import('./types').GameEvent[] = []
+    processDeaths(s2, events, lib)
+    const heir = s2.players[0].board[0]
+    expect(heir.enchants.some((e) => e.heirloom === 'eq-heirloom-blade')).toBe(true)
+    expect(events.some((e) => e.type === 'EquipmentAttached' && e.targetIid === heir.iid)).toBe(true)
+  })
+
+  it('场上没有别人时不传承(刀跟着一起没了)', () => {
+    const lib = libWith([base({ id: 'test-solo', health: 1 })])
+    const s = game(lib, ['test-solo'])
+    s.players[0].board[0].enchants.push({ attack: 3, health: 1, heirloom: 'eq-heirloom-blade' })
+    s.players[0].board[0].damage = 99
+    refreshInstance(s.players[0].board[0], lib)
+    const events: import('./types').GameEvent[] = []
+    processDeaths(s, events, lib)
+    expect(s.players[0].board).toHaveLength(0)
+    expect(events.some((e) => e.type === 'EquipmentAttached')).toBe(false)
+  })
+})
+
+describe('塚中:墓地计数', () => {
+  it('只数武将,锦囊装备不算', () => {
+    const lib = libWith([base({ id: 'test-mourn', attack: 2, health: 3, battlecry: { ops: [{ op: 'buffPer', per: { kind: 'friendlyGraveyard' }, attack: 1, health: 1, target: 'self' } ] } })])
+    const cfg: GameConfig = {
+      seed: 8,
+      heroIds: ['liu-bei', 'cao-cao'],
+      deckIds: [[], []],
+      first: 0,
+      scenario: {
+        activePlayer: 0,
+        players: [
+          { heroHp: 30, mana: 10, board: [], hand: ['test-mourn'] },
+          { heroHp: 30, mana: 10, board: [], hand: [] },
+        ],
+      },
+    }
+    const g = createGame(cfg, lib)
+    // 墓里两个武将 + 一个锦囊 → 计数应当是 2
+    g.players[0].graveyard.push('guan-yu', 'zhang-fei', 'strat-huo-ji')
+    const card = g.players[0].hand[0]
+    const r = applyCommand(g, 0, { type: 'PlayCard', iid: card.iid }, lib)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.state.players[0].board[0].attack).toBe(4)
   })
 })
