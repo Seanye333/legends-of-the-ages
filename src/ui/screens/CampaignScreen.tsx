@@ -1,6 +1,14 @@
 import { Fragment, useState } from 'react'
 import type { CSSProperties } from 'react'
-import { BOSSES, bossDeck, bossChapter, CHAPTER_TITLES, type BossDef } from '../../content/campaign'
+import {
+  BOSSES,
+  bossDeck,
+  bossChapter,
+  bossTrial,
+  CHAPTER_TITLES,
+  type BossDef,
+  type TrialDef,
+} from '../../content/campaign'
 import { PRECON_DECKS } from '../../content/decks'
 import { useCampaign } from '../../app/campaignStore'
 import { HEROES_BY_ID } from '../../content/overrides/heroes'
@@ -25,6 +33,7 @@ export function CampaignScreen({ onBack, onEnterMatch }: CampaignScreenProps) {
   const pick = usePickText()
   const pickCompact = usePickCompact()
   const cleared = useCampaign((s) => s.cleared)
+  const trialsCleared = useCampaign((s) => s.trialsCleared)
   const isUnlocked = useCampaign((s) => s.isUnlocked)
   const begin = useCampaign((s) => s.begin)
   const customDecks = useCollection((s) => s.customDecks)
@@ -33,10 +42,12 @@ export function CampaignScreen({ onBack, onEnterMatch }: CampaignScreenProps) {
 
   const myDecks = [...PRECON_DECKS, ...customDecks]
 
-  const fight = (boss: BossDef) => {
+  // trial 给定时打的是**试炼版**:同一个 Boss、同样的血量与主公技,只换胜负条件
+  // (守成 / 斩将 / 护送)。目标单位靠 modifiersOverride 的 startTokens 摆上场。
+  const fight = (boss: BossDef, trial?: TrialDef) => {
     const mine = myDecks[deckIndex % myDecks.length]
     if (!mine) return
-    if (!begin(boss.id)) return
+    if (!begin(boss.id, Boolean(trial))) return
     playSfx('duel')
     haptic('impact')
     const myHero = HEROES_BY_ID[mine.heroId]
@@ -48,6 +59,8 @@ export function CampaignScreen({ onBack, onEnterMatch }: CampaignScreenProps) {
       // 玩家侧保持自己主公的正常配置 —— 不对称只加在对手身上。
       heroPowersOverride: [myHero?.power, boss.power],
       heroHpsOverride: [myHero?.hp ?? START_HP, boss.hp],
+      objective: trial?.objective,
+      modifiersOverride: trial ? [trial.playerModifiers, trial.bossModifiers] : undefined,
     })
     onEnterMatch()
   }
@@ -123,7 +136,9 @@ export function CampaignScreen({ onBack, onEnterMatch }: CampaignScreenProps) {
                   <span className={styles.stageTitle}>{pick(b.title)}</span>
                 </span>
                 <span className={styles.stageMeta}>
-                  {done ? (
+                  {done && trialsCleared.includes(b.id) ? (
+                    <span className={styles.trialTag}>{t('試煉已成', 'Trial done')}</span>
+                  ) : done ? (
                     <span className={styles.clearedTag}>{t('已破', 'Cleared')}</span>
                   ) : open ? (
                     <span className={styles.hp}>{b.hp} HP</span>
@@ -181,10 +196,40 @@ export function CampaignScreen({ onBack, onEnterMatch }: CampaignScreenProps) {
                     `First clear: ${selected.rewardPacks} packs, +${selected.rewardMerit} merit`,
                   )}
             </p>
+            {/* 试炼:首通之后解锁的第二种打法 —— 同一个 Boss,换一个赢法 */}
+            {cleared.includes(selected.id) &&
+              (() => {
+                const trial = bossTrial(selected.id)
+                if (!trial) return null
+                const trialDone = trialsCleared.includes(selected.id)
+                return (
+                  <div className={styles.trialBox}>
+                    <span className={styles.trialName}>
+                      {t('試煉 · ', 'Trial · ')}
+                      {pick(trial.name)}
+                      {trialDone && <span className={styles.trialDone}>{t(' ✓', ' ✓')}</span>}
+                    </span>
+                    <span className={styles.trialText}>{pick(trial.text)}</span>
+                    <span className={styles.trialReward}>
+                      {trialDone
+                        ? t('已成 —— 重打不再发放战利', 'Complete — no further spoils')
+                        : t(`首成战利:功勋 +${trial.rewardMerit}`, `First clear: +${trial.rewardMerit} merit`)}
+                    </span>
+                  </div>
+                )
+              })()}
             <div className={styles.briefActions}>
               <button className={styles.primary} onClick={() => fight(selected)}>
                 {t('出战', 'Fight')}
               </button>
+              {cleared.includes(selected.id) && bossTrial(selected.id) && (
+                <button
+                  className={styles.trialBtn}
+                  onClick={() => fight(selected, bossTrial(selected.id))}
+                >
+                  {t('挑战试炼', 'Take the Trial')}
+                </button>
+              )}
               <button className={styles.plain} onClick={() => setSelected(null)}>
                 {t('再看看', 'Not yet')}
               </button>

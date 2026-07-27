@@ -361,9 +361,63 @@
 }
 
 .primary:focus-visible,
-.plain:focus-visible {
+.plain:focus-visible,
+.trialBtn:focus-visible {
   outline: 2px solid var(--gold-bright);
   outline-offset: 2px;
+}
+
+/* ---- 关底试炼:首通后解锁的第二种打法 ---- */
+/* 用青色而不是金色 —— 与常规关底的「已破」区分开,一眼看得出是另一条线 */
+.trialTag {
+  color: #6fd8d0;
+}
+
+.trialBox {
+  margin: 10px 18px 0;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(111, 216, 208, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: left;
+}
+
+.trialName {
+  font-family: var(--font-display);
+  font-size: 13px;
+  color: #6fd8d0;
+  letter-spacing: 0.06em;
+}
+
+.trialDone {
+  color: #7ae87a;
+}
+
+.trialText {
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--parchment);
+}
+
+.trialReward {
+  font-size: 10px;
+  color: #e8c878;
+}
+
+.trialBtn {
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  background: rgba(111, 216, 208, 0.12);
+  border: 1px solid rgba(111, 216, 208, 0.5);
+  color: #6fd8d0;
 }
 
 @media (prefers-reduced-motion: reduce) {

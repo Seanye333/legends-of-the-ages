@@ -44,7 +44,7 @@ export function ExpeditionScreen({ onBack, onEnterMatch }: ExpeditionScreenProps
     const { bonusHp, modifiers } = combineRelics(run.relics)
     // 战场态势修饰符:合进 Boss 侧修正 / 双方修正 / Boss 血量
     const mod = run.stageMod ? MODIFIERS_BY_ID[run.stageMod] : undefined
-    const playerMods = { ...modifiers, ...(mod?.both ?? {}) }
+    const playerMods = { ...modifiers, ...(mod?.both ?? {}), ...(mod?.player ?? {}) }
     const bossMods = { ...(mod?.boss ?? {}), ...(mod?.both ?? {}) }
     playSfx('duel')
     haptic('impact')
@@ -55,6 +55,7 @@ export function ExpeditionScreen({ onBack, onEnterMatch }: ExpeditionScreenProps
       heroPowersOverride: [myHero?.power, boss.power],
       heroHpsOverride: [(myHero?.hp ?? START_HP) + bonusHp, boss.hp + (mod?.bossHpBonus ?? 0)],
       modifiersOverride: [playerMods, bossMods],
+      objective: mod?.objective,
     })
     onEnterMatch()
   }

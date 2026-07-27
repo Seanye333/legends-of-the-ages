@@ -1,4 +1,4 @@
-import type { LocalizedText, RunModifiers } from '../engine/types'
+import type { BattleObjective, LocalizedText, RunModifiers } from '../engine/types'
 
 // 远征关卡修饰符:第 2 关起每关一个「战场态势」,给 roguelike 加变数与风险。
 // 多数是**给 Boss 加强**(逐关变难的一部分),难度高的配 bonusRelic 作补偿(多得一件宝物)。
@@ -6,6 +6,9 @@ import type { LocalizedText, RunModifiers } from '../engine/types'
 //
 // boss:施加给 Boss 座位的开局修正。bossHpBonus:额外加到 Boss 血量。
 // both:双方都吃(混乱型)。bonusRelic:通关本关多给一件宝物。
+// objective / player:换胜负条件的那一类态势。远征此前每一关都是「谁先把对方打死」,
+// 十六关下来节奏完全一样;换掉赢法比换数值更能把一趟 run 撑起来。
+// player 是**只加在玩家侧**的修正(护送目标要摆在我方场上,不能混进 boss/both)。
 export interface ExpeditionModifier {
   id: string
   name: LocalizedText
@@ -14,6 +17,8 @@ export interface ExpeditionModifier {
   boss?: RunModifiers
   bossHpBonus?: number
   both?: RunModifiers
+  player?: RunModifiers
+  objective?: BattleObjective
   bonusRelic?: boolean
 }
 
@@ -96,6 +101,56 @@ export const EXPEDITION_MODIFIERS: ExpeditionModifier[] = [
     weight: 2,
     bossHpBonus: 12,
     boss: { startArmor: 6 },
+    bonusRelic: true,
+  },
+
+  // ---- 换胜负条件的一类(权重刻意压低:偶尔遇上才新鲜,每关都换就成负担了)----
+  // 都配 bonusRelic:目标类关卡的失败方式更多(粮车被 AOE 扫掉、守不满回合数),
+  // 风险高一档,回报也该高一档。
+  {
+    id: 'mod-hold',
+    name: { zh: '堅守待援', en: 'Hold Until Relief' },
+    text: {
+      zh: '换个赢法:撑过 12 回合即胜,不必斩敌主公。敌军血量 +10。通关多得一件宝物。',
+      en: 'A different win: survive 12 turns. The enemy has +10 health. Clear it for an extra relic.',
+    },
+    weight: 3,
+    bossHpBonus: 10,
+    objective: { kind: 'survive', turns: 12 },
+    bonusRelic: true,
+  },
+  {
+    id: 'mod-behead',
+    name: { zh: '斬將奪旗', en: 'Take the Standard' },
+    text: {
+      zh: '换个赢法:敌阵中有一员主将(5/10 守护),斩了他就赢。通关多得一件宝物。',
+      en: 'A different win: a 5/10 Guard commander leads the enemy line. Cut him down. Extra relic on clear.',
+    },
+    weight: 3,
+    boss: { startTokens: ['token-di-zhu-jiang'] },
+    objective: {
+      kind: 'assassinate',
+      targetSide: 1,
+      targetDefId: 'token-di-zhu-jiang',
+      targetName: { zh: '敵軍主將', en: 'Enemy Commander' },
+    },
+    bonusRelic: true,
+  },
+  {
+    id: 'mod-convoy',
+    name: { zh: '押運糧草', en: 'Escort the Convoy' },
+    text: {
+      zh: '你带一辆 0/8 粮车,车毁即负 —— 照常斩敌主公才算赢。通关多得一件宝物。',
+      en: 'You escort a 0/8 grain cart. Lose it and the run ends. Extra relic on clear.',
+    },
+    weight: 3,
+    player: { startTokens: ['token-liang-che'] },
+    objective: {
+      kind: 'protect',
+      targetSide: 0,
+      targetDefId: 'token-liang-che',
+      targetName: { zh: '糧車', en: 'Grain Cart' },
+    },
     bonusRelic: true,
   },
 ]

@@ -1,4 +1,11 @@
-import type { CardDef, Doctrine, HeroPowerDef, LocalizedText } from '../engine/types'
+import type {
+  BattleObjective,
+  CardDef,
+  Doctrine,
+  HeroPowerDef,
+  LocalizedText,
+  RunModifiers,
+} from '../engine/types'
 import { DECK_SIZE } from '../engine/types'
 import { CARDS_BY_ID, COLLECTIBLE_CARDS } from './cards'
 
@@ -585,4 +592,222 @@ export function bossDeck(doctrine: Doctrine, tier = 0): string[] {
 // 这条在 campaign.test.ts 里断言。
 export function bossHeroExists(b: BossDef): boolean {
   return Boolean(CARDS_BY_ID[b.heroId])
+}
+
+// ============================================================
+// 關底試煉 —— 同一个 Boss,换一个赢法。
+//
+// 引擎里的 `BattleObjective`(守成 / 斩将 / 护送)此前**只有名局重现在用**:
+// 一层写好、测好、有 UI 指示器的能力,只服务了十四场固定战役。
+// 试炼把它接到冒险上 —— 十六关每关多一个打法,内容翻倍,引擎零改动。
+//
+// **刻意做成「首通之后才解锁的第二种打法」,而不是改关底本身的胜负条件。**
+// BOSSES 那条难度曲线是 tune-campaign 网格扫描出来的(见文件顶部),
+// 给它换个胜负条件等于把十六个数字全作废,还得重搜一轮。试炼是**加法**:
+// sim-campaign 不看它,曲线不受影响。
+//
+// 难度旋钮与关底不同:这里靠**目标形态**而不是 tier。
+//   · 守成 —— 回合数。12 回合是「顶住三板斧」,16 回合是「熬过中期爆发」。
+//   · 斩将 —— 目标带守护,你得先啃穿它。血越高越难。
+//   · 护送 —— 0 攻高血,AI 懒得打它,但 AOE 会误伤。最松的一档。
+// 目标单位靠 startTokens 摆上场,`targetDefId` 必须与摆上去的那张对得上,
+// 对不上就是「目标永不触发」的静默失败(createGame 解析不到 iid)——
+// campaign.test 有一条闸门专门钉这个。
+export interface TrialDef {
+  id: string
+  name: LocalizedText
+  text: LocalizedText
+  objective: BattleObjective
+  playerModifiers?: RunModifiers // 护送类:目标单位摆在**我方**场上
+  bossModifiers?: RunModifiers // 斩将类:目标单位摆在**敌方**场上
+  rewardMerit: number
+}
+
+const slay = (name: LocalizedText, tokenId: string) =>
+  ({
+    objective: {
+      kind: 'assassinate' as const,
+      targetSide: 1 as const,
+      targetDefId: tokenId,
+      targetName: name,
+    },
+    bossModifiers: { startTokens: [tokenId] },
+  })
+
+const escort = (name: LocalizedText, tokenId: string) =>
+  ({
+    objective: {
+      kind: 'protect' as const,
+      targetSide: 0 as const,
+      targetDefId: tokenId,
+      targetName: name,
+    },
+    playerModifiers: { startTokens: [tokenId] },
+  })
+
+export const TRIALS: Record<string, TrialDef> = {
+  'boss-zhang-jiao': {
+    id: 'trial-zhang-jiao',
+    name: { zh: '蒼天已死', en: 'The Blue Sky is Dead' },
+    text: {
+      zh: '守成:黄巾漫野,不必斩其渠帅 —— 撑过 12 回合,乱民自散。',
+      en: 'Endure: you need not kill their prophet. Survive 12 turns and the mob disperses.',
+    },
+    objective: { kind: 'survive', turns: 12 },
+    rewardMerit: 150,
+  },
+  'boss-dong-zhuo': {
+    id: 'trial-dong-zhuo',
+    name: { zh: '溫酒斬華雄', en: 'The Wine Still Warm' },
+    text: {
+      zh: '斩将:酒且斟下,某去便来 —— 阵斩华雄即胜,不必理会董卓。',
+      en: 'Slay: pour the wine and keep it warm. Cut down Hua Xiong and the trial is yours.',
+    },
+    ...slay({ zh: '華雄', en: 'Hua Xiong' }, 'token-hua-xiong'),
+    rewardMerit: 180,
+  },
+  'boss-lu-bu': {
+    id: 'trial-lu-bu',
+    name: { zh: '三英戰呂布', en: 'Three Against Lü Bu' },
+    text: {
+      zh: '守成:人中吕布,马中赤兔 —— 谁也杀不了他,撑过 14 回合就算你赢。',
+      en: 'Endure: no one kills Lü Bu. Survive 14 turns and call it a victory.',
+    },
+    objective: { kind: 'survive', turns: 14 },
+    rewardMerit: 200,
+  },
+  'boss-yuan-shao': {
+    id: 'trial-yuan-shao',
+    name: { zh: '火燒烏巢', en: 'The Granaries at Wuchao' },
+    text: {
+      zh: '斩将:袁绍的粮在乌巢,守粮的是淳于琼 —— 斩了他,河北自乱。',
+      en: 'Slay: Yuan Shao’s grain lies at Wuchao. Cut down its keeper and his host unravels.',
+    },
+    ...slay({ zh: '淳于瓊', en: 'Chunyu Qiong' }, 'token-chunyu-qiong'),
+    rewardMerit: 200,
+  },
+  'boss-sun-ce': {
+    id: 'trial-sun-ce',
+    name: { zh: '糧道不絕', en: 'Keep the Grain Road Open' },
+    text: {
+      zh: '护送:小霸王来得快,你的粮车走得慢 —— 车在,你就没输。',
+      en: 'Escort: the Little Conqueror moves fast and your grain cart does not. Keep it alive.',
+    },
+    ...escort({ zh: '糧車', en: 'Grain Cart' }, 'token-liang-che'),
+    rewardMerit: 220,
+  },
+  'boss-zhou-yu': {
+    id: 'trial-zhou-yu',
+    name: { zh: '東風未至', en: 'Before the East Wind' },
+    text: {
+      zh: '守成:火攻要等东风。撑过 14 回合,风自己会来。',
+      en: 'Endure: fire needs the east wind. Survive 14 turns and it will come.',
+    },
+    objective: { kind: 'survive', turns: 14 },
+    rewardMerit: 220,
+  },
+  'boss-zhuge-liang': {
+    id: 'trial-zhuge-liang',
+    name: { zh: '木門道', en: 'The Wooden Gate Trail' },
+    text: {
+      zh: '斩将:退兵之路设伏,一员主将授首 —— 丞相自会退兵。',
+      en: 'Slay: an ambush on the retreat road. Take their commander and the army withdraws.',
+    },
+    ...slay({ zh: '敵軍主將', en: 'Enemy Commander' }, 'token-di-zhu-jiang'),
+    rewardMerit: 250,
+  },
+  'boss-cao-cao': {
+    id: 'trial-cao-cao',
+    name: { zh: '官渡對峙', en: 'The Standoff at Guandu' },
+    text: {
+      zh: '守成:兵少粮尽也要顶住。撑过 16 回合,变数自来。',
+      en: 'Endure: fewer men, less grain, and you must still hold. Survive 16 turns.',
+    },
+    objective: { kind: 'survive', turns: 16 },
+    rewardMerit: 280,
+  },
+  'boss-bai-qi': {
+    id: 'trial-bai-qi',
+    name: { zh: '長平糧道', en: 'The Road to Changping' },
+    text: {
+      zh: '护送:白起最擅长的从来不是决战,是断你的粮。车没了,四十万就没了。',
+      en: 'Escort: Bai Qi never needed a decisive battle — only your supply line.',
+    },
+    ...escort({ zh: '糧車', en: 'Grain Cart' }, 'token-liang-che'),
+    rewardMerit: 280,
+  },
+  'boss-xiang-yu': {
+    id: 'trial-xiang-yu',
+    name: { zh: '垓下合圍', en: 'The Ring at Gaixia' },
+    text: {
+      zh: '斩将:十面埋伏,先破其一。拿下当面的主将,合围才收得拢。',
+      en: 'Slay: ten ambushes, one at a time. Break the commander before you the ring can close.',
+    },
+    ...slay({ zh: '敵軍主將', en: 'Enemy Commander' }, 'token-di-zhu-jiang'),
+    rewardMerit: 300,
+  },
+  'boss-han-xin': {
+    id: 'trial-han-xin',
+    name: { zh: '背水一戰', en: 'Backs to the River' },
+    text: {
+      zh: '守成:置之死地而后生 —— 退无可退,撑过 14 回合。',
+      en: 'Endure: no ground left to give. Survive 14 turns with the river at your back.',
+    },
+    objective: { kind: 'survive', turns: 14 },
+    rewardMerit: 300,
+  },
+  'boss-huo-qubing': {
+    id: 'trial-huo-qubing',
+    name: { zh: '封狼居胥', en: 'The Altar at Langjuxu' },
+    text: {
+      zh: '斩将:千里奔袭,只为阵前那一个人。',
+      en: 'Slay: a thousand li of hard riding for one man in the enemy line.',
+    },
+    ...slay({ zh: '敵軍主將', en: 'Enemy Commander' }, 'token-di-zhu-jiang'),
+    rewardMerit: 320,
+  },
+  'boss-tang-taizong': {
+    id: 'trial-tang-taizong',
+    name: { zh: '虎牢死守', en: 'Holding Hulao' },
+    text: {
+      zh: '守成:三千五百骑挡十万,你只要不倒。撑过 16 回合。',
+      en: 'Endure: three thousand horse against a hundred thousand. Just do not fall. 16 turns.',
+    },
+    objective: { kind: 'survive', turns: 16 },
+    rewardMerit: 340,
+  },
+  'boss-zhao-kuangyin': {
+    id: 'trial-zhao-kuangyin',
+    name: { zh: '護周室', en: 'Guard the Young Emperor' },
+    text: {
+      zh: '护送:陈桥驿黄袍加身那一夜,周室的幼主还在你手上。',
+      en: 'Escort: on the night the yellow robe was raised at Chenqiao, the child emperor was still yours to protect.',
+    },
+    ...escort({ zh: '幼主', en: 'The Young Lord' }, 'token-you-zhu'),
+    rewardMerit: 360,
+  },
+  'boss-yue-fei': {
+    id: 'trial-yue-fei',
+    name: { zh: '拐子馬', en: 'The Linked Cavalry' },
+    text: {
+      zh: '斩将:重甲连环,专砍马足 —— 先把领头那个拿下来。',
+      en: 'Slay: armoured horse chained three abreast. Take down the one who leads them.',
+    },
+    ...slay({ zh: '敵軍主將', en: 'Enemy Commander' }, 'token-di-zhu-jiang'),
+    rewardMerit: 380,
+  },
+  'boss-xu-da': {
+    id: 'trial-xu-da',
+    name: { zh: '大漠孤軍', en: 'Alone in the Desert' },
+    text: {
+      zh: '守成:孤军深入,粮尽援绝。撑过 16 回合,就能带人回去。',
+      en: 'Endure: deep in the desert, out of grain and out of reach. Survive 16 turns and lead them home.',
+    },
+    objective: { kind: 'survive', turns: 16 },
+    rewardMerit: 400,
+  },
+}
+
+export function bossTrial(bossId: string): TrialDef | undefined {
+  return TRIALS[bossId]
 }

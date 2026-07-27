@@ -1,15 +1,24 @@
-import type { LocalizedText, RunModifiers } from '../engine/types'
+import type { BattleObjective, LocalizedText, RunModifiers } from '../engine/types'
 
 // 乱斗:一场怪规则的快速对局。规则**双方同吃**,所以是公平的混战 —— 纯图一乐,
 // 也顺便让玩家在奇葩规则下重新认识自己的卡组。复用 RunModifiers,零引擎改动。
 //
 // hpDelta:双方主公血量增减(RunModifiers 里没有 HP,单列)。
+//
+// objective:换胜负条件的那一类乱斗(守成 / 斩将 / 护送)。这一层引擎早就有了
+// (名局重现在用),乱斗只是第二个消费者 —— **规则怪不一定要靠数值怪**,
+// 「这一局赢的方式不一样」比「这一局双方都多抽四张」新鲜得多。
+// 目标是**不对称**的(座位 0 = 玩家),所以带目标的乱斗要用 playerOnly/oppOnly
+// 单独摆目标单位,不能混进双方同吃的 modifiers。
 export interface BrawlDef {
   id: string
   name: LocalizedText
   text: LocalizedText
   modifiers: RunModifiers // 双方同吃
   hpDelta?: number
+  objective?: BattleObjective
+  playerOnly?: RunModifiers // 只加在玩家侧(护送目标)
+  oppOnly?: RunModifiers // 只加在对手侧(斩将目标)
 }
 
 export const BRAWLS: BrawlDef[] = [
@@ -85,5 +94,52 @@ export const BRAWLS: BrawlDef[] = [
       en: 'Both Hero Powers are free and both draw three extra cards — it peaks from turn one.',
     },
     modifiers: { heroPowerCostDelta: -2, bonusHandSize: 3 },
+  },
+
+  // ---- 换胜负条件的一类 ----
+  // 这三条不动数值,只动「怎么算赢」。对手是普通预组 AI,而 AI **不懂目标**
+  // (它只会照常打脸),所以难度靠目标形态自己成立:守成看回合数,
+  // 斩将的目标带守护逼你啃穿,护送的目标 0 攻高血、AI 懒得碰但会被 AOE 误伤。
+  {
+    id: 'brawl-siege',
+    name: { zh: '孤城不落', en: 'The City Holds' },
+    text: {
+      zh: '换个赢法:不必斩敌主公 —— 撑过 12 回合即胜。双方开局 8 点护甲。',
+      en: 'A different win: you need not kill the enemy hero. Survive 12 turns. Both start with 8 Armor.',
+    },
+    modifiers: { startArmor: 8 },
+    objective: { kind: 'survive', turns: 12 },
+  },
+  {
+    id: 'brawl-decapitate',
+    name: { zh: '斬其主將', en: 'Take the Commander' },
+    text: {
+      zh: '换个赢法:敌阵中有一员主将(5/10 守护),斩了他就赢,主公血量无关。',
+      en: 'A different win: a 5/10 Guard commander stands in the enemy line. Cut him down and win.',
+    },
+    modifiers: {},
+    oppOnly: { startTokens: ['token-di-zhu-jiang'] },
+    objective: {
+      kind: 'assassinate',
+      targetSide: 1,
+      targetDefId: 'token-di-zhu-jiang',
+      targetName: { zh: '敵軍主將', en: 'Enemy Commander' },
+    },
+  },
+  {
+    id: 'brawl-convoy',
+    name: { zh: '糧道之爭', en: 'The Grain Road' },
+    text: {
+      zh: '换个赢法:你带一辆 0/8 粮车,车毁即负 —— 照常斩敌主公才算赢。',
+      en: 'A different win: you escort a 0/8 grain cart. Lose it and you lose. Kill the enemy hero to win.',
+    },
+    modifiers: {},
+    playerOnly: { startTokens: ['token-liang-che'] },
+    objective: {
+      kind: 'protect',
+      targetSide: 0,
+      targetDefId: 'token-liang-che',
+      targetName: { zh: '糧車', en: 'Grain Cart' },
+    },
   },
 ]

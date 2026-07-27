@@ -47,7 +47,12 @@ export function BrawlScreen({ onBack, onEnterMatch }: BrawlScreenProps) {
       deckIds: [mine.cardIds.slice(), opp.cardIds.slice()],
       heroPowersOverride: [myHero?.power, oppHero?.power],
       heroHpsOverride: [hp, hp],
-      modifiersOverride: [brawl.modifiers, brawl.modifiers], // 规则双方同吃
+      // 规则双方同吃;带目标的乱斗另有单侧修正(护送的车在我方、斩将的目标在敌方)
+      modifiersOverride: [
+        { ...brawl.modifiers, ...(brawl.playerOnly ?? {}) },
+        { ...brawl.modifiers, ...(brawl.oppOnly ?? {}) },
+      ],
+      objective: brawl.objective,
       // 只有当值那条算「本周乱斗」,胜了才发一次首胜功勋
       weeklyBrawlWeek: brawlIndex === weeklyIndex ? thisWeek : undefined,
     })
