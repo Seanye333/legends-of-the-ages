@@ -288,6 +288,12 @@ export function playSfx(name: SfxName): void {
 
 export type MusicScene = 'title' | 'match'
 
+// 换一个调式。传时代块 key(见 content/eras.ts)或直接传调式名;认不出就回宫调。
+export function setMusicEra(era: string | undefined): void {
+  const mode = (era && ERA_MODE[era]) ?? 'gong'
+  PENTATONIC = MODES[mode] ?? MODES.gong
+}
+
 let musicGain: GainNode | null = null
 let musicTimer: number | null = null
 let musicScene: MusicScene | null = null
@@ -295,7 +301,33 @@ let nextNoteAt = 0
 let step = 0
 let lastDegree = 0
 
-const PENTATONIC = [0, 2, 4, 7, 9] // 宫商角徵羽(半音数)
+// 五声音阶的五个**调式**(宫/商/角/徵/羽为主音各转一次)。
+// 之前全游戏只有一个「宫调」,于是从标题到第十六关、从先秦到明清,
+// 听到的是同一段旋律的同一个色彩 —— 一局四十分钟里它会变得非常明显。
+//
+// 转调是这里最便宜的一笔:音阶本身不变,只换从哪一级起算,
+// 于是每个时代块有自己的色彩,而**一个音符都不用写**。
+//   宫 明亮端正(先秦)· 商 肃杀(秦汉)· 角 柔和(三国)
+//   徵 开阔(隋唐)· 羽 幽暗(宋元、明清火器与边塞)
+const MODES: Record<string, number[]> = {
+  gong: [0, 2, 4, 7, 9],
+  shang: [0, 2, 5, 7, 10],
+  jue: [0, 3, 5, 8, 10],
+  zhi: [0, 2, 5, 7, 9],
+  yu: [0, 3, 5, 7, 10],
+}
+
+// 时代块 → 调式。用 content/eras.ts 那张表的 key,免得两处各排一套时代。
+const ERA_MODE: Record<string, keyof typeof MODES> = {
+  'pre-qin': 'gong',
+  'qin-han': 'shang',
+  'three-kingdoms': 'jue',
+  'sui-tang': 'zhi',
+  'song-yuan': 'yu',
+  'ming-qing': 'yu',
+}
+
+let PENTATONIC = MODES.gong // 宫商角徵羽(半音数);随场景转调
 const SCHEDULE_AHEAD = 1.0 // 排到未来多少秒
 const TICK_MS = 250
 

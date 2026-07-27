@@ -30,7 +30,8 @@ import { GraveyardPanel } from '../components/GraveyardPanel'
 import { EmoteWheel } from '../components/EmoteWheel'
 import type { CardDef } from '../../engine/types'
 import { useEventAnimations } from '../useEventAnimations'
-import { initSound, playSfx, startMusic, stopMusic } from '../sound'
+import { initSound, playSfx, setMusicEra, startMusic, stopMusic } from '../sound'
+import { ERA_OF } from '../../content/eras'
 import { useSettings } from '../../app/settingsStore'
 import styles from './MatchScreen.module.css'
 
@@ -109,8 +110,13 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
 
   useEffect(() => {
     initSound()
+    // 按对手的时代块转调:先秦宫、秦汉商、三国角、隋唐徵、宋元明清羽。
+    // 一局四十分钟,同一个色彩从头听到尾会非常明显 —— 而转调不用写一个音符。
+    const foeCard = CARDS_BY_ID[state?.players[1].heroId ?? '']
+    setMusicEra(foeCard ? ERA_OF[foeCard.dynasty] : undefined)
     startMusic('match')
     return () => stopMusic()
+    // 只在进入对局时定调 —— 对手不会中途换人
   }, [])
 
   // 唯一规则来源:legalCommands。UI 只做筛选,不重演规则。
