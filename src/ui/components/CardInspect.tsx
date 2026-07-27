@@ -12,6 +12,7 @@ import {
 } from '../doctrineColors'
 import { exportCardImage, probeCardArt } from '../cardExport'
 import { LORE } from '../../content/generated/lore.gen'
+import { bondsOf, bondRoster, cardName, rivalsOf, rivalLore } from '../../content/relations'
 import { Portrait } from './Portrait'
 import { usePickCompact, usePickText, useT } from '../i18n'
 import { playSfx } from '../sound'
@@ -122,6 +123,39 @@ export function CardInspect({ def, onClose, forge = false }: CardInspectProps) {
                 <div key={k} className={styles.keywordRow}>
                   <span className={styles.keywordName}>{pickCompact(KEYWORD_NAME[k])}</span>
                   <span className={styles.keywordRule}>{pick(KEYWORD_RULE[k])}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {/* 关系:羁绊与宿敌是**反向**看不见的 —— 卡面只写在锚点身上,
+              点开关羽看不出他属于桃园结义。这里把索引翻过来一起列出。 */}
+          {(bondsOf(def.id).length > 0 || rivalsOf(def.id).length > 0) && (
+            <div className={styles.relations}>
+              {bondsOf(def.id).map((ref) => (
+                <div key={ref.bond.id} className={styles.bondRow}>
+                  <span className={styles.bondName}>
+                    {t('羈絆 · ', 'Bond · ')}
+                    {pick(ref.bond.name)}
+                  </span>
+                  <span className={styles.bondMembers}>
+                    {bondRoster(ref)
+                      .map((id) => pickCompact(cardName(id)))
+                      .join(' · ')}
+                  </span>
+                </div>
+              ))}
+              {rivalsOf(def.id).map((ref) => (
+                <div key={ref.rival.id} className={styles.rivalRow}>
+                  <span className={styles.rivalName}>
+                    {t('宿敵 · ', 'Rival · ')}
+                    {pick(ref.rival.name)}
+                  </span>
+                  <span className={styles.bondMembers}>
+                    {pickCompact(cardName(ref.anchor.id))} ⇄ {pickCompact(cardName(ref.rival.foe))}
+                  </span>
+                  {rivalLore(ref.rival.id) && (
+                    <span className={styles.rivalLore}>{pick(rivalLore(ref.rival.id)!)}</span>
+                  )}
                 </div>
               ))}
             </div>

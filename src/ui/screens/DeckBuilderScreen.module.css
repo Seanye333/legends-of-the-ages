@@ -312,6 +312,86 @@
   margin-top: 20px;
 }
 
+/* ---- 卡组体检 ---- */
+.health {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(122, 100, 58, 0.3);
+  background: rgba(12, 10, 7, 0.5);
+  font-size: 11px;
+  color: var(--parchment-faint);
+}
+
+.healthItem b {
+  color: var(--parchment);
+  font-weight: 700;
+  margin-left: 2px;
+}
+
+/* 偏低标黄、偏高标青 —— 都不是错,只是提示「这项和健康的牌不一样」 */
+.low b {
+  color: #e0a84a;
+}
+
+.high b {
+  color: #6fd8d0;
+}
+
+.ok b {
+  color: var(--parchment);
+}
+
+/* ---- 羁绊面板 ---- */
+.bonds {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(122, 100, 58, 0.3);
+  background: rgba(12, 10, 7, 0.5);
+}
+
+.bondsHead {
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--parchment-faint);
+}
+
+.bondDone,
+.bondPartial {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.bondDone .bondLabel {
+  color: var(--gold-bright);
+}
+
+.bondPartial .bondLabel {
+  color: var(--parchment);
+}
+
+.bondDone .bondNeed {
+  color: #7ae87a;
+}
+
+.bondNeed {
+  color: var(--parchment-faint);
+  text-align: right;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .errors {
   font-size: 12px;
   color: #e8a094;

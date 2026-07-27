@@ -13,6 +13,8 @@ const HERO_PICKS = [...ALL_HEROES].sort(
 )
 import { decodeDeck, encodeDeck } from '../../content/deckCode'
 import { useCollection, copyLimit } from '../../app/collectionStore'
+import { cardName, deckBonds } from '../../content/relations'
+import { deckHealth, verdictOf } from '../../content/deckHealth'
 import { DOCTRINE_COLORS, DOCTRINE_NAME } from '../doctrineColors'
 import { CardFace } from '../components/CardFace'
 import { CardInspect } from '../components/CardInspect'
@@ -109,6 +111,17 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
     return bars
   }, [counts])
   const curveMax = Math.max(1, ...curve)
+
+  const health = useMemo(
+    () => deckHealth(Object.entries(counts).flatMap(([id, n]) => Array<string>(n).fill(id))),
+    [counts],
+  )
+
+  // 羁绊只看**带了哪些卡**,不看带了几张 —— 同一条羁绊带两份不会触发两次
+  const deckBondList = useMemo(
+    () => deckBonds(Object.keys(counts).filter((id) => (counts[id] ?? 0) > 0)),
+    [counts],
+  )
 
   const add = (id: string) => {
     const have = counts[id] ?? 0
@@ -431,6 +444,52 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
               })}
             {total === 0 && <p className={styles.hint}>{t('点左侧卡牌加入卡组', 'Tap cards to add')}</p>}
           </div>
+          {/* 体检:曲线之外的骨架指标。和 `npm run deck-stats` 共用同一份定义,
+              让玩家看见调平衡时才看得到的那几项。 */}
+          {total > 0 && (
+            <div className={styles.health}>
+              <span className={styles.healthItem}>
+                {t('均费', 'Avg')} <b>{health.avgCost.toFixed(1)}</b>
+              </span>
+              <span className={styles.healthItem}>
+                {t('身材', 'Body')} <b>{health.body}</b>
+              </span>
+              <span className={`${styles.healthItem} ${styles[verdictOf('guards', health.guards)]}`}>
+                {t('守護', 'Guard')} <b>{health.guards}</b>
+              </span>
+              <span
+                className={`${styles.healthItem} ${styles[verdictOf('removal', health.removal)]}`}
+              >
+                {t('解場', 'Removal')} <b>{health.removal}</b>
+              </span>
+              <span className={styles.healthItem}>
+                {t('抽牌', 'Draw')} <b>{health.draw}</b>
+              </span>
+            </div>
+          )}
+          {/* 羁绊面板:构筑的叙事钩子。只列「已经带了至少一个人」的,
+              重点是**还差谁** —— 全池 31 条铺出来对玩家没有意义。 */}
+          {deckBondList.length > 0 && (
+            <div className={styles.bonds}>
+              <div className={styles.bondsHead}>{t('羈絆', 'Bonds')}</div>
+              {deckBondList.slice(0, 6).map(({ ref, missing }) => (
+                <div
+                  key={ref.bond.id}
+                  className={missing.length === 0 ? styles.bondDone : styles.bondPartial}
+                >
+                  <span className={styles.bondLabel}>{pickCompact(ref.bond.name)}</span>
+                  <span className={styles.bondNeed}>
+                    {missing.length === 0
+                      ? t('已成', 'complete')
+                      : t(
+                          `缺 ${missing.map((id) => pickCompact(cardName(id))).join('、')}`,
+                          `needs ${missing.map((id) => pickCompact(cardName(id))).join(', ')}`,
+                        )}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
           {errors.length > 0 && (
             <div className={styles.errors}>
               {errors.map((e, i) => (
