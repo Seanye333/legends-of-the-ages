@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { CardInstance } from '../../engine/types'
-import { useT } from '../i18n'
+import { usePickText, useT } from '../i18n'
+import { proclamation } from '../../content/proclamation'
 import { CardFace } from './CardFace'
 import styles from './MulliganOverlay.module.css'
 
@@ -8,11 +9,16 @@ interface MulliganOverlayProps {
   hand: CardInstance[]
   waiting: boolean // 我已确认,等待对手
   onConfirm: (keepIids: number[]) => void
+  // 战前檄文:每一局的开场此前是同一屏调度界面,而曹操打岳飞和曹操打刘备
+  // 是隔了九百年的两件事,界面上一个字都不提。
+  heroIds?: [string, string]
 }
 
 // 调度(换牌)界面:点击卡牌标记换掉,确认后发送 Mulligan。
-export function MulliganOverlay({ hand, waiting, onConfirm }: MulliganOverlayProps) {
+export function MulliganOverlay({ hand, waiting, onConfirm, heroIds }: MulliganOverlayProps) {
   const t = useT()
+  const pick = usePickText()
+  const proc = heroIds ? proclamation(heroIds[0], heroIds[1]) : null
   const [replaced, setReplaced] = useState<ReadonlySet<number>>(new Set())
   // 联机时服务器确认前 waiting 尚未翻转,防双击重复提交
   const [submitted, setSubmitted] = useState(false)
@@ -37,6 +43,7 @@ export function MulliganOverlay({ hand, waiting, onConfirm }: MulliganOverlayPro
   return (
     <div className={styles.overlay}>
       <h2 className={styles.title}>{t('调度', 'Mulligan')}</h2>
+      {proc && <p className={styles.proclamation}>{pick(proc)}</p>}
       <p className={styles.hint}>{t('点击要换掉的卡牌', 'Tap cards to replace them')}</p>
       <div className={styles.cards}>
         {hand.map((c) => (

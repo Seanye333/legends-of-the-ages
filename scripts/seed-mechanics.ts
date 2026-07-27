@@ -43,37 +43,10 @@ export function hash01(id: string, salt: string): number {
 }
 
 // ---------- 时代块 ----------
-//
-// 播种要按时代分风味,但 18 个朝代逐个配池子既写不完也调不动。
-// 归并成六个「时代块」—— 每块内部的战争形态与名将画像相近,分块依据是史不是凑数:
-//   先秦     百家争鸣、士与刺客 —— 谋略、说客、暗杀
-//   秦汉     军功爵、郡县、大兵团远征 —— 重骑、铺场、护甲
-//   三国两晋  势力对峙 —— 同势力协同是这一块独有的题眼
-//   隋唐五代  府兵与藩镇 —— 骑将冲阵,先手压制
-//   宋元     一边城防重甲,一边骑射长驱 —— 守护/铁壁 与 冲锋/碾压并存
-//   明清     火器、水师、边军 —— 群体杀伤与阵地
-export type Era = 'pre-qin' | 'qin-han' | 'three-kingdoms' | 'sui-tang' | 'song-yuan' | 'ming-qing'
-
-export const ERA_OF: Record<DynastyTag, Era> = {
-  'spring-autumn': 'pre-qin',
-  'warring-states': 'pre-qin',
-  qin: 'qin-han',
-  'chu-han': 'qin-han',
-  'western-han': 'qin-han',
-  wei: 'three-kingdoms',
-  shu: 'three-kingdoms',
-  wu: 'three-kingdoms',
-  qun: 'three-kingdoms',
-  jin: 'three-kingdoms',
-  'southern-northern': 'sui-tang',
-  sui: 'sui-tang',
-  tang: 'sui-tang',
-  'five-dynasties': 'sui-tang',
-  song: 'song-yuan',
-  yuan: 'song-yuan',
-  ming: 'ming-qing',
-  qing: 'ming-qing',
-}
+// 定义搬到了 src/content/eras.ts —— 战前檄文也要用它,而 src 不能 import scripts。
+// 方向:内容层是真相,这个构建期脚本是消费者。
+export { ERA_OF } from '../src/content/eras'
+export type { Era } from '../src/content/eras'
 
 // ---------- 定价表 ----------
 

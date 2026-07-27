@@ -744,6 +744,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
 
       {state.phase === 'mulligan' && (
         <MulliganOverlay
+          heroIds={[me.heroId, foe.heroId]}
           hand={me.hand}
           waiting={me.mulliganDone}
           onConfirm={(keepIids) => {
