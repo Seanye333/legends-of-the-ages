@@ -56,6 +56,7 @@ export function CampaignScreen({ onBack, onEnterMatch }: CampaignScreenProps) {
       heroIds: [mine.heroId, boss.heroId],
       deckIds: [mine.cardIds.slice(), bossDeck(boss.doctrine, boss.deckTier)],
       campaign: true,
+      bossId: boss.id,
       // 关底战的不对称全在这两行:Boss 血更厚、主公技更强。
       // 玩家侧保持自己主公的正常配置 —— 不对称只加在对手身上。
       heroPowersOverride: [myHero?.power, boss.power],

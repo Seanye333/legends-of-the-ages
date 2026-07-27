@@ -52,6 +52,7 @@ export function ExpeditionScreen({ onBack, onEnterMatch }: ExpeditionScreenProps
       heroIds: [run.heroId, boss.heroId],
       deckIds: [run.deck.slice(), bossDeck(boss.doctrine, boss.deckTier)],
       expedition: true,
+      bossId: boss.id,
       heroPowersOverride: [myHero?.power, boss.power],
       heroHpsOverride: [(myHero?.hp ?? START_HP) + bonusHp, boss.hp + (mod?.bossHpBonus ?? 0)],
       modifiersOverride: [playerMods, bossMods],

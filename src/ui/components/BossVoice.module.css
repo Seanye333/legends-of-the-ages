@@ -1,0 +1,38 @@
+/* Boss 台词气泡:贴在敌方主帅面板下方,不挡牌桌 */
+.bubble {
+  position: absolute;
+  top: 74px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(78vw, 460px);
+  padding: 7px 14px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(46, 24, 20, 0.96), rgba(28, 15, 12, 0.96));
+  border: 1px solid rgba(208, 90, 74, 0.55);
+  color: #f0d8c8;
+  font-family: var(--font-display);
+  font-size: 14px;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+  text-align: center;
+  pointer-events: none;
+  z-index: 24;
+  animation: bossVoiceIn 260ms ease-out;
+}
+
+@keyframes bossVoiceIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bubble {
+    animation: none;
+  }
+}

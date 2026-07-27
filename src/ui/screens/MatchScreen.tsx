@@ -25,6 +25,7 @@ import { CardInspect } from '../components/CardInspect'
 import { TutorialCoach } from '../components/TutorialCoach'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { TurnRope } from '../components/TurnRope'
+import { BossVoice } from '../components/BossVoice'
 import { GraveyardPanel } from '../components/GraveyardPanel'
 import { EmoteWheel } from '../components/EmoteWheel'
 import type { CardDef } from '../../engine/types'
@@ -80,6 +81,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
     undoPuzzle,
     markPuzzlePeeked,
     practice,
+    bossId,
   } = useMatch()
   const puzzleDef = puzzleId ? puzzleDefById(puzzleId) : undefined
   const [showHint, setShowHint] = useState(false)
@@ -588,6 +590,9 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
           {t('轮到你了', 'Your Turn')}
         </div>
       )}
+
+      {/* 关底 Boss 的战场台词 —— 十六个历史人物打起来之后不该再是同一个沉默的机器 */}
+      <BossVoice bossId={bossId} state={state} events={lastEvents} />
 
       {/* 竖屏提示:牌桌是按横屏设计的,窄屏竖着会被压扁(纯 CSS 控制显隐) */}
       <div className={styles.rotateHint}>

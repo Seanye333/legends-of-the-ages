@@ -11,8 +11,11 @@ export function cardName(defId: string | undefined): LocalizedText {
   return CARDS_BY_ID[defId]?.name ?? { zh: defId, en: defId }
 }
 
+// 主帅名。**必须回落到花名册**:关底 Boss / 远征 / 爬塔的对手用的是武将卡 id
+// (zhang-jiao 这种),它们不在 HEROES_BY_ID(那里只有 12 位可选主公)里。
+// 少了这一层回落,战报与主帅面板会直接把原始 id 显示给玩家 —— 实际发生过。
 export function heroName(heroId: string): LocalizedText {
-  return HEROES_BY_ID[heroId]?.name ?? { zh: heroId, en: heroId }
+  return HEROES_BY_ID[heroId]?.name ?? CARDS_BY_ID[heroId]?.name ?? { zh: heroId, en: heroId }
 }
 
 export interface EventTextCtx {

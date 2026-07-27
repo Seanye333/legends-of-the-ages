@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DECK_SIZE } from '../engine/types'
-import { BOSSES, bossDeck, bossTrial, TRIALS } from './campaign'
+import { BOSSES, bossDeck, bossTrial, bossPersonality, TRIALS } from './campaign'
+import { bossLines } from './bossLines'
 import { CARDS_BY_ID } from './cards'
 import { createGame } from '../engine/init'
 import { HEROES_BY_ID } from './overrides/heroes'
@@ -144,5 +145,22 @@ describe('campaign trials', () => {
       const obj = s.objective!
       expect(obj.kind === 'survive' ? undefined : obj.targetIid, `${bossId} 目标没解析到`).toBeDefined()
     }
+  })
+})
+
+describe('boss 台词', () => {
+  it('每一关都有四句 —— 缺一关就是那个对手在牌桌上一言不发', () => {
+    for (const b of BOSSES) {
+      const lines = bossLines(b.id)
+      expect(lines, b.id).toBeDefined()
+      for (const k of ['open', 'kill', 'low', 'win'] as const) {
+        expect(lines![k].zh.length, `${b.id}.${k}`).toBeGreaterThan(0)
+        expect(lines![k].en.length, `${b.id}.${k}`).toBeGreaterThan(0)
+      }
+    }
+  })
+
+  it('每一关都有性格 —— 否则十六个对手打法一样', () => {
+    for (const b of BOSSES) expect(bossPersonality(b.id), b.id).toBeDefined()
   })
 })

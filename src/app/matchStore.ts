@@ -47,6 +47,7 @@ export interface StartMatchArgs {
   tutorial?: boolean // 教学对局:对战画面挂教鞭浮层
   arena?: boolean // 竞技场对局:胜负记进当前 run,而不是普通战绩
   campaign?: boolean // 关底战:胜负记进冒险进度,首通发奖
+  bossId?: string
   history?: boolean // 历史名战:胜负记进名战进度,首通发奖(与 campaign 同路,另存进度)
   // 关底战的不对称配置(Boss 血量与主公技由内容层给)
   heroPowersOverride?: [HeroPowerDef | undefined, HeroPowerDef | undefined]
@@ -73,6 +74,7 @@ export interface StartMatchArgs {
   // 对手性格:覆盖 AI 的评分权重(关底 Boss 用 —— 曹操压场、司马懿苟血、项羽只顾打脸)。
   // 难度档不变,变的只是那一侧「什么叫局面好」。
   aiWeights?: Partial<EvalWeights>
+  // 关底 Boss id —— 只用来放台词(content/bossLines.ts),不参与任何结算
   // 卡组胜率:随便打时带上你这套卡组的内容哈希,终局按它记胜负
   deckKey?: string
 }
@@ -96,6 +98,7 @@ interface MatchStoreState {
   tutorial: boolean
   arena: boolean
   campaign: boolean
+  bossId: string | null
   history: boolean
   expedition: boolean
   weeklyBrawlWeek: string | null
@@ -257,6 +260,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
   tutorial: false,
   arena: false,
   campaign: false,
+  bossId: null,
   history: false,
   expedition: false,
   weeklyBrawlWeek: null,
@@ -331,6 +335,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       tutorial: args.tutorial === true,
       arena: args.arena === true,
       campaign: args.campaign === true,
+      bossId: args.bossId ?? null,
       history: args.history === true,
       expedition: args.expedition === true,
       weeklyBrawlWeek: args.weeklyBrawlWeek ?? null,
@@ -525,6 +530,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       tutorial: false,
       arena: false,
       campaign: false,
+      bossId: null,
       history: false,
       expedition: false,
       weeklyBrawlWeek: null,

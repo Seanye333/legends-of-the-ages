@@ -41,8 +41,12 @@ export function HeroPlate({
   const lang = useSettings((s) => s.language)
   const t = useT()
   const hero = HEROES_BY_ID[ps.heroId]
-  const nameZh = hero?.name.zh ?? ps.heroId
-  const name = hero ? (lang === 'en' ? hero.name.en : hero.name.zh) : ps.heroId
+  // 关底 Boss / 远征 / 爬塔的对手是**武将卡 id**,不在 HEROES_BY_ID 里 ——
+  // 不回落到花名册的话,面板上写的就是 `zhang-jiao` 这样的原始 id。
+  const heroCard = CARDS_BY_ID[ps.heroId]
+  const label = hero?.name ?? heroCard?.name
+  const nameZh = label?.zh ?? ps.heroId
+  const name = label ? (lang === 'en' ? label.en : label.zh) : ps.heroId
   const power = ps.heroPower
   const powerName = power ? (lang === 'en' ? power.name.en : power.name.zh) : ''
   const powerText = power ? (lang === 'en' ? power.text.en : power.text.zh) : ''
@@ -64,7 +68,7 @@ export function HeroPlate({
             className={`fx-flash ${fx.flash.kind === 'clash' ? 'fx-flash-clash' : 'fx-flash-hit'}`}
           />
         )}
-        <Portrait id={ps.heroId} nameZh={nameZh} doctrine={hero?.doctrine ?? 'neutral'} />
+        <Portrait id={ps.heroId} nameZh={nameZh} doctrine={hero?.doctrine ?? heroCard?.doctrine ?? 'neutral'} />
         <span className={styles.hp}>{ps.heroHp}</span>
         {ps.armor > 0 && <span className={styles.armor}>{ps.armor}</span>}
         {floats?.map((f) => (
