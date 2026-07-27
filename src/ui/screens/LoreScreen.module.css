@@ -191,3 +191,63 @@
   cursor: pointer;
 }
 .closeBtn:hover { border-color: var(--gold); color: #fff; }
+
+/* ---- 关系图谱 ---- */
+.relationList {
+  width: min(94vw, 760px);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding-bottom: 24px;
+}
+
+.relationHead {
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.16em;
+  color: var(--parchment-faint);
+  margin-top: 12px;
+}
+
+.relationRow {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(20, 16, 10, 0.7);
+  border-left: 2px solid var(--gold-bright);
+  color: var(--parchment);
+  cursor: pointer;
+  text-align: left;
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+}
+
+.rivalRow {
+  border-left-color: #d05a4a;
+}
+
+.relationName {
+  font-family: var(--font-display);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  color: var(--gold-bright);
+}
+
+.rivalRow .relationName {
+  color: #e07a68;
+}
+
+.relationMembers {
+  font-size: 12px;
+  color: var(--parchment);
+}
+
+.relationLore {
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--parchment-faint);
+  font-style: italic;
+}

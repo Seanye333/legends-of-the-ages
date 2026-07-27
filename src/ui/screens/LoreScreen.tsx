@@ -6,6 +6,7 @@ import { useCollection } from '../../app/collectionStore'
 import { Portrait } from '../components/Portrait'
 import { DOCTRINE_COLORS, dynastyName } from '../doctrineColors'
 import { usePickCompact, usePickText, useT } from '../i18n'
+import { ALL_BONDS, ALL_RIVALS, bondRoster, cardName, rivalLore } from '../../content/relations'
 import { playSfx } from '../sound'
 import styles from './LoreScreen.module.css'
 
@@ -24,6 +25,7 @@ export function LoreScreen({ onBack }: Props) {
   const owned = useCollection((s) => s.owned)
   const [selected, setSelected] = useState<string | null>(null)
   const [dynFilter, setDynFilter] = useState<string>('all')
+  const [showGraph, setShowGraph] = useState(false)
 
   // 有列传的签名卡,按朝代分组
   const entries = useMemo(
@@ -70,6 +72,80 @@ export function LoreScreen({ onBack }: Props) {
         )}
       </p>
 
+      {/* 关系图谱:31 条羁绊 + 29 对宿敌本来就是一张网络图。
+          此前它们只在结算里存在,玩家没有任何地方能**通览**这些历史关系 ——
+          而「通览」正是这个模式(名将列传 = 博物馆)该干的事。
+          不做力导向图:那在手机上点不准,也读不出「谁和谁」。列表按关系本身分组更清楚。 */}
+      <div className={styles.filters}>
+        <button
+          className={showGraph ? styles.filterBtn : styles.filterActive}
+          onClick={() => {
+            playSfx('buttonTap')
+            setShowGraph(false)
+          }}
+        >
+          {t('列传', 'Lives')}
+        </button>
+        <button
+          className={showGraph ? styles.filterActive : styles.filterBtn}
+          onClick={() => {
+            playSfx('buttonTap')
+            setShowGraph(true)
+          }}
+        >
+          {t('關係圖譜', 'Relations')}
+        </button>
+      </div>
+
+      {showGraph && (
+        <div className={styles.relationList}>
+          <div className={styles.relationHead}>
+            {t(`羈絆 · ${ALL_BONDS.length} 條`, `Bonds · ${ALL_BONDS.length}`)}
+          </div>
+          {ALL_BONDS.map((ref) => (
+            <button
+              key={ref.bond.id}
+              className={styles.relationRow}
+              onClick={() => {
+                playSfx('buttonTap')
+                setSelected(ref.anchor.id)
+                setShowGraph(false)
+              }}
+            >
+              <span className={styles.relationName}>{pickCompact(ref.bond.name)}</span>
+              <span className={styles.relationMembers}>
+                {bondRoster(ref)
+                  .map((id) => pickCompact(cardName(id)))
+                  .join(' · ')}
+              </span>
+            </button>
+          ))}
+          <div className={styles.relationHead}>
+            {t(`宿敵 · ${ALL_RIVALS.length} 對`, `Rivals · ${ALL_RIVALS.length}`)}
+          </div>
+          {ALL_RIVALS.map((ref) => (
+            <button
+              key={ref.rival.id}
+              className={`${styles.relationRow} ${styles.rivalRow}`}
+              onClick={() => {
+                playSfx('buttonTap')
+                setSelected(ref.anchor.id)
+                setShowGraph(false)
+              }}
+            >
+              <span className={styles.relationName}>{pickCompact(ref.rival.name)}</span>
+              <span className={styles.relationMembers}>
+                {pickCompact(cardName(ref.anchor.id))} ⇄ {pickCompact(cardName(ref.rival.foe))}
+              </span>
+              {rivalLore(ref.rival.id) && (
+                <span className={styles.relationLore}>{pick(rivalLore(ref.rival.id)!)}</span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {!showGraph && (
       <div className={styles.filters}>
         <button
           className={dynFilter === 'all' ? styles.filterActive : styles.filterBtn}
@@ -94,6 +170,9 @@ export function LoreScreen({ onBack }: Props) {
         ))}
       </div>
 
+      )}
+
+      {!showGraph && (
       <div className={styles.grid}>
         {shown.map((id) => {
           const card = CARDS_BY_ID[id]
@@ -119,6 +198,7 @@ export function LoreScreen({ onBack }: Props) {
           )
         })}
       </div>
+      )}
 
       {sel && selLore && (
         <div className={styles.overlay} onClick={() => setSelected(null)}>
