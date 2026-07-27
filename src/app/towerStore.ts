@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { towerFloor } from '../content/tower'
+import { offerBooks, shouldOfferBook } from '../content/warBooks'
 import { useCollection } from './collectionStore'
 import { useAchievements } from './achievementStore'
 
@@ -12,8 +13,13 @@ interface TowerState {
   floor: number // 当前要打的层
   best: number // 历史最高**通过**层
   active: boolean // 是否有一局正在打
+  // 兵书:这一趟爬塔已经拿到的(摔下来清空 —— 那是爬塔的规矩,和层数一起归零)
+  books: string[]
+  offered: string[] | null // 待选的三本;非空时爬塔页停在选书界面
+  rngState: number
   begin(): void
   settle(win: boolean): { merit: number; floor: number; newBest: boolean } | null
+  pickBook(id: string): void
   abandon(): void
   reset(): void
 }
@@ -24,6 +30,9 @@ export const useTower = create<TowerState>()(
       floor: 1,
       best: 0,
       active: false,
+      books: [],
+      offered: null,
+      rngState: 0x5eed,
 
       begin() {
         set({ active: true })
@@ -34,8 +43,15 @@ export const useTower = create<TowerState>()(
         const cleared = get().floor
         set({ active: false })
         if (!win) {
-          set({ floor: 1 }) // 摔下来从头爬,最高层保留
+          // 摔下来从头爬:层数与兵书一起归零,最高层保留(那是荣誉)
+          set({ floor: 1, books: [], offered: null })
           return null
+        }
+        // 每通三层给一次三选一 —— 登楼此前是「敌人越来越强,你原地不动」,
+        // 爬到十几层就变成纯粹的卡组质量检定,本局内一个决策都没有。
+        if (shouldOfferBook(cleared)) {
+          const roll = offerBooks(get().rngState, get().books)
+          set({ offered: roll.ids, rngState: roll.next })
         }
         const newBest = cleared > get().best
         if (newBest) {
@@ -50,12 +66,18 @@ export const useTower = create<TowerState>()(
         return { merit: 0, floor: cleared, newBest: false }
       },
 
+      pickBook(id) {
+        const { offered, books } = get()
+        if (!offered?.includes(id)) return
+        set({ books: [...books, id], offered: null })
+      },
+
       abandon() {
         set({ active: false })
       },
 
       reset() {
-        set({ floor: 1, best: 0, active: false })
+        set({ floor: 1, best: 0, active: false, books: [], offered: null, rngState: 0x5eed })
       },
     }),
     { name: 'qiangu-tower' },

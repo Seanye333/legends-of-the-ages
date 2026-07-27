@@ -6,6 +6,7 @@ import { useTower } from '../../app/towerStore'
 import { HEROES_BY_ID } from '../../content/overrides/heroes'
 import { START_HP } from '../../engine/types'
 import { useCollection } from '../../app/collectionStore'
+import { combineBooks, WAR_BOOKS_BY_ID } from '../../content/warBooks'
 import { launchMatch } from '../matchSetup'
 import { DOCTRINE_COLORS, DOCTRINE_NAME } from '../doctrineColors'
 import { Portrait } from '../components/Portrait'
@@ -27,6 +28,9 @@ export function TowerScreen({ onBack, onEnterMatch }: Props) {
   const floor = useTower((s) => s.floor)
   const best = useTower((s) => s.best)
   const begin = useTower((s) => s.begin)
+  const books = useTower((s) => s.books)
+  const offered = useTower((s) => s.offered)
+  const pickBook = useTower((s) => s.pickBook)
   const customDecks = useCollection((s) => s.customDecks)
   const [deckIndex, setDeckIndex] = useState(0)
   const myDecks = [...PRECON_DECKS, ...customDecks]
@@ -42,15 +46,49 @@ export function TowerScreen({ onBack, onEnterMatch }: Props) {
     playSfx('duel')
     haptic('impact')
     const myHero = HEROES_BY_ID[mine.heroId]
+    // 兵书:这一趟已经拿到的全部合成开局修正(与远征宝物同一个形状)
+    const { bonusHp, modifiers } = combineBooks(books)
     launchMatch({
       heroIds: [mine.heroId, current.heroId],
       deckIds: [mine.cardIds.slice(), towerDeck(current)],
       tower: true,
       heroPowersOverride: [myHero?.power, current.power],
-      heroHpsOverride: [myHero?.hp ?? START_HP, current.hp],
-      modifiersOverride: [undefined, current.enemyModifiers],
+      heroHpsOverride: [(myHero?.hp ?? START_HP) + bonusHp, current.hp],
+      modifiersOverride: [modifiers, current.enemyModifiers],
     })
     onEnterMatch()
+  }
+
+  // 选兵书:通三层给一次三选一。停在这一屏,选完才继续爬。
+  if (offered && offered.length > 0) {
+    return (
+      <div className={styles.screen}>
+        <header className={styles.head}>
+          <h2 className={styles.title}>{t('登楼 · 授兵書', 'The Tower · Take a Treatise')}</h2>
+        </header>
+        <div className={styles.deckPicker}>
+          {offered.map((id) => {
+            const b = WAR_BOOKS_BY_ID[id]
+            if (!b) return null
+            return (
+              <button
+                key={id}
+                className={styles.deckBtn}
+                onClick={() => {
+                  playSfx('cardPlay')
+                  haptic('impact')
+                  pickBook(id)
+                }}
+              >
+                <b>{pickCompact(b.name)}</b>
+                <br />
+                {pickCompact(b.text)}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+    )
   }
 
   return (
