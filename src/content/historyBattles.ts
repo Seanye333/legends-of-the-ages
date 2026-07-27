@@ -92,7 +92,7 @@ export const HISTORY_BATTLES: HistoryBattle[] = [
     heroId: 'hist-goujian',
     doctrine: 'separatist',
     hp: 36,
-    deckTier: 0.85,
+    deckTier: 0.7,
     power: power(
       'hbp-woxin',
       { zh: '臥薪嘗膽', en: 'Sleeping on Brushwood' },
@@ -511,7 +511,7 @@ export const HISTORY_BATTLES: HistoryBattle[] = [
     },
     heroId: 'hist-qi-jiguang',
     doctrine: 'royal',
-    hp: 46,
+    hp: 40,
     deckTier: 0.75,
     power: power(
       'hbp-yuanyang',

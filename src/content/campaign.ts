@@ -31,11 +31,19 @@ import { CARDS_BY_ID, COLLECTIBLE_CARDS } from './cards'
 // 这一行以前写的是「固定用名将」,那是错的,一直没人对过。
 //
 // 曲线是拿 sim-campaign 的基准尺(AI_NORMAL,双方同档)调出来的:
-//   60 / 50 / 50 / 42 / 48 / 40 / 30 / 17 %
+//   第一章 77 / 57 / 67 / 48 / 47 / 45 / 20 / 20 %
+//   第二章 53 / 37 / 43 / 42 / 37 / 32 / 25 / 17 %
 // 真人玩家强于贪心 AI,所以这组数字是**下限**,实际体感会更松一些。
-// (第六卡包把大量势力/流派卡灌进了 Boss 抽取的池子,曲线被扰动过,已用
-//  tune-campaign 重搜 + 手工平掉孫策的凸点重调。孫策的 tier→强度关系是反的
-//  —— 卡池重做费用曲线后每个 Boss 各不相同,只能实测,不能靠 tier 大小推。)
+//
+// 这套 tier 是**机制播种重做之后重搜的**。播种重做把带效果的卡从 55% 提到 80%,
+// 而效果是从身材里买的 —— Boss 抽到的卡整体变软,旧的一组 tier 直接失效
+// (趙匡胤从 32% 飙到 87%、李世民从 20% 到 53%)。这不是 bug:
+// **卡池一动,冒险曲线就得重调**,sim-campaign 就是干这个的。
+//
+// 重搜时把 tune-campaign 从二分改成了**网格扫描** —— tier→强度非单调
+// (孫策的关系甚至是反的),二分会顺着局部斜率跑偏,报出来的建议填回去就是凸点。
+// 另外 60 局的噪声有 ±6%,单点异常先加样本量复测再动手:呂布用 60 局量到 38%、
+// 90 局量到 57%,差的那 19 个点全是噪声。
 //
 // **换成名将档(多一层前瞻)整条曲线会压平**,实测 `BOSS_AI=general`:
 //   52 / 47 / 48 / 43 / 50 / 48 / 25 / 23 %
@@ -90,7 +98,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'fame',
     hp: 30,
-    deckTier: 0.62,
+    deckTier: 0.15,
     power: power(
       'bp-taiping',
       { zh: '太平要術', en: 'Way of Great Peace' },
@@ -112,7 +120,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'hegemonic',
     hp: 34,
-    deckTier: 0.84,
+    deckTier: 0.75,
     power: power(
       'bp-fenjing',
       { zh: '焚城', en: 'Raze' },
@@ -134,7 +142,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'hegemonic',
     hp: 36,
-    deckTier: 0.82,
+    deckTier: 0.45,
     power: power(
       'bp-wushuang',
       { zh: '無雙', en: 'Peerless Might' },
@@ -159,7 +167,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'royal',
     hp: 38,
-    deckTier: 0.28,
+    deckTier: 0.9,
     // 这一关的调校记录(结论已并入 bossDeck 的注释,这里只留因果):
     // 原技能是「抽一张牌 + 2 点护甲」,实测玩家胜率 75%,比第 1 关还好打。
     // 换成「召唤 1 个 1/1 + 2 护甲」后仍是 77% —— 说明瓶颈不在技能。
@@ -187,7 +195,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'separatist',
     hp: 40,
-    deckTier: 0.50,
+    deckTier: 0.45,
     power: power(
       'bp-xiaoba',
       { zh: '小霸王', en: 'Conqueror’s Charge' },
@@ -212,7 +220,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'separatist',
     hp: 42,
-    deckTier: 0.23,
+    deckTier: 0.0,
     power: power(
       'bp-huogong',
       { zh: '火攻', en: 'Fire Attack' },
@@ -234,7 +242,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'ritual',
     hp: 45,
-    deckTier: 0.23,
+    deckTier: 0.0,
     power: power(
       'bp-bagua',
       { zh: '八陣圖', en: 'Stone Sentinel Maze' },
@@ -259,7 +267,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'hegemonic',
     hp: 52,
-    deckTier: 0.68,
+    deckTier: 0.0,
     power: power(
       'bp-weiwu',
       { zh: '魏武揮鞭', en: 'The Tyrant’s Lash' },
@@ -292,7 +300,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'hegemonic',
     hp: 52, // 与曹操持平(单调不破);白起要当开章软目标,血量这条弱旋钮也一并往下压
-    deckTier: 0.9, // 最软档:霸道深池太硬,开章需要它给到最弱
+    deckTier: 0.0,
     // 长平的「歼灭」本想给 3 点,但白起 = 霸道深池 + 每回合稳定点杀,实测哪怕最软卡组
     // 玩家胜率也压不过 33%,当不成开章的软目标;降到 2 点(与董卓同机制)+ 最软档 ≈ 40%。
     power: power(
@@ -317,7 +325,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'hegemonic',
     hp: 56,
-    deckTier: 0.79,
+    deckTier: 0.0,
     power: power(
       'bp-pofu',
       { zh: '破釜沉舟', en: 'Burn the Boats' },
@@ -340,7 +348,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'hegemonic',
     hp: 58,
-    deckTier: 0.79,
+    deckTier: 0.45,
     power: power(
       'bp-duoduo',
       { zh: '多多益善', en: 'The More the Merrier' },
@@ -363,7 +371,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'hegemonic',
     hp: 60,
-    deckTier: 0.7,
+    deckTier: 0.45,
     power: power(
       'bp-fenglang',
       { zh: '長驅直入', en: 'Deep Strike' },
@@ -386,7 +394,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'royal',
     hp: 62,
-    deckTier: 0.03,
+    deckTier: 0.0,
     // 王道深池已到最强档(tier 0.03)仍只把玩家压到 ~44%,当不成第 13 关的坡度,
     // 反成中段的凸点;把 +1/+1 提到 +2/+2(仍带冲锋)让它真能一波带走,回落到 ~34%。
     power: power(
@@ -414,7 +422,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'royal',
     hp: 64,
-    deckTier: 0.03,
+    deckTier: 0.6,
     power: power(
       'bp-huangpao',
       { zh: '黃袍加身', en: 'The Yellow Robe' },
@@ -437,7 +445,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'royal',
     hp: 66,
-    deckTier: 0.03,
+    deckTier: 0.6,
     power: power(
       'bp-yuejiajun',
       { zh: '岳家軍', en: 'The Yue Army' },
@@ -463,7 +471,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'royal',
     hp: 70,
-    deckTier: 0.03,
+    deckTier: 0.6,
     power: power(
       'bp-beifa',
       { zh: '北伐', en: 'The Northern Expedition' },

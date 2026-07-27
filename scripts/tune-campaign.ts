@@ -62,33 +62,40 @@ function winRate(boss: BossDef, tier: number): number {
   return (wins / GAMES) * 100
 }
 
-console.log(`tune-campaign: 每次测量 ${GAMES} 局,二分搜索卡组分位 tier\n`)
+// **网格扫描,不是二分。**
+//
+// 原来这里是二分,前提写在注释里:「tier 越大卡组越弱 → 玩家胜率越高,单调递增」。
+// 那个前提是错的,而且 campaign.ts 自己的注释早就记着「tier→强度非单调,只能实测」
+// (孫策的关系甚至是反的)。在非单调函数上二分,会顺着一段局部斜率跑偏到另一侧,
+// 报出来的「建议值」看着收敛,填回去一跑就是凸点 —— 諸葛亮 13% / 岳飛 57% 就是这么来的。
+//
+// 换成扫全格:六个 tier 各测一遍,取离目标最近的。代价是每个 Boss 多测两轮,
+// 换来的是**结果可信**,而且顺带把整条 tier→胜率曲线打印出来 ——
+// 下次卡池再动,一眼就能看出这个 Boss 的曲线是正是反。
+const GRID = [0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9]
+
+console.log(`tune-campaign: 每次测量 ${GAMES} 局,扫描 ${GRID.length} 档卡组分位 tier\n`)
 const t0 = performance.now()
 const suggested: number[] = []
 
 for (let i = 0; i < BOSSES.length; i++) {
   const boss = BOSSES[i]
   const target = TARGETS[i] ?? 40
-  // tier 越大卡组越弱 → 玩家胜率越高,单调递增,可以二分
-  let lo = 0
-  let hi = 0.9
-  let best = boss.deckTier
+  const rates = GRID.map((t) => winRate(boss, t))
+  let best = GRID[0]
   let bestErr = Infinity
-  for (let step = 0; step < 6; step++) {
-    const mid = (lo + hi) / 2
-    const rate = winRate(boss, mid)
-    const err = Math.abs(rate - target)
+  GRID.forEach((t, k) => {
+    const err = Math.abs(rates[k] - target)
     if (err < bestErr) {
       bestErr = err
-      best = Math.round(mid * 100) / 100
+      best = t
     }
-    if (rate > target) hi = mid
-    else lo = mid
-  }
+  })
   suggested.push(best)
   console.log(
     `${String(i + 1).padStart(2)}. ${boss.name.zh.padEnd(4)} 目标 ${String(target).padStart(2)}%  ` +
-      `建议 tier ${best.toFixed(2)}(当前 ${boss.deckTier})  实测偏差 ±${Math.round(bestErr)}%`,
+      `建议 tier ${best.toFixed(2)}(当前 ${boss.deckTier})  偏差 ±${Math.round(bestErr)}%\n` +
+      `      曲线 ${GRID.map((t, k) => `${t.toFixed(2)}:${Math.round(rates[k])}%`).join('  ')}`,
   )
 }
 
