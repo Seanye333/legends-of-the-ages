@@ -238,3 +238,63 @@ describe('风味文本', () => {
     expect(naked).toEqual([])
   })
 })
+
+// ---------------------------------------------------------------------------
+// 「卡面写的 = 卡真会做的」
+//
+// 卡池是**生成层 ⊕ 手写覆盖层**的浅合并,于是存在一条隐蔽的漏法:
+// 覆盖只改 `text` 与 `keywords`,生成层播下去的战吼/光环**从手写文本底下漏上来** ——
+// 卡面一个字没提,对局里却真的会触发。实际踩到过:
+//   · 高順 背了一道看不见的「你的其他武将+1/+0」光环;
+//   · 廖化 背了一条看不见的「战吼:交换敌将攻血」。
+// 233 张签名卡里有 102 张刻意不带效果,全都在这条漏法的射程内 —— 而它们是关羽、张飞、
+// 卫青、李靖这一批门面卡。修法是管线不给签名卡播种(见 import-content 的 handAuthored),
+// 这两条闸门负责让它不再复发。
+describe('卡面文本与机制一致', () => {
+  const KEYWORD_ZH: Record<string, string> = {
+    charge: '衝鋒',
+    rush: '突襲',
+    guard: '守護',
+    windfury: '連擊',
+    lifesteal: '吸血',
+    stealth: '潛行',
+    duel: '單挑',
+    poison: '劇毒',
+    divineShield: '鐵壁',
+    trample: '碾壓',
+  }
+
+  it('武将带的每个关键词都必须写在卡面上 —— 看不见的关键词等于骗玩家', () => {
+    const bad = COLLECTIBLE_CARDS.filter((c) => c.type === 'general' && c.keywords.length > 0)
+      .flatMap((c) =>
+        c.keywords
+          .filter((k) => !(c.text?.zh ?? '').includes(KEYWORD_ZH[k] ?? k))
+          .map((k) => `${c.id}(${c.name.zh}) 带 ${k} 但文本里没有「${KEYWORD_ZH[k] ?? k}」`),
+      )
+    expect(bad).toEqual([])
+  })
+
+  // 钉的是**管线不变量**而不是最终卡面:签名卡在生成层就该是白板,
+  // 效果全部由 signature.ts 或后续卡包手写叠上去(项羽的过载、荆轲的连击就来自 pack4,
+  // 那是正当的)。在生成层查,既精确又不会冤枉后续卡包。
+  it('生成层不给签名卡播种 —— 否则手写文本会盖住播下去的效果', () => {
+    const EFFECT_FIELDS = [
+      'battlecry', 'deathrattle', 'aura', 'choose', 'combo', 'secret',
+      'endOfTurn', 'startOfTurn', 'onAttack', 'onDamaged', 'onSpellCast',
+      'enrage', 'spellDamage', 'overload',
+    ] as const
+    const seeded: string[] = []
+    const genById = new Map(GENERATED_CARDS.map((c) => [c.id, c as unknown as Record<string, unknown>]))
+    for (const id of Object.keys(SIGNATURE_OVERRIDES)) {
+      const g = genById.get(id)
+      if (!g) continue
+      for (const f of EFFECT_FIELDS) {
+        if (g[f] != null) seeded.push(`${id}(${CARDS_BY_ID[id]?.name.zh}) 生成层被播了 ${f}`)
+      }
+      if ((g.keywords as unknown[])?.length) {
+        seeded.push(`${id}(${CARDS_BY_ID[id]?.name.zh}) 生成层被播了关键词`)
+      }
+    }
+    expect(seeded).toEqual([])
+  })
+})

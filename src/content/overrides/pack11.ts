@@ -27,7 +27,7 @@ export const PACK11_CARDS: CardDef[] = [
     // 耐战的突袭身:落地就能咬一口,此后每次出手都续一张牌——进攻即抽牌的引擎。
     onAttack: { ops: [{ op: 'draw', count: 1 }] },
     text: {
-      zh: '突袭。攻击后:抽一張牌。陷陣者先登,亦先取賞。',
+      zh: '突襲。攻擊後:抽一張牌。陷陣者先登,亦先取賞。',
       en: 'Rush. After this attacks, draw a card.',
     },
   },
@@ -62,7 +62,7 @@ export const PACK11_OVERRIDES: Record<string, Partial<CardDef>> = {
   budugen: {
     onAttack: { ops: [{ op: 'draw', count: 1 }] },
     text: {
-      zh: '突袭。攻击后:抽一張牌。鮮卑輕騎,來去如風。',
+      zh: '突襲。攻擊後:抽一張牌。鮮卑輕騎,來去如風。',
       en: 'Rush. After this attacks, draw a card.',
     },
   },
@@ -71,7 +71,7 @@ export const PACK11_OVERRIDES: Record<string, Partial<CardDef>> = {
   'ling-tong': {
     onAttack: { ops: [{ op: 'buffStats', attack: 1, health: 1, target: 'self' }] },
     text: {
-      zh: '突袭。攻击后:獲得 +1/+1。江表虎臣,愈戰愈勇。',
+      zh: '突襲。攻擊後:獲得 +1/+1。江表虎臣,愈戰愈勇。',
       en: 'Rush. After this attacks, gain +1/+1.',
     },
   },
@@ -80,7 +80,7 @@ export const PACK11_OVERRIDES: Record<string, Partial<CardDef>> = {
   'gou-fu': {
     onAttack: { ops: [{ op: 'summon', defId: 'token-xiangyong', count: 1 }] },
     text: {
-      zh: '突袭。攻击后:召喚一個 1/1 的鄉勇。裹挾流民,愈眾愈盛。',
+      zh: '突襲。攻擊後:召喚一個 1/1 的鄉勇。裹挾流民,愈眾愈盛。',
       en: 'Rush. After this attacks, summon a 1/1 Village Levy.',
     },
   },
