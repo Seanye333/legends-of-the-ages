@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 
 // 群雄连斩:冒险全通之后才露出来。
 // 这条闸门同时钉住「没通关时不该看见」和「通关后能开阵」。
-const ALL_BOSSES = (readFileSync('src/content/campaign.ts', 'utf8').match(/^    id: 'boss-/gm) ?? [])
+const ALL_BOSSES = (readFileSync('src/content/campaign.ts', 'utf8').match(/^ {4}id: 'boss-/gm) ?? [])
   .length
 
 test('未通关时标题页没有连斩入口', async ({ page }) => {
