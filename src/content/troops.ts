@@ -25,7 +25,10 @@ import type { CardDef, TroopType } from '../engine/types'
 // 兵种只覆盖不到一半的武将,这条轴根本立不住,「带够三个骑兵」的门槛也变得极难。
 // 所以谋士自己就是一个兵种(advisor):每个武将都恰好属于一种,
 // 轴是满的,顺带「谋士流」也成了一条可构筑的路。
-// 锦囊、装备、衍生物仍然没有兵种 —— 它们不是人。
+// 锦囊与装备没有兵种 —— 它们不是人。
+// **衍生物有**:「鐵騎」字面上就是骑兵,把它排除在外等于让召唤流整个吃不到兵种协同。
+// 但衍生物的名字比它的数值更可信,所以内容层可以在卡上**直接写死** troop,
+// 派生只负责填空(见 cards.ts:`withText.troop ?? deriveTroop(withText)`)。
 //
 // 但**全部 1204 张谋士都归 advisor 又太挤**(54% 挤在一个兵种里,
 // 剩下五个分 46%,谁也长不起来)。所以只有**守型**谋士(血 > 攻)算纯谋士,
@@ -55,7 +58,6 @@ const CAVALRY_DYNASTIES = new Set(['warring-states', 'qin', 'western-han', 'tang
 
 export function deriveTroop(card: CardDef): TroopType | undefined {
   if (card.type !== 'general') return undefined
-  if (card.token) return undefined
   // 守型谋士(血 > 攻)= 纯谋士;偏攻的那批继续往下走,按战场角色入列
   if (card.archetype === 'strategist' && (card.health ?? 0) > (card.attack ?? 0)) return 'advisor'
 

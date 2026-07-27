@@ -212,7 +212,8 @@ function withFieldText(card: CardDef): CardDef {
 // 放在前面的话,pack 覆盖给的冲锋/守护就还没进来,推出来的兵种和卡面对不上。
 export const CARDS: CardDef[] = MERGED_CARDS.map((c) => {
   const withText = withFieldText(withBondRivalText(c, NAME_BY_ID))
-  const troop = deriveTroop(withText)
+  // 内容层写死的兵种优先(衍生物按名字定,比按数值猜准)
+  const troop = withText.troop ?? deriveTroop(withText)
   return troop ? { ...withText, troop } : withText
 })
 

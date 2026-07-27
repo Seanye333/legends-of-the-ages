@@ -65,14 +65,34 @@ export function legalCommands(state: GameState, player: PlayerIdx, lib: CardLibr
             .filter((c) => !hasKeyword(c, 'stealth'))
             .map((c) => ({ kind: 'general', iid: c.iid }))
         : []
-      if (needsChosen && pool.length > 0) {
-        for (const target of pool) commands.push({ type: 'PlayCard', iid: card.iid, target })
-      } else if (duelTargets.length > 0) {
-        // 单挑可选:带目标与不带目标都合法
-        for (const target of duelTargets) commands.push({ type: 'PlayCard', iid: card.iid, target })
-        commands.push({ type: 'PlayCard', iid: card.iid })
-      } else {
-        commands.push({ type: 'PlayCard', iid: card.iid })
+      // 摆放位置:**只在阵型(adjacent 光环)真的在场时才枚举**。
+      //
+      // 第十九卡包让 board 顺序第一次有了意义,但 legalCommands 一直只发
+      // 「打出这张牌」而不带 boardPos —— 于是 AI 永远把牌摆在最右,
+      // 求解器/军师/规划器也**根本看不见**任何位置相关的线。阵型卡在 AI 手里等于废牌。
+      //
+      // 但无差别枚举位置会把每张随从牌的分支乘以 7,而 99.9% 的局面里位置
+      // 语义上毫无差别。所以只在「场上或手上这张有 adjacent 光环」时才展开 ——
+      // 精确、且对既有搜索成本零影响。
+      const positionMatters =
+        p.board.length > 0 &&
+        (def.aura?.scope === 'adjacent' ||
+          p.board.some((u) => lib[u.defId]?.aura?.scope === 'adjacent'))
+      const positions = positionMatters
+        ? Array.from({ length: p.board.length + 1 }, (_, i) => i)
+        : [undefined]
+      for (const boardPos of positions) {
+        if (needsChosen && pool.length > 0) {
+          for (const target of pool) commands.push({ type: 'PlayCard', iid: card.iid, target, boardPos })
+        } else if (duelTargets.length > 0) {
+          // 单挑可选:带目标与不带目标都合法
+          for (const target of duelTargets) {
+            commands.push({ type: 'PlayCard', iid: card.iid, target, boardPos })
+          }
+          commands.push({ type: 'PlayCard', iid: card.iid, boardPos })
+        } else {
+          commands.push({ type: 'PlayCard', iid: card.iid, boardPos })
+        }
       }
     } else if (def.type === 'equipment') {
       // 装备:目标为任一友方在场武将;无友军则不可打出

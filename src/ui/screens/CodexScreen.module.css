@@ -170,3 +170,18 @@
     grid-column: 1 / -1;
   }
 }
+
+/* 实练入口:讲堂里唯一一个会把你带走的按钮,所以做得比正文显眼一档 */
+.lessonBtn {
+  align-self: flex-start;
+  margin-top: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: #1a1206;
+  background: linear-gradient(180deg, #d4a84a, #8a6c26);
+  border: none;
+  cursor: pointer;
+}

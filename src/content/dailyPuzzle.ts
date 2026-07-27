@@ -1,6 +1,7 @@
 // 每日谜题:从挖矿池(dailyPuzzles.ts)里按日期确定性地选一题,并把生成题包装成
 // 与手搓题同构的 LethalPuzzle(补合成的标题/情境/提示),这样 UI 与结算面板零改动复用。
 import type { LethalPuzzle } from './lethalPuzzles'
+import { LESSONS_BY_ID } from './lessons'
 import { LETHAL_PUZZLES_BY_ID } from './lethalPuzzles'
 import { DAILY_POOL, type GeneratedPuzzle } from './dailyPuzzles'
 import { HEROES_BY_ID } from './overrides/heroes'
@@ -59,6 +60,9 @@ export function dailyPuzzleFor(dateStr: string): LethalPuzzle | null {
 export function puzzleDefById(id: string): LethalPuzzle | undefined {
   const authored = LETHAL_PUZZLES_BY_ID[id]
   if (authored) return authored
+  // 讲堂实练也走谜题通道(残局 + 结束回合即判负 + 不记战绩),所以在这里认一下
+  const lesson = LESSONS_BY_ID[id]
+  if (lesson) return lesson
   const gen = DAILY_POOL.find((g) => g.id === id)
   return gen ? toLethalPuzzle(gen) : undefined
 }

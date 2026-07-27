@@ -5,18 +5,21 @@ import { CardFace } from '../components/CardFace'
 import { CardInspect } from '../components/CardInspect'
 import { fakeInstance } from './CollectionScreen'
 import { usePickText, useT } from '../i18n'
+import { lessonForMechanic } from '../../content/lessons'
 import { playSfx } from '../sound'
 import styles from './CodexScreen.module.css'
 
 interface CodexScreenProps {
   onBack: () => void
+  // 开一局实练(走谜题通道)。不传则讲堂仍是纯手册。
+  onStartLesson?: (lessonId: string) => void
 }
 
 // 兵法讲堂:关键词 / 机制 / 对局规则 / 敌手档位的可查手册。
 //
 // 教程只讲了「出牌—攻击—结束回合」。守护到底强制什么、铁壁挡的是一次还是一点、
 // 连击和連擊(风怒)是不是一回事 —— 这些以前没有任何地方能查。
-export function CodexScreen({ onBack }: CodexScreenProps) {
+export function CodexScreen({ onBack, onStartLesson }: CodexScreenProps) {
   const t = useT()
   const pick = usePickText()
   const [query, setQuery] = useState('')
@@ -91,6 +94,21 @@ export function CodexScreen({ onBack }: CodexScreenProps) {
                   {open && (
                     <div className={styles.detail}>
                       {entry.note && <p className={styles.note}>{pick(entry.note)}</p>}
+                      {/* 实练:讲堂此前是一本**只能读的手册**。
+                          兵种/阵型/战场这几条新轴比关键词难懂一档,读完仍然不会用 ——
+                          借斩杀谜题那整条管线(残局 + 求解器验证 + 谜题对局通道)给一道题。 */}
+                      {lessonForMechanic(entry.id) && onStartLesson && (
+                        <button
+                          className={styles.lessonBtn}
+                          onClick={() => {
+                            const lesson = lessonForMechanic(entry.id)!
+                            playSfx('duel')
+                            onStartLesson(lesson.id)
+                          }}
+                        >
+                          {t('上手试一试 ›', 'Try it ›')}
+                        </button>
+                      )}
                       {ex && (
                         <div className={styles.exampleWrap}>
                           <span className={styles.exampleLabel}>{t('例', 'e.g.')}</span>

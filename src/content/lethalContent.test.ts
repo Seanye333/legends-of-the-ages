@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { LETHAL_PUZZLES, LETHAL_PUZZLES_BY_ID, puzzleGameConfig } from './lethalPuzzles'
 import { CARDS_BY_ID } from './cards'
+import { LESSONS } from './lessons'
+import { CODEX } from '../ui/codex'
 import { HEROES_BY_ID } from './overrides/heroes'
 import { createGame } from '../engine/init'
 import { applyCommand } from '../engine/reducer'
@@ -52,4 +54,32 @@ describe('斩杀谜题内容自检', () => {
       expect(cur.winner).toBe(me)
     })
   }
+})
+
+// ---- 講堂實練 ----
+//
+// 实练和谜题共用一条管线,所以也共用同一道闸门:必须有解、且不能是「全体打脸就赢」。
+// 多一条它自己的:每一课必须挂在讲堂真实存在的词条上,否则那一课永远没人点得到。
+describe('讲堂实练', () => {
+  it('每一课都有解,且不是平凡打脸', () => {
+    for (const lesson of LESSONS) {
+      const s = createGame(puzzleGameConfig(lesson), CARDS_BY_ID)
+      expect(trivialFaceLethal(s, 0), `${lesson.id} 是平凡解`).toBe(false)
+      const res = solveLethal(s, 0, CARDS_BY_ID)
+      expect(res, `${lesson.id} 无解`).not.toBeNull()
+    }
+  })
+
+  it('挂的词条真实存在 —— 否则那一课永远没人点得到', () => {
+    const ids = new Set(CODEX.flatMap((s) => s.entries.map((e) => e.id)))
+    for (const lesson of LESSONS) {
+      expect(ids.has(lesson.mechanic), `${lesson.id} → ${lesson.mechanic}`).toBe(true)
+    }
+  })
+
+  it('id 唯一,且不与手搓谜题撞车', () => {
+    const ids = LESSONS.map((l) => l.id)
+    expect(new Set(ids).size).toBe(ids.length)
+    for (const id of ids) expect(id.startsWith('lesson-')).toBe(true)
+  })
 })

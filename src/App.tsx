@@ -1,3 +1,6 @@
+import { LESSONS_BY_ID } from './content/lessons'
+import { HEROES_BY_ID } from './content/overrides/heroes'
+import { launchMatch } from './ui/matchSetup'
 import { Suspense, lazy, useState } from 'react'
 import { TitleScreen } from './ui/screens/TitleScreen'
 import { MatchScreen } from './ui/screens/MatchScreen'
@@ -70,6 +73,7 @@ export type Screen =
   | 'lethal'
   | 'practice'
 
+// 讲堂实练走谜题通道:launchMatch 在这一层调,CodexScreen 只负责说「开哪一课」
 export default function App() {
   const [screen, setScreen] = useState<Screen>('title')
   const back = () => setScreen('title')
@@ -118,7 +122,27 @@ export default function App() {
     case 'codex':
       return (
         <Suspense fallback={<ScreenFallback />}>
-          <CodexScreen onBack={back} />
+          <CodexScreen
+            onBack={back}
+            onStartLesson={(lessonId) => {
+              const lesson = LESSONS_BY_ID[lessonId]
+              if (!lesson) return
+              launchMatch({
+                heroIds: lesson.heroes,
+                deckIds: [[], []],
+                heroPowersOverride: [
+                  HEROES_BY_ID[lesson.heroes[0]]?.power,
+                  HEROES_BY_ID[lesson.heroes[1]]?.power,
+                ],
+                scenario: lesson.scenario,
+                puzzle: true,
+                puzzleId: lesson.id,
+              })
+              // 打完回讲堂,而不是回标题页 —— 玩家来这儿是在读手册
+              setAfterMatch('codex')
+              setScreen('match')
+            }}
+          />
         </Suspense>
       )
     case 'arena':
