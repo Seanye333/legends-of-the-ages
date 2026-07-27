@@ -115,6 +115,21 @@ export function applyCommand(
       checkGameEnd(next, events)
       return { ok: true, state: next, events }
     }
+    case 'UpgradeHeroPower': {
+      if (next.phase !== 'main') return { ok: false, error: 'not-main-phase' }
+      if (player !== next.activePlayer) return { ok: false, error: 'not-your-turn' }
+      const p = next.players[player]
+      const up = p.heroPower?.upgrade
+      if (!up) return { ok: false, error: 'no-upgrade' }
+      const price = Math.max(0, p.heroPower?.upgradeCost ?? 0)
+      if (p.mana.current < price) return { ok: false, error: 'not-enough-mana' }
+      p.mana.current -= price
+      // 整份换掉 —— 升级后的那份自己也可以再带 upgrade,天然支持多级
+      p.heroPower = up
+      p.heroPowerTier = (p.heroPowerTier ?? 0) + 1
+      events.push({ type: 'HeroPowerUpgraded', player, powerId: up.id })
+      return { ok: true, state: next, events }
+    }
     case 'Attack': {
       if (next.phase !== 'main') return { ok: false, error: 'not-main-phase' }
       if (player !== next.activePlayer) return { ok: false, error: 'not-your-turn' }

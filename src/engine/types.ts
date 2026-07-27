@@ -279,6 +279,12 @@ export interface HeroPowerDef {
   text: LocalizedText
   cost: number
   script: EffectScript
+  // 升级后的主公技(炉石「英雄牌」那个位置)。**整份嵌在这里,不查表** ——
+  // 引擎必须状态自足:主公技随 PlayerState.heroPower 走,存 id 再去内容层查
+  // 会让服务端权威对局与老战报依赖内容版本(见 ARCHITECTURE 主公技一节)。
+  upgrade?: HeroPowerDef
+  // 升级要花的法力。一局一次,不占「每回合一次」的使用额度。
+  upgradeCost?: number
 }
 
 export interface HeroDef {
@@ -345,6 +351,10 @@ export interface PlayerState {
   graveyard: string[]
   mulliganDone: boolean
   heroPowerUsed: boolean
+  // 主公技升过几阶。**可选字段**:老存档/老战报没有它 → undefined → 视作 0,
+  // 迁移零风险(铁律 6)。存在的理由是给 AI 一个**可见的**价值 —— 见 greedy.evaluate:
+  // 升阶花掉法力却不改场面,纯贪心永远不会去升,和伏兵一模一样的毛病。
+  heroPowerTier?: number
   // ---- 第四卡包 ----
   // 伏兵区。对对手裁剪时只留 iid(见 redact.ts),否则伏兵形同明牌。
   secrets: { iid: number; defId: string }[]
@@ -444,6 +454,8 @@ export type Command =
   | { type: 'PlayCard'; iid: number; boardPos?: number; target?: TargetRef; mode?: number }
   | { type: 'Attack'; attackerIid: number; target: TargetRef }
   | { type: 'UseHeroPower'; target?: TargetRef }
+  // 升级主公技:花 upgradeCost 把 heroPower 换成 heroPower.upgrade。一局一次。
+  | { type: 'UpgradeHeroPower' }
   | { type: 'EndTurn' }
   // 发现:回应一个待决选择(pendingChoice)。index 指向亮出的第几张。
   | { type: 'ResolveChoice'; index: number }
@@ -497,6 +509,7 @@ export type GameEvent =
       health: number
     }
   | { type: 'KeywordGranted'; player: PlayerIdx; iid: number; keyword: Keyword }
+  | { type: 'HeroPowerUpgraded'; player: PlayerIdx; powerId: string }
   // 战场环境布下 / 消散(rule 为 undefined 表示消散)
   | { type: 'FieldChanged'; rule?: FieldRule }
   | { type: 'GeneralDied'; player: PlayerIdx; iid: number; defId: string }

@@ -4,7 +4,7 @@ import { RELICS_BY_ID, combineRelics } from '../../content/relics'
 import { CARDS_BY_ID } from '../../content/cards'
 import { MODIFIERS_BY_ID } from '../../content/expeditionModifiers'
 import { PRECON_DECKS } from '../../content/decks'
-import { HEROES_BY_ID } from '../../content/overrides/heroes'
+import { HEROES_BY_ID, withUpgrade } from '../../content/overrides/heroes'
 import { START_HP } from '../../engine/types'
 import { useCollection } from '../../app/collectionStore'
 import { useExpedition } from '../../app/expeditionStore'
@@ -53,7 +53,8 @@ export function ExpeditionScreen({ onBack, onEnterMatch }: ExpeditionScreenProps
       deckIds: [run.deck.slice(), bossDeck(boss.doctrine, boss.deckTier)],
       expedition: true,
       bossId: boss.id,
-      heroPowersOverride: [myHero?.power, boss.power],
+      // 远征独有:主公技可以花 5 费升阶(天梯与冒险没有 —— 见 heroes.ts 那段实测说明)
+      heroPowersOverride: [withUpgrade(myHero?.power), boss.power],
       heroHpsOverride: [(myHero?.hp ?? START_HP) + bonusHp, boss.hp + (mod?.bossHpBonus ?? 0)],
       modifiersOverride: [playerMods, bossMods],
       objective: mod?.objective,

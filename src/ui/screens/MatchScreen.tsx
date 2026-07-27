@@ -508,6 +508,15 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
             e.stopPropagation()
             onUseHeroPower()
           }}
+          onUpgradePower={
+            myTurn
+              ? (e) => {
+                  e.stopPropagation()
+                  playSfx('stratagemCast')
+                  send({ type: 'UpgradeHeroPower' })
+                }
+              : undefined
+          }
           onClick={(e) => {
             e.stopPropagation()
             onEntityClick({ kind: 'hero', player: 0 })

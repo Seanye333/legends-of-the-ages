@@ -318,3 +318,83 @@ describe('塚中:墓地计数', () => {
     expect(r.state.players[0].board[0].attack).toBe(4)
   })
 })
+
+describe('主公技升階', () => {
+  const basePower = {
+    id: 'hp-t1',
+    name: { zh: '一階', en: 'Tier 1' },
+    text: { zh: '造成 1 點傷害。', en: 'Deal 1 damage.' },
+    cost: 2,
+    script: { ops: [{ op: 'damage' as const, amount: 1, target: 'chosenAny' as const }] },
+    upgradeCost: 5,
+    upgrade: {
+      id: 'hp-t2',
+      name: { zh: '二階', en: 'Tier 2' },
+      text: { zh: '造成 3 點傷害。', en: 'Deal 3 damage.' },
+      cost: 2,
+      script: { ops: [{ op: 'damage' as const, amount: 3, target: 'chosenAny' as const }] },
+    },
+  }
+
+  function withPower(mana: number) {
+    const cfg: GameConfig = {
+      seed: 12,
+      heroIds: ['liu-bei', 'cao-cao'],
+      deckIds: [[], []],
+      first: 0,
+      heroPowers: [basePower, undefined],
+      scenario: {
+        activePlayer: 0,
+        players: [
+          { heroHp: 30, mana, board: [], hand: [] },
+          { heroHp: 30, mana: 0, board: [], hand: [] },
+        ],
+      },
+    }
+    return createGame(cfg, CARDS_BY_ID)
+  }
+
+  it('花掉 upgradeCost,主公技整份换成下一阶', () => {
+    const s = withPower(10)
+    const r = applyCommand(s, 0, { type: 'UpgradeHeroPower' }, CARDS_BY_ID)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.state.players[0].heroPower?.id).toBe('hp-t2')
+    expect(r.state.players[0].mana.current).toBe(5)
+    expect(r.state.players[0].heroPowerTier).toBe(1)
+    expect(r.events.some((e) => e.type === 'HeroPowerUpgraded')).toBe(true)
+  })
+
+  it('法力不够就不给升', () => {
+    const s = withPower(3)
+    const r = applyCommand(s, 0, { type: 'UpgradeHeroPower' }, CARDS_BY_ID)
+    expect(r.ok).toBe(false)
+  })
+
+  // 升级那一轮如果连技能都用不了,等于白扔一个回合 —— 这条是刻意的设计
+  it('升阶不占「每回合一次」的额度 —— 升完还能照常用', () => {
+    const s = withPower(10)
+    const up = applyCommand(s, 0, { type: 'UpgradeHeroPower' }, CARDS_BY_ID)
+    expect(up.ok).toBe(true)
+    if (!up.ok) return
+    expect(up.state.players[0].heroPowerUsed).toBe(false)
+    const use = applyCommand(
+      up.state,
+      0,
+      { type: 'UseHeroPower', target: { kind: 'hero', player: 1 } },
+      CARDS_BY_ID,
+    )
+    expect(use.ok).toBe(true)
+    if (!use.ok) return
+    expect(use.state.players[1].heroHp).toBe(27) // 二阶是 3 点
+  })
+
+  it('没有下一阶时升不了', () => {
+    const s = withPower(10)
+    const r1 = applyCommand(s, 0, { type: 'UpgradeHeroPower' }, CARDS_BY_ID)
+    expect(r1.ok).toBe(true)
+    if (!r1.ok) return
+    const r2 = applyCommand(r1.state, 0, { type: 'UpgradeHeroPower' }, CARDS_BY_ID)
+    expect(r2.ok).toBe(false)
+  })
+})

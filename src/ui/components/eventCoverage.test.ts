@@ -54,6 +54,7 @@ const SAMPLES: GameEvent[] = [
   { type: 'GeneralBuffed', player: 0, iid: 2, attack: 1, health: 1 },
   { type: 'KeywordGranted', player: 0, iid: 2, keyword: 'guard' },
   { type: 'GeneralDied', player: 1, iid: 3, defId: 'guan-yu' },
+  { type: 'HeroPowerUpgraded', player: 0, powerId: 'hp-test-up' },
   {
     type: 'FieldChanged',
     rule: {

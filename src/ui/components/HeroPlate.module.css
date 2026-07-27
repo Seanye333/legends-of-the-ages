@@ -433,3 +433,25 @@
 @media (prefers-reduced-motion: reduce) {
   .secret { animation: none; }
 }
+
+/* 升阶主公技:一局一次的中期投资,所以做成小而显眼的一枚角标,不抢技能按钮的位置 */
+.upgrade {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font-display);
+  color: #1a1206;
+  background: linear-gradient(180deg, #6fd8d0, #2c8d86);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+  z-index: 3;
+}
+
+.upgrade:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

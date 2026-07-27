@@ -207,3 +207,92 @@ export const ALL_HEROES: HeroDef[] = [...HEROES, ...ALT_HEROES]
 export const HEROES_BY_ID: Record<string, HeroDef> = Object.fromEntries(
   ALL_HEROES.map((h) => [h.id, h]),
 )
+
+// ============================================================
+// 主公技升階 —— **只在远征里发**,不进天梯与冒险。这是实测逼出来的边界,记清楚。
+//
+// 引擎侧的升阶(Command: UpgradeHeroPower)是干净的:一局一次、整份换掉、
+// 不占「每回合一次」的额度、可选字段零迁移风险。真正的问题在**内容**。
+//
+// 【实测经过】把升阶挂到六个基准主公技上之后,sim-balance 当场炸:
+//   克己復禮 vs 大隱於市 从 36% 掉到 **25%**(越界)。
+// 改了四轮升阶内容(隐逸去伤害、礼教翻倍抽牌、礼教去自伤、全体降价到 3 费),
+// **四次全是 25%,一格没动**;降价那次更糟,21%,连大隱於市的总胜率也顶到 60.2%。
+//
+// 决定性实验:把 AI 的升阶估值调成 0(它因此永不升阶),矩阵**逐格回到原样**。
+// 所以 11 个点全部来自「AI 什么时候升」,与升阶内容无关 ——
+// `evaluate` 里没有法力这个概念,升阶在它眼里是白送的分数,于是一到够钱的回合
+// 就无脑升,把一整个回合的节奏扔掉。给那条命令单收机会成本也压不住:
+// 只要净值为正,AI 就会在「这回合没好牌可打」时升,而那恰恰是节奏牌组最不该分心的时刻。
+//
+// 【结论】六个升阶**彼此不平衡**(隐逸的控场升阶在慢局里价值远高于礼教的过牌升阶),
+// 要进天梯得走一轮和当初主公技同级别的调校(sim-hero-mirror + 逐个改数值)。
+// 在那之前,把它发在**远征**里:那是单人 roguelike,难度靠一趟 run 自己成立,
+// 没有平衡闸门,而「花一笔法力把主公技升上去」正是 roguelike 最想要的那种决策。
+export const HERO_POWER_UPGRADES: Record<string, HeroPowerDef> = {
+  'hp-rende': {
+    id: 'hp-rende-2',
+    name: { zh: '仁德佈於四海', en: 'Benevolence Spread Wide' },
+    text: { zh: '使一名友方武將獲得+2/+3。', en: 'Give a friendly general +2/+3.' },
+    cost: 2,
+    script: { ops: [{ op: 'buffStats', attack: 2, health: 3, target: 'chosenFriendlyGeneral' }] },
+  },
+  'hp-weicai': {
+    id: 'hp-weicai-2',
+    name: { zh: '唯才是舉 · 廣納', en: 'Merit Above All · Wide Net' },
+    text: { zh: '造成 2 點傷害。', en: 'Deal 2 damage.' },
+    cost: 2,
+    script: { ops: [{ op: 'damage', amount: 2, target: 'chosenAny' }] },
+  },
+  'hp-youjiao': {
+    id: 'hp-youjiao-2',
+    name: { zh: '有教無類 · 弟子三千', en: 'Teaching Without Class · Three Thousand' },
+    text: { zh: '抽兩張牌。', en: 'Draw two cards.' },
+    cost: 2,
+    script: { ops: [{ op: 'draw', count: 2 }] },
+  },
+  'hp-yingshi': {
+    id: 'hp-yingshi-2',
+    name: { zh: '鷹視狼顧 · 蓄勢', en: 'Wolf’s Gaze · Gathering' },
+    text: { zh: '召喚兩個 1/1 的死士。', en: 'Summon two 1/1 Retainers.' },
+    cost: 2,
+    script: { ops: [{ op: 'summon', defId: 'token-si-shi', count: 2 }] },
+  },
+  'hp-zhiheng': {
+    id: 'hp-zhiheng-2',
+    name: { zh: '制衡 · 深壘', en: 'Equilibrium · Deep Works' },
+    text: {
+      zh: '召喚一個 0/4 的江東水寨(守護),並獲得 2 點護甲。',
+      en: 'Summon a 0/4 Jiangdong Stockade with Guard and gain 2 Armor.',
+    },
+    cost: 2,
+    script: {
+      ops: [
+        { op: 'summon', defId: 'token-shui-zhai', count: 1 },
+        { op: 'gainArmor', amount: 2 },
+      ],
+    },
+  },
+  'hp-wuwei': {
+    id: 'hp-wuwei-2',
+    name: { zh: '無為 · 不爭', en: 'Non-Action · Yielding' },
+    text: {
+      zh: '凍結一名敵方武將,我方主公獲得 2 點護甲。',
+      en: 'Freeze an enemy general and gain 2 Armor.',
+    },
+    cost: 2,
+    script: {
+      ops: [
+        { op: 'freeze', target: 'chosenEnemyGeneral' },
+        { op: 'gainArmor', amount: 2 },
+      ],
+    },
+  },
+}
+
+// 给一个主公技挂上它的升阶(有升阶版本时)。只有远征调它 —— 见上面那段说明。
+export function withUpgrade(power?: HeroPowerDef, upgradeCost = 5): HeroPowerDef | undefined {
+  if (!power) return power
+  const up = HERO_POWER_UPGRADES[power.id]
+  return up ? { ...power, upgrade: up, upgradeCost } : power
+}

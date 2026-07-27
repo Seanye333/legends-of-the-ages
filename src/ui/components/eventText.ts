@@ -150,6 +150,8 @@ function line(ev: GameEvent, ctx: EventTextCtx, l: Lang): string {
         : `${n(ev.iid)} gained [${KEYWORD_NAME[ev.keyword].en}]`
     case 'GeneralDied':
       return zh ? `${n(ev.iid)}阵亡` : `${n(ev.iid)} fell in battle`
+    case 'HeroPowerUpgraded':
+      return zh ? `${hero(ev.player)}的主公技已升階` : `${hero(ev.player)}'s Hero Power was upgraded`
     case 'FieldChanged':
       return ev.rule
         ? zh

@@ -192,6 +192,13 @@ export function evaluate(
   // 主公技这回合还没用 = 一份没兑现的资源
   if (me.heroPower && !me.heroPowerUsed && me.mana.current >= me.heroPower.cost) score += 0.3
 
+  // 主公技升阶对贪心是**不可见的价值** —— 和伏兵一模一样的毛病:
+  // 花掉法力,场面一点变化都没有,于是纯贪心永远不会去升,那批设计在 AI 手里等于不存在。
+  // 主公技是全局触发频率最高的效果(每回合一次,一局能用三十次),
+  // 所以给的持有价值比伏兵还高一档。
+  score += (me.heroPowerTier ?? 0) * 4
+  score -= (foe.heroPowerTier ?? 0) * 4
+
   // ---- 第四卡包 ----
   // 伏兵对贪心 AI 是**不可见的价值**:打出它场面一点变化都没有,
   // 于是纯贪心永远不会打伏兵 —— 那批卡在 AI 手里等于废牌。
@@ -343,6 +350,16 @@ export function aiStep(
     const r = applyCommand(state, player, cmd, lib)
     if (!r.ok) return { cmd, score: -Infinity }
     let score = evaluate(r.state, player, lib, config.foresight === true, config.weights)
+    if (cmd.type === 'UpgradeHeroPower') {
+      // 升阶是**投资**:这一步一点场面都不改,却花掉一大笔法力。
+      // evaluate 看不见法力(它只看局面),所以不在这里显式收一次机会成本的话,
+      // 升阶在 AI 眼里就是白送的分数 —— 实测它会在刚够钱的那个回合无脑升,
+      // 把 sim-balance 的矩阵打出一个 25% 的极化对位。
+      //
+      // 收 0.6/点:5 费升阶净得 +1,而同样 5 费的一张牌大约值 +9 ——
+      // 于是 AI 只在「这笔法力没有更好去处」时才升,这正是人类的判断。
+      score -= Math.max(0, state.players[player].heroPower?.upgradeCost ?? 0) * 0.6
+    }
     if (cmd.type === 'EndTurn') {
       // 浮费惩罚:结束回合时每点没花掉的法力都是白扔的。
       // 没有这一项,AI 会因为「出牌会掉一点手牌分」而攥着牌过回合。

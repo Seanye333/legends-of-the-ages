@@ -23,6 +23,8 @@ interface HeroPlateProps {
   powerUsable?: boolean
   onUsePower?: (e: MouseEvent) => void
   powerSelected?: boolean
+  // 升阶主公技(只给自己这一侧接)。不传则不画升阶按钮。
+  onUpgradePower?: (e: MouseEvent) => void
 }
 
 // 主帅面板:头像 + 血量 + 法力水晶 + 主公技 + 牌库余量;敌方另显示手牌数(牌背)。
@@ -37,6 +39,7 @@ export function HeroPlate({
   powerUsable,
   onUsePower,
   powerSelected,
+  onUpgradePower,
 }: HeroPlateProps) {
   const lang = useSettings((s) => s.language)
   const t = useT()
@@ -48,6 +51,9 @@ export function HeroPlate({
   const nameZh = label?.zh ?? ps.heroId
   const name = label ? (lang === 'en' ? label.en : label.zh) : ps.heroId
   const power = ps.heroPower
+  const pickLocal = (x: { zh: string; en: string }) => (lang === 'en' ? x.en : x.zh)
+  const upgradeAffordable =
+    power?.upgrade !== undefined && ps.mana.current >= Math.max(0, power.upgradeCost ?? 0)
   const powerName = power ? (lang === 'en' ? power.name.en : power.name.zh) : ''
   const powerText = power ? (lang === 'en' ? power.text.en : power.text.zh) : ''
 
@@ -174,6 +180,21 @@ export function HeroPlate({
           <span className={styles.powerName}>{powerName}</span>
           <span className={styles.powerCost}>{power.cost}</span>
           {ps.heroPowerUsed && <span className={styles.powerUsed} aria-hidden="true" />}
+        </button>
+      )}
+      {/* 升阶按钮:一局一次,不占「每回合一次」的使用额度 ——
+          升完这回合还能照常用一次技能,否则升级那一轮等于白扔一个回合。
+          只画在自己这一侧(enemy 侧没有 onUpgradePower)。 */}
+      {power?.upgrade && onUpgradePower && (
+        <button
+          type="button"
+          className={styles.upgrade}
+          disabled={!upgradeAffordable}
+          onClick={onUpgradePower}
+          aria-label={`${t('升階主公技', 'Upgrade Hero Power')} — ${pickLocal(power.upgrade.name)}`}
+          title={`${pickLocal(power.upgrade.name)}(${power.upgradeCost ?? 0})\n${pickLocal(power.upgrade.text)}`}
+        >
+          ⇧ {power.upgradeCost ?? 0}
         </button>
       )}
     </div>

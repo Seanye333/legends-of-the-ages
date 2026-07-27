@@ -107,6 +107,15 @@ export function legalCommands(state: GameState, player: PlayerIdx, lib: CardLibr
     }
   }
 
+  // 升级主公技:一局一次,不占「每回合一次」的使用额度 ——
+  // 升完这回合还能照常用一次技能,否则升级那一轮等于白扔一个回合。
+  if (
+    p.heroPower?.upgrade &&
+    Math.max(0, p.heroPower.upgradeCost ?? 0) <= p.mana.current
+  ) {
+    commands.push({ type: 'UpgradeHeroPower' })
+  }
+
   // 攻击
   for (const attacker of p.board) {
     for (const target of legalAttackTargets(state, player, attacker)) {
