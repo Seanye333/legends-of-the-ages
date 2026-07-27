@@ -20,6 +20,7 @@ import { useQuests } from './questStore'
 import { useArena } from './arenaStore'
 import { useAchievements } from './achievementStore'
 import { useCampaign } from './campaignStore'
+import { useBossRush } from './bossRushStore'
 import { useHistory } from './historyStore'
 import { useWeeklyBrawl } from './weeklyBrawlStore'
 import { useTower } from './towerStore'
@@ -68,6 +69,8 @@ export interface StartMatchArgs {
   weeklyBrawlWeek?: string
   // 无尽爬塔:胜负记进爬塔进度(通层上行 / 失败回第一层)
   tower?: boolean
+  // 群雄连斩:胜负记进连斩进度,**血量结转到下一关**
+  bossRush?: boolean
   // 每日谜题:胜利走「按天」奖励(solveDaily),而不是按谜题 id 的静态奖励
   daily?: boolean
   dailyDate?: string
@@ -101,6 +104,7 @@ interface MatchStoreState {
   tutorial: boolean
   arena: boolean
   campaign: boolean
+  bossRush: boolean
   bossId: string | null
   history: boolean
   expedition: boolean
@@ -181,9 +185,16 @@ function settleMatch(
   campaign: boolean,
   expedition: boolean,
   history: boolean,
+  bossRush = false,
+  hpLeft = 0,
 ): void {
   const ended = events.find((e) => e.type === 'GameEnded')
   if (!ended || ended.type !== 'GameEnded') return
+  if (bossRush) {
+    // 血量结转是这个模式的全部:必须把**终局那一刻**的血传进去
+    useBossRush.getState().settle(ended.winner === 0, hpLeft)
+    return
+  }
   if (expedition) {
     if (ended.winner !== 'draw') useExpedition.getState().settle(ended.winner === 0)
     return
@@ -263,6 +274,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
   tutorial: false,
   arena: false,
   campaign: false,
+  bossRush: false,
   bossId: null,
   history: false,
   expedition: false,
@@ -339,6 +351,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       tutorial: args.tutorial === true,
       arena: args.arena === true,
       campaign: args.campaign === true,
+      bossRush: args.bossRush === true,
       bossId: args.bossId ?? null,
       history: args.history === true,
       expedition: args.expedition === true,
@@ -466,7 +479,15 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
     }
     const events = r.updates.flatMap((u) => u.events)
     const last = r.updates[r.updates.length - 1]
-    settleMatch(events, get().arena, get().campaign, get().expedition, get().history)
+    settleMatch(
+      events,
+      get().arena,
+      get().campaign,
+      get().expedition,
+      get().history,
+      get().bossRush,
+      get().state?.players[0].heroHp ?? 0,
+    )
     // 无尽爬塔:胜则上一层(刷新最高层才发功勋),负则回第一层
     if (get().tower) {
       const tEnd = events.find((e) => e.type === 'GameEnded')
@@ -534,6 +555,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       tutorial: false,
       arena: false,
       campaign: false,
+      bossRush: false,
       bossId: null,
       history: false,
       expedition: false,

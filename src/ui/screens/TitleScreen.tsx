@@ -99,7 +99,7 @@ const DIFFICULTIES: { key: Difficulty; name: LocalizedText }[] = [
 interface TitleScreenProps {
   onStart?: () => void
   onNavigate?: (
-    screen: 'collection' | 'deckbuilder' | 'replays' | 'settings' | 'arena' | 'campaign' | 'history' | 'tower' | 'lore' | 'quiz' | 'codex' | 'expedition' | 'brawl' | 'lethal' | 'practice',
+    screen: 'collection' | 'deckbuilder' | 'replays' | 'settings' | 'arena' | 'campaign' | 'history' | 'tower' | 'lore' | 'quiz' | 'codex' | 'expedition' | 'brawl' | 'lethal' | 'practice' | 'bossrush',
   ) => void
 }
 
@@ -115,6 +115,7 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
   const campaignDone = useCampaign((s) => s.cleared.length)
   const historyDone = useHistory((s) => s.cleared.length)
   const towerBest = useTower((s) => s.best)
+  const campaignAllCleared = useCampaign((s) => s.cleared.length >= BOSSES.length)
   // 订阅 stats/claimed 而不是调 claimableCount() —— 后者不是响应式的
   const achStats = useAchievements((s) => s.stats)
   const achClaimed = useAchievements((s) => s.claimed)
@@ -324,6 +325,20 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
         >
           {towerBest > 0 ? t(`登楼 · ${towerBest} 层`, `Tower · ${towerBest}`) : t('登楼', 'Tower')}
         </button>
+        {/* 群雄连斩:冒险全通之后才露出来 —— 它问的是「你的卡组撑不撑得住十六场」,
+            在还没走完一遍十六关之前问这个没有意义。 */}
+        {campaignAllCleared && (
+          <button
+            className={styles.navBtn}
+            onClick={() => {
+              playSfx('buttonTap')
+              countMode('bossrush' as ModeKey)
+              onNavigate?.('bossrush')
+            }}
+          >
+            {t('群雄连斩', 'Gauntlet')}
+          </button>
+        )}
         <button
           className={styles.navBtn}
           onClick={() => {

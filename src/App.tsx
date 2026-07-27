@@ -38,6 +38,9 @@ const LoreScreen = lazy(() =>
 const QuizScreen = lazy(() =>
   import('./ui/screens/QuizScreen').then((m) => ({ default: m.QuizScreen })),
 )
+const BossRushScreen = lazy(() =>
+  import('./ui/screens/BossRushScreen').then((m) => ({ default: m.BossRushScreen })),
+)
 const CodexScreen = lazy(() =>
   import('./ui/screens/CodexScreen').then((m) => ({ default: m.CodexScreen })),
 )
@@ -71,6 +74,7 @@ export type Screen =
   | 'expedition'
   | 'brawl'
   | 'lethal'
+  | 'bossrush'
   | 'practice'
 
 // 讲堂实练走谜题通道:launchMatch 在这一层调,CodexScreen 只负责说「开哪一课」
@@ -176,6 +180,18 @@ export default function App() {
             onBack={back}
             onEnterMatch={() => {
               setAfterMatch('brawl')
+              setScreen('match')
+            }}
+          />
+        </Suspense>
+      )
+    case 'bossrush':
+      return (
+        <Suspense fallback={<ScreenFallback />}>
+          <BossRushScreen
+            onBack={back}
+            onEnterMatch={() => {
+              setAfterMatch('bossrush')
               setScreen('match')
             }}
           />

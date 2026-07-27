@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import type { CSSProperties } from 'react'
 import {
   HISTORY_BATTLES,
@@ -94,10 +94,21 @@ export function HistoryScreen({ onBack, onEnterMatch }: HistoryScreenProps) {
         ))}
       </div>
 
+      {/* 戰役簿:十四场名局本来就是按年代排的,但界面上它们只是十四行并列的按钮 ——
+          读不出「从春秋一路打到明」这条线。按年代插分隔之后,这个模式才像一本战役簿,
+          而不是一张关卡列表。年代取 era 里 ` · ` 之前那一段(「三國 · 建安五年」→「三國」)。 */}
       <ol className={styles.road}>
         {HISTORY_BATTLES.map((b, i) => {
           const done = cleared.includes(b.id)
+          const eraOf = (x: (typeof HISTORY_BATTLES)[number]) => pick(x.era).split(' · ')[0]
+          const newEra = i === 0 || eraOf(b) !== eraOf(HISTORY_BATTLES[i - 1])
           return (
+            <Fragment key={`era-${b.id}`}>
+            {newEra && (
+              <li className={styles.eraHead} aria-hidden>
+                {eraOf(b)}
+              </li>
+            )}
             <li
               key={b.id}
               className={`${styles.stage} ${done ? styles.done : ''}`}
@@ -128,6 +139,7 @@ export function HistoryScreen({ onBack, onEnterMatch }: HistoryScreenProps) {
                 </span>
               </button>
             </li>
+            </Fragment>
           )
         })}
       </ol>
