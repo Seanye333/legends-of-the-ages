@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { Suspense, lazy, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { CARDS, CARDS_BY_ID, SIGNATURE_IDS } from '../../content/cards'
 import { PRECON_DECKS, deckKey } from '../../content/decks'
 import { useDeckStats, winRate } from '../../app/deckStatsStore'
@@ -26,14 +26,33 @@ import { useBossRush } from '../../app/bossRushStore'
 import { rankOf, toNextRank, warMerit } from '../../content/ranks'
 import { HISTORY_BATTLES } from '../../content/historyBattles'
 import { ACHIEVEMENTS, useAchievements } from '../../app/achievementStore'
-import { AchievementPanel } from '../components/AchievementPanel'
-import { StatsPanel } from '../components/StatsPanel'
 import type { DeckList } from '../../content/decks'
-import { PackOpening } from '../components/PackOpening'
-import { LeaderboardPanel } from '../components/LeaderboardPanel'
-import { RemoteMatchPanel } from '../components/RemoteMatchPanel'
-import { QuestPanel } from '../components/QuestPanel'
-import { DailyGeneralPanel } from '../components/DailyGeneralPanel'
+
+// 标题页的七个面板全部懒加载。它们都在按钮后面(条件渲染),但静态 import
+// 会把它们连同**传递依赖**一起钉进首屏 chunk —— 其中 DailyGeneralPanel 拖着
+// 144KB 的 lore.gen(2,211 条列传台词),而首屏根本不需要一个字。
+// 这是首屏体积里最划算的一刀:七个面板都是「点了才看」,加载延迟藏在点击动作里。
+const AchievementPanel = lazy(() =>
+  import('../components/AchievementPanel').then((m) => ({ default: m.AchievementPanel })),
+)
+const StatsPanel = lazy(() =>
+  import('../components/StatsPanel').then((m) => ({ default: m.StatsPanel })),
+)
+const PackOpening = lazy(() =>
+  import('../components/PackOpening').then((m) => ({ default: m.PackOpening })),
+)
+const LeaderboardPanel = lazy(() =>
+  import('../components/LeaderboardPanel').then((m) => ({ default: m.LeaderboardPanel })),
+)
+const RemoteMatchPanel = lazy(() =>
+  import('../components/RemoteMatchPanel').then((m) => ({ default: m.RemoteMatchPanel })),
+)
+const QuestPanel = lazy(() =>
+  import('../components/QuestPanel').then((m) => ({ default: m.QuestPanel })),
+)
+const DailyGeneralPanel = lazy(() =>
+  import('../components/DailyGeneralPanel').then((m) => ({ default: m.DailyGeneralPanel })),
+)
 import { useDailyGeneral } from '../../app/dailyGeneralStore'
 import { dayKey } from '../../content/dailyPuzzle'
 import { useQuests } from '../../app/questStore'
@@ -642,22 +661,26 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
         ))}
       </div>
 
-      {questsOpen && <QuestPanel onClose={() => setQuestsOpen(false)} />}
-      {dailyGenOpen && <DailyGeneralPanel onClose={() => setDailyGenOpen(false)} />}
-      {achOpen && <AchievementPanel onClose={() => setAchOpen(false)} />}
-      {statsOpen && <StatsPanel onClose={() => setStatsOpen(false)} />}
-      {packsOpen && <PackOpening onClose={() => setPacksOpen(false)} />}
-      {ladderOpen && <LeaderboardPanel onClose={() => setLadderOpen(false)} />}
-      {remoteOpen && selectableDecks.length > 0 && (
-        <RemoteMatchPanel
-          deck={selectableDecks[deckIndex % selectableDecks.length]}
-          onStart={() => {
-            setRemoteOpen(false)
-            onStart?.()
-          }}
-          onClose={() => setRemoteOpen(false)}
-        />
-      )}
+      {/* 懒加载面板统一挂在一个 Suspense 下:fallback 是 null 而不是转圈 ——
+          这些 chunk 都在几十 KB 量级,同源加载通常一帧就到,转圈反而更闪。 */}
+      <Suspense fallback={null}>
+        {questsOpen && <QuestPanel onClose={() => setQuestsOpen(false)} />}
+        {dailyGenOpen && <DailyGeneralPanel onClose={() => setDailyGenOpen(false)} />}
+        {achOpen && <AchievementPanel onClose={() => setAchOpen(false)} />}
+        {statsOpen && <StatsPanel onClose={() => setStatsOpen(false)} />}
+        {packsOpen && <PackOpening onClose={() => setPacksOpen(false)} />}
+        {ladderOpen && <LeaderboardPanel onClose={() => setLadderOpen(false)} />}
+        {remoteOpen && selectableDecks.length > 0 && (
+          <RemoteMatchPanel
+            deck={selectableDecks[deckIndex % selectableDecks.length]}
+            onStart={() => {
+              setRemoteOpen(false)
+              onStart?.()
+            }}
+            onClose={() => setRemoteOpen(false)}
+          />
+        )}
+      </Suspense>
     </div>
   )
 }

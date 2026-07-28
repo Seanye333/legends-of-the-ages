@@ -3,11 +3,18 @@ import { HEROES_BY_ID } from './content/overrides/heroes'
 import { launchMatch } from './ui/matchSetup'
 import { Suspense, lazy, useState } from 'react'
 import { TitleScreen } from './ui/screens/TitleScreen'
-import { MatchScreen } from './ui/screens/MatchScreen'
 import { ScreenFallback } from './ui/components/ScreenFallback'
 
-// 标题与对战是主路径,随主包走;图鉴/构筑/回放体量大且不是每次都进,按需加载。
-// 图鉴要渲染两千余张卡、构筑器带全套校验、回放自带播放器,都不该拖慢首屏。
+// 只有标题页随主包走。
+//
+// 对战画面从前也是「主路径」跟着主包一起下 —— 但它是全项目最大的一个组件
+// (战场 + 手牌扇 + 事件动效 + 军师 + 六个覆盖层),而**首屏永远看不到它**:
+// 任何一局都得先从标题页点进去。把它挪成懒加载,首屏少下的那部分是纯赚,
+// 而点「开战」时的那一次加载被开场动画完全盖住。
+// 图鉴/构筑/回放同理:体量大且不是每次都进。
+const MatchScreen = lazy(() =>
+  import('./ui/screens/MatchScreen').then((m) => ({ default: m.MatchScreen })),
+)
 const CollectionScreen = lazy(() =>
   import('./ui/screens/CollectionScreen').then((m) => ({ default: m.CollectionScreen })),
 )
@@ -90,7 +97,11 @@ export default function App() {
 
   switch (screen) {
     case 'match':
-      return <MatchScreen onExit={() => setScreen(afterMatch)} />
+      return (
+        <Suspense fallback={<ScreenFallback />}>
+          <MatchScreen onExit={() => setScreen(afterMatch)} />
+        </Suspense>
+      )
     case 'collection':
       return (
         <Suspense fallback={<ScreenFallback />}>

@@ -11,7 +11,7 @@ import {
   dynastyName,
 } from '../doctrineColors'
 import { exportCardImage, probeCardArt } from '../cardExport'
-import { LORE } from '../../content/generated/lore.gen'
+import { loadLore, loreNow } from '../../content/loreLazy'
 import { bondsOf, bondRoster, cardName, rivalsOf, rivalLore } from '../../content/relations'
 import { TROOP_NAME } from '../../content/troops'
 import { Portrait } from './Portrait'
@@ -61,6 +61,19 @@ export function CardInspect({ def, onClose, forge = false }: CardInspectProps) {
       live = false
     }
   }, [def.id])
+
+  // 列传是 144KB 的独立 chunk,进详情页才拉(见 content/loreLazy.ts)。
+  // 加载完再 setState 一次触发重渲染;已缓存时 loreNow() 首帧就是满的,不闪。
+  const [LORE, setLore] = useState(loreNow)
+  useEffect(() => {
+    let live = true
+    loadLore().then((l) => {
+      if (live) setLore(l)
+    })
+    return () => {
+      live = false
+    }
+  }, [])
 
   const onSave = async () => {
     if (busy) return

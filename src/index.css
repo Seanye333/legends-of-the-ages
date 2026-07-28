@@ -8,6 +8,38 @@ body {
   padding: 0;
 }
 
+/* —— 视口:刘海、Home 条、以及移动 Safari 那条会伸缩的地址栏 ——
+   `<meta viewport>` 已经带了 `viewport-fit=cover`,所以页面本来就铺到屏幕边缘,
+   但**没有任何一处读过 safe-area-inset** —— iPhone 上左右两侧的返回键正好落在刘海里。
+
+   两件事一起做:
+   1. 四个方向的安全区抽成 CSS 变量,组件按需取用(不要直接 padding 在 body 上 ——
+      对局画面是满屏铺的,给 body 加内边距会把战场压出一圈黑边)。
+   2. 高度用 `100dvh`(动态视口)而不是 `100vh`。移动 Safari 的 `100vh` 算的是
+      **地址栏收起后**的高度,页面一进来就比可视区高一截,于是底部按钮被顶到屏幕外,
+      要往上滑才点得到 —— 这是移动端网页游戏最经典的那个「按钮点不着」。
+      `dvh` 跟着地址栏实时变。旧浏览器不认 dvh 时回落到 vh,写两条即可。 */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+html,
+body,
+#root {
+  height: 100vh;
+  height: 100dvh;
+}
+
+#root {
+  overflow: auto;
+  /* 横屏时刘海在左或右侧,竖屏时在上方 —— 两种都靠这一条兜住 */
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+}
+
 :root {
   /* —— 千古名将 · 调色盘:暗金 / 朱砂 / 玉色 —— */
   --gold-bright: #f7e1a8;
