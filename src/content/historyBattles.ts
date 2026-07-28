@@ -549,3 +549,75 @@ export function battleModifiers(
 export function battleHeroExists(b: HistoryBattle): boolean {
   return Boolean(CARDS_BY_ID[b.heroId])
 }
+
+// ============================================================
+// 逆位挑戰 —— 用歷史上輸的那一方打贏。
+//
+// 【这个模式的问题在于「对手是谁」】
+// 名局的数据结构里,敌方是完整定义的(heroId / 主公技 / 血量 / 卡组分位),
+// 而**玩家那一侧只有「你自己的卡组」** —— 没有历史胜方的任何数据。
+// 所以逆位不是把两边的字段对调就能得到的:它需要一个新的对手。
+//
+// 【解法:历史上的胜方多半就是冒险的关底 Boss】
+// 曹操、韩信、白起、周瑜、朱元璋 —— 这五个人本来就在 BOSSES 里,
+// 有血量、有主公技、有调好的卡组分位。逆位因此只要**引用那个 boss id**,
+// 一个新对手都不用编。没有对应 Boss 的九场就不做逆位 ——
+// 硬编一个「历史胜方」出来,既没有立绘也没有调过的数值,不如不做。
+//
+// 【玩家拿什么】
+// 拿**原本那个敌方**的主公技与开局态势 —— 你现在就是袁绍、就是项羽。
+// 卡组仍然是你自己的(这是名局一贯的口径:历史给你处境,牌你自己带)。
+export interface ReverseBattle {
+  battleId: string // 对应的正位名局
+  bossId: string // 对手 = 冒险里的这个关底(历史胜方)
+  name: LocalizedText
+  intro: LocalizedText
+  rewardMerit: number
+}
+
+export const REVERSE_BATTLES: ReverseBattle[] = [
+  {
+    battleId: 'hb-guandu',
+    bossId: 'boss-cao-cao',
+    name: { zh: '官渡 · 逆位', en: 'Guandu, Reversed' },
+    intro: {
+      zh: '这一次你是袁绍。带甲十万、粮草如山,而乌巢的火还没烧起来 —— 守住它。',
+      en: 'This time you are Yuan Shao: a hundred thousand men, grain like mountains, and Wuchao not yet burning. Keep it that way.',
+    },
+    rewardMerit: 320,
+  },
+  {
+    battleId: 'hb-gaixia',
+    bossId: 'boss-han-xin',
+    name: { zh: '垓下 · 逆位', en: 'Gaixia, Reversed' },
+    intro: {
+      zh: '这一次你是项羽。四面楚歌,乌骓不逝 —— 但天不一定要亡你。',
+      en: 'This time you are Xiang Yu: songs of Chu on every side. Heaven need not end you tonight.',
+    },
+    rewardMerit: 360,
+  },
+  {
+    battleId: 'hb-changping',
+    bossId: 'boss-bai-qi',
+    name: { zh: '長平 · 逆位', en: 'Changping, Reversed' },
+    intro: {
+      zh: '这一次你是赵军。四十万人的性命压在你这一战上 —— 白起在对面。',
+      en: 'This time you command Zhao. Four hundred thousand lives ride on this — and Bai Qi stands opposite.',
+    },
+    rewardMerit: 380,
+  },
+  {
+    battleId: 'hb-chibi',
+    bossId: 'boss-zhou-yu',
+    name: { zh: '赤壁 · 逆位', en: 'Red Cliffs, Reversed' },
+    intro: {
+      zh: '这一次你是曹操。八十万众列于江北,只要不让那把火起来。',
+      en: 'This time you are Cao Cao, eight hundred thousand along the north bank. Just do not let the fire start.',
+    },
+    rewardMerit: 340,
+  },
+]
+
+export const REVERSE_BY_BATTLE: Record<string, ReverseBattle> = Object.fromEntries(
+  REVERSE_BATTLES.map((r) => [r.battleId, r]),
+)

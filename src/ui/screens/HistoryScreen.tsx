@@ -4,6 +4,7 @@ import {
   HISTORY_BATTLES,
   battleDeck,
   battleModifiers,
+  REVERSE_BY_BATTLE,
   type HistoryBattle,
 } from '../../content/historyBattles'
 import { PRECON_DECKS } from '../../content/decks'
@@ -11,6 +12,7 @@ import { useHistory } from '../../app/historyStore'
 import { HEROES_BY_ID } from '../../content/overrides/heroes'
 import { START_HP } from '../../engine/types'
 import { useCollection } from '../../app/collectionStore'
+import { BOSSES, bossDeck, bossPersonality } from '../../content/campaign'
 import { launchMatch } from '../matchSetup'
 import { DOCTRINE_COLORS, DOCTRINE_NAME } from '../doctrineColors'
 import { Portrait } from '../components/Portrait'
@@ -38,6 +40,8 @@ export function HistoryScreen({ onBack, onEnterMatch }: HistoryScreenProps) {
   const [deckIndex, setDeckIndex] = useState(0)
 
   const myDecks = [...PRECON_DECKS, ...customDecks]
+  const reversed = useHistory((s) => s.reversed)
+  const reverseOf = (id: string) => REVERSE_BY_BATTLE[id]
 
   const fight = (battle: HistoryBattle) => {
     const mine = myDecks[deckIndex % myDecks.length]
@@ -56,6 +60,33 @@ export function HistoryScreen({ onBack, onEnterMatch }: HistoryScreenProps) {
       heroHpsOverride: [myHero?.hp ?? START_HP, battle.hp],
       modifiersOverride: battleModifiers(battle),
       objective: battle.objective,
+    })
+    onEnterMatch()
+  }
+
+  // 逆位:你**就是**史上的败方 —— 拿他的主公技与开局态势,
+  // 对手换成历史胜方(复用冒险的关底定义,一个新对手都不用编)。
+  // 卡组仍然是你自己的,这是名局一贯的口径:历史给你处境,牌你自己带。
+  const fightReverse = (battle: HistoryBattle) => {
+    const rev = REVERSE_BY_BATTLE[battle.id]
+    const boss = BOSSES.find((b) => b.id === rev?.bossId)
+    const mine = myDecks[deckIndex % myDecks.length]
+    if (!rev || !boss || !mine) return
+    if (!begin(battle.id, true)) return
+    playSfx('duel')
+    haptic('impact')
+    const mods = battleModifiers(battle)
+    launchMatch({
+      heroIds: [battle.heroId, boss.heroId],
+      deckIds: [mine.cardIds.slice(), bossDeck(boss.doctrine, boss.deckTier)],
+      history: true,
+      bossId: boss.id,
+      // 你拿败方的主公技与血量,对手拿关底那一套
+      heroPowersOverride: [battle.power, boss.power],
+      heroHpsOverride: [battle.hp, boss.hp],
+      // 态势也跟着换边:原本压在你头上的那些,现在是你的
+      modifiersOverride: [mods[1], mods[0]],
+      aiWeights: bossPersonality(boss.id),
     })
     onEnterMatch()
   }
@@ -194,10 +225,33 @@ export function HistoryScreen({ onBack, onEnterMatch }: HistoryScreenProps) {
                     `First clear: ${selected.rewardPacks} packs, +${selected.rewardMerit} merit`,
                   )}
             </p>
+            {/* 逆位:正位通关后才解锁 —— 先把这一仗按史实打赢一次,再来问「反过来呢」 */}
+            {reverseOf(selected.id) && cleared.includes(selected.id) && (
+              <div className={styles.trialBox}>
+                <span className={styles.trialName}>
+                  {pick(reverseOf(selected.id)!.name)}
+                  {reversed.includes(selected.id) && <span className={styles.trialDone}> ✓</span>}
+                </span>
+                <span className={styles.trialText}>{pick(reverseOf(selected.id)!.intro)}</span>
+                <span className={styles.trialReward}>
+                  {reversed.includes(selected.id)
+                    ? t('已成 —— 重打不再发放战利', 'Complete — no further spoils')
+                    : t(
+                        `首成战利:功勋 +${reverseOf(selected.id)!.rewardMerit}`,
+                        `First clear: +${reverseOf(selected.id)!.rewardMerit} merit`,
+                      )}
+                </span>
+              </div>
+            )}
             <div className={styles.briefActions}>
               <button className={styles.primary} onClick={() => fight(selected)}>
                 {t('出战', 'Fight')}
               </button>
+              {reverseOf(selected.id) && cleared.includes(selected.id) && (
+                <button className={styles.trialBtn} onClick={() => fightReverse(selected)}>
+                  {t('逆位而战', 'Fight Reversed')}
+                </button>
+              )}
               <button className={styles.plain} onClick={() => setSelected(null)}>
                 {t('再看看', 'Not yet')}
               </button>
