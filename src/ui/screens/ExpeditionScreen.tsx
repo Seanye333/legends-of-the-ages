@@ -25,7 +25,8 @@ export function ExpeditionScreen({ onBack, onEnterMatch }: ExpeditionScreenProps
   const t = useT()
   const pick = usePickText()
   const customDecks = useCollection((s) => s.customDecks)
-  const { run, bestDepth, start, pickRelic, pickCard, skipCard, dropCard, abandon } = useExpedition()
+  const { run, bestDepth, start, pickRelic, pickCard, skipCard, pickRoute, dropCard, abandon } =
+    useExpedition()
   const [deckIndex, setDeckIndex] = useState(0)
   const myDecks = [...PRECON_DECKS, ...customDecks]
 
@@ -155,6 +156,45 @@ export function ExpeditionScreen({ onBack, onEnterMatch }: ExpeditionScreenProps
             </div>
           </details>
         )}
+      </div>
+    )
+  }
+
+  // ---- 选路(选完牌之后)----
+  // 远征此前是「系统给你一个态势,接受它」—— 关间唯一的决策是选宝物与选牌,
+  // 路本身没有分叉。而 roguelike 的核心恰恰是路线选择:
+  // 「这一关我要不要为了多一件宝物去啃硬的那条」。
+  // 两条候选足够产生这个决策,又不用画一整张节点图 —— 手机上那玩意既难点准也读不出通向哪。
+  if (run && run.routeOffer && run.routeOffer.length > 0) {
+    return (
+      <div className={styles.screen}>
+        {header}
+        <div className={styles.relicPrompt}>
+          {t(`前路有二 —— 擇一而行(下一关:第 ${run.stage + 2} 关)`, 'Two roads ahead — choose one')}
+        </div>
+        <div className={styles.relicRow}>
+          {run.routeOffer.map((id) => {
+            const m = MODIFIERS_BY_ID[id]
+            if (!m) return null
+            return (
+              <button
+                key={id}
+                className={`${styles.relicCard} ${m.bonusRelic ? styles.legendary : ''}`}
+                onClick={() => {
+                  playSfx('buttonTap')
+                  haptic('impact')
+                  pickRoute(id)
+                }}
+              >
+                <div className={styles.relicName}>{pick(m.name)}</div>
+                {m.bonusRelic && (
+                  <div className={styles.relicRarity}>{t('多得一件宝物', 'Extra relic')}</div>
+                )}
+                <div className={styles.relicText}>{pick(m.text)}</div>
+              </button>
+            )
+          })}
+        </div>
       </div>
     )
   }

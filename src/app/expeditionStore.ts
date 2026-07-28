@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { BOSSES } from '../content/campaign'
 import { RELICS, type RelicDef } from '../content/relics'
-import { MODIFIERS_BY_ID, rollModifier } from '../content/expeditionModifiers'
+import { MODIFIERS_BY_ID, rollTwoModifiers } from '../content/expeditionModifiers'
 import { offerCards } from '../content/expeditionDraft'
 import { HEROES_BY_ID } from '../content/overrides/heroes'
 import { useCollection } from './collectionStore'
@@ -29,7 +29,9 @@ export interface ExpeditionRun {
   // 选完宝物后亮出的三选一**卡牌**(加进卡组);null = 不在选牌。
   // 可选字段:老存档没有它 → undefined → 当作 null,旧 run 不会卡住。
   cardOffer?: string[] | null
-  stageMod: string | null // 当前关的战场态势修饰符 id(第 1 关为 null)
+  stageMod: string | null
+  // 两条候选路线(关间选一条走)。非空时远征页停在选路界面。
+  routeOffer: string[] | null // 当前关的战场态势修饰符 id(第 1 关为 null)
   rngState: number // 宝物/修饰符随机的种子推进(可复现)
 }
 
@@ -41,7 +43,9 @@ interface ExpeditionState {
   settle(win: boolean): void // 一场打完
   pickRelic(id: string): void
   pickCard(id: string): void // 把牌加进卡组并进下一关
-  skipCard(): void // 不加牌,直接进下一关
+  skipCard(): void
+  // 选定关间路线(两条候选之一)。选定才推进关卡。
+  pickRoute(modId: string): void // 不加牌,直接进下一关
   dropCard(id: string): void // 精简军册:从卡组里删掉一张(选牌阶段可用)
   abandon(): void
 }
@@ -90,6 +94,7 @@ export const useExpedition = create<ExpeditionState>()(
             relics: [],
             offered: null,
             stageMod: null,
+            routeOffer: null,
             rngState: (Math.floor(Math.random() * 0x7fffffff) || 1) >>> 0,
           },
           totalRuns: get().totalRuns + 1,
@@ -136,28 +141,31 @@ export const useExpedition = create<ExpeditionState>()(
       },
 
       // 选完牌(或跳过)才真正进下一关:抽战场态势修饰符,推进 stage
+      // 选完牌(或跳过)进**选路**:两条候选态势,挑一条走。
+      // 远征此前是「系统给你一个态势,接受它」—— 路本身没有分叉,
+      // 而 roguelike 的核心恰恰是路线选择。
       pickCard(id) {
         const run = get().run
         if (!run || !run.cardOffer || !run.cardOffer.includes(id)) return
-        const { id: modId, next } = rollModifier(run.rngState)
+        const { ids, next } = rollTwoModifiers(run.rngState)
         set({
-          run: {
-            ...run,
-            deck: [...run.deck, id],
-            cardOffer: null,
-            stage: run.stage + 1,
-            stageMod: modId,
-            rngState: next,
-          },
+          run: { ...run, deck: [...run.deck, id], cardOffer: null, routeOffer: ids, rngState: next },
         })
       },
 
       skipCard() {
         const run = get().run
         if (!run || !run.cardOffer) return
-        const { id: modId, next } = rollModifier(run.rngState)
+        const { ids, next } = rollTwoModifiers(run.rngState)
+        set({ run: { ...run, cardOffer: null, routeOffer: ids, rngState: next } })
+      },
+
+      // 选定路线才真正推进 stage
+      pickRoute(modId: string) {
+        const run = get().run
+        if (!run || !run.routeOffer?.includes(modId)) return
         set({
-          run: { ...run, cardOffer: null, stage: run.stage + 1, stageMod: modId, rngState: next },
+          run: { ...run, routeOffer: null, stage: run.stage + 1, stageMod: modId },
         })
       },
 

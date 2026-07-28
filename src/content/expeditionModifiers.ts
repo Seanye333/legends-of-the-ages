@@ -159,6 +159,21 @@ export const MODIFIERS_BY_ID: Record<string, ExpeditionModifier> = Object.fromEn
   EXPEDITION_MODIFIERS.map((m) => [m.id, m]),
 )
 
+// 抽**两条路**让玩家选。
+//
+// 远征此前是「系统给你一个态势,接受它」—— 关间唯一的决策是选宝物与选牌,
+// 路本身没有分叉。而 roguelike 的核心恰恰是**路线选择**:
+// 「这一关我要不要为了多一件宝物去啃硬的那条」。
+// 两条候选足够产生这个决策,又不需要一整张节点图的 UI ——
+// 手机上点一张节点图既难点准也读不出「这条路通向哪」。
+export function rollTwoModifiers(rngState: number): { ids: string[]; next: number } {
+  const a = rollModifier(rngState)
+  let b = rollModifier(a.next)
+  // 抽到同一条就再抽一次(最多两次,避免权重极端时死循环)
+  if (b.id === a.id) b = rollModifier(b.next)
+  return { ids: b.id === a.id ? [a.id] : [a.id, b.id], next: b.next }
+}
+
 // 按权重从 rngState 抽一个修饰符,返回选中 id 与推进后的 rng。
 export function rollModifier(rngState: number): { id: string; next: number } {
   let s = rngState >>> 0
