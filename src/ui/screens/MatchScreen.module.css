@@ -889,3 +889,37 @@
   border: none;
   cursor: pointer;
 }
+
+/* 「这张牌为什么打不出」的即时提示。
+   浮在手牌上方、不拦截点击(pointer-events: none)—— 玩家看到原因后
+   下一个动作多半就是去点别的牌,提示不该挡在中间。 */
+.whyToast {
+  position: absolute;
+  left: 50%;
+  bottom: 27%;
+  transform: translateX(-50%);
+  z-index: 60;
+  pointer-events: none;
+  max-width: min(86vw, 460px);
+  padding: 9px 18px;
+  border-radius: 8px;
+  border: 1px solid rgba(197, 59, 44, 0.55);
+  background: linear-gradient(180deg, rgba(46, 22, 18, 0.96), rgba(28, 14, 11, 0.96));
+  color: var(--parchment);
+  font-size: clamp(12px, 3vw, 14px);
+  letter-spacing: 0.04em;
+  text-align: center;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
+  animation: whyToastIn 0.18s ease-out both;
+}
+
+@keyframes whyToastIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}

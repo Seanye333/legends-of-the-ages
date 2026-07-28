@@ -24,6 +24,7 @@ export interface ProfileData {
   // 表现为「换设备后这个字段悄悄归零」,而且不会报错。
   merit: number
   packsSinceLegendary: number
+  packsEverOpened: number
   wins: number
   losses: number
   customDecks: unknown[]
@@ -100,6 +101,7 @@ export function snapshot(): ProfileData {
     packs: c.packs,
     merit: c.merit,
     packsSinceLegendary: c.packsSinceLegendary,
+    packsEverOpened: c.packsEverOpened,
     wins: c.wins,
     losses: c.losses,
     customDecks: c.customDecks,
@@ -119,6 +121,7 @@ function adopt(data: ProfileData): void {
     packs: data.packs ?? 0,
     merit: data.merit ?? 0,
     packsSinceLegendary: data.packsSinceLegendary ?? 0,
+    packsEverOpened: data.packsEverOpened ?? 0,
     wins: data.wins ?? 0,
     losses: data.losses ?? 0,
     customDecks: (data.customDecks ?? []) as never,

@@ -1,4 +1,4 @@
-import type { SfxName } from './sound'
+import type { SfxName } from './sfxNames'
 
 // 静音优先 —— 每一个音效都必须有一个**非听觉**的对应通道。
 //

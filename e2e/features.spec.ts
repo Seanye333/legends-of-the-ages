@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { seedUnlockedProfile } from './unlocked'
 
 // 新增系统的冒烟:教程引导、每日军令、战报回放、装备/新关键词入池。
 
@@ -176,6 +177,8 @@ test('deck codes: copy from a precon and import it back', async ({ page, context
 })
 
 test('arena: entry gate, hero pick, drafting, and fighting', async ({ page }) => {
+  // 校场是解锁阶梯的最后一档(通 6 关),先播一个老玩家档
+  await seedUnlockedProfile(page)
   await page.goto('/')
   // 先给足功勋(报名费 100)—— 新号只有 0 功勋,入口应该是锁着的
   await page.getByRole('button', { name: '校场点将' }).click()

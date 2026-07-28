@@ -139,6 +139,9 @@ interface CollectionState {
   packs: number
   merit: number
   packsSinceLegendary: number
+  // 累计开过多少包 —— 只为「第一包必出传说」那条规则存在。
+  // 用累计数而不是布尔量,是因为将来若要做「前 N 包定向」不必再加字段。
+  packsEverOpened: number
   wins: number
   losses: number
   customDecks: DeckList[]
@@ -166,6 +169,7 @@ export const useCollection = create<CollectionState>()(
       packs: 2, // 新手礼:两包
       merit: 0,
       packsSinceLegendary: 0,
+      packsEverOpened: 0,
       wins: 0,
       losses: 0,
       customDecks: [],
@@ -190,9 +194,25 @@ export const useCollection = create<CollectionState>()(
       },
 
       openPack() {
-        const { packs, owned, packsSinceLegendary } = get()
+        const { packs, owned, packsSinceLegendary, packsEverOpened } = get()
         if (packs <= 0) return null
-        const cardIds = rollPack(Math.random, packsSinceLegendary + 1 >= LEGENDARY_PITY)
+        // 第一包必出传说。
+        //
+        // 【为什么不是「前三包给一套能用的卡」】
+        // 原本想做的是那个,查了才发现**没必要**:初始收藏已经是六套预组的并集
+        // (starterCollection),新玩家一进来就有六套完整能打的卡组。
+        // 「三包全是散件、拼不出一套牌」这个问题在这个项目里根本不存在。
+        //
+        // 【那什么才是真问题】
+        // 第一包的作用不是给战力,是给**印象**。从 1,400 张普通卡里随机五张,
+        // 开出来的多半是五个没听过的名字 —— 而这游戏最大的卖点是「名将」。
+        // 第一包塞一张传说,开出来的是关羽、李白这个量级的名字,
+        // 玩家立刻知道自己在收集什么。往后照旧走 20 包保底。
+        const firstEver = packsEverOpened === 0
+        const cardIds = rollPack(
+          Math.random,
+          firstEver || packsSinceLegendary + 1 >= LEGENDARY_PITY,
+        )
         const newOwned = { ...owned }
         const newCardIds: string[] = []
         let meritGained = 0
@@ -214,6 +234,7 @@ export const useCollection = create<CollectionState>()(
           owned: newOwned,
           merit: s.merit + meritGained,
           packsSinceLegendary: gotLegendary ? 0 : s.packsSinceLegendary + 1,
+          packsEverOpened: s.packsEverOpened + 1,
         }))
         return { cardIds, newCardIds, meritGained }
       },

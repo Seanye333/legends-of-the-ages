@@ -39,6 +39,8 @@ import { EmoteWheel } from '../components/EmoteWheel'
 import type { CardDef } from '../../engine/types'
 import { useEventAnimations } from '../useEventAnimations'
 import { initSound, playSfx, setMusicEra, setMusicTension, startMusic, stopMusic } from '../sound'
+import { haptic } from '../haptics'
+import { whyNotPlayable } from '../whyNotPlayable'
 import { exportRecapImage } from '../recapExport'
 import { HEROES_BY_ID } from '../../content/overrides/heroes'
 import { ERA_OF, type Era } from '../../content/eras'
@@ -120,6 +122,14 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
   const [selection, setSelection] = useState<Selection>(null)
   // 抉择卡的模式选择器(非空 = 正在选模式)
   const [modeChoice, setModeChoice] = useState<{ iid: number; modes: ChooseMode[] } | null>(null)
+  // 「这张牌为什么打不出」的即时提示。自动消失,不需要玩家关 ——
+  // 它是对刚才那一次点击的回答,不是一个待办。
+  const [whyToast, setWhyToast] = useState<string | null>(null)
+  useEffect(() => {
+    if (!whyToast) return
+    const timer = window.setTimeout(() => setWhyToast(null), 2600)
+    return () => window.clearTimeout(timer)
+  }, [whyToast])
   const [log, setLog] = useState<LocalizedText[]>([])
   const [toast, setToast] = useState<string | null>(null)
   const [inspect, setInspect] = useState<CardDef | null>(null)
@@ -354,13 +364,24 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
   }
 
   const onHandClick = (iid: number) => {
-    if (!myTurn) return
     if (selection?.kind === 'hand' && selection.iid === iid) {
       setSelection(null)
       return
     }
     const variants = playCmds.filter((c) => c.iid === iid)
-    if (variants.length === 0) return
+    // 打不出的牌:不再「点了没反应」,而是当场说清为什么(见 ui/whyNotPlayable.ts)。
+    // 灰色只说了「不行」,而「不行」在这游戏里有六七种原因,
+    // 其中至少三种新手根本想不到(场上满了 / 锦囊没有合法目标 / 还没轮到你)。
+    if (variants.length === 0 || !myTurn) {
+      const inst = state?.players[viewer].hand.find((c) => c.iid === iid)
+      if (!inst) return
+      const why = whyNotPlayable(state, viewer, inst, CARDS_BY_ID[inst.defId], playableIids)
+      if (why) {
+        setWhyToast(pickText(why.text))
+        haptic('warn')
+      }
+      return
+    }
     // 抉择卡:legalCommands 会给每个模式各出命令(带 mode)。先让玩家选模式。
     const inst = state?.players[viewerSeat(state, hotSeat)].hand.find((c) => c.iid === iid)
     const def = inst ? CARDS_BY_ID[inst.defId] : undefined
@@ -937,6 +958,14 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
               {t('关闭', 'Close')}
             </button>
           </div>
+        </div>
+      )}
+
+      {/* 「这张牌为什么打不出」——点了灰牌之后的即时回答,2.6 秒后自己消失。
+          位置放在手牌正上方:视线刚从被点的那张牌抬起来就看得到。 */}
+      {whyToast && (
+        <div className={styles.whyToast} role="status">
+          {whyToast}
         </div>
       )}
 

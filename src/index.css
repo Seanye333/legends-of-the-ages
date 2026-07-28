@@ -12,13 +12,16 @@ body {
    `<meta viewport>` 已经带了 `viewport-fit=cover`,所以页面本来就铺到屏幕边缘,
    但**没有任何一处读过 safe-area-inset** —— iPhone 上左右两侧的返回键正好落在刘海里。
 
-   两件事一起做:
-   1. 四个方向的安全区抽成 CSS 变量,组件按需取用(不要直接 padding 在 body 上 ——
-      对局画面是满屏铺的,给 body 加内边距会把战场压出一圈黑边)。
-   2. 高度用 `100dvh`(动态视口)而不是 `100vh`。移动 Safari 的 `100vh` 算的是
-      **地址栏收起后**的高度,页面一进来就比可视区高一截,于是底部按钮被顶到屏幕外,
-      要往上滑才点得到 —— 这是移动端网页游戏最经典的那个「按钮点不着」。
-      `dvh` 跟着地址栏实时变。旧浏览器不认 dvh 时回落到 vh,写两条即可。 */
+   安全区抽成四个 CSS 变量,由各屏自己取用。
+   **刻意不在这里给 #root 加内边距、也不把它变成滚动容器** ——
+   第一版就是那么写的(`#root { overflow:auto; height:100dvh }`),
+   结果整站的滚动容器从 body 变成了 #root,`window.scrollTo` 立刻失效,
+   图鉴的无限滚动当场挂掉(端到端用例抓到的)。
+   一个「顺手加的兜底」能改掉全站的滚动语义,这是那次的教训。
+
+   各屏的 `min-height` 走 dvh 而不是 vh:移动 Safari 的 `vh` 算的是
+   **地址栏收起后**的高度,页面一进来就比可视区高一截,底部按钮被顶出屏幕外,
+   要先往上滑才点得到 —— 移动端网页游戏最经典的那个「按钮点不着」。 */
 :root {
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -26,16 +29,10 @@ body {
   --safe-right: env(safe-area-inset-right, 0px);
 }
 
-html,
-body,
-#root {
-  height: 100vh;
-  height: 100dvh;
-}
-
-#root {
-  overflow: auto;
-  /* 横屏时刘海在左或右侧,竖屏时在上方 —— 两种都靠这一条兜住 */
+/* 左右安全区放在 body 上:body 仍然是滚动容器(不动滚动语义),
+   而横屏时刘海在左或右 —— 对战画面正是横屏的,受影响最大的也是它。
+   非刘海设备上这两个值是 0px,等于什么都没做。 */
+body {
   padding-left: var(--safe-left);
   padding-right: var(--safe-right);
 }

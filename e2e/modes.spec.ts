@@ -1,9 +1,11 @@
 import { expect, test } from '@playwright/test'
+import { seedUnlockedProfile } from './unlocked'
 
 // 远征与乱斗此前没有端到端覆盖。这里只验「能从标题进模式、配置、真正开起一局对局」——
 // 对局内的流程 smoke.spec 已覆盖,这里补的是两个模式各自的入口 → 开战链路。
 
 test('brawl: title → pick ruleset → into a match', async ({ page }) => {
+  await seedUnlockedProfile(page)
   await page.goto('/')
   await page.getByRole('button', { name: '群雄乱斗' }).click()
   await expect(page.getByRole('heading', { name: '乱斗 · 群雄混战' })).toBeVisible()
@@ -24,6 +26,7 @@ test('practice: title → pick both sides + tier → into a match', async ({ pag
 })
 
 test('expedition: title → set out → fight → into a match', async ({ page }) => {
+  await seedUnlockedProfile(page)
   await page.goto('/')
   await page.getByRole('button', { name: '远征逐鹿' }).click()
   await expect(page.getByRole('heading', { name: '远征 · 逐鹿中原' })).toBeVisible()

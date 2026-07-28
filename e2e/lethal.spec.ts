@@ -1,9 +1,11 @@
 import { expect, test } from '@playwright/test'
+import { seedUnlockedProfile } from './unlocked'
 
 // 斩杀谜题:标题入口 → 选题 → 残局直接进「你的回合」(跳过调度)→ 结束回合判负 →
 // 专用结算面板(提示 + 重试/返回)→ 重试回到残局 → 返回选题。
 // 胜利路径的引擎逻辑已由求解器回放测试覆盖,这里专测谜题特有的 UI 管线。
 test('lethal puzzle: enter → fail on end turn → retry → back to list', async ({ page }) => {
+  await seedUnlockedProfile(page)
   await page.goto('/')
   await page.getByRole('button', { name: '斩杀谜题' }).click()
 

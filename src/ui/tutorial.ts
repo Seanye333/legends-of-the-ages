@@ -156,6 +156,20 @@ export function tutorialMatchArgs(): StartMatchArgs {
     heroIds: [mine.heroId, foe.heroId],
     deckIds: [mine.cardIds.slice(), foe.cardIds.slice()],
     seed: TUTORIAL_SEED,
+    // 教学局**必须让他赢**,而且要赢得像是自己赢的。
+    //
+    // 此前这里什么都没设,于是教学局用的是设置页里的难度档 ——
+    // 默认档是「名将」:零失误、必算斩杀、还会看你下一回合。
+    // 一个刚学会「点牌上场」的人对上它,大概率在第八回合被一波带走,
+    // 而那是他玩这个游戏的**第一局**。
+    //
+    // 两个旋钮一起给:
+    //   · 对手压到新兵档(会漏斩杀、会打错目标)
+    //   · 自己多 10 点血 —— 不是为了赢,是为了**容错**:
+    //     新手一定会拿 2/1 去撞 3/4,得让他撞几次还站得住,才学得到东西。
+    // 教学局本来就不记战绩、不发奖,所以这两个旋钮不污染任何数据。
+    difficultyOverride: 'recruit',
+    heroHpsOverride: [40, 30],
   }
 }
 

@@ -1,6 +1,7 @@
 .screen {
   position: relative;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -578,6 +579,40 @@
   color: var(--gold-bright);
   border-color: var(--gold-mid);
   animation: navBreath 1.8s ease-in-out infinite;
+}
+
+/* 未解锁的模式入口:压暗但**不隐藏**,把条件写在按钮第二行。
+   刻意保留边框的金色(降到 0.22 透明度)—— 完全去色的话它看起来像坏了,
+   而我们要传达的是「它在,只是还没轮到」。 */
+.navLocked {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+  border-color: rgba(184, 134, 59, 0.22);
+  background: linear-gradient(180deg, rgba(28, 24, 16, 0.7), rgba(18, 15, 10, 0.7));
+  color: var(--parchment-faint);
+  cursor: default;
+  padding: 6px 16px;
+}
+
+.navLocked:hover {
+  color: var(--parchment-faint);
+  transform: none;
+}
+
+.navLockedName {
+  opacity: 0.55;
+}
+
+.navLockedHint {
+  font-family:
+    'PingFang SC',
+    system-ui,
+    sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--gold-dark);
 }
 
 @keyframes navBreath {

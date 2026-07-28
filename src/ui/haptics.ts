@@ -8,7 +8,7 @@ import { useSettings } from '../app/settingsStore'
 //    只有 Android 与桌面 Chrome 会震。Tauri 原生的触感要装插件,留待以后。
 // 2. 必须跟随「音效开关」——玩家关掉音效多半是在安静场合,这时候震动同样不合时宜。
 // 3. 一切调用都吞异常:某些浏览器会在非用户手势里抛。
-export type HapticKind = 'tap' | 'play' | 'impact' | 'lethal' | 'reward'
+export type HapticKind = 'tap' | 'play' | 'impact' | 'lethal' | 'reward' | 'warn'
 
 const PATTERNS: Record<HapticKind, number | number[]> = {
   tap: 8,
@@ -16,6 +16,10 @@ const PATTERNS: Record<HapticKind, number | number[]> = {
   impact: [0, 18, 26, 18],
   lethal: [0, 30, 40, 60],
   reward: [0, 12, 30, 12, 30, 24],
+  // 「不行」:两记极短的顿挫。它必须和上面五种都不一样 ——
+  // 拒绝是唯一一种**负面**反馈,做成短促的双击是通用语汇(和「摇头」同构),
+  // 而其余五种都是渐强或有节奏的,读起来是肯定的。
+  warn: [0, 10, 60, 10],
 }
 
 export function haptic(kind: HapticKind): void {

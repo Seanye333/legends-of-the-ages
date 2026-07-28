@@ -5,24 +5,10 @@
 
 import { useSettings } from '../app/settingsStore'
 
-export type SfxName =
-  | 'buttonTap' // UI 轻击
-  | 'cardPlay' // 出牌落子:木质闷响
-  | 'stratagemCast' // 锦囊施放:气声呼啸 + 铃音
-  | 'attack' // 攻击:金铁交鸣
-  | 'hit' // 受击:低沉闷响
-  | 'duel' // 单挑:两音戏剧性重锤
-  | 'death' // 阵亡:蒙皮闷鼓
-  | 'heal' // 治疗:温润上行编钟
-  | 'turnStart' // 回合开始:轻锣
-  | 'lethal' // 主帅陨落:轰鸣 + 余晖
-  | 'victory' // 胜利:宫商角徵羽短号
-  | 'defeat' // 失败:低音渐弱长吟
-  | 'draw' // 抽牌:纸帛抽出的摩擦
-  | 'mana' // 法力水晶点亮:清脆玉磬
-  | 'bond' // 羁绊/宿敌触发:双音共鸣
-  | 'armorBreak' // 护甲破碎:甲片崩裂
-  | 'discover' // 发现三选一:翻开的气声
+// 音效名字清单在 sfxNames.ts(那个文件不依赖 DOM,见其中的注释)。
+// 这里 re-export,既有的 `import type { SfxName } from './sound'` 一律不用改。
+export type { SfxName } from './sfxNames'
+import type { SfxName } from './sfxNames'
 
 let ctx: AudioContext | null = null
 let master: GainNode | null = null

@@ -57,7 +57,58 @@ import { useDailyGeneral } from '../../app/dailyGeneralStore'
 import { dayKey } from '../../content/dailyPuzzle'
 import { useQuests } from '../../app/questStore'
 import { shouldOfferTutorial, tutorialMatchArgs } from '../tutorial'
+import { unlockHint, type UnlockProgress } from '../../content/unlocks'
 import styles from './TitleScreen.module.css'
+
+// 大厅里带解锁门槛的模式入口。没解锁时**照样渲染**,只是灰着并把条件写在按钮上 ——
+// 藏起来的话游戏看着空,而内容量恰恰是这游戏最大的卖点。见 content/unlocks.ts。
+function ModeBtn({
+  mode,
+  progress,
+  onNavigate,
+  glow,
+  children,
+}: {
+  mode: string
+  progress: UnlockProgress
+  onNavigate?: (s: NavTarget) => void
+  glow?: boolean
+  children: React.ReactNode
+}) {
+  const pick = usePickText()
+  const hint = unlockHint(mode, progress)
+  if (hint) {
+    // 提示文字标 aria-hidden,并把同样的内容挂到 title 上。
+    // 不这么做的话,按钮的**可及名称**会变成「校场点将 群雄逐鹿通 6 关解锁(还差 5)」——
+    // 屏幕阅读器把门槛说明当成按钮名字念是一;二是这个名字里含着别的模式的名字,
+    // 于是「找名叫『群雄逐鹿』的按钮」会同时命中三个灰按钮
+    // (实测:这条直接打挂了三个既有的端到端用例)。
+    return (
+      <button
+        className={`${styles.navBtn} ${styles.navLocked}`}
+        disabled
+        title={pick(hint)}
+      >
+        <span className={styles.navLockedName}>{children}</span>
+        <span className={styles.navLockedHint} aria-hidden="true">
+          {pick(hint)}
+        </span>
+      </button>
+    )
+  }
+  return (
+    <button
+      className={`${styles.navBtn} ${glow ? styles.navGlow : ''}`}
+      onClick={() => {
+        playSfx('buttonTap')
+        countMode(mode as ModeKey)
+        onNavigate?.(mode as NavTarget)
+      }}
+    >
+      {children}
+    </button>
+  )
+}
 
 function MiniCard({ card }: { card: CardDef }) {
   const pick = usePickText()
@@ -119,11 +170,28 @@ const DIFFICULTIES: { key: Difficulty; name: LocalizedText }[] = [
   { key: 'marshal', name: { zh: '军神', en: 'Marshal' } },
 ]
 
+type NavTarget =
+  | 'collection'
+  | 'deckbuilder'
+  | 'replays'
+  | 'settings'
+  | 'arena'
+  | 'campaign'
+  | 'history'
+  | 'tower'
+  | 'lore'
+  | 'quiz'
+  | 'codex'
+  | 'expedition'
+  | 'brawl'
+  | 'lethal'
+  | 'practice'
+  | 'bossrush'
+  | 'study'
+
 interface TitleScreenProps {
   onStart?: () => void
-  onNavigate?: (
-    screen: 'collection' | 'deckbuilder' | 'replays' | 'settings' | 'arena' | 'campaign' | 'history' | 'tower' | 'lore' | 'quiz' | 'codex' | 'expedition' | 'brawl' | 'lethal' | 'practice' | 'bossrush' | 'study',
-  ) => void
+  onNavigate?: (screen: NavTarget) => void
 }
 
 export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
@@ -140,6 +208,7 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
   const towerBest = useTower((s) => s.best)
   const campaignAllCleared = useCampaign((s) => s.cleared.length >= BOSSES.length)
   const wins = useCollection((s) => s.wins)
+  const losses = useCollection((s) => s.losses)
   const trialsDone = useCampaign((s) => s.trialsCleared.length)
   const expeditionDepth = useExpedition((s) => s.bestDepth)
   const bossRushBest = useBossRush((s) => s.best)
@@ -193,6 +262,12 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
   const claimable = quests.filter((q) => !q.claimed && q.progress >= q.goal).length
   const dynastyCount = new Set(CARDS.map((c) => c.dynasty)).size
   const gallery = SIGNATURE_IDS.map((id) => CARDS_BY_ID[id]).filter(Boolean)
+  // 渐进解锁的两个计数(见 content/unlocks.ts)。两个都是玩家自然会累积的量,
+  // 不需要他知道解锁条件存在 —— 顺着最显眼的「群雄逐鹿」打,模式会依次自己亮。
+  const unlockProgress = useMemo(
+    () => ({ matches: wins + losses, campaignCleared: campaignDone }),
+    [wins, losses, campaignDone],
+  )
   const selectableDecks = useMemo(
     () => [...PRECON_DECKS, ...customDecks],
     [customDecks],
@@ -384,26 +459,12 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
 
       <div className={styles.navGroup}>{t('對局', 'Ways to Play')}</div>
       <div className={styles.navRow}>
-        <button
-          className={`${styles.navBtn} ${arenaLive ? styles.navGlow : ''}`}
-          onClick={() => {
-            playSfx('buttonTap')
-            countMode('arena' as ModeKey)
-            onNavigate?.('arena')
-          }}
-        >
+        <ModeBtn mode="arena" progress={unlockProgress} onNavigate={onNavigate} glow={arenaLive}>
           {arenaLive ? t('校场 · 进行中', 'Arena · in progress') : t('校场点将', 'Arena')}
-        </button>
-        <button
-          className={styles.navBtn}
-          onClick={() => {
-            playSfx('buttonTap')
-            countMode('tower' as ModeKey)
-            onNavigate?.('tower')
-          }}
-        >
+        </ModeBtn>
+        <ModeBtn mode="tower" progress={unlockProgress} onNavigate={onNavigate}>
           {towerBest > 0 ? t(`登楼 · ${towerBest} 层`, `Tower · ${towerBest}`) : t('登楼', 'Tower')}
-        </button>
+        </ModeBtn>
         {/* 群雄连斩:冒险全通之后才露出来 —— 它问的是「你的卡组撑不撑得住十六场」,
             在还没走完一遍十六关之前问这个没有意义。 */}
         {campaignAllCleared && (
@@ -418,36 +479,15 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
             {t('群雄连斩', 'Gauntlet')}
           </button>
         )}
-        <button
-          className={styles.navBtn}
-          onClick={() => {
-            playSfx('buttonTap')
-            countMode('expedition' as ModeKey)
-            onNavigate?.('expedition')
-          }}
-        >
+        <ModeBtn mode="expedition" progress={unlockProgress} onNavigate={onNavigate}>
           {t('远征逐鹿', 'Expedition')}
-        </button>
-        <button
-          className={styles.navBtn}
-          onClick={() => {
-            playSfx('buttonTap')
-            countMode('brawl' as ModeKey)
-            onNavigate?.('brawl')
-          }}
-        >
+        </ModeBtn>
+        <ModeBtn mode="brawl" progress={unlockProgress} onNavigate={onNavigate}>
           {t('群雄乱斗', 'Brawl')}
-        </button>
-        <button
-          className={styles.navBtn}
-          onClick={() => {
-            playSfx('buttonTap')
-            countMode('lethal' as ModeKey)
-            onNavigate?.('lethal')
-          }}
-        >
+        </ModeBtn>
+        <ModeBtn mode="lethal" progress={unlockProgress} onNavigate={onNavigate}>
           {t('斩杀谜题', 'Lethal Puzzles')}
-        </button>
+        </ModeBtn>
         <button
           className={styles.navBtn}
           onClick={() => {
