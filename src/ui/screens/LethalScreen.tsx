@@ -1,5 +1,15 @@
 import { LETHAL_PUZZLES, type LethalPuzzle } from '../../content/lethalPuzzles'
 import { dailyPuzzleFor, dayKey } from '../../content/dailyPuzzle'
+import { useState } from 'react'
+import { createGame } from '../../engine/init'
+import { CARDS_BY_ID } from '../../content/cards'
+import { solveLethal, trivialFaceLethal } from '../../ai/lethalSolver'
+import {
+  decodePuzzle,
+  encodePuzzle,
+  puzzleFromCode,
+  sharedPuzzleConfig,
+} from '../../content/puzzleCode'
 import { HEROES_BY_ID } from '../../content/overrides/heroes'
 import { useLethal } from '../../app/lethalStore'
 import { launchMatch } from '../matchSetup'
@@ -23,6 +33,8 @@ export function LethalScreen({ onBack, onEnterMatch }: LethalScreenProps) {
   const dailySolvedDate = useLethal((s) => s.dailySolvedDate)
   const streakAsOf = useLethal((s) => s.streakAsOf)
   const solvedSet = new Set(solved)
+  const [codeInput, setCodeInput] = useState('')
+  const [codeMsg, setCodeMsg] = useState<string | null>(null)
 
   const today = dayKey()
   const daily = dailyPuzzleFor(today)
@@ -46,6 +58,16 @@ export function LethalScreen({ onBack, onEnterMatch }: LethalScreenProps) {
   }
 
   const start = (p: LethalPuzzle) => launch(p)
+
+  // 分享:把一道题编成码。放在每张题卡上会太吵,所以只给「当日题」一个入口 ——
+  // 那是所有人今天都在打的同一道,最值得被聊起来。
+  const shareDaily = () => {
+    if (!daily) return
+    playSfx('buttonTap')
+    const code = encodePuzzle(daily.heroes, daily.scenario)
+    void navigator.clipboard?.writeText(code)
+    setCodeMsg(t('每日残局码已复制', 'Daily puzzle code copied'))
+  }
 
   const total = LETHAL_PUZZLES.length
   const done = LETHAL_PUZZLES.filter((p) => solvedSet.has(p.id)).length
@@ -74,6 +96,58 @@ export function LethalScreen({ onBack, onEnterMatch }: LethalScreenProps) {
           'A fixed board. Find a line that ends it this very turn — cards, hero power, attack order, all of it.',
         )}
       </p>
+
+      {/* 残局分享:UGC 最难的一环从来不是编辑器,是**审核** ——
+          谁来保证这道题真的有解?而这里有 solveLethal,导入时当场跑一遍,
+          无解的、或者「全体打脸就赢」的平凡题直接拒收。别家要请人审,这里是一行断言。 */}
+      <div className={styles.shareRow}>
+        <input
+          className={styles.shareInput}
+          placeholder={t('粘贴残局码…', 'Paste a puzzle code…')}
+          aria-label={t('粘贴残局码', 'Paste a puzzle code')}
+          value={codeInput}
+          onChange={(e) => {
+            setCodeInput(e.target.value)
+            setCodeMsg(null)
+          }}
+        />
+        <button className={styles.shareBtn} disabled={!daily} onClick={shareDaily}>
+          {t('复制今日残局码', 'Copy daily code')}
+        </button>
+        <button
+          className={styles.shareBtn}
+          disabled={!codeInput.trim()}
+          onClick={() => {
+            playSfx('buttonTap')
+            const decoded = decodePuzzle(codeInput)
+            if (!decoded.ok) {
+              setCodeMsg(
+                t(
+                  { 'bad-prefix': '这不像一个残局码', 'bad-payload': '残局码已损坏',
+                    'unknown-card': '里面有本作没有的卡', 'unknown-hero': '里面有本作没有的主公',
+                    'empty-board': '这个残局是空的' }[decoded.error],
+                  'That code could not be read.',
+                ),
+              )
+              return
+            }
+            // 导入即验:无解或平凡解一律拒收
+            const state = createGame(sharedPuzzleConfig(decoded.heroes, decoded.scenario), CARDS_BY_ID)
+            if (trivialFaceLethal(state, 0)) {
+              setCodeMsg(t('这题全体打脸就能赢 —— 不算谜题', 'Everything just hits the face — not a puzzle'))
+              return
+            }
+            if (!solveLethal(state, 0, CARDS_BY_ID)) {
+              setCodeMsg(t('这题无解 —— 拒收', 'No lethal exists in that position — rejected'))
+              return
+            }
+            launch(puzzleFromCode(decoded.heroes, decoded.scenario))
+          }}
+        >
+          {t('导入残局', 'Import')}
+        </button>
+      </div>
+      {codeMsg && <p className={styles.shareMsg}>{codeMsg}</p>}
 
       {daily && (
         <button
