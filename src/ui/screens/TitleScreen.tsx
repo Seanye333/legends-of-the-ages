@@ -20,6 +20,7 @@ import { useCampaign } from '../../app/campaignStore'
 import { BOSSES } from '../../content/campaign'
 import { useHistory } from '../../app/historyStore'
 import { useTower } from '../../app/towerStore'
+import { useStreak } from '../../app/streakStore'
 import { useExpedition } from '../../app/expeditionStore'
 import { useBossRush } from '../../app/bossRushStore'
 import { rankOf, toNextRank, warMerit } from '../../content/ranks'
@@ -135,6 +136,20 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
   const rank = rankOf(merit)
   const nextRank = toNextRank(merit)
 
+  // 连日到营:今天第一次打开时签到。放在标题页而不是某个面板里 ——
+  // 它奖励的是「回来」这件事本身,不该要求玩家再点一下才生效。
+  const [streakToast, setStreakToast] = useState<string | null>(null)
+  useEffect(() => {
+    const r = useStreak.getState().checkIn()
+    if (!r.isNew || r.merit <= 0) return
+    setStreakToast(
+      t(`連日到營 ${r.streak} 天 —— 功勳 +${r.merit}`, `${r.streak} days running — +${r.merit} merit`),
+    )
+    const timer = window.setTimeout(() => setStreakToast(null), 4200)
+    return () => window.clearTimeout(timer)
+    // 只在挂载时签一次
+  }, [t])
+
   // 订阅 stats/claimed 而不是调 claimableCount() —— 后者不是响应式的
   const achStats = useAchievements((s) => s.stats)
   const achClaimed = useAchievements((s) => s.claimed)
@@ -213,6 +228,7 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
         {/* 军衔:标题页有二十几个入口,每个都发自己的进度,
             而没有任何一样东西回答「我在这个游戏里走到哪儿了」。
             战功把每一种胜利都折进来,权重按**这一局有多难**给。 */}
+        {streakToast && <div className={styles.streakToast}>{streakToast}</div>}
         <div className={styles.rankRow} title={t(`累计战功 ${merit}`, `${merit} war merit`)}>
           <span className={styles.rankName}>{pick(rank.rank.name)}</span>
           {nextRank && (

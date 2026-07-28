@@ -16,6 +16,11 @@
     url('/art/battlefield-bg.jpg') center 40% / cover no-repeat,
     #12100c;
   background-blend-mode: normal, multiply, normal;
+  /* 战场按时代变色:同一张底图,不同的色温。
+     先秦冷青、秦汉赭黄、三国暖褐(默认)、隋唐金、宋元灰蓝、明清暗红。
+     只用 filter,**不需要六张新底图** —— 六张 4K 战场图是几十 MB,
+     而包体红线是 150MB(立绘已经占了 65MB)。 */
+  filter: var(--era-tint, none);
   padding:
     max(4px, env(safe-area-inset-top))
     max(4px, env(safe-area-inset-right))

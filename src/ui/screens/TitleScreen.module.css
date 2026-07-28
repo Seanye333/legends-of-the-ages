@@ -782,3 +782,15 @@
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(212, 168, 74, 0.4), transparent);
 }
+
+/* 连日到营的提示条:比军衔轻,4 秒后自己消失 */
+.streakToast {
+  margin: 6px auto 0;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: #7ae87a;
+  background: rgba(20, 40, 20, 0.6);
+  border: 1px solid rgba(122, 232, 122, 0.35);
+}

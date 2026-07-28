@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { CSSProperties } from 'react'
 import type { ChooseMode, Command, GameEvent, LocalizedText, TargetRef } from '../../engine/types'
 import { legalCommands } from '../../engine/legal'
 import { CARDS_BY_ID } from '../../content/cards'
@@ -31,7 +32,17 @@ import { EmoteWheel } from '../components/EmoteWheel'
 import type { CardDef } from '../../engine/types'
 import { useEventAnimations } from '../useEventAnimations'
 import { initSound, playSfx, setMusicEra, startMusic, stopMusic } from '../sound'
-import { ERA_OF } from '../../content/eras'
+import { ERA_OF, type Era } from '../../content/eras'
+
+// 六个时代块各一套色温。三国是默认(底图本来就是那个调子),所以它不变。
+const ERA_TINT: Record<Era, string> = {
+  'pre-qin': 'hue-rotate(-18deg) saturate(0.85) brightness(0.96)',
+  'qin-han': 'hue-rotate(-8deg) saturate(1.08)',
+  'three-kingdoms': 'none',
+  'sui-tang': 'hue-rotate(8deg) saturate(1.12) brightness(1.04)',
+  'song-yuan': 'hue-rotate(150deg) saturate(0.6) brightness(0.94)',
+  'ming-qing': 'hue-rotate(-24deg) saturate(1.1) brightness(0.92)',
+}
 import { useSettings } from '../../app/settingsStore'
 import styles from './MatchScreen.module.css'
 
@@ -101,6 +112,13 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
   // 「轮到你了」横幅:此前只有主帅面板的一次金光脉动,很容易错过 ——
   // 尤其是联机局隔了对手一整个回合之后。
   const [turnBanner, setTurnBanner] = useState(0)
+
+  // 战场色温:同一张底图,按对手的时代块换色 —— 六张 4K 底图是几十 MB,
+  // 而包体红线 150MB 里立绘已经占了 65MB。filter 一行解决。
+  const eraOfMatch = useMemo(() => {
+    const foeCard = CARDS_BY_ID[state?.players[1].heroId ?? '']
+    return foeCard ? ERA_OF[foeCard.dynasty] : 'three-kingdoms'
+  }, [state])
 
   // 事件时间轴:动效 + 音效 + 飘字都由它按节拍产出
   const anim = useEventAnimations(state, lastEvents)
@@ -246,7 +264,9 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
 
   if (!state) {
     return (
-      <div className={styles.screen}>
+      <div
+      style={{ '--era-tint': ERA_TINT[eraOfMatch] ?? 'none' } as CSSProperties}
+      className={styles.screen}>
         <div className={styles.noMatch}>
           <p>{t('没有进行中的对局', 'No match in progress')}</p>
           <button className={styles.plainBtn} onClick={onExit}>
