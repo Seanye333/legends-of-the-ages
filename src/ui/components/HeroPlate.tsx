@@ -3,6 +3,7 @@ import type { PlayerState } from '../../engine/types'
 import { HEROES_BY_ID } from '../../content/overrides/heroes'
 import { CARDS_BY_ID } from '../../content/cards'
 import { useSettings } from '../../app/settingsStore'
+import { backCss } from '../../content/cardBacks'
 import { useT } from '../i18n'
 import type { FloatItem } from './floats'
 import type { TokenFx } from '../useEventAnimations'
@@ -42,6 +43,7 @@ export function HeroPlate({
   onUpgradePower,
 }: HeroPlateProps) {
   const lang = useSettings((s) => s.language)
+  const cardBack = useSettings((s) => s.cardBack)
   const t = useT()
   const hero = HEROES_BY_ID[ps.heroId]
   // 关底 Boss / 远征 / 爬塔的对手是**武将卡 id**,不在 HEROES_BY_ID 里 ——
@@ -122,7 +124,7 @@ export function HeroPlate({
         {enemy && (
           <div className={styles.backs} title={t(`对方手牌 ${ps.hand.length} 张`, `Opponent hand: ${ps.hand.length}`)}>
             {Array.from({ length: Math.min(ps.hand.length, 10) }, (_, i) => (
-              <span key={i} className={styles.back} />
+              <span key={i} className={styles.back} style={{ background: backCss(cardBack) }} />
             ))}
             <span className={styles.backCount}>{ps.hand.length}</span>
           </div>

@@ -6,6 +6,10 @@ import { getPlayerId } from '../../app/leaderboard'
 import { COLLECTIBLE_CARDS } from '../../content/cards'
 import { useT, usePickText } from '../i18n'
 import { clearDiagnostics, crashes, diagnosticsText } from '../../app/telemetry'
+import { CARD_BACKS, isBackUnlocked } from '../../content/cardBacks'
+import { rankOf, warMerit } from '../../content/ranks'
+import { useCampaign } from '../../app/campaignStore'
+import { useBossRush } from '../../app/bossRushStore'
 import { playSfx, setMasterVolume, setMusicVolume, startMusic, stopMusic } from '../sound'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import styles from './SettingsScreen.module.css'
@@ -30,6 +34,18 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
   const pick = usePickText()
   const s = useSettings()
   const [diagCopied, setDiagCopied] = useState(false)
+  // 卡背解锁只读**已经在记的东西**:军衔、冒险通关数、连斩最远、收藏数。
+  // 不新开统计 —— 那意味着又要在 achievement.test 那道闸门里登记一次。
+  const campaignCleared = useCampaign((c) => c.cleared.length)
+  const gauntletBest = useBossRush((c) => c.best)
+  const ownedSize = useCollection((c) => Object.values(c.owned).filter((n) => n > 0).length)
+  const casualWins = useCollection((c) => c.wins)
+  const backProgress = {
+    rankIndex: rankOf(warMerit({ casualWins, campaignCleared, bossRushBest: gauntletBest })).index,
+    campaignCleared,
+    gauntletBest,
+    collectionSize: ownedSize,
+  }
   const [crashCount, setCrashCount] = useState(() => crashes().length)
   const wins = useCollection((c) => c.wins)
   const losses = useCollection((c) => c.losses)
@@ -194,6 +210,52 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
             onChange={(e) => s.setReducedMotion(e.target.checked)}
           />
         </label>
+      </section>
+
+      {/* ---- 卡背 ---- */}
+      {/* 奖励此前只有功勋与卡包,两者最终都落回卡池 —— 于是「我通关了第三章」
+          这件事在牌桌上是不可见的。卡背是唯一一样**对手也看得见**的东西。
+          全部程序生成(CSS 渐变),零字节 —— 六张手绘卡背是六张图,
+          而包体红线 150MB 里立绘已经占了 65MB。 */}
+      <section className={styles.card}>
+        <h3 className={styles.sectionTitle}>{t('卡背', 'Card Back')}</h3>
+        <div className={styles.chipRow}>
+          {CARD_BACKS.map((b) => {
+            const unlocked = isBackUnlocked(b, backProgress)
+            return (
+              <button
+                key={b.id}
+                className={s.cardBack === b.id ? styles.chipActive : styles.chip}
+                disabled={!unlocked}
+                title={unlocked ? pick(b.name) : pick(b.hint)}
+                onClick={() => {
+                  playSfx('buttonTap')
+                  s.setCardBack(b.id)
+                }}
+              >
+                <span
+                  style={{
+                    display: 'inline-block',
+                    width: 14,
+                    height: 20,
+                    borderRadius: 3,
+                    marginRight: 6,
+                    verticalAlign: 'middle',
+                    background: b.css,
+                    border: '1px solid rgba(212,168,74,0.5)',
+                    opacity: unlocked ? 1 : 0.3,
+                  }}
+                />
+                {unlocked ? pick(b.name) : '???'}
+              </button>
+            )
+          })}
+        </div>
+        <p className={styles.hint}>
+          {CARD_BACKS.filter((b) => !isBackUnlocked(b, backProgress))
+            .map((b) => pick(b.hint))
+            .join(' · ') || t('全部已解锁', 'All unlocked')}
+        </p>
       </section>
 
       {/* ---- 诊断信息 ---- */}

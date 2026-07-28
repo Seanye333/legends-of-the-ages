@@ -21,6 +21,8 @@ interface SettingsState {
   // 减少动效:跟随系统 prefers-reduced-motion,但允许手动覆盖 ——
   // 战斗特效是全站动效最猛的地方,晕动敏感的人需要一个明确的开关。
   reducedMotion: boolean
+  // 卡背:唯一一样**对手也看得见**的成就展示(见 content/cardBacks.ts)
+  cardBack: string
   setLanguage: (lang: Language) => void
   setSoundEnabled: (on: boolean) => void
   setVolume: (v: number) => void
@@ -28,6 +30,7 @@ interface SettingsState {
   setMusicVolume: (v: number) => void
   setDifficulty: (d: Difficulty) => void
   setReducedMotion: (on: boolean) => void
+  setCardBack: (id: string) => void
 }
 
 export const useSettings = create<SettingsState>()(
@@ -40,6 +43,7 @@ export const useSettings = create<SettingsState>()(
       musicVolume: 0.6,
       difficulty: 'veteran',
       reducedMotion: false,
+      cardBack: 'back-default',
       setLanguage: (language) => set({ language }),
       setSoundEnabled: (soundEnabled) => set({ soundEnabled }),
       setVolume: (volume) => set({ volume: Math.max(0, Math.min(1, volume)) }),
@@ -47,6 +51,7 @@ export const useSettings = create<SettingsState>()(
       setMusicVolume: (musicVolume) => set({ musicVolume: Math.max(0, Math.min(1, musicVolume)) }),
       setDifficulty: (difficulty) => set({ difficulty }),
       setReducedMotion: (reducedMotion) => set({ reducedMotion }),
+      setCardBack: (cardBack) => set({ cardBack }),
     }),
     { name: 'qiangu-settings' },
   ),
