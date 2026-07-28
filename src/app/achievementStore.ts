@@ -47,6 +47,10 @@ export type StatKey =
   | 'puzzlesSolved' // 斩杀谜题:每有奖励的解开(手搓首解 / 每日首解)+1
   | 'bestPuzzleStreak' // 每日谜题历史最长连续天数(取最大)
   | 'towerBest' // 无尽爬塔历史最高层(取最大)
+  // ---- 这一轮新加的三个模式,此前一条成就都没有 ----
+  | 'trialsCleared' // 关底试炼(换赢法的第二种打法)通过数
+  | 'bossRushBest' // 群雄连斩最远打到第几关(取最大)
+  | 'lessonsDone' // 讲堂实练完成数
   | 'historyCleared' // 历史名战通关场数
   | 'collectionSize' // 收藏里程碑:拥有的**不同**卡牌数(取历史最大)
   | 'legendariesOwned' // 拥有的不同传说卡数(取历史最大)
@@ -278,6 +282,33 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     [5, 20],
     [80, 260],
   ),
+  // ---- 这一轮新加的模式:试炼 / 连斩 / 实练 ----
+  // 加了模式不加成就,那个模式在功名簿里就等于不存在 —— 而功名簿是玩家
+  // 找「还有什么可做」的唯一一张清单。
+  ...tier(
+    'ach-trial',
+    'trialsCleared',
+    { zh: '試煉', en: 'Trials' },
+    (n) => ({ zh: `通过 ${n} 场关底试炼`, en: `Complete ${n} boss trials` }),
+    [1, 6, 16],
+    [80, 240, 700],
+  ),
+  ...tier(
+    'ach-gauntlet',
+    'bossRushBest',
+    { zh: '連斬', en: 'Gauntlet' },
+    (n) => ({ zh: `群雄连斩连过 ${n} 关`, en: `Clear ${n} bouts in the Gauntlet` }),
+    [4, 10, 16],
+    [120, 350, 900],
+  ),
+  ...tier(
+    'ach-lesson',
+    'lessonsDone',
+    { zh: '實練', en: 'Drills' },
+    (n) => ({ zh: `完成 ${n} 课讲堂实练`, en: `Finish ${n} codex drills` }),
+    [1, 3],
+    [60, 180],
+  ),
   ...tier(
     'ach-tower',
     'towerBest',
@@ -431,6 +462,7 @@ export function tallyStats(events: GameEvent[], myHeroId: string): Stats {
 // bestTurnDamage / arenaBestWins 是「取最大」而不是「累加」
 const MAX_STATS = new Set<StatKey>([
   'towerBest', // 爬塔最高层:取历史最大,不是累加
+  'bossRushBest', // 同理:连斩记的是最远走到哪一关
   'bestTurnDamage',
   'arenaBestWins',
   'bestPuzzleStreak',

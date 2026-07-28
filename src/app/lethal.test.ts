@@ -145,3 +145,28 @@ describe('lethalStore', () => {
     expect(useAchievements.getState().stats.bestPuzzleStreak).toBe(3) // 保留最大
   })
 })
+
+// ---- 讲堂实练走同一条谜题通道,但它不是「谜题」----
+describe('讲堂实练与谜题分开记', () => {
+  it('实练不计进 solved —— 混进去会让「全套通关」永远凑不齐', () => {
+    const before = useLethal.getState().solved.length
+    useLethal.getState().solve('lesson-formation')
+    expect(useLethal.getState().solved.length).toBe(before)
+    expect(useLethal.getState().lessonsDone).toContain('lesson-formation')
+  })
+
+  it('实练不发首解功勋,但记成就进度', () => {
+    const merit = useCollection.getState().merit
+    const r = useLethal.getState().solve('lesson-field')
+    expect(r.merit).toBe(0)
+    expect(useCollection.getState().merit).toBe(merit)
+    expect(useAchievements.getState().stats.lessonsDone).toBeGreaterThan(0)
+  })
+
+  it('同一课重做不重复计数', () => {
+    useLethal.getState().solve('lesson-troop')
+    const n = useAchievements.getState().stats.lessonsDone
+    useLethal.getState().solve('lesson-troop')
+    expect(useAchievements.getState().stats.lessonsDone).toBe(n)
+  })
+})

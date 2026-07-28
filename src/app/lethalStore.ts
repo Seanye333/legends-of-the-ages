@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { LESSONS_BY_ID } from '../content/lessons'
 import { LETHAL_PUZZLES } from '../content/lethalPuzzles'
 import { daysBetween } from '../content/dailyPuzzle'
 import { useCollection } from './collectionStore'
@@ -23,6 +24,8 @@ export interface PuzzleReward {
 
 interface LethalState {
   solved: string[] // 已解开的谜题 id
+  // 讲堂实练完成的课(与谜题分开记 —— 混进 solved 会让「全套通关」永远凑不齐)
+  lessonsDone: string[]
   completedRewardGiven: boolean // 全套通关奖是否已发(防重复)
   dailySolvedDate: string | null // 每日谜题最近一次解开的日期(YYYY-MM-DD)
   dailyStreak: number // 当前连续解题天数
@@ -43,6 +46,7 @@ export const useLethal = create<LethalState>()(
   persist(
     (set, get) => ({
       solved: [],
+      lessonsDone: [],
       completedRewardGiven: false,
       dailySolvedDate: null,
       dailyStreak: 0,
@@ -87,6 +91,17 @@ export const useLethal = create<LethalState>()(
       },
 
       solve(id) {
+        // 讲堂实练走同一条谜题通道,但它不是「谜题」——
+        // 不计进 solved(否则「全套通关」永远凑不齐)、不发首解功勋,
+        // 只记一条自己的成就进度。
+        if (LESSONS_BY_ID[id]) {
+          if (get().lessonsDone.includes(id)) {
+            return { firstSolve: false, merit: 0, packs: 0, allComplete: false }
+          }
+          set({ lessonsDone: [...get().lessonsDone, id] })
+          useAchievements.getState().bump('lessonsDone')
+          return { firstSolve: true, merit: 0, packs: 0, allComplete: false }
+        }
         // 只认真实存在的谜题 id
         if (!LETHAL_PUZZLES.some((p) => p.id === id)) {
           return { firstSolve: false, merit: 0, packs: 0, allComplete: false }
@@ -115,6 +130,7 @@ export const useLethal = create<LethalState>()(
       reset() {
         set({
           solved: [],
+          lessonsDone: [],
           completedRewardGiven: false,
           dailySolvedDate: null,
           dailyStreak: 0,

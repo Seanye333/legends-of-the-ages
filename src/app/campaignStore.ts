@@ -68,6 +68,7 @@ export const useCampaign = create<CampaignState>()(
           if (!trial) return null
           if (trialsCleared.includes(active)) return null
           set({ trialsCleared: [...trialsCleared, active] })
+          useAchievements.getState().bump('trialsCleared')
           useCollection.setState({
             merit: useCollection.getState().merit + trial.rewardMerit,
           })

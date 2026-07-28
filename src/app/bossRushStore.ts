@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { BOSSES } from '../content/campaign'
 import { useCollection } from './collectionStore'
+import { useAchievements } from './achievementStore'
 
 // 群雄連斬(Boss Rush)—— 十六关一口气连打,**血量继承**。
 //
@@ -54,11 +55,13 @@ export const useBossRush = create<BossRushState>()(
         if (!win) {
           // 倒在第几关就记到第几关(倒下那关不算通过),然后整趟重来
           set({ stage: 0, hp: null, best: Math.max(get().best, stage) })
+          useAchievements.getState().bump('bossRushBest', stage)
           return null
         }
         const nextStage = stage + 1
         const finished = nextStage >= BOSSES.length
         set({ best: Math.max(get().best, nextStage) })
+        useAchievements.getState().bump('bossRushBest', nextStage) // MAX 统计
         if (finished) {
           // 通关奖励只发一次(和冒险首通同一条原则:否则连斩变成刷功勋的农场)
           const first = !get().cleared
