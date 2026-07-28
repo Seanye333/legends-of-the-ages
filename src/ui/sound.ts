@@ -18,6 +18,11 @@ export type SfxName =
   | 'lethal' // 主帅陨落:轰鸣 + 余晖
   | 'victory' // 胜利:宫商角徵羽短号
   | 'defeat' // 失败:低音渐弱长吟
+  | 'draw' // 抽牌:纸帛抽出的摩擦
+  | 'mana' // 法力水晶点亮:清脆玉磬
+  | 'bond' // 羁绊/宿敌触发:双音共鸣
+  | 'armorBreak' // 护甲破碎:甲片崩裂
+  | 'discover' // 发现三选一:翻开的气声
 
 let ctx: AudioContext | null = null
 let master: GainNode | null = null
@@ -250,6 +255,45 @@ const SFX: Record<SfxName, (c: AudioContext, t: number) => void> = {
     tone(c, t, { freq: 55, dur: 1.4, type: 'sine', gain: 0.14 })
     tone(c, t, { at: 0.25, freq: 233, to: 210, dur: 0.9, type: 'sine', gain: 0.05 })
   },
+
+  // 抽牌:纸帛从牌堆里抽出来的那一下摩擦。
+  // 刻意做得**很轻**(gain 0.03 量级)——抽牌一回合响好几次,
+  // 稍微重一点就变成噪音;它的作用只是让「牌确实进手了」有个确认,不是演出。
+  draw(c, t) {
+    noise(c, t, { dur: 0.09, filter: 'bandpass', freq: 1800, to: 3400, q: 0.9, gain: 0.032 })
+    tone(c, t, { at: 0.02, freq: 640, to: 880, dur: 0.06, type: 'sine', gain: 0.022 })
+  },
+
+  // 法力水晶点亮:清脆玉磬。逐颗点亮时会连响几声,
+  // 所以做成极短的高频粒 —— 连响时听起来是一串,不是一堆。
+  mana(c, t) {
+    tone(c, t, { freq: 1318.5, dur: 0.11, type: 'sine', gain: 0.05 })
+    tone(c, t, { at: 0.005, freq: 1975.5, dur: 0.07, type: 'sine', gain: 0.022, detune: 5 })
+  },
+
+  // 羁绊/宿敌触发:两个音同时响的共鸣 —— 「两个人凑在一起」的声音直译。
+  // 用纯五度(C-G),五声音阶里最稳的那个音程。
+  bond(c, t) {
+    tone(c, t, { freq: 523.25, dur: 0.6, type: 'triangle', gain: 0.075 })
+    tone(c, t, { freq: 783.99, dur: 0.6, type: 'triangle', gain: 0.065, detune: -4 })
+    tone(c, t, { at: 0.1, freq: 1046.5, dur: 0.5, type: 'sine', gain: 0.03 })
+    noise(c, t, { dur: 0.2, filter: 'highpass', freq: 4200, gain: 0.012, attack: 0.06 })
+  },
+
+  // 护甲破碎:甲片崩裂。和「受击」要能一耳朵分开 ——
+  // 受击是闷的(肉),这个是脆的(金属),所以走高频噪声 + 短促非谐音。
+  armorBreak(c, t) {
+    noise(c, t, { dur: 0.14, filter: 'highpass', freq: 3000, gain: 0.1 })
+    tone(c, t, { freq: 880, to: 300, dur: 0.1, type: 'square', gain: 0.05 })
+    tone(c, t, { at: 0.03, freq: 1400, to: 620, dur: 0.09, type: 'square', gain: 0.03, detune: 14 })
+    tone(c, t, { at: 0.02, freq: 160, to: 70, dur: 0.14, type: 'sine', gain: 0.12 })
+  },
+
+  // 发现(三选一):翻开的气声,尾巴上一个上扬 —— 「请你挑」的语气。
+  discover(c, t) {
+    noise(c, t, { dur: 0.26, filter: 'bandpass', freq: 900, to: 2200, q: 1.1, gain: 0.05, attack: 0.04 })
+    tone(c, t, { at: 0.12, freq: 659.25, to: 987.77, dur: 0.26, type: 'triangle', gain: 0.06 })
+  },
 }
 
 // ---------- 播放入口 ----------
@@ -331,6 +375,27 @@ let PENTATONIC = MODES.gong // 宫商角徵羽(半音数);随场景转调
 const SCHEDULE_AHEAD = 1.0 // 排到未来多少秒
 const TICK_MS = 250
 
+// ---------- 紧张度 ----------
+//
+// 局势紧不紧张,音乐得知道。0 = 开局风平浪静,1 = 下一回合就要分生死。
+//
+// 【为什么值得做】
+// 一局四十分钟,从开局到斩杀线用的是同一段随机游走 —— 而玩家的心率完全不同。
+// 音乐是唯一能**在玩家意识到之前**告诉他「情况不对了」的通道:
+// 血量掉到十几时底鼓变密,他会先觉得慌,再回头看血条。
+//
+// 【为什么不做成「战斗/平静」两段式】
+// 两段式要在切换点做交叉淡化,而这里的旋律是现场生成的、没有段落边界。
+// 连续量反而更简单:紧张度只改三个旋钮(拍速、低音密度、留白概率),
+// 一个音符都不用重写,而且中间态天然平滑。
+let tension = 0
+
+export function setMusicTension(v: number): void {
+  const next = Math.max(0, Math.min(1, v))
+  // 只在变化明显时才更新,避免每帧调用引起的抖动
+  if (Math.abs(next - tension) > 0.02) tension = next
+}
+
 function midiToFreq(semitonesFromC4: number): number {
   return 261.63 * Math.pow(2, semitonesFromC4 / 12)
 }
@@ -399,19 +464,27 @@ function drone(c: AudioContext, at: number, freq: number, dur: number): void {
 function scheduleMusic(): void {
   const c = getCtx()
   if (!c || !musicGain || !musicScene) return
-  // 标题页疏朗、对战页略密
-  const beat = musicScene === 'title' ? 1.1 : 0.85
+  // 标题页疏朗、对战页略密;紧张度再往上压最多四分之一拍长(越紧张越急)
+  const base = musicScene === 'title' ? 1.1 : 0.85
+  const t = musicScene === 'match' ? tension : 0
+  const beat = base * (1 - 0.25 * t)
+  // 低音间隔:平时 8 拍一次,危急时 4 拍一次 —— 底鼓变密是「心跳加快」的直译
+  const bassEvery = t > 0.6 ? 4 : 8
+  // 留白概率随紧张度收紧:平静时三成留白(呼吸),危急时几乎不留
+  const restChance = 0.28 * (1 - 0.7 * t)
   while (nextNoteAt < c.currentTime + SCHEDULE_AHEAD) {
     const at = Math.max(nextNoteAt, c.currentTime + 0.02)
-    // 每 8 拍一个低音;其余为拨弦,偶尔留白(留白比音符更重要)
-    if (step % 8 === 0) {
-      if (musicScene === 'match') drone(c, at, degreeToFreq(lastDegree) / 4, beat * 8)
+    // 每 N 拍一个低音;其余为拨弦,偶尔留白(留白比音符更重要)
+    if (step % bassEvery === 0) {
+      if (musicScene === 'match') drone(c, at, degreeToFreq(lastDegree) / 4, beat * bassEvery)
       pluck(c, at, degreeToFreq(0) / 2, 0.1, 3.2)
-    } else if (Math.random() > 0.28) {
+    } else if (Math.random() > restChance) {
       const d = nextDegree()
       pluck(c, at, degreeToFreq(d), 0.075, 2.4)
       // 偶尔叠一个五度,像古琴的按音
       if (Math.random() < 0.18) pluck(c, at + 0.06, degreeToFreq(d + 3), 0.04, 1.8)
+      // 危急时给高音区加一层短促的泛音,像弦被绷紧
+      if (t > 0.75 && Math.random() < 0.3) pluck(c, at + 0.04, degreeToFreq(d + 5), 0.03, 0.9)
     }
     nextNoteAt = at + beat
     step++

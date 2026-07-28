@@ -38,7 +38,7 @@ import { GraveyardPanel } from '../components/GraveyardPanel'
 import { EmoteWheel } from '../components/EmoteWheel'
 import type { CardDef } from '../../engine/types'
 import { useEventAnimations } from '../useEventAnimations'
-import { initSound, playSfx, setMusicEra, startMusic, stopMusic } from '../sound'
+import { initSound, playSfx, setMusicEra, setMusicTension, startMusic, stopMusic } from '../sound'
 import { exportRecapImage } from '../recapExport'
 import { HEROES_BY_ID } from '../../content/overrides/heroes'
 import { ERA_OF, type Era } from '../../content/eras'
@@ -315,6 +315,23 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
   // 否则会出现「点了没反应」的迷惑体验(服务器本来就会丢弃观战席的指令)
   const myTurn = !spectating && state.phase === 'main' && state.activePlayer === viewer
   const canEndTurn = !spectating && legal.some((c) => c.type === 'EndTurn')
+
+  // 音乐紧张度:把局面折成一个 0-1 的数喂给合成器(见 sound.ts 的 setMusicTension)。
+  //
+  // 三个来源,取最大值而不是加权和 —— 「我快死了」和「他快死了」都足以让人心跳加快,
+  // 平均起来反而会互相抵消成「一切正常」,而那正是最不正常的时候。
+  //   · 我的血:30 → 0 紧张,10 以下开始明显,5 以下拉满
+  //   · 他的血:同上(斩杀线在望也是紧张,只是另一种)
+  //   · 场面差:一边被压着打的时候,血量还没变但气氛已经变了
+  const tension = useMemo(() => {
+    const hpPart = (hp: number, armor: number) => {
+      const eff = hp + armor
+      return eff >= 20 ? 0 : eff <= 5 ? 1 : (20 - eff) / 15
+    }
+    const boardGap = Math.abs(me.board.length - foe.board.length) / 7
+    return Math.min(1, Math.max(hpPart(me.heroHp, me.armor), hpPart(foe.heroHp, foe.armor), boardGap))
+  }, [me.heroHp, me.armor, foe.heroHp, foe.armor, me.board.length, foe.board.length])
+  useEffect(() => setMusicTension(tension), [tension])
 
   // 视角一换就落帘(热座)。非热座时 viewer 恒为 0,这段永远不触发。
   const curtain = hotSeat && curtainSeat !== viewer

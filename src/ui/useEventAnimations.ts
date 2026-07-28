@@ -330,6 +330,37 @@ function buildTimeline(events: GameEvent[], rects: ReadonlyMap<string, DOMRect>)
         break
       }
 
+      // ---- 声音补齐:这四类事件此前完全是静音的 ----
+      // 它们都**不占独立节拍**(`loose()` 挂在当前这一拍上)——
+      // 抽牌一回合能响四五次,给每次都排一拍会把回合开始拖成慢动作。
+      // `addSfxOnce` 保证同一拍里重复的同类事件只发一次声。
+
+      case 'CardDrawn': {
+        // 只响自己的抽牌。对手抽牌照样有战报行,但不该发声 ——
+        // 一局里对手抽的牌和自己一样多,全响等于把这个音效的信息量摊薄成噪音。
+        if (ev.player === 0) addSfxOnce(loose(), 'draw')
+        break
+      }
+
+      case 'ArmorGained': {
+        // 得甲用「甲片」音色的那一记,和受击(闷响)听感上分得开
+        addSfxOnce(loose(), 'armorBreak')
+        break
+      }
+
+      case 'DiscoverStarted': {
+        // 发现三选一:覆盖层弹出前的那一下气声,给玩家「要做选择了」的预告
+        addSfxOnce(loose(), 'discover')
+        break
+      }
+
+      case 'KeywordGranted': {
+        // 羁绊与宿敌都走「授予关键词」这条路(光环 → 附魔 → 关键词),
+        // 于是这一声也就顺带覆盖了羁绊成立的那一刻。
+        addSfxOnce(loose(), 'bond')
+        break
+      }
+
       case 'GameEnded': {
         push(0, {
           release: true,
