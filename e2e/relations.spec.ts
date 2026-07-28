@@ -15,7 +15,8 @@ test('构筑器:体检面板与羁绊提示', async ({ page }) => {
   // 桃园仁德带着刘备与张飞,缺 7 费的关羽(那套牌曲线封顶 6 费)。
   // 面板的价值就在这一行:**当场告诉你还差谁**,而不是等你自己去数。
   // 顺带记一笔实测发现:六套预组一条羁绊都凑不齐,羁绊是留给自组卡组的奖励。
-  await expect(page.getByText('桃園結義')).toBeVisible()
+  // 「按羁绊组卡」的面板也列同一条羁绊,所以这里要指明是**羁绊面板**里的那个
+  await expect(page.getByText('桃園結義').last()).toBeVisible()
   await expect(page.getByText(/缺 關羽/)).toBeVisible()
 })
 
