@@ -21,7 +21,8 @@
     "tune-campaign": "node --import tsx scripts/tune-campaign.ts",
     "sim-hero-mirror": "node --import tsx scripts/sim-hero-mirror.ts",
     "mine-puzzles": "node --import tsx scripts/mine-puzzles.ts",
-    "sim-ai-tiers": "node --import tsx scripts/sim-ai-tiers.ts"
+    "sim-ai-tiers": "node --import tsx scripts/sim-ai-tiers.ts",
+    "sim-cards": "node --import tsx scripts/sim-cards.ts"
   },
   "dependencies": {
     "react": "^19.0.0",
