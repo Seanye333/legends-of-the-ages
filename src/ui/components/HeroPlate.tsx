@@ -1,4 +1,4 @@
-import type { MouseEvent } from 'react'
+import type { CSSProperties, MouseEvent } from 'react'
 import type { PlayerState } from '../../engine/types'
 import { HEROES_BY_ID } from '../../content/overrides/heroes'
 import { CARDS_BY_ID } from '../../content/cards'
@@ -101,6 +101,11 @@ export function HeroPlate({
               <span
                 key={i}
                 className={locked ? styles.gemLocked : filled ? styles.gemFull : styles.gemEmpty}
+                // 逐颗点亮:第 i 颗晚 i×45ms 亮。
+                // 回合开始时水晶是整排瞬间刷新的,读起来像「数字变了」;
+                // 一颗一颗亮起来读起来像「资源到账了」—— 同样的信息,后者有分量。
+                // 延迟挂在 CSS 变量上,动画本身在 module.css 里(只用 transform/opacity)。
+                style={{ '--gem-delay': `${i * 45}ms` } as CSSProperties}
               >
                 {locked ? '✕' : '◆'}
               </span>

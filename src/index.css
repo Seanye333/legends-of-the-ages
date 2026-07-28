@@ -84,12 +84,30 @@ button {
   z-index: 6;
 }
 
+/* 突进走**抛物线 + 顿帧**,不是直线往返。
+   两处改动,都是为了让这一击有重量:
+
+   1) 中途插一个 22% 的关键帧,把 y 再往上抬一点(--fx-arc)——
+      直线位移读起来像「滑过去」,而带弧线的读起来像「扑过去」。
+      弧的方向恒为向上(负 y):无论打上路还是下路,起跳都是抬起来的。
+
+   2) 38% 到 46% 之间**几乎不动**(顿帧)。这 8% ≈ 40ms,
+      正好是接触瞬间。格斗游戏里叫 hit-stop:在碰到的那一帧把时间掐停,
+      大脑会把这段静止读成「撞上了硬东西」。
+      去掉它,同样的位移看起来像穿过空气。 */
 @keyframes fxLunge {
   0% {
     transform: translate(0, 0);
   }
+  22% {
+    transform: translate(calc(var(--fx-x, 0px) * 0.55), calc(var(--fx-y, -40px) * 0.5 - 14px))
+      scale(1.05);
+  }
   38% {
     transform: translate(var(--fx-x, 0px), var(--fx-y, -40px)) scale(1.07);
+  }
+  46% {
+    transform: translate(var(--fx-x, 0px), calc(var(--fx-y, -40px) + 1px)) scale(1.06);
   }
   100% {
     transform: translate(0, 0);

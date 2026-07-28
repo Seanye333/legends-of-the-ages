@@ -34,3 +34,27 @@
 .slotSelected {
   transform: rotate(0deg) translateY(-18px) scale(1.07);
 }
+
+/* ---- 拖拽出牌 ----
+   拖拽期间把扇形的旋转/下沉整个换成「跟手位移 + 惯性倾斜」。
+   transition 必须关掉:留着的话牌会以 0.15s 的延迟追手指,手感是拖泥带水的。
+   松手时类被移除,transition 重新生效,于是自动获得一个「弹回原位」的过渡 ——
+   不用写第二套动画。 */
+.slotDragging {
+  transform: translate(var(--drag-x), var(--drag-y)) rotate(var(--drag-tilt)) scale(1.06);
+  transition: none;
+  cursor: grabbing;
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.55));
+}
+
+/* 抬到出牌线以上:金边亮起 —— 松手就打出去了。
+   这是拖拽相对点击多出来的那点信息:**在松手之前**就知道会不会生效。 */
+.slotArmed {
+  filter: drop-shadow(0 0 10px rgba(247, 225, 168, 0.85)) drop-shadow(0 10px 18px rgba(0, 0, 0, 0.5));
+}
+
+/* 手牌区禁用浏览器自身的滚动/长按选择手势,否则纵向拖拽会被当成页面滚动。
+   长按查看详情由 useLongPress 自己处理,不依赖系统手势。 */
+.fan {
+  touch-action: none;
+}

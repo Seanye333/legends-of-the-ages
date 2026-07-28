@@ -923,3 +923,35 @@
     transform: translateX(-50%) translateY(0);
   }
 }
+
+/* ---- 斩杀慢镜 ----
+   主帅倒下的那一拍(useEventAnimations 里 760ms)整个牌桌压暗、收缩、去饱和。
+   一局四十分钟只有这一下,值得给它一秒钟 —— 在此之前这一拍只有 340ms,
+   玩家还没看清是哪一击结束的战斗,结算面板就盖上来了。
+
+   实现上只用 filter + transform:CSS 没法真的放慢子元素的动画,
+   但**压暗 + 轻微推近 + 抽掉颜色**在观感上就是慢镜,而且零布局成本。
+   与 .screen 自己的 --era-tint 是叠加关系,所以这里把时代色温也写进来,
+   否则慢镜期间战场会突然跳回原色。 */
+.slowmo {
+  animation: slowmoDip 0.76s cubic-bezier(0.16, 0.8, 0.3, 1) both;
+}
+
+@keyframes slowmoDip {
+  0% {
+    filter: var(--era-tint, none);
+    transform: scale(1);
+  }
+  30% {
+    filter: var(--era-tint, none) brightness(0.62) saturate(0.45) contrast(1.12);
+    transform: scale(1.028);
+  }
+  100% {
+    filter: var(--era-tint, none) brightness(0.82) saturate(0.7);
+    transform: scale(1.012);
+  }
+}
+
+:root[data-reduced-motion='true'] .slowmo {
+  animation: none;
+}

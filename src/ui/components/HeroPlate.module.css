@@ -455,3 +455,32 @@
   opacity: 0.4;
   cursor: default;
 }
+
+/* 水晶逐颗点亮。
+   `--gem-delay` 由 HeroPlate 按下标算好(第 i 颗晚 i×45ms)。
+   动画只碰 transform 与 opacity,不触发布局 —— 这是全站动效的统一约束。
+   注意用的是 `animation` 而不是 `transition`:回合开始时整排水晶的
+   className 是一次性全变的,transition 会同时起跑,做不出「一颗一颗」。 */
+.gemFull {
+  animation: gemLight 0.34s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+  animation-delay: var(--gem-delay, 0ms);
+}
+
+@keyframes gemLight {
+  0% {
+    opacity: 0.25;
+    transform: scale(0.72);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.28);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+:root[data-reduced-motion='true'] .gemFull {
+  animation: none;
+}

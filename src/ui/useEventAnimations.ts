@@ -138,7 +138,9 @@ function buildTimeline(events: GameEvent[], rects: ReadonlyMap<string, DOMRect>)
     switch (ev.type) {
       case 'TurnStarted': {
         if (ev.player === 0) {
-          push(300, { pulse: true, sfx: ['turnStart'] })
+          // 轻锣之后跟一记玉磬:水晶是逐颗点亮的(HeroPlate 里第 i 颗晚 45ms),
+          // 声音跟着一起到,那一下「资源到账」才成立。
+          push(300, { pulse: true, sfx: ['turnStart', 'mana'] })
         } else {
           push(200)
         }
@@ -233,8 +235,13 @@ function buildTimeline(events: GameEvent[], rects: ReadonlyMap<string, DOMRect>)
         e.motions.push({ key: `hero-${ev.player}`, kind: 'shake' })
         addSfxOnce(e, 'hit')
         if (ev.hpAfter <= 0) {
-          // 致命一击:全屏白金闪光,压在终局结算之前
-          push(340, { lethal: true, sfx: ['lethal'] })
+          // 致命一击:全屏白金闪光 + 慢镜,压在终局结算之前。
+          //
+          // 从 340ms 拉到 760ms 是为了让慢镜真的存在:这一拍原本一闪而过,
+          // 玩家还没看清是哪一击结束的战斗,结算面板就盖上来了。
+          // **一局四十分钟只有这一下**,值得给它一秒钟。
+          // 时长同时决定了 .slowmo 的作用窗口(MatchScreen 按 lethalFlash 挂类)。
+          push(760, { lethal: true, sfx: ['lethal'] })
           cur = null
         }
         break

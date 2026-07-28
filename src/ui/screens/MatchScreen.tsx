@@ -504,7 +504,10 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
   const castDef = anim.cast ? CARDS_BY_ID[anim.cast.defId] : null
 
   return (
-    <div className={styles.screen} onClick={() => setSelection(null)}>
+    <div
+      className={`${styles.screen} ${anim.lethalFlash ? styles.slowmo : ''}`}
+      onClick={() => setSelection(null)}
+    >
       {/* 顶部:敌方主帅 */}
       <div className={styles.top}>
         <HeroPlate
