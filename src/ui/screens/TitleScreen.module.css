@@ -728,3 +728,35 @@
   color: var(--parchment-faint, #9a8a6a);
   font-variant-numeric: tabular-nums;
 }
+
+/* ---- 军衔 ---- */
+/* 贴在副标题下面:它是「我走到哪儿了」的答案,该在最显眼的位置,但不能盖过标题 */
+.rankRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px auto 0;
+  font-size: 11px;
+  color: var(--parchment-faint);
+}
+
+.rankName {
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  color: var(--gold-bright);
+}
+
+.rankBar {
+  width: 88px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.rankFill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold-dark), var(--gold-bright));
+}

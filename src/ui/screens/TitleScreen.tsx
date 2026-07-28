@@ -20,6 +20,9 @@ import { useCampaign } from '../../app/campaignStore'
 import { BOSSES } from '../../content/campaign'
 import { useHistory } from '../../app/historyStore'
 import { useTower } from '../../app/towerStore'
+import { useExpedition } from '../../app/expeditionStore'
+import { useBossRush } from '../../app/bossRushStore'
+import { rankOf, toNextRank, warMerit } from '../../content/ranks'
 import { HISTORY_BATTLES } from '../../content/historyBattles'
 import { ACHIEVEMENTS, useAchievements } from '../../app/achievementStore'
 import { AchievementPanel } from '../components/AchievementPanel'
@@ -116,6 +119,22 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
   const historyDone = useHistory((s) => s.cleared.length)
   const towerBest = useTower((s) => s.best)
   const campaignAllCleared = useCampaign((s) => s.cleared.length >= BOSSES.length)
+  const wins = useCollection((s) => s.wins)
+  const trialsDone = useCampaign((s) => s.trialsCleared.length)
+  const expeditionDepth = useExpedition((s) => s.bestDepth)
+  const bossRushBest = useBossRush((s) => s.best)
+  const merit = warMerit({
+    casualWins: wins,
+    campaignCleared: campaignDone,
+    trialsCleared: trialsDone,
+    historyCleared: historyDone,
+    expeditionDepth,
+    towerBest,
+    bossRushBest,
+  })
+  const rank = rankOf(merit)
+  const nextRank = toNextRank(merit)
+
   // 订阅 stats/claimed 而不是调 claimableCount() —— 后者不是响应式的
   const achStats = useAchievements((s) => s.stats)
   const achClaimed = useAchievements((s) => s.claimed)
@@ -191,6 +210,22 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
           </span>
         </div>
         <p className={styles.subtitle}>Legends of the Ages</p>
+        {/* 军衔:标题页有二十几个入口,每个都发自己的进度,
+            而没有任何一样东西回答「我在这个游戏里走到哪儿了」。
+            战功把每一种胜利都折进来,权重按**这一局有多难**给。 */}
+        <div className={styles.rankRow} title={t(`累计战功 ${merit}`, `${merit} war merit`)}>
+          <span className={styles.rankName}>{pick(rank.rank.name)}</span>
+          {nextRank && (
+            <span className={styles.rankBar}>
+              <span className={styles.rankFill} style={{ width: `${Math.round(nextRank.ratio * 100)}%` }} />
+            </span>
+          )}
+          <span className={styles.rankNext}>
+            {nextRank
+              ? t(`距${pick(rank.next!.name)}还差 ${nextRank.need}`, `${nextRank.need} to ${pick(rank.next!.name)}`)
+              : t('已至極位', 'At the summit')}
+          </span>
+        </div>
         <div className={styles.rule} aria-hidden="true">
           <span className={styles.ruleDiamond} />
         </div>
