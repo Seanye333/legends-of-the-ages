@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { GameEvent } from '../engine/types'
 import { applyTally, rollDailyQuests, tallyMatch, type QuestState } from './questStore'
 import { HEROES } from '../content/overrides/heroes'
+import { COLLECTIBLE_CARDS } from '../content/cards'
 
 const HERO_ID = HEROES[0].id
 const HERO_DOCTRINE = HEROES[0].doctrine
@@ -112,5 +113,55 @@ describe('applyTally', () => {
     let qs = [quest({ kind: 'heroDamage', goal: 12 })]
     for (let i = 0; i < 3; i++) qs = applyTally(qs, tallyMatch(batch, HERO_ID))
     expect(qs[0].progress).toBe(12)
+  })
+})
+
+// ---- 与内容挂钩的三种军令 ----
+//
+// 任务池原来七种全是「打出 N 张」「造成 N 点」这类**与卡池无关**的计数 ——
+// 换掉整个卡池它们一条都不用改,也就是说它们从不引导你去玩任何具体的东西。
+describe('内容挂钩的军令', () => {
+  const play = (defId: string): GameEvent => ({
+    type: 'CardPlayed',
+    player: 0,
+    iid: 1,
+    defId,
+    cost: 1,
+  })
+
+  it('兵种军令按兵种分桶计数', () => {
+    const cavalry = COLLECTIBLE_CARDS.find((c) => c.troop === 'cavalry')!
+    const archer = COLLECTIBLE_CARDS.find((c) => c.troop === 'archer')!
+    const tally = tallyMatch([play(cavalry.id), play(cavalry.id), play(archer.id)], 'liu-bei')
+    expect(tally.playTroop.cavalry).toBe(2)
+    expect(tally.playTroop.archer).toBe(1)
+    expect(tally.playTroop.navy ?? 0).toBe(0)
+  })
+
+  it('时代军令按时代块计数', () => {
+    const shu = COLLECTIBLE_CARDS.find((c) => c.dynasty === 'shu' && c.type === 'general')!
+    const tally = tallyMatch([play(shu.id)], 'liu-bei')
+    expect(tally.playEra['three-kingdoms']).toBe(1)
+  })
+
+  // 布下才算 —— 消散那一条 rule 是 undefined
+  it('战场军令只数「布下」,不数「消散」', () => {
+    const laid: GameEvent = {
+      type: 'FieldChanged',
+      rule: { id: 'f', name: { zh: 'x', en: 'x' }, text: { zh: 'x', en: 'x' }, turnDamageAll: 1 },
+    }
+    const gone: GameEvent = { type: 'FieldChanged' }
+    expect(tallyMatch([laid, gone, laid], 'liu-bei').setField).toBe(2)
+  })
+
+  it('进度真的落到对应的任务上', () => {
+    const cavalry = COLLECTIBLE_CARDS.find((c) => c.troop === 'cavalry')!
+    const quests = [
+      { kind: 'playTroop' as const, goal: 3, reward: 1, troop: 'cavalry' as const, id: 'q1', progress: 0, claimed: false },
+      { kind: 'playTroop' as const, goal: 3, reward: 1, troop: 'navy' as const, id: 'q2', progress: 0, claimed: false },
+    ]
+    const next = applyTally(quests, tallyMatch([play(cavalry.id), play(cavalry.id)], 'liu-bei'))
+    expect(next[0].progress).toBe(2)
+    expect(next[1].progress).toBe(0)
   })
 })
