@@ -16,6 +16,8 @@ import { useCollection, copyLimit } from '../../app/collectionStore'
 import { cardName, deckBonds } from '../../content/relations'
 import { bondsByReadiness, suggestDeckForBond } from '../../content/deckSuggest'
 import { deckHealth, verdictOf } from '../../content/deckHealth'
+import { exportDeckImage } from '../deckExport'
+import { useSettings } from '../../app/settingsStore'
 import { DOCTRINE_COLORS, DOCTRINE_NAME } from '../doctrineColors'
 import { CardFace } from '../components/CardFace'
 import { CardInspect } from '../components/CardInspect'
@@ -53,6 +55,7 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
   const t = useT()
   const pick = usePickText()
   const pickCompact = usePickCompact()
+  const lang = useSettings((s) => s.language)
   const owned = useCollection((s) => s.owned)
   const customDecks = useCollection((s) => s.customDecks)
   const saveDeck = useCollection((s) => s.saveDeck)
@@ -559,6 +562,34 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
 
           {/* 卡组码:以前只能导出单张卡面的 PNG,卡组本身没法分享给任何人 */}
           <div className={styles.codeRow}>
+            {/* 卡组分享图:卡组码是**给游戏读的**,人看不出里面是什么牌,
+                也没法在社交媒体上引起任何兴趣。而这个游戏的卡组自带叙事
+                (羁绊/时代/主义)—— 一张图能一眼说清「这是一副桃园结义的牌」。 */}
+            <button
+              className={styles.codeBtn}
+              disabled={!hero || total === 0}
+              onClick={async () => {
+                if (!hero) return
+                playSfx('buttonTap')
+                const heroNo = CARDS_BY_ID[hero.id]?.collectorNo ?? 0
+                let code = ''
+                try {
+                  const ids = Object.entries(counts).flatMap(([id, n]) =>
+                    Array.from({ length: n }, () => id),
+                  )
+                  code = encodeDeck(
+                    { heroId: hero.id, name: { zh: deckName, en: deckName }, cardIds: ids },
+                    CARDS_BY_ID,
+                    heroNo,
+                  )
+                } catch {
+                  // 未满 30 张时编码会失败 —— 图照出,只是图上没有可导入的码
+                }
+                await exportDeckImage(hero, counts, deckName, code, lang)
+              }}
+            >
+              {t('保存卡组图', 'Save deck image')}
+            </button>
             <button
               className={styles.codeBtn}
               disabled={total !== DECK_SIZE}
