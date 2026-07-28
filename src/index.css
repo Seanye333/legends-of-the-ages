@@ -67,6 +67,50 @@ button {
   }
 }
 
+/* 兵种化的冲锋:同一条 fxLunge 时间轴,不同的**节奏与姿态**。
+   骑兵冲得远而利落、步卒短促沉重、弓弩几乎不动(它在原地放箭)、
+   器械慢而重、水军带一点摇摆。
+   全部只改 animation-timing/duration 与关键帧里的 scale ——
+   不新增任何素材,也不新增一条 JS 逻辑(类名由 GeneralToken 按 troop 拼)。 */
+.fx-lunge.troop-cavalry {
+  animation-duration: 0.42s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fx-lunge.troop-infantry {
+  animation-duration: 0.34s;
+  animation-timing-function: cubic-bezier(0.5, 0, 0.75, 1);
+}
+
+/* 弓弩:位移压到两成 —— 它不该冲上去,它在原地放箭 */
+.fx-lunge.troop-archer {
+  animation: fxVolley 0.44s ease-out both;
+  animation-delay: var(--fx-delay, 0ms);
+}
+
+@keyframes fxVolley {
+  0% {
+    transform: translate(0, 0);
+  }
+  30% {
+    transform: translate(calc(var(--fx-x, 0px) * 0.18), calc(var(--fx-y, -40px) * 0.18))
+      scale(1.04);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+.fx-lunge.troop-siege {
+  animation-duration: 0.66s;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fx-lunge.troop-navy {
+  animation-duration: 0.56s;
+  animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+}
+
 .fx-shake {
   animation: fxShake 0.32s linear both;
 }

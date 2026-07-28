@@ -46,6 +46,9 @@ export function GeneralToken({ inst, ready, selected, targetable, floats, fx, on
     selected ? styles.selected : '',
     targetable ? styles.targetable : '',
     fx?.motion ? MOTION_CLASS[fx.motion.kind] : '',
+    // 兵种化的冲锋姿态:骑兵利落、步卒短促、弓弩几乎不动、器械慢重、水军带摇摆。
+    // 只是多拼一个类名 —— 差异全在 CSS 的时间轴上,零新素材。
+    fx?.motion?.kind === 'lunge' && def?.troop ? `troop-${def.troop}` : '',
   ]
     .filter(Boolean)
     .join(' ')
