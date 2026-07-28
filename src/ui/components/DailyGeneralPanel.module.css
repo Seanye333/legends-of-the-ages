@@ -122,3 +122,41 @@
   outline: 2px solid var(--gold-bright);
   outline-offset: 2px;
 }
+
+/* ---- 今日战事 ---- */
+.story {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border-left: 2px solid #d05a4a;
+  text-align: left;
+}
+
+.storyHead {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--parchment-faint);
+}
+
+.storyTitle {
+  font-family: var(--font-display);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  color: #e07a68;
+}
+
+.storyPeople {
+  font-size: 11px;
+  color: var(--parchment);
+}
+
+.storyLore {
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--parchment-faint);
+  font-style: italic;
+}

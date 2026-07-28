@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import type { CSSProperties } from 'react'
-import { dailyGeneralFor } from '../../content/dailyGeneral'
+import { dailyGeneralFor, dailyStoryFor } from '../../content/dailyGeneral'
+import { cardName } from '../../content/relations'
 import { dayKey } from '../../content/dailyPuzzle'
 import { useDailyGeneral } from '../../app/dailyGeneralStore'
 import { Portrait } from './Portrait'
@@ -21,6 +22,7 @@ export function DailyGeneralPanel({ onClose }: Props) {
   const markSeen = useDailyGeneral((s) => s.markSeen)
   const today = dayKey()
   const daily = dailyGeneralFor(today)
+  const story = dailyStoryFor(today)
 
   useEffect(() => {
     markSeen(today)
@@ -50,6 +52,20 @@ export function DailyGeneralPanel({ onClose }: Props) {
         </div>
         <p className={styles.bio}>{pick(lore.bio)}</p>
         {lore.quote && <p className={styles.quote}>「{pick(lore.quote)}」</p>}
+        {/* 今日战事:每日一将推的是**一个人**,而这个游戏真正独有的素材是**关系** ——
+            31 条羁绊与 29 对宿敌背后各有一段真事,而它们只在对局里偶然撞见。 */}
+        {story && (
+          <div className={styles.story}>
+            <span className={styles.storyHead}>
+              {story.kind === 'rival' ? t('今日戰事 · 宿敵', 'Today · Rivalry') : t('今日戰事 · 羈絆', 'Today · Bond')}
+            </span>
+            <span className={styles.storyTitle}>{pick(story.title)}</span>
+            <span className={styles.storyPeople}>
+              {story.people.map((id) => pickCompact(cardName(id))).join(story.kind === 'rival' ? ' ⇄ ' : ' · ')}
+            </span>
+            {story.lore && <span className={styles.storyLore}>{pick(story.lore)}</span>}
+          </div>
+        )}
         <button
           className={styles.closeBtn}
           onClick={() => {
