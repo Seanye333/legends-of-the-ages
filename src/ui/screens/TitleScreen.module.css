@@ -760,3 +760,25 @@
   height: 100%;
   background: linear-gradient(90deg, var(--gold-dark), var(--gold-bright));
 }
+
+/* 大厅分组抬头:两侧金线夹一个居中的组名,与冒险页的章节分隔同一套语言 */
+.navGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(92vw, 640px);
+  margin: 10px auto 0;
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 0.26em;
+  color: var(--parchment-faint);
+  white-space: nowrap;
+}
+
+.navGroup::before,
+.navGroup::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(212, 168, 74, 0.4), transparent);
+}

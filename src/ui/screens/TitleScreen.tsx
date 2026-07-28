@@ -315,6 +315,11 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
         )}
       </div>
 
+      {/* 大厅分组:标题页此前是一面**二十来个按钮的墙**,平铺在一个 flex 里 ——
+          新玩家读不出「哪个是主线、哪个是每日、哪个只是查东西」,
+          老玩家每次要找某个入口都得整片扫一遍。
+          按「征战 / 较技 / 典藏 / 日常」四组分开,顺序也是新玩家该走的顺序。 */}
+      <div className={styles.navGroup}>{t('征戰', 'Campaigns')}</div>
       <div className={styles.navRow}>
         <button
           className={styles.navBtn}
@@ -340,6 +345,10 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
             ? t(`名局重现 ${historyDone}/${HISTORY_BATTLES.length}`, `Great Battles ${historyDone}/${HISTORY_BATTLES.length}`)
             : t('名局重现 ✦', 'Great Battles ✦')}
         </button>
+      </div>
+
+      <div className={styles.navGroup}>{t('對局', 'Ways to Play')}</div>
+      <div className={styles.navRow}>
         <button
           className={`${styles.navBtn} ${arenaLive ? styles.navGlow : ''}`}
           onClick={() => {
@@ -414,6 +423,10 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
         >
           {t('演武场', 'Training')}
         </button>
+      </div>
+
+      <div className={styles.navGroup}>{t('典藏', 'Collection')}</div>
+      <div className={styles.navRow}>
         <button
           className={styles.navBtn}
           onClick={() => {
@@ -473,6 +486,10 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
         >
           {t(`卡包 ×${packs}`, `Packs ×${packs}`)}
         </button>
+      </div>
+
+      <div className={styles.navGroup}>{t('日常', 'Daily')}</div>
+      <div className={styles.navRow}>
         <button
           className={styles.navBtn}
           onClick={() => {
