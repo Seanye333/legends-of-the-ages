@@ -598,3 +598,52 @@
   outline: 2px solid var(--gold-bright);
   outline-offset: 2px;
 }
+
+/* ---- 按羁绊组卡 ---- */
+.seedBox {
+  flex: 0 0 auto;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(212, 168, 74, 0.35);
+  background: rgba(20, 16, 10, 0.7);
+}
+
+.seedSummary {
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: var(--gold-bright);
+}
+
+.seedList {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 6px;
+}
+
+.seedRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: none;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--parchment);
+  font-size: 11px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.seedRow:hover {
+  background: rgba(212, 168, 74, 0.16);
+}
+
+.seedNote {
+  margin: 6px 0 0;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #e8c878;
+}

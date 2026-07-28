@@ -14,6 +14,7 @@ const HERO_PICKS = [...ALL_HEROES].sort(
 import { decodeDeck, encodeDeck } from '../../content/deckCode'
 import { useCollection, copyLimit } from '../../app/collectionStore'
 import { cardName, deckBonds } from '../../content/relations'
+import { bondsByReadiness, suggestDeckForBond } from '../../content/deckSuggest'
 import { deckHealth, verdictOf } from '../../content/deckHealth'
 import { DOCTRINE_COLORS, DOCTRINE_NAME } from '../doctrineColors'
 import { CardFace } from '../components/CardFace'
@@ -62,6 +63,7 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
   const [counts, setCounts] = useState<Record<string, number>>({})
   const [errors, setErrors] = useState<LocalizedText[]>([])
   const [savedMsg, setSavedMsg] = useState(false)
+  const [seedNote, setSeedNote] = useState<string | null>(null)
   const [inspect, setInspect] = useState<CardDef | null>(null)
   // 图鉴一直有搜索和筛选,构筑器却什么都没有 —— 卡池一大就只能靠滚。
   const [query, setQuery] = useState('')
@@ -466,6 +468,54 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
                 {t('抽牌', 'Draw')} <b>{health.draw}</b>
               </span>
             </div>
+          )}
+          {/* 以羁绊为种子自动组卡:面板只会**指出**缺谁,不会帮忙 ——
+              而从零搭一副合法的三十张牌是新玩家最陡的一道坎。 */}
+          {hero && (
+            <details className={styles.seedBox}>
+              <summary className={styles.seedSummary}>
+                {t('按羈絆組卡', 'Build around a bond')}
+              </summary>
+              <div className={styles.seedList}>
+                {bondsByReadiness(hero.doctrine, owned)
+                  .slice(0, 8)
+                  .map(({ ref, have, total }) => (
+                    <button
+                      key={ref.bond.id}
+                      className={styles.seedRow}
+                      onClick={() => {
+                        playSfx('cardPlay')
+                        const { cardIds, missing } = suggestDeckForBond(ref, hero.doctrine, owned)
+                        const next: Record<string, number> = {}
+                        for (const id of cardIds) next[id] = (next[id] ?? 0) + 1
+                        setCounts(next)
+                        setDeckName(pickCompact(ref.bond.name))
+                        setSeedNote(
+                          missing.length > 0
+                            ? t(
+                                `已按「${pickCompact(ref.bond.name)}」配好 ${cardIds.length} 张 —— 你还缺 ${missing
+                                  .map((id) => pickCompact(cardName(id)))
+                                  .join('、')}`,
+                                `Built ${cardIds.length} cards around it — still missing ${missing
+                                  .map((id) => pickCompact(cardName(id)))
+                                  .join(', ')}`,
+                              )
+                            : t(
+                                `已按「${pickCompact(ref.bond.name)}」配好 ${cardIds.length} 张,羁绊齐了`,
+                                `Built ${cardIds.length} cards — the bond is complete`,
+                              ),
+                        )
+                      }}
+                    >
+                      <span className={styles.bondLabel}>{pickCompact(ref.bond.name)}</span>
+                      <span className={styles.bondNeed}>
+                        {have}/{total}
+                      </span>
+                    </button>
+                  ))}
+                {seedNote && <p className={styles.seedNote}>{seedNote}</p>}
+              </div>
+            </details>
           )}
           {/* 羁绊面板:构筑的叙事钩子。只列「已经带了至少一个人」的,
               重点是**还差谁** —— 全池 31 条铺出来对玩家没有意义。 */}
