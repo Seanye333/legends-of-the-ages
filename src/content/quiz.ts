@@ -1,5 +1,7 @@
 import { CARDS_BY_ID, SIGNATURE_IDS } from './cards'
 import { LORE } from './generated/lore.gen'
+import { ALL_RIVALS, rivalPair } from './relations'
+import { ERA_OF } from './eras'
 
 // 历史小测验「稽古」:结合卡池的历史知识小测。
 //
@@ -9,7 +11,10 @@ import { LORE } from './generated/lore.gen'
 //
 // 教育向的差异化:别家 CCG 没有真历史可考,这一屏既是留存钩子也是传播素材。
 
-export type QuizKind = 'whoIsIt' | 'whichDynasty'
+// 三种题型。前两种从列传生成,第三种从**关系**生成 ——
+// 这一轮把 31 条羁绊与 29 对宿敌做进了内容层,而它们恰好是最好的题干:
+// 「谁和谁是宿敌」比「谁是哪个朝代的」更能考出真读过史料的人。
+export type QuizKind = 'whoIsIt' | 'whichDynasty' | 'whoIsRival'
 
 export interface QuizQuestion {
   kind: QuizKind
@@ -53,7 +58,35 @@ export function makeQuestion(seed: number): QuizQuestion | null {
   const card = CARDS_BY_ID[subjectId]
   const lore = LORE[subjectId]
   if (!card || !lore) return null
-  const kind: QuizKind = rand() < 0.6 ? 'whoIsIt' : 'whichDynasty'
+  const roll = rand()
+  // 关系题占三成 —— 它的题库(29 对宿敌)比另外两类小得多,占比高了会开始重复
+  const kind: QuizKind = roll < 0.45 ? 'whoIsIt' : roll < 0.7 ? 'whichDynasty' : 'whoIsRival'
+
+  if (kind === 'whoIsRival') {
+    // 从宿敌里出题:「此人的宿敌是谁」。答案与干扰项都是真实名将,
+    // 干扰项刻意从**同一时代块**里挑 —— 随便挑的话「隔了八百年那个」一眼就排除了。
+    if (ALL_RIVALS.length === 0) return null
+    const ref = ALL_RIVALS[Math.floor(rand() * ALL_RIVALS.length)]
+    const [a, b] = rivalPair(ref)
+    const askAnchor = rand() < 0.5
+    const askId = askAnchor ? a : b
+    const ansId = askAnchor ? b : a
+    const askCard = CARDS_BY_ID[askId]
+    const ansCard = CARDS_BY_ID[ansId]
+    if (!askCard || !ansCard) return null
+    const sameEra = QUIZ_POOL.filter(
+      (id) => CARDS_BY_ID[id] && ERA_OF[CARDS_BY_ID[id].dynasty] === ERA_OF[ansCard.dynasty],
+    )
+    const wrong = pickDistinct(sameEra.length >= 6 ? sameEra : QUIZ_POOL, 3, [askId, ansId], rand)
+    if (wrong.length < 3) return null
+    return {
+      kind,
+      prompt: { zh: askCard.name.zh, en: askCard.name.en ?? askCard.name.zh },
+      subjectId: askId,
+      options: shuffle([ansId, ...wrong], rand),
+      answer: ansId,
+    }
+  }
 
   if (kind === 'whoIsIt') {
     // 题干:传记片段(去掉人名本身,免得白送)

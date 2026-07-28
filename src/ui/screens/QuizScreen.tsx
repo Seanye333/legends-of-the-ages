@@ -78,8 +78,9 @@ export function QuizScreen({ onBack }: Props) {
     setDone(false)
   }
 
+  // 朝代题的选项是 dynasty tag,其余两类都是人名 id
   const label = (value: string) =>
-    q.kind === 'whoIsIt' ? pick(personLabel(value)) : pick(dynastyName(value))
+    q.kind === 'whichDynasty' ? pick(dynastyName(value)) : pick(personLabel(value))
 
   return (
     <div className={styles.screen}>
@@ -104,7 +105,9 @@ export function QuizScreen({ onBack }: Props) {
           <div className={styles.kind}>
             {q.kind === 'whoIsIt'
               ? t('列传所载,此人是谁?', 'Whose chronicle is this?')
-              : t('此人属哪一朝代阵营?', 'Which dynasty did they serve?')}
+              : q.kind === 'whichDynasty'
+                ? t('此人属哪一朝代阵营?', 'Which dynasty did they serve?')
+                : t('此人的宿敵是誰?', 'Who was their sworn rival?')}
           </div>
           <p className={styles.prompt}>{pick(q.prompt)}</p>
           <div className={styles.options}>
