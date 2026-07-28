@@ -13,7 +13,8 @@ import type {
 import { COLLECTIBLE_CARDS } from '../../content/cards'
 import { TROOP_NAME } from '../../content/troops'
 import { claimableGoals, eraProgress } from '../../content/collectionGoals'
-import { useCollection } from '../../app/collectionStore'
+import { adviceTotal, disenchantAdvice } from '../../content/disenchantAdvice'
+import { disenchantValue, useCollection } from '../../app/collectionStore'
 import { DOCTRINE_COLORS, DYNASTY_NAME } from '../doctrineColors'
 import { CardFace } from '../components/CardFace'
 import { CardInspect } from '../components/CardInspect'
@@ -150,12 +151,18 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
   const [sortKey, setSortKey] = useState<SortKey>('rarity')
   const [limit, setLimit] = useState(PAGE)
   const [inspect, setInspect] = useState<CardDef | null>(null)
+  const customDecks = useCollection((s) => s.customDecks)
   const collectionClaimed = useCollection((s) => s.collectionClaimed)
   const claimGoal = useCollection((s) => s.claimCollectionGoal)
   const progress = useMemo(() => eraProgress(owned), [owned])
   const claimable = useMemo(
     () => claimableGoals(owned, collectionClaimed),
     [owned, collectionClaimed],
+  )
+  const advice = useMemo(() => disenchantAdvice(owned, customDecks), [owned, customDecks])
+  const adviceMerit = useMemo(
+    () => adviceTotal(advice, (id) => disenchantValue(id)),
+    [advice],
   )
 
   // 搜索防抖:每次按键都全量过滤 2000+ 张卡会明显掉帧
@@ -281,6 +288,20 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
               </span>
             </div>
           ))}
+          {/* 分解建议:功勋入口只有三个,而收藏里通常躺着几百张从没进过任何牌组的卡 ——
+              既不会被用到,也不会被想起来分解。只列**真正安全**的:
+              不在任何预组/自组卡组里,且不是史诗与传说(收藏价值,合回来要四倍功勋)。 */}
+          {advice.length > 0 && (
+            <div className={styles.goalRow}>
+              <span className={styles.goalName}>{t('可分解', 'Spare')}</span>
+              <span className={styles.goalNum} style={{ width: 'auto', flex: 1 }}>
+                {t(
+                  `${advice.length} 种从没进过任何牌组 · 约可换 ${adviceMerit} 功勋`,
+                  `${advice.length} kinds never used in a deck · about ${adviceMerit} merit`,
+                )}
+              </span>
+            </div>
+          )}
           {claimable.map((g) => (
             <button
               key={g.id}
