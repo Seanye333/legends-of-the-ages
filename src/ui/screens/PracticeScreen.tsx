@@ -31,6 +31,9 @@ export function PracticeScreen({ onBack, onEnterMatch }: PracticeScreenProps) {
   const [mineIdx, setMineIdx] = useState(0)
   const [oppIdx, setOppIdx] = useState(decks.length > 1 ? 1 : 0)
   const [diff, setDiff] = useState<Difficulty>('veteran')
+  // 热座:双人同机。放在演武场里而不是单开一个模式 ——
+  // 它要的东西(自选双方主公与卡组)和演武场一模一样,只是把 AI 换成了另一个人。
+  const [hotSeat, setHotSeat] = useState(false)
 
   const mine = decks[mineIdx % decks.length]
   const opp = decks[oppIdx % decks.length]
@@ -45,6 +48,7 @@ export function PracticeScreen({ onBack, onEnterMatch }: PracticeScreenProps) {
       heroPowersOverride: [HEROES_BY_ID[mine.heroId]?.power, HEROES_BY_ID[opp.heroId]?.power],
       practice: true,
       difficultyOverride: diff,
+      hotSeat,
     })
     onEnterMatch()
   }
@@ -132,10 +136,20 @@ export function PracticeScreen({ onBack, onEnterMatch }: PracticeScreenProps) {
             {t(d.zh, d.en)}
           </button>
         ))}
+        {/* 热座:把 AI 换成坐在对面的人。同一台设备轮流出牌,换人时落一道帘。 */}
+        <button
+          className={`${styles.diffBtn} ${hotSeat ? styles.diffOn : ''}`}
+          onClick={() => {
+            playSfx('buttonTap')
+            setHotSeat((v) => !v)
+          }}
+        >
+          {t('热座双人', 'Hot seat')}
+        </button>
       </div>
 
       <button className={styles.fightBtn} onClick={fight}>
-        {t('开战 ›', 'Fight ›')}
+        {hotSeat ? t('对坐开战 ›', 'Hot seat ›') : t('开战 ›', 'Fight ›')}
       </button>
     </div>
   )

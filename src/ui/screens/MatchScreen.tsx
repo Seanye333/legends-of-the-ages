@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
-import type { ChooseMode, Command, GameEvent, LocalizedText, TargetRef } from '../../engine/types'
+import type {
+  ChooseMode,
+  Command,
+  GameEvent,
+  GameState,
+  LocalizedText,
+  TargetRef,
+} from '../../engine/types'
 import { legalCommands } from '../../engine/legal'
 import { CARDS_BY_ID } from '../../content/cards'
 import { useMatch } from '../../app/matchStore'
@@ -45,6 +52,14 @@ const ERA_TINT: Record<Era, string> = {
 }
 import { useSettings } from '../../app/settingsStore'
 import styles from './MatchScreen.module.css'
+
+// 视角座位:非热座恒为 0;热座时谁该动谁就在下面(调度阶段看谁还没调度完)。
+// 抽成纯函数是因为 useMemo 的依赖里也要用它,而那时组件内的 viewer 还没算出来。
+function viewerSeat(state: GameState, hotSeat: boolean): 0 | 1 {
+  if (!hotSeat) return 0
+  if (state.phase === 'mulligan') return state.players[0].mulliganDone ? 1 : 0
+  return state.activePlayer as 0 | 1
+}
 
 type PlayCmd = Extract<Command, { type: 'PlayCard' }>
 type AttackCmd = Extract<Command, { type: 'Attack' }>
@@ -94,6 +109,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
     markPuzzlePeeked,
     practice,
     bossId,
+    hotSeat,
   } = useMatch()
   const puzzleDef = puzzleId ? puzzleDefById(puzzleId) : undefined
   const [showHint, setShowHint] = useState(false)
@@ -112,6 +128,9 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
   // 「轮到你了」横幅:此前只有主帅面板的一次金光脉动,很容易错过 ——
   // 尤其是联机局隔了对手一整个回合之后。
   const [turnBanner, setTurnBanner] = useState(0)
+  // 热座:已经接手的那个座位。与当前视角座位不一致时落帘。
+  const [curtainSeat, setCurtainSeat] = useState<0 | 1 | null>(0)
+  const setCurtainFor = (seat: 0 | 1) => setCurtainSeat(seat)
 
   // 战场色温:同一张底图,按对手的时代块换色 —— 六张 4K 底图是几十 MB,
   // 而包体红线 150MB 里立绘已经占了 65MB。filter 一行解决。
@@ -139,7 +158,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
 
   // 唯一规则来源:legalCommands。UI 只做筛选,不重演规则。
   const legal = useMemo(
-    () => (state ? legalCommands(state, 0, CARDS_BY_ID) : []),
+    () => (state ? legalCommands(state, viewerSeat(state, hotSeat), CARDS_BY_ID) : []),
     [state],
   )
   const playCmds = useMemo(
@@ -277,13 +296,26 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
     )
   }
 
-  const me = state.players[0]
-  const foe = state.players[1]
+  // 视角座位。**非热座时恒为 0** —— 与从前逐字等价,普通对局一点没变。
+  // 热座(双人同机)时跟着 activePlayer 翻:谁该出牌,谁就在下面。
+  // 调度阶段两人各调度一次,所以那一阶段看谁还没调度完。
+  const viewer: 0 | 1 = !hotSeat
+    ? 0
+    : state.phase === 'mulligan'
+      ? state.players[0].mulliganDone
+        ? 1
+        : 0
+      : (state.activePlayer as 0 | 1)
+  const foeSeat: 0 | 1 = viewer === 0 ? 1 : 0
+  const me = state.players[viewer]
+  const foe = state.players[foeSeat]
   // 观战席没有「我方回合」可言:一切操作入口都要关掉,
   // 否则会出现「点了没反应」的迷惑体验(服务器本来就会丢弃观战席的指令)
-  const myTurn = !spectating && state.phase === 'main' && state.activePlayer === 0
+  const myTurn = !spectating && state.phase === 'main' && state.activePlayer === viewer
   const canEndTurn = !spectating && legal.some((c) => c.type === 'EndTurn')
 
+  // 视角一换就落帘(热座)。非热座时 viewer 恒为 0,这段永远不触发。
+  const curtain = hotSeat && curtainSeat !== viewer
   const sendAndClear = (cmd: Command) => {
     send(cmd)
     setSelection(null)
@@ -311,7 +343,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
     const variants = playCmds.filter((c) => c.iid === iid)
     if (variants.length === 0) return
     // 抉择卡:legalCommands 会给每个模式各出命令(带 mode)。先让玩家选模式。
-    const inst = state?.players[0].hand.find((c) => c.iid === iid)
+    const inst = state?.players[viewerSeat(state, hotSeat)].hand.find((c) => c.iid === iid)
     const def = inst ? CARDS_BY_ID[inst.defId] : undefined
     if (def?.choose) {
       setSelection(null)
@@ -438,12 +470,12 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
         <HeroPlate
           ps={foe}
           enemy
-          targetable={activeTargets.has('hero-1')}
-          floats={floatsFor('hero-1')}
-          fx={fxFor('hero-1')}
+          targetable={activeTargets.has(`hero-${foeSeat}`)}
+          floats={floatsFor(`hero-${foeSeat}`)}
+          fx={fxFor(`hero-${foeSeat}`)}
           onClick={(e) => {
             e.stopPropagation()
-            onEntityClick({ kind: 'hero', player: 1 })
+            onEntityClick({ kind: 'hero', player: foeSeat })
           }}
         />
         <div className={styles.topRight}>
@@ -524,9 +556,9 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
       <div className={styles.bottom}>
         <HeroPlate
           ps={me}
-          targetable={activeTargets.has('hero-0')}
-          floats={floatsFor('hero-0')}
-          fx={fxFor('hero-0')}
+          targetable={activeTargets.has(`hero-${viewer}`)}
+          floats={floatsFor(`hero-${viewer}`)}
+          fx={fxFor(`hero-${viewer}`)}
           pulse={anim.myTurnPulse}
           powerUsable={myTurn && powerCmds.length > 0}
           powerSelected={selection?.kind === 'heroPower'}
@@ -545,7 +577,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
           }
           onClick={(e) => {
             e.stopPropagation()
-            onEntityClick({ kind: 'hero', player: 0 })
+            onEntityClick({ kind: 'hero', player: viewer })
           }}
         />
         <div className={styles.handArea}>
@@ -623,6 +655,25 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
       {turnBanner > 0 && myTurn && (
         <div key={turnBanner} className={styles.turnBanner} role="status" aria-live="polite">
           {t('轮到你了', 'Your Turn')}
+        </div>
+      )}
+
+      {/* 热座的传递帘:同一台设备上换人时,**必须先把上一个人的手牌盖住**。
+          没有这一层的话,「双人同机」等于两个人一起看两副手牌,游戏就不成立了。
+          帘子由玩家自己点开 —— 用定时器自动收会赶不上真人递手机的速度。 */}
+      {hotSeat && curtain && (
+        <div className={styles.curtain}>
+          <div className={styles.curtainInner}>
+            <div className={styles.curtainTitle}>
+              {t(`請交予 ${viewer === 0 ? '先手' : '後手'}`, `Pass to player ${viewer + 1}`)}
+            </div>
+            <p className={styles.curtainText}>
+              {t('接手之后再点开 —— 帘后是对方的手牌。', 'Tap only after you have the device.')}
+            </p>
+            <button className={styles.curtainBtn} onClick={() => setCurtainFor(viewer)}>
+              {t('我已接手', 'I have it')}
+            </button>
+          </div>
         </div>
       )}
 

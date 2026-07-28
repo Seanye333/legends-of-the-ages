@@ -12,5 +12,6 @@ test('构筑器:选一条羁绊就自动配好一副牌', async ({ page }) => {
   await page.locator('[class*="seedRow"]').first().click()
   await expect(page.getByText(/已按「|Built /)).toBeVisible()
   // 配完之后卡组是满的(或接近满),保存按钮显示张数
-  await expect(page.getByRole('button', { name: /保存卡组/ })).toBeVisible()
+  // 「保存卡组图」也匹配 /保存卡组/,所以这里要钉住带张数的那个
+  await expect(page.getByRole('button', { name: /保存卡组\(/ })).toBeVisible()
 })

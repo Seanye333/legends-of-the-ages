@@ -74,6 +74,8 @@ export interface StartMatchArgs {
   // 每日谜题:胜利走「按天」奖励(solveDaily),而不是按谜题 id 的静态奖励
   daily?: boolean
   dailyDate?: string
+  // 热座:双人同机,轮流出牌,没有 AI。不记战绩/军令/成就(那是两个人的局)
+  hotSeat?: boolean
   // 演武场:自选双方 + 难度的自由练习,不记战绩/军令/成就/战报
   practice?: boolean
   difficultyOverride?: Difficulty
@@ -121,6 +123,7 @@ interface MatchStoreState {
   puzzleHistory: GameState[]
   puzzlePeeked: boolean
   practice: boolean
+  hotSeat: boolean
   deckKey: string | null
   match: LocalMatch | null
   remote: RemoteMatch | null
@@ -289,6 +292,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
   puzzleHistory: [],
   puzzlePeeked: false,
   practice: false,
+  hotSeat: false,
   deckKey: null,
   match: null,
   remote: null,
@@ -339,6 +343,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       },
       CARDS_BY_ID,
       ai,
+      args.hotSeat === true,
     )
     const { state, events } = match.start()
     // 谜题 / 演武场不进战报回放(会污染「最近 5 场」列表)
@@ -366,6 +371,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       puzzleHistory: [],
       puzzlePeeked: false,
       practice: args.practice === true,
+      hotSeat: args.hotSeat === true,
       deckKey: args.deckKey ?? null,
       match,
       state,
@@ -570,6 +576,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       puzzleHistory: [],
       puzzlePeeked: false,
       practice: false,
+      hotSeat: false,
       deckKey: null,
       match: null,
       remote: null,

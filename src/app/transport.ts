@@ -32,12 +32,24 @@ export class LocalMatch implements MatchTransport {
   private aiRng: number
   private readonly aiPlayer: PlayerIdx = 1
 
+  // 热座(双人同机):没有 AI,两个人轮流在同一台设备上出牌。
+  // 引擎侧只要两件事 —— 命令按**当前该谁动**来执行,以及 AI 一步都不许走。
+  // 视角翻转是 UI 的事(MatchScreen 按 activePlayer 决定谁在下面)。
   constructor(
     private readonly cfg: GameConfig,
     private readonly lib: CardLibrary,
     private readonly aiConfig: AiConfig = AI_NORMAL,
+    private readonly hotSeat = false,
   ) {
     this.aiRng = cfg.seed ^ 0x5eed
+  }
+
+  // 该谁出牌。非热座时永远是座位 0(人类);热座时跟着对局走 ——
+  // 调度阶段两个人各自调度一次,之后按 activePlayer。
+  private actor(): PlayerIdx {
+    if (!this.hotSeat) return this.humanPlayer
+    if (this.state.phase === 'mulligan') return this.state.players[0].mulliganDone ? 1 : 0
+    return this.state.activePlayer
   }
 
   start(): MatchUpdate {
@@ -57,7 +69,7 @@ export class LocalMatch implements MatchTransport {
   }
 
   sendCommand(cmd: Command): { error: string } | { updates: MatchUpdate[] } {
-    const r = applyCommand(this.state, this.humanPlayer, cmd, this.lib)
+    const r = applyCommand(this.state, this.actor(), cmd, this.lib)
     if (!r.ok) return { error: r.error }
     this.state = r.state
     const updates: MatchUpdate[] = [{ state: this.state, events: r.events }]
@@ -85,6 +97,7 @@ export class LocalMatch implements MatchTransport {
   }
 
   private aiShouldAct(): boolean {
+    if (this.hotSeat) return false // 热座局没有 AI
     if (this.state.phase === 'ended') return false
     if (this.state.phase === 'mulligan') return !this.state.players[this.aiPlayer].mulliganDone
     return this.state.activePlayer === this.aiPlayer
