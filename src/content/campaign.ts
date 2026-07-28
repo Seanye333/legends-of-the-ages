@@ -20,7 +20,9 @@ import { CARDS_BY_ID, COLLECTIBLE_CARDS } from './cards'
 // 现在是**两章共十六场**关底战,每一场是一个**规则不对称**的对手:更高的血量、
 // 一个比玩家更强的主公技、一套主题卡组。玩家用自己的卡组去打,所以它同时是构筑的试金石。
 //
-// 第一章「汉末群雄」张角→曹操,第二章「逐鹿千年」白起→徐达沿中华战史一路往下打。
+// 第一章「汉末群雄」张角→曹操,第二章「逐鹿千年」白起→徐达,
+// 第三章「山河永寂」谢玄→郑成功 —— 前两章的主角是**去取天下的人**,
+// 第三章换成**守住一条线不让它断的人**。共 24 关。
 // 解锁是**全局线性**的(通了曹操才进白起),但难度按章各自成曲线:第二章开章时
 // 玩家已成军,不必再像张角那样友好。sim-campaign 按 chapter 分段校验每章的曲线。
 //
@@ -43,8 +45,9 @@ import { CARDS_BY_ID, COLLECTIBLE_CARDS } from './cards'
 // 这一行以前写的是「固定用名将」,那是错的,一直没人对过。
 //
 // 曲线是拿 sim-campaign 的基准尺(AI_NORMAL,双方同档)调出来的:
-//   第一章 70 / 58 / 67 / 50 / 30 / 35 / 28 / 27 %
-//   第二章 72 / 60 / 52 / 52 / 30 / 38 / 20 / 15 %
+//   第一章 78 / 48 / 55 / 50 / 32 / 40 / 32 / 33 %
+//   第二章 72 / 68 / 40 / 40 / 28 / 40 / 28 / 15 %
+//   第三章 58 / 47 / 43 / 35 / 22 / 27 / 33 / 17 %
 // 真人玩家强于贪心 AI,所以这组数字是**下限**,实际体感会更松一些。
 //
 // 这套 tier 重搜过两轮:一轮是机制播种重做,一轮是**预组骨架名将补专属技**
@@ -92,6 +95,7 @@ export function bossChapter(b: BossDef): number {
 export const CHAPTER_TITLES: Record<number, LocalizedText> = {
   1: { zh: '第一章 · 漢末群雄', en: 'Chapter I · Warlords of Han’s Fall' },
   2: { zh: '第二章 · 逐鹿千年', en: 'Chapter II · A Thousand Years of Contenders' },
+  3: { zh: '第三章 · 山河永寂', en: 'Chapter III · The Silent Land' },
 }
 
 const power = (
@@ -499,6 +503,227 @@ export const BOSSES: BossDef[] = [
     rewardPacks: 5,
     chapter: 2,
   },
+
+  // ============================================================
+  // 第三章「山河永寂」—— 从淝水到台湾,守土者与逐鹿者。
+  //
+  // 前两章是「汉末群雄」与「逐鹿千年」,主角都是**开局的人**:曹操、白起、韩信。
+  // 第三章刻意换一批人 —— 谢玄、虞允文、文天祥、于谦、郑成功,
+  // 他们多数不是去取天下的,而是**守住一条线不让它断**。这一章的对手因此更硬:
+  // 血更厚、主公技偏防守与消耗,逼玩家真的去解决问题而不是拼刀。
+  //
+  // 全部选**有立绘的签名卡**(见 high-visual-quality-bar):
+  // 关底简报是一整屏全身立绘,占位图会直接砸掉这一屏。
+  // 主义分布 royal×3 / separatist×2 / ritual×2 / hegemonic×1 ——
+  // 名利与隐逸在这一段历史里找不到有立绘的合适人选,不硬凑。
+  //
+  // deckTier 由 `ONLY=... npm run tune-campaign` 网格扫描搜出来,
+  // 再用 sim-campaign 验收(章内前后半差 ≥8、开章友好、收官有压力)。
+  {
+    id: 'boss-xie-xuan',
+    heroId: 'hist-xie-xuan',
+    name: { zh: '謝玄', en: 'Xie Xuan' },
+    title: { zh: '北府之鋒', en: 'Blade of the Northern Garrison' },
+    intro: {
+      zh: '八千北府兵列于淝水之南。投鞭断流的百萬之眾就在对岸 —— 他等的是对方后退半步。',
+      en: 'Eight thousand of the Northern Garrison stand south of the Fei. A million men wait across the water; he waits for half a step back.',
+    },
+    doctrine: 'royal',
+    hp: 46,
+    deckTier: 0.3,
+    power: power(
+      'bp-beifu',
+      { zh: '北府兵', en: 'The Northern Garrison' },
+      { zh: '使一名友方武將獲得+1/+1與守護。', en: 'Give a friendly general +1/+1 and Guard.' },
+      2,
+      [
+        { op: 'buffStats', attack: 1, health: 1, target: 'chosenFriendlyGeneral' },
+        { op: 'grantKeyword', keyword: 'guard', target: 'chosenFriendlyGeneral' },
+      ],
+    ),
+    rewardMerit: 500,
+    rewardPacks: 2,
+    chapter: 3,
+  },
+  {
+    id: 'boss-an-lushan',
+    heroId: 'hist-an-lushan',
+    name: { zh: '安祿山', en: 'An Lushan' },
+    title: { zh: '漁陽鼙鼓', en: 'War Drums from Yuyang' },
+    intro: {
+      zh: '渔阳鼙鼓动地来,惊破霓裳羽衣曲。三镇节度使反了,而长安还在唱歌。',
+      en: 'The drums of Yuyang shook the earth. Three commands rose in revolt while Chang’an was still singing.',
+    },
+    doctrine: 'separatist',
+    hp: 48,
+    deckTier: 0.75,
+    power: power(
+      'bp-yuyang',
+      { zh: '漁陽鼙鼓', en: 'Drums of Yuyang' },
+      { zh: '召喚兩個 2/2 的鐵騎。', en: 'Summon two 2/2 Ironclad Cavalry.' },
+      2,
+      [{ op: 'summon', defId: 'token-tie-qi', count: 2 }],
+    ),
+    rewardMerit: 580,
+    rewardPacks: 2,
+    chapter: 3,
+  },
+  {
+    id: 'boss-di-qing',
+    heroId: 'hist-di-qing',
+    name: { zh: '狄青', en: 'Di Qing' },
+    title: { zh: '面涅將軍', en: 'The Tattooed General' },
+    intro: {
+      zh: '脸上刺着字的行伍出身,一路做到枢密使。昆仑关那一夜他没打灯,天亮时关已经在手里。',
+      en: 'A tattooed conscript who rose to command the empire’s armies. He took Kunlun Pass in the dark and held it by dawn.',
+    },
+    doctrine: 'hegemonic',
+    hp: 50,
+    deckTier: 0.45,
+    power: power(
+      'bp-kunlun',
+      { zh: '昆侖夜襲', en: 'Night Attack at Kunlun' },
+      { zh: '使一名友方武將獲得突襲並+2/+0。', en: 'Give a friendly general Rush and +2/+0.' },
+      2,
+      [
+        { op: 'grantKeyword', keyword: 'rush', target: 'chosenFriendlyGeneral' },
+        { op: 'buffStats', attack: 2, health: 0, target: 'chosenFriendlyGeneral' },
+      ],
+    ),
+    rewardMerit: 670,
+    rewardPacks: 2,
+    chapter: 3,
+  },
+  {
+    id: 'boss-yu-yunwen',
+    heroId: 'hist-yu-yunwen',
+    name: { zh: '虞允文', en: 'Yu Yunwen' },
+    title: { zh: '采石一書生', en: 'The Scholar at Caishi' },
+    intro: {
+      zh: '他本是去劳军的文官。到了采石才发现主帅未至、军无斗志 —— 于是他自己站上了江岸。',
+      en: 'He came only to deliver supplies. Finding no commander and no will to fight, the clerk took the riverbank himself.',
+    },
+    doctrine: 'ritual',
+    hp: 52,
+    deckTier: 0.45,
+    power: power(
+      'bp-caishi',
+      { zh: '采石卻敵', en: 'Turning Them at Caishi' },
+      { zh: '抽一張牌,並獲得 3 點護甲。', en: 'Draw a card and gain 3 Armor.' },
+      2,
+      [
+        { op: 'draw', count: 1 },
+        { op: 'gainArmor', amount: 3 },
+      ],
+    ),
+    rewardMerit: 780,
+    rewardPacks: 2,
+    chapter: 3,
+  },
+  {
+    id: 'boss-wen-tianxiang',
+    heroId: 'hist-wen-tianxiang',
+    name: { zh: '文天祥', en: 'Wen Tianxiang' },
+    title: { zh: '零丁洋裡', en: 'On the Lonely Sea' },
+    intro: {
+      zh: '惶恐滩头说惶恐,零丁洋里叹零丁。宋已经没有了,他还在打。',
+      en: 'Song had already fallen. He went on fighting anyway.',
+    },
+    doctrine: 'royal',
+    hp: 54,
+    deckTier: 0.45,
+    power: power(
+      'bp-danxin',
+      { zh: '丹心照汗青', en: 'A Red Heart in the Histories' },
+      { zh: '使全體友方武將獲得+0/+1,並獲得 2 點護甲。', en: 'Give all friendly generals +0/+1 and gain 2 Armor.' },
+      2,
+      [
+        { op: 'buffStats', attack: 0, health: 1, target: 'allFriendlyGenerals' },
+        { op: 'gainArmor', amount: 2 },
+      ],
+    ),
+    rewardMerit: 900,
+    rewardPacks: 2,
+    chapter: 3,
+  },
+  {
+    id: 'boss-chen-youliang',
+    heroId: 'hist-chen-youliang',
+    name: { zh: '陳友諒', en: 'Chen Youliang' },
+    title: { zh: '鄱陽舟師', en: 'The Fleet at Poyang' },
+    intro: {
+      zh: '六十万众,楼船连锁数十里。中国史上最大的水战,他是兵多的那一边。',
+      en: 'Six hundred thousand men and towered ships chained for tens of li. In the largest naval battle in Chinese history, he had the numbers.',
+    },
+    doctrine: 'separatist',
+    hp: 56,
+    deckTier: 0.9,
+    power: power(
+      'bp-loushi',
+      { zh: '樓船連鎖', en: 'Ships Chained Abreast' },
+      { zh: '召喚一個 3/3 的禁軍,並使其獲得守護。', en: 'Summon a 3/3 Imperial Guard with Guard.' },
+      2,
+      [
+        { op: 'summon', defId: 'token-jin-jun', count: 1 },
+        { op: 'grantKeyword', keyword: 'guard', target: 'randomFriendlyGeneral' },
+      ],
+    ),
+    rewardMerit: 1050,
+    rewardPacks: 3,
+    chapter: 3,
+  },
+  {
+    id: 'boss-yu-qian',
+    heroId: 'hist-yu-qian',
+    name: { zh: '于謙', en: 'Yu Qian' },
+    title: { zh: '社稷為重', en: 'The Altars Come First' },
+    intro: {
+      zh: '皇帝被俘,群臣议南迁。他说言南迁者可斩 —— 然后关上城门,守了北京。',
+      en: 'The emperor captured, the court urging flight south. "Whoever speaks of fleeing may be executed," he said — then shut the gates and held Beijing.',
+    },
+    doctrine: 'ritual',
+    hp: 58,
+    deckTier: 0.3,
+    power: power(
+      'bp-shouji',
+      { zh: '九門禦敵', en: 'Nine Gates Held' },
+      { zh: '召喚一個 0/4 的守軍(守護),並獲得 2 點護甲。', en: 'Summon a 0/4 Guard defender and gain 2 Armor.' },
+      2,
+      [
+        { op: 'summon', defId: 'token-shui-zhai', count: 1 },
+        { op: 'gainArmor', amount: 2 },
+      ],
+    ),
+    rewardMerit: 1250,
+    rewardPacks: 3,
+    chapter: 3,
+  },
+  {
+    id: 'boss-zheng-chenggong',
+    heroId: 'hist-zheng-chenggong',
+    name: { zh: '鄭成功', en: 'Koxinga' },
+    title: { zh: '海上孤忠', en: 'The Last Loyalist at Sea' },
+    intro: {
+      zh: '大陆已经没有他的立足之地。他带着最后的船队渡海,把一座岛变成了最后一片明土。',
+      en: 'No ground left on the mainland. He took the last fleet across the strait and made an island the last of Ming.',
+    },
+    doctrine: 'royal',
+    hp: 62,
+    deckTier: 0.45,
+    power: power(
+      'bp-kaitai',
+      { zh: '開臺', en: 'Across the Strait' },
+      { zh: '使一名友方武將獲得+2/+2,並抽一張牌。', en: 'Give a friendly general +2/+2 and draw a card.' },
+      2,
+      [
+        { op: 'buffStats', attack: 2, health: 2, target: 'chosenFriendlyGeneral' },
+        { op: 'draw', count: 1 },
+      ],
+    ),
+    rewardMerit: 1700,
+    rewardPacks: 4,
+    chapter: 3,
+  },
 ]
 
 // Boss 卡组:从该主义 + 中立池里按曲线取满 30 张,**优先带关键词或效果的卡**。
@@ -801,6 +1026,89 @@ export const TRIALS: Record<string, TrialDef> = {
     ...slay({ zh: '敵軍主將', en: 'Enemy Commander' }, 'token-di-zhu-jiang'),
     rewardMerit: 380,
   },
+  // ---- 第三章 · 山河永寂 ----
+  // 这一章多是守土者,试炼因此偏「守成」与「护送」——
+  // 斩将那一类留给主动进攻的那几个(安禄山、狄青、陈友谅)。
+  'boss-xie-xuan': {
+    id: 'trial-xie-xuan',
+    name: { zh: '八千北府', en: 'Eight Thousand of the Garrison' },
+    text: {
+      zh: '守成:以少击众,撑过 14 回合 —— 风声鹤唳的是对面。',
+      en: 'Endure: outnumbered, hold for 14 turns. It is the other side that hears cranes in the wind.',
+    },
+    objective: { kind: 'survive', turns: 14 },
+    rewardMerit: 300,
+  },
+  'boss-an-lushan': {
+    id: 'trial-an-lushan',
+    name: { zh: '睢陽孤城', en: 'The Lone City of Suiyang' },
+    text: {
+      zh: '斩将:叛军阵中有一员主将,斩了他,鼙鼓就停了。',
+      en: 'Slay: cut down the commander in the rebel line and the drums fall silent.',
+    },
+    ...slay({ zh: '敵軍主將', en: 'Enemy Commander' }, 'token-di-zhu-jiang'),
+    rewardMerit: 320,
+  },
+  'boss-di-qing': {
+    id: 'trial-di-qing',
+    name: { zh: '昆侖關', en: 'Kunlun Pass' },
+    text: {
+      zh: '斩将:关前那员大将不倒,这一夜就过不去。',
+      en: 'Slay: the pass does not open while their commander still stands.',
+    },
+    ...slay({ zh: '敵軍主將', en: 'Enemy Commander' }, 'token-di-zhu-jiang'),
+    rewardMerit: 340,
+  },
+  'boss-yu-yunwen': {
+    id: 'trial-yu-yunwen',
+    name: { zh: '采石糧道', en: 'The Supply Line at Caishi' },
+    text: {
+      zh: '护送:一个文官守江，粮车比刀更要紧。',
+      en: 'Escort: a clerk holding a river needs the grain more than the blade.',
+    },
+    ...escort({ zh: '糧車', en: 'Grain Cart' }, 'token-liang-che'),
+    rewardMerit: 360,
+  },
+  'boss-wen-tianxiang': {
+    id: 'trial-wen-tianxiang',
+    name: { zh: '零丁洋', en: 'The Lonely Sea' },
+    text: {
+      zh: '守成:大势已去,撑过 16 回合 —— 你要的从来不是赢。',
+      en: 'Endure: the tide has turned. Hold 16 turns. Winning was never the point.',
+    },
+    objective: { kind: 'survive', turns: 16 },
+    rewardMerit: 380,
+  },
+  'boss-chen-youliang': {
+    id: 'trial-chen-youliang',
+    name: { zh: '火燒連環', en: 'Burn the Chains' },
+    text: {
+      zh: '斩将:楼船连锁,先斩了指挥连锁的那个人。',
+      en: 'Slay: the ships are chained. Cut down the one who chained them.',
+    },
+    ...slay({ zh: '敵軍主將', en: 'Enemy Commander' }, 'token-di-zhu-jiang'),
+    rewardMerit: 400,
+  },
+  'boss-yu-qian': {
+    id: 'trial-yu-qian',
+    name: { zh: '九門不開', en: 'Nine Gates Shut' },
+    text: {
+      zh: '守成:皇帝没了,城还在。撑过 16 回合。',
+      en: 'Endure: the emperor is gone; the city is not. Hold 16 turns.',
+    },
+    objective: { kind: 'survive', turns: 16 },
+    rewardMerit: 420,
+  },
+  'boss-zheng-chenggong': {
+    id: 'trial-zheng-chenggong',
+    name: { zh: '最後一船', en: 'The Last Ship' },
+    text: {
+      zh: '护送:最后的船队渡海,这一船不能丢。',
+      en: 'Escort: the last fleet crosses the strait. This one ship cannot be lost.',
+    },
+    ...escort({ zh: '糧車', en: 'Grain Cart' }, 'token-liang-che'),
+    rewardMerit: 500,
+  },
   'boss-xu-da': {
     id: 'trial-xu-da',
     name: { zh: '大漠孤軍', en: 'Alone in the Desert' },
@@ -854,6 +1162,16 @@ export const BOSS_PERSONALITIES: Record<string, Partial<EvalWeights>> = {
   'boss-zhao-kuangyin': { myHp: 0.85, board: 1.05 }, // 杯酒释兵权 —— 先立于不败
   'boss-yue-fei': { board: 1.15, myHp: 0.7 }, // 岳家军 —— 阵不乱
   'boss-xu-da': { myHp: 0.75, board: 1.1 }, // 持重 —— 稳扎稳打
+
+  // 第三章 · 山河永寂 —— 这一章多是守土者,权重整体偏「先立于不败」
+  'boss-xie-xuan': { board: 1.15, myHp: 0.7 }, // 北府之锋 —— 以少击众,阵不能乱
+  'boss-an-lushan': { foeHp: 0.85, myHp: 0.45 }, // 渔阳鼙鼓 —— 叛军只管往前压
+  'boss-di-qing': { foeHp: 0.8, board: 0.9 }, // 昆仑夜袭 —— 突袭见血
+  'boss-yu-yunwen': { myHp: 0.85, hand: 0.55 }, // 采石书生 —— 守住并且续上
+  'boss-wen-tianxiang': { myHp: 0.9, board: 1.05 }, // 丹心 —— 苟到最后一刻
+  'boss-chen-youliang': { board: 1.25, foeHp: 0.5 }, // 楼船连锁 —— 靠体量碾
+  'boss-yu-qian': { myHp: 0.9, board: 1.1 }, // 九门御敌 —— 纯守城
+  'boss-zheng-chenggong': { board: 1.15, hand: 0.55 }, // 海上孤忠 —— 场面与资源双吃
 }
 
 export function bossPersonality(bossId: string): Partial<EvalWeights> | undefined {

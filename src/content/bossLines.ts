@@ -109,6 +109,55 @@ export const BOSS_LINES: Record<string, BossLines> = {
     low: { zh: '莫等閒,白了少年頭。', en: 'Do not idle, and let a young head turn white.' },
     win: { zh: '撼山易,撼岳家軍難。', en: 'Easier to move a mountain than the Yue family army.' },
   },
+  // ---- 第三章 · 山河永寂 ----
+  'boss-xie-xuan': {
+    open: { zh: '八千人,足夠了。', en: 'Eight thousand. That will do.' },
+    kill: { zh: '陣不許亂。', en: 'The line does not break.' },
+    low: { zh: '風聲鶴唳的是你們,不是我。', en: 'It is you who hear cranes in the wind, not I.' },
+    win: { zh: '投鞭斷流?水還在流。', en: 'They said they could dam the river. The river still runs.' },
+  },
+  'boss-an-lushan': {
+    open: { zh: '長安還在唱歌 —— 讓他們唱完。', en: 'Chang’an is still singing. Let them finish.' },
+    kill: { zh: '擋路的,一個也留不得。', en: 'No one in the way is left standing.' },
+    low: { zh: '我起兵那天就沒想過回頭。', en: 'I never planned to turn back.' },
+    win: { zh: '漁陽鼙鼓,動地而來。', en: 'The drums of Yuyang shake the earth.' },
+  },
+  'boss-di-qing': {
+    open: { zh: '臉上的字我沒去掉 —— 那是我從哪來的。', en: 'I never had the tattoo removed. It says where I came from.' },
+    kill: { zh: '快些,天亮之前要拿下。', en: 'Quickly. It must be taken before dawn.' },
+    low: { zh: '行伍出身的人,不怕挨這一下。', en: 'A man risen from the ranks does not flinch at this.' },
+    win: { zh: '關已在手。', en: 'The pass is ours.' },
+  },
+  'boss-yu-yunwen': {
+    open: { zh: '主帥未至,那便由我來。', en: 'The commander has not come. Then it falls to me.' },
+    kill: { zh: '書生也會殺人。', en: 'A scholar can kill too.' },
+    low: { zh: '江在我身後,退不得。', en: 'The river is behind me. There is nowhere to withdraw.' },
+    win: { zh: '采石一戰,我只是站在了那裡。', en: 'At Caishi I did nothing but stand there.' },
+  },
+  'boss-wen-tianxiang': {
+    open: { zh: '國已亡,我還在。', en: 'The realm has fallen. I have not.' },
+    kill: { zh: '此身可死,此志不改。', en: 'This body may die; this will does not change.' },
+    low: { zh: '惶恐灘頭說惶恐。', en: 'At Fear Rapids I spoke of fear.' },
+    win: { zh: '人生自古誰無死。', en: 'Since ancient times, which man has not died?' },
+  },
+  'boss-chen-youliang': {
+    open: { zh: '六十萬眾,樓船連鎖。你有多少?', en: 'Six hundred thousand, ships chained abreast. And you?' },
+    kill: { zh: '人多的一方,不必講道理。', en: 'The side with the numbers need not argue.' },
+    low: { zh: '風向……風向不對。', en: 'The wind. The wind is wrong.' },
+    win: { zh: '鄱陽湖上,舟連數十里。', en: 'On Lake Poyang the ships stretched for tens of li.' },
+  },
+  'boss-yu-qian': {
+    open: { zh: '言南遷者,可斬。', en: 'Whoever speaks of fleeing south may be executed.' },
+    kill: { zh: '九門已閉,誰也別想進來。', en: 'Nine gates shut. No one comes through.' },
+    low: { zh: '社稷為重,君為輕。', en: 'The altars of state come first; the sovereign second.' },
+    win: { zh: '城在,人在。', en: 'The city stands, and so do we.' },
+  },
+  'boss-zheng-chenggong': {
+    open: { zh: '大陸已無我立足之地 —— 海上還有。', en: 'No ground left for me on the mainland. There is still the sea.' },
+    kill: { zh: '船上的人,一個都不能少。', en: 'Not one man aboard is to be lost.' },
+    low: { zh: '這是最後一支船隊了。', en: 'This is the last fleet.' },
+    win: { zh: '開闢荊榛,以待後人。', en: 'We clear the thornland and leave it for those who come after.' },
+  },
   'boss-xu-da': {
     open: { zh: '持重而行,不爭一時。', en: 'Move with weight. I do not fight for a single moment.' },
     kill: { zh: '穩住,繼續推進。', en: 'Hold steady. Keep advancing.' },

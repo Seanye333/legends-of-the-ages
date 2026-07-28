@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { DECK_SIZE } from '../engine/types'
-import { BOSSES, bossDeck, bossTrial, bossPersonality, TRIALS } from './campaign'
+import { BOSSES, bossChapter, bossDeck, bossTrial, bossPersonality, TRIALS } from './campaign'
 import { bossLines } from './bossLines'
 import { CARDS_BY_ID } from './cards'
 import { createGame } from '../engine/init'
@@ -61,12 +61,32 @@ describe('campaign bosses', () => {
     expect(overlap).toBeLessThan(DECK_SIZE * 0.6)
   })
 
-  it('hp and reward both rise across the eight stages', () => {
+  // 血量按**章内**递增,不是全局:每一章都从一个较低的血量重新起步
+  // (第三章开章的谢玄 46 血,比第二章收官的徐达 70 血低,这是对的 ——
+  // 开章要友好,否则每一章的第一关都是一堵墙)。奖励则全局递增。
+  // 血量与奖励都按**章内**递增,不是全局:每一章都从较低处重新起步
+  // (第三章开章的谢玄 46 血 / 400 功勋,都低于第二章收官的徐达 70 血 / 1500)。
+  // 这是对的 —— 开章要友好,收官才该是墙;拿全局单调去要求它,
+  // 只会逼出「每一章的第一关都比上一章的最后一关更难」这种荒谬曲线。
+  // 章与章之间另有一条:后一章的**开章**必须不低于前一章的开章。
+  it('hp and reward rise within each chapter; later chapters open higher', () => {
     for (let i = 1; i < BOSSES.length; i++) {
-      expect(BOSSES[i].hp, `第 ${i + 1} 关血量应不低于前一关`).toBeGreaterThanOrEqual(
+      if (bossChapter(BOSSES[i]) !== bossChapter(BOSSES[i - 1])) continue
+      expect(BOSSES[i].hp, `第 ${i + 1} 关血量应不低于同章前一关`).toBeGreaterThanOrEqual(
         BOSSES[i - 1].hp,
       )
-      expect(BOSSES[i].rewardMerit).toBeGreaterThan(BOSSES[i - 1].rewardMerit)
+      expect(BOSSES[i].rewardMerit, `第 ${i + 1} 关奖励应高于同章前一关`).toBeGreaterThan(
+        BOSSES[i - 1].rewardMerit,
+      )
+    }
+    const openers = new Map<number, (typeof BOSSES)[number]>()
+    for (const b of BOSSES) if (!openers.has(bossChapter(b))) openers.set(bossChapter(b), b)
+    const chapters = [...openers.keys()].sort((a, b) => a - b)
+    for (let i = 1; i < chapters.length; i++) {
+      expect(
+        openers.get(chapters[i])!.rewardMerit,
+        `第 ${chapters[i]} 章开章奖励应不低于前一章开章`,
+      ).toBeGreaterThanOrEqual(openers.get(chapters[i - 1])!.rewardMerit)
     }
   })
 

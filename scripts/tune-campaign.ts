@@ -28,6 +28,7 @@ const ONLY = (process.env.ONLY ?? '').split(',').map((s) => s.trim()).filter(Boo
 const TARGETS = [
   70, 63, 57, 50, 44, 37, 30, 22, // 第一章 汉末群雄
   52, 46, 42, 37, 32, 27, 20, 12, // 第二章 逐鹿千年
+  48, 43, 39, 34, 29, 24, 18, 10, // 第三章 山河永寂(开章比第二章再低一点 —— 玩家已成军)
 ]
 
 function play(boss: BossDef, tier: number, deckIdx: number, seed: number, first: PlayerIdx): Winner {
