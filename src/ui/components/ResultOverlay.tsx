@@ -15,6 +15,8 @@ interface ResultOverlayProps {
   stats?: MatchStats | null // 战绩回顾
   onRematch: () => void
   onExit: () => void
+  // 战报海报:一局打完之后能发出去的那张图。不传则不画按钮。
+  onShare?: () => void
 }
 
 // 终局结算:胜/败战场画卷 + 书法大字 + 再来一局/返回标题。
@@ -27,6 +29,7 @@ export function ResultOverlay({
   stats = null,
   onRematch,
   onExit,
+  onShare,
 }: ResultOverlayProps) {
   const t = useT()
   // 只列**这一局真的发生过**的项。零值全列出来会把一场三回合的速攻
@@ -99,6 +102,13 @@ export function ResultOverlay({
               : remoteRematch === 'offered'
                 ? t('接受再战', 'Accept rematch')
                 : t('请求再战', 'Request rematch')}
+          </button>
+        )}
+        {/* 分享的是**结果**不是重放:一份战报是每一帧的完整 GameState(上限 2.5MB),
+            编成码长度以兆计,而没有服务器就没有短链接。 */}
+        {onShare && (
+          <button className={styles.secondary} onClick={onShare}>
+            {t('保存戰報圖', 'Save recap')}
           </button>
         )}
         <button className={styles.secondary} onClick={onExit}>

@@ -39,6 +39,8 @@ import { EmoteWheel } from '../components/EmoteWheel'
 import type { CardDef } from '../../engine/types'
 import { useEventAnimations } from '../useEventAnimations'
 import { initSound, playSfx, setMusicEra, startMusic, stopMusic } from '../sound'
+import { exportRecapImage } from '../recapExport'
+import { HEROES_BY_ID } from '../../content/overrides/heroes'
 import { ERA_OF, type Era } from '../../content/eras'
 
 // 六个时代块各一套色温。三国是默认(底图本来就是那个调子),所以它不变。
@@ -114,7 +116,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
   const puzzleDef = puzzleId ? puzzleDefById(puzzleId) : undefined
   const [showHint, setShowHint] = useState(false)
   const [solution, setSolution] = useState<string[] | null>(null)
-  const { soundEnabled, setSoundEnabled } = useSettings()
+  const { soundEnabled, setSoundEnabled, language: lang } = useSettings()
   const [selection, setSelection] = useState<Selection>(null)
   // 抉择卡的模式选择器(非空 = 正在选模式)
   const [modeChoice, setModeChoice] = useState<{ iid: number; modes: ChooseMode[] } | null>(null)
@@ -947,6 +949,16 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
           }}
           ratingResult={mode === 'remote' ? ratingResult : null}
           stats={stats}
+          onShare={() => {
+            playSfx('buttonTap')
+            void exportRecapImage(
+              HEROES_BY_ID[me.heroId],
+              pickCompact(heroName(foe.heroId)),
+              state.winner,
+              stats,
+              lang !== 'en',
+            )
+          }}
           onRematch={handleRematch}
           onExit={handleExit}
         />
