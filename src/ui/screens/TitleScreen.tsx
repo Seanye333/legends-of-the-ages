@@ -102,7 +102,7 @@ const DIFFICULTIES: { key: Difficulty; name: LocalizedText }[] = [
 interface TitleScreenProps {
   onStart?: () => void
   onNavigate?: (
-    screen: 'collection' | 'deckbuilder' | 'replays' | 'settings' | 'arena' | 'campaign' | 'history' | 'tower' | 'lore' | 'quiz' | 'codex' | 'expedition' | 'brawl' | 'lethal' | 'practice' | 'bossrush',
+    screen: 'collection' | 'deckbuilder' | 'replays' | 'settings' | 'arena' | 'campaign' | 'history' | 'tower' | 'lore' | 'quiz' | 'codex' | 'expedition' | 'brawl' | 'lethal' | 'practice' | 'bossrush' | 'study',
   ) => void
 }
 
@@ -498,6 +498,17 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
           }}
         >
           {t('群雄榜', 'Ladder')}
+        </button>
+        {/* 书房:进度散落在八个 store 里,每个只在自己那一屏露出 ——
+            没有任何一屏能回答「我玩了多少」。军衔给总分,书房给明细。 */}
+        <button
+          className={styles.navBtn}
+          onClick={() => {
+            playSfx('buttonTap')
+            onNavigate?.('study')
+          }}
+        >
+          {t('書房', 'The Study')}
         </button>
         <button
           className={styles.navBtn}

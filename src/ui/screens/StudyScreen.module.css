@@ -1,0 +1,98 @@
+.screen {
+  min-height: 100dvh;
+  padding: max(20px, env(safe-area-inset-top) + 8px) 16px max(28px, env(safe-area-inset-bottom));
+  background: radial-gradient(ellipse at 50% 0%, #1d1710 0%, #0b0805 65%);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 640px;
+  margin: 0 auto 14px;
+}
+
+.backBtn {
+  padding: 8px 14px;
+  border-radius: 9px;
+  border: 1px solid rgba(212, 168, 74, 0.35);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--parchment);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(18px, 3.2vh, 24px);
+  letter-spacing: 0.18em;
+  color: var(--gold-bright);
+}
+
+.card {
+  max-width: 640px;
+  margin: 0 auto 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(122, 100, 58, 0.35);
+  background: rgba(16, 13, 8, 0.72);
+}
+
+.rankBig {
+  font-family: var(--font-display);
+  font-size: clamp(22px, 4vh, 30px);
+  letter-spacing: 0.2em;
+  color: var(--gold-bright);
+  text-align: center;
+}
+
+.rankMeta {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--parchment-faint);
+  text-align: center;
+}
+
+.milestone {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(122, 100, 58, 0.3);
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--parchment);
+  text-align: center;
+}
+
+.sectionTitle {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.18em;
+  color: var(--parchment-faint);
+}
+
+.subTitle {
+  margin: 10px 0 4px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--parchment-faint);
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 0;
+  font-size: 12px;
+  color: var(--parchment);
+}
+
+.rowLabel {
+  color: var(--parchment-faint);
+}
+
+.rowValue {
+  font-family: var(--font-display);
+  color: var(--parchment);
+}
