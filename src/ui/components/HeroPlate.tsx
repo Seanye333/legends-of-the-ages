@@ -1,5 +1,6 @@
 import type { CSSProperties, MouseEvent } from 'react'
 import type { PlayerState } from '../../engine/types'
+import { MORALE_THRESHOLD } from '../../engine/types'
 import { HEROES_BY_ID } from '../../content/overrides/heroes'
 import { CARDS_BY_ID } from '../../content/cards'
 import { useSettings } from '../../app/settingsStore'
@@ -24,6 +25,9 @@ interface HeroPlateProps {
   powerUsable?: boolean
   onUsePower?: (e: MouseEvent) => void
   powerSelected?: boolean
+  // 副将技(双将)。与主公技**共用**每回合一次的额度,所以两颗按钮同时变灰。
+  onUseVicePower?: (e: MouseEvent) => void
+  vicePowerSelected?: boolean
   // 升阶主公技(只给自己这一侧接)。不传则不画升阶按钮。
   onUpgradePower?: (e: MouseEvent) => void
 }
@@ -40,6 +44,8 @@ export function HeroPlate({
   powerUsable,
   onUsePower,
   powerSelected,
+  onUseVicePower,
+  vicePowerSelected,
   onUpgradePower,
 }: HeroPlateProps) {
   const lang = useSettings((s) => s.language)
@@ -58,6 +64,12 @@ export function HeroPlate({
     power?.upgrade !== undefined && ps.mana.current >= Math.max(0, power.upgradeCost ?? 0)
   const powerName = power ? (lang === 'en' ? power.name.en : power.name.zh) : ''
   const powerText = power ? (lang === 'en' ? power.text.en : power.text.zh) : ''
+
+  // 士气 / 粮道:两条**全队**状态,不属于任何一个单位,所以挂在帅案上。
+  // 只在非零时画 —— 绝大多数回合它们都是 0,常驻两个「0」会把已经很挤的
+  // 帅案再占掉一行,而且天天见的零值等于没有信息。
+  const morale = ps.morale ?? 0
+  const supply = ps.supply ?? 0
 
   return (
     <div
@@ -147,6 +159,39 @@ export function HeroPlate({
           </span>
           {ps.fatigue > 0 && <span className={styles.fatigue}>☠ {ps.fatigue}</span>}
         </div>
+        {(morale !== 0 || supply > 0) && (
+          <div className={styles.corps}>
+            {morale !== 0 && (
+              <span
+                className={`${styles.morale} ${morale > 0 ? styles.moraleUp : styles.moraleDown}`}
+                title={t(
+                  `士气 ${morale > 0 ? '+' : ''}${morale}${
+                    Math.abs(morale) >= MORALE_THRESHOLD
+                      ? `,全场攻击 ${morale > 0 ? '+1' : '-1'}`
+                      : ''
+                  }`,
+                  `Morale ${morale > 0 ? '+' : ''}${morale}${
+                    Math.abs(morale) >= MORALE_THRESHOLD
+                      ? ` — all generals ${morale > 0 ? '+1' : '-1'} attack`
+                      : ''
+                  }`,
+                )}
+              >
+                {/* 旗帜的朝向就是士气的方向,不必读数字也知道好坏 */}
+                {morale > 0 ? '⚑' : '⚐'} {morale > 0 ? '+' : ''}
+                {morale}
+              </span>
+            )}
+            {supply > 0 && (
+              <span
+                className={styles.supply}
+                title={t(`粮道 ${supply}(军需牌要花它)`, `Supply ${supply} — spent by Provision cards`)}
+              >
+                ▦ {supply}
+              </span>
+            )}
+          </div>
+        )}
       </div>
       {/* 伏兵区。对手的伏兵 defId 是空串(裁剪层保证),渲染成「?」——
           玩家能看到有几个、但不知道是什么,这正是这个机制的全部价值。 */}
@@ -186,6 +231,25 @@ export function HeroPlate({
         >
           <span className={styles.powerName}>{powerName}</span>
           <span className={styles.powerCost}>{power.cost}</span>
+          {ps.heroPowerUsed && <span className={styles.powerUsed} aria-hidden="true" />}
+        </button>
+      )}
+      {/* 副将技(双将)。画成和主公技一样的按钮、并排放 ——
+          它们抢的是**同一次**每回合额度,长得一样才说得清「二选一」;
+          做成另一种样子玩家会以为这回合两个都能点。 */}
+      {ps.vicePower && (
+        <button
+          type="button"
+          className={`${styles.power} ${styles.vice} ${powerUsable ? styles.powerReady : ''} ${
+            vicePowerSelected ? styles.powerSelected : ''
+          }`}
+          disabled={!powerUsable || !onUseVicePower}
+          onClick={onUseVicePower}
+          aria-label={`${t('副将', 'Vice')} ${pickLocal(ps.vicePower.name)} — ${pickLocal(ps.vicePower.text)}`}
+          title={`${t('副将', 'Vice')}:${pickLocal(ps.vicePower.name)}(${ps.vicePower.cost})\n${pickLocal(ps.vicePower.text)}`}
+        >
+          <span className={styles.powerName}>{pickLocal(ps.vicePower.name)}</span>
+          <span className={styles.powerCost}>{ps.vicePower.cost}</span>
           {ps.heroPowerUsed && <span className={styles.powerUsed} aria-hidden="true" />}
         </button>
       )}

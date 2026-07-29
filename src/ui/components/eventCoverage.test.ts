@@ -110,6 +110,12 @@ const SAMPLES: GameEvent[] = [
   // ---- 第十七卡包:策反 ----
   { type: 'GeneralSeized', player: 0, iid: 12, defId: 'guan-yu', from: 1, position: 2 },
   { type: 'GeneralBanished', player: 1, iid: 13, defId: 'guan-yu' },
+  // ---- 第二十一卡包 ----
+  { type: 'MoraleChanged', player: 0, morale: 2, delta: 1 },
+  { type: 'SupplyChanged', player: 0, supply: 4, delta: 1 },
+  { type: 'ChainAdvanced', player: 0, chain: 2 },
+  { type: 'ChainTriggered', player: 0, defId: 'strat-huo-ji' },
+  { type: 'SkyChanged', sky: 'night', turn: 7 },
   { type: 'GameEnded', winner: 0 },
 ]
 

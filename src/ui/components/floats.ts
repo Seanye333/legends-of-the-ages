@@ -97,6 +97,32 @@ export function extractFloats(events: GameEvent[], batch: number, lang: Language
           'buff',
         )
         break
+      // ---- 第二十一卡包 ----
+      // 士气/粮道/连环都挂在主帅上:它们是**整支队伍**的状态,不属于某一个单位。
+      case 'MoraleChanged':
+        push(
+          `hero-${ev.player}`,
+          pickCompact(
+            ev.delta > 0 ? { zh: '士气↑', en: 'MORALE↑' } : { zh: '士气↓', en: 'MORALE↓' },
+            lang,
+          ),
+          ev.delta > 0 ? 'buff' : 'damage',
+        )
+        break
+      case 'SupplyChanged':
+        // 每回合末那一格 +1 是常态,不值得飘 —— 只在牌真的动了粮时才说话,
+        // 否则每个回合都会在主帅头上弹一次「粮道 +1」,纯噪音。
+        if (Math.abs(ev.delta) > 1 || ev.delta < 0) {
+          push(
+            `hero-${ev.player}`,
+            `${ev.delta > 0 ? '+' : ''}${ev.delta}${pickCompact({ zh: '粮', en: ' SUP' }, lang)}`,
+            ev.delta > 0 ? 'buff' : 'damage',
+          )
+        }
+        break
+      case 'ChainTriggered':
+        push(`hero-${ev.player}`, pickCompact({ zh: '连环计', en: 'CHAIN' }, lang), 'buff')
+        break
       default:
         break
     }

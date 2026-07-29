@@ -1,7 +1,7 @@
 import type { GameEvent, LocalizedText, PlayerIdx, TargetRef } from '../../engine/types'
 import { CARDS_BY_ID } from '../../content/cards'
 import { HEROES_BY_ID } from '../../content/overrides/heroes'
-import { KEYWORD_NAME } from '../doctrineColors'
+import { KEYWORD_NAME, SKY_NAME } from '../doctrineColors'
 
 const UNKNOWN_CARD: LocalizedText = { zh: '一张牌', en: 'a card' }
 
@@ -160,6 +160,29 @@ function line(ev: GameEvent, ctx: EventTextCtx, l: Lang): string {
         : zh
           ? '战场恢复如常'
           : 'The field settles back to normal'
+    case 'MoraleChanged': {
+      // 说清「涨了还是掉了」和「现在是多少」两件事 —— 只报数字读者得自己记上一次。
+      const up = ev.delta > 0
+      if (zh) {
+        const word = up ? '士气大振' : '士气受挫'
+        return `${side(ev.player)}${word}(${ev.morale > 0 ? '+' : ''}${ev.morale})`
+      }
+      return `${side(ev.player)} ${up ? 'rallied' : 'faltered'} (morale ${ev.morale > 0 ? '+' : ''}${ev.morale})`
+    }
+    case 'SupplyChanged':
+      return zh
+        ? `${poss(ev.player)}粮道 ${ev.delta > 0 ? '+' : ''}${ev.delta}(存 ${ev.supply})`
+        : `${poss(ev.player)} supply ${ev.delta > 0 ? '+' : ''}${ev.delta} (now ${ev.supply})`
+    case 'ChainAdvanced':
+      return zh
+        ? `${poss(ev.player)}计谋链 ${ev.chain}`
+        : `${poss(ev.player)} stratagem chain at ${ev.chain}`
+    case 'ChainTriggered':
+      return zh
+        ? `连环计成!${dn(ev.defId)}结算两次`
+        : `Chain complete — ${dn(ev.defId)} resolved twice`
+    case 'SkyChanged':
+      return zh ? `天时转入${SKY_NAME[ev.sky].zh}` : `The sky turns to ${SKY_NAME[ev.sky].en}`
     case 'AttackResolved': {
       if (zh) {
         const back = ev.damageToAttacker > 0 ? `,反受 ${ev.damageToAttacker}` : ''

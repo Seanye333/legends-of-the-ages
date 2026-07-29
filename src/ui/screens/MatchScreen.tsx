@@ -9,6 +9,9 @@ import type {
   TargetRef,
 } from '../../engine/types'
 import { legalCommands } from '../../engine/legal'
+import { skyOf } from '../../engine/resolve'
+import { SKY_SPAN } from '../../engine/types'
+import { SKY_COLOR, SKY_GLYPH, SKY_NAME } from '../doctrineColors'
 import { CARDS_BY_ID } from '../../content/cards'
 import { useMatch } from '../../app/matchStore'
 import { usePickCompact, usePickText, useT } from '../i18n'
@@ -74,7 +77,9 @@ type Selection =
   // mode:抉择卡选定的模式(非抉择卡为 undefined);目标筛选按它过滤 playCmds
   | { kind: 'hand'; iid: number; mode?: number }
   | { kind: 'attacker'; iid: number }
-  | { kind: 'heroPower' }
+  // vice:双将时指的是副将技。**必须带上** —— 主将技与副将技的目标池可能不同,
+  // 不区分的话选中副将技会去高亮主将技的目标,点下去必然被引擎拒。
+  | { kind: 'heroPower'; vice: boolean }
   | null
 
 interface MatchScreenProps {
@@ -201,6 +206,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
       }
     } else if (selection.kind === 'heroPower') {
       for (const c of powerCmds) {
+        if ((c.vice ?? false) !== selection.vice) continue
         if (c.target) m.set(targetFloatKey(c.target), c)
       }
     } else {
@@ -417,19 +423,21 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
   }
 
   // 主公技:无目标的直接发动;需要目标的进入选目标模式(与出牌同一套交互)
-  const onUseHeroPower = () => {
-    if (!myTurn || powerCmds.length === 0) return
-    if (selection?.kind === 'heroPower') {
+  const onUseHeroPower = (vice = false) => {
+    const mine = powerCmds.filter((c) => (c.vice ?? false) === vice)
+    if (!myTurn || mine.length === 0) return
+    // 再点一次同一颗按钮 = 取消;点另一颗 = 换选(而不是取消后什么都没选中)
+    if (selection?.kind === 'heroPower' && selection.vice === vice) {
       setSelection(null)
       return
     }
-    const untargeted = powerCmds.find((c) => !c.target)
+    const untargeted = mine.find((c) => !c.target)
     if (untargeted) {
       playSfx('stratagemCast')
       sendAndClear(untargeted)
       return
     }
-    setSelection({ kind: 'heroPower' })
+    setSelection({ kind: 'heroPower', vice })
   }
 
   const onConcede = () => setConfirmConcede(true)
@@ -639,10 +647,15 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
           fx={fxFor(`hero-${viewer}`)}
           pulse={anim.myTurnPulse}
           powerUsable={myTurn && powerCmds.length > 0}
-          powerSelected={selection?.kind === 'heroPower'}
+          powerSelected={selection?.kind === 'heroPower' && !selection.vice}
           onUsePower={(e) => {
             e.stopPropagation()
-            onUseHeroPower()
+            onUseHeroPower(false)
+          }}
+          vicePowerSelected={selection?.kind === 'heroPower' && selection.vice}
+          onUseVicePower={(e) => {
+            e.stopPropagation()
+            onUseHeroPower(true)
           }}
           onUpgradePower={
             myTurn
@@ -736,6 +749,28 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
               {t('我已接手', 'I have it')}
             </button>
           </div>
+        </div>
+      )}
+
+      {/* 天时:整局都在走的钟。**没有任何状态**(由回合数推出),但必须一直可见 ——
+          玩家要能提前排「等到夜半再劫营」,看不见就只能靠背回合数。
+          下一段也写出来:天时的全部价值就在于它可以被预判。 */}
+      {state.phase === 'main' && (
+        <div
+          className={styles.skyBanner}
+          style={{ '--sky': SKY_COLOR[skyOf(state.turn)] } as CSSProperties}
+          title={t(
+            `天时:${SKY_NAME[skyOf(state.turn)].zh},下一段:${SKY_NAME[skyOf(state.turn + SKY_SPAN)].zh}`,
+            `Sky: ${SKY_NAME[skyOf(state.turn)].en} — next: ${SKY_NAME[skyOf(state.turn + SKY_SPAN)].en}`,
+          )}
+        >
+          <span className={styles.skyGlyph} aria-hidden="true">
+            {SKY_GLYPH[skyOf(state.turn)]}
+          </span>
+          <span className={styles.skyName}>{pickText(SKY_NAME[skyOf(state.turn)])}</span>
+          <span className={styles.skyNext}>
+            → {pickText(SKY_NAME[skyOf(state.turn + SKY_SPAN)])}
+          </span>
         </div>
       )}
 

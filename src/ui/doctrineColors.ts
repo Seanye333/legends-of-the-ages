@@ -1,4 +1,4 @@
-import type { CardDef, CardType, Keyword, LocalizedText, Rarity } from '../engine/types'
+import type { CardDef, CardType, Keyword, LocalizedText, Rarity, Sky } from '../engine/types'
 
 // 六主义 + 中立的主题色。标题画面与对战画面共用。
 export const DOCTRINE_COLORS: Record<CardDef['doctrine'], string> = {
@@ -97,6 +97,30 @@ export const RARITY_NAME: Record<Rarity, LocalizedText> = {
   rare: { zh: '稀有', en: 'Rare' },
   epic: { zh: '史诗', en: 'Epic' },
   legendary: { zh: '传奇', en: 'Legendary' },
+}
+
+// 天时四段。glyph 是**非文字**的第二条线索 —— 深色 UI 上一小块金字很容易被
+// 底图吃掉,而月亮/太阳的形状在任何底色上都读得出来(和主义符号同一个道理)。
+export const SKY_NAME: Record<Sky, LocalizedText> = {
+  dawn: { zh: '拂晓', en: 'Dawn' },
+  noon: { zh: '正午', en: 'Noon' },
+  dusk: { zh: '黄昏', en: 'Dusk' },
+  night: { zh: '夜半', en: 'Night' },
+}
+
+export const SKY_GLYPH: Record<Sky, string> = {
+  dawn: '☼',
+  noon: '☀',
+  dusk: '☾',
+  night: '☽',
+}
+
+// 天时染色:界面上那一格的底色。晨青、午金、暮赭、夜蓝。
+export const SKY_COLOR: Record<Sky, string> = {
+  dawn: '#8fb8a0',
+  noon: '#e8c878',
+  dusk: '#c98a52',
+  night: '#6f86b8',
 }
 
 export const CARD_TYPE_NAME: Record<CardType | 'strategist', LocalizedText> = {

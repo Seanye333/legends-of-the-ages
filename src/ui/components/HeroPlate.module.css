@@ -308,6 +308,38 @@
   color: #ff6a55;
 }
 
+/* ---- 军情:士气 / 粮道 ---- */
+/* 和牌库余量同一档字号与灰度 —— 它们是同一类东西:**一直在那儿的公开数字**。
+   做得比这更显眼会去抢血量和法力的位置,而那两个才是每一步都要读的。 */
+.corps {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: clamp(9px, 1.7vh, 12px);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.morale {
+  /* 过线那一刻会真的改全场攻击,所以给一层辉光当「生效中」的信号 */
+  padding: 0 3px;
+  border-radius: 3px;
+}
+
+.moraleUp {
+  color: #f0d68a;
+  text-shadow: 0 0 7px rgba(240, 214, 138, 0.6);
+}
+
+.moraleDown {
+  color: #9aa8c0;
+  text-shadow: 0 0 6px rgba(120, 140, 180, 0.45);
+}
+
+.supply {
+  color: #9ab87a;
+}
+
 /* ---- 主公技印钮 ---- */
 .power {
   position: relative;
@@ -333,6 +365,39 @@
   transition:
     filter 0.18s ease,
     transform 0.12s ease;
+}
+
+/* 副将技:和主公技同一个形状(它们抢的是同一次额度,长得一样才说得清「二选一」),
+   但小一号、边框换成青铜色,一眼分得出谁是主谁是副。
+   margin-left 从 auto 改回定值 —— 否则第二颗按钮也想把自己推到最右,两颗会分家。 */
+.vice {
+  width: clamp(42px, 8.2vh, 62px);
+  height: clamp(42px, 8.2vh, 62px);
+  margin-left: 5px;
+  border-color: #5c6a5a;
+}
+
+.vice.powerReady {
+  border-color: #8fae86;
+  box-shadow:
+    0 0 0 1px rgba(10, 7, 3, 0.9),
+    0 0 12px 2px rgba(143, 174, 134, 0.32);
+}
+
+/* 「副」字角标:不占按钮里那点可怜的横向空间,压在左上角 */
+.vice::before {
+  content: '副';
+  position: absolute;
+  top: -5px;
+  left: -4px;
+  padding: 0 3px;
+  border-radius: 3px;
+  background: #2a3328;
+  border: 1px solid #6f8a68;
+  color: #b8d0ae;
+  font-size: 9px;
+  line-height: 1.3;
+  font-family: var(--font-display);
 }
 
 .powerName {

@@ -62,6 +62,7 @@ export function CardFace({ inst, playable, selected, large, onClick, onInspect }
     mainName,
     `${effCost} ${lang === 'en' ? 'mana' : '费'}`,
     def.type === 'general' ? `${def.attack ?? 0}/${def.health ?? 0}` : '',
+    def.supplyCost ? `${def.supplyCost} ${lang === 'en' ? 'supply' : '粮'}` : '',
     def.text ? (lang === 'en' ? def.text.en : def.text.zh) : '',
   ]
     .filter(Boolean)
@@ -94,6 +95,14 @@ export function CardFace({ inst, playable, selected, large, onClick, onInspect }
       title={def.text ? (lang === 'en' ? def.text.en : def.text.zh) : undefined}
     >
       <span className={`${styles.cost} ${discounted ? styles.costDown : ''}`}>{effCost}</span>
+      {/* 军需:除法力外还要花粮道。画成**第二颗宝石**、贴在费用宝石正下方 ——
+          它和费用是同一类东西(打出这张牌的门槛),写进卡面文字里的话
+          玩家要读完一整句才知道自己打不起,而费用是一眼就该看见的。 */}
+      {def.supplyCost !== undefined && def.supplyCost > 0 && (
+        <span className={styles.supplyCost} title={`${def.supplyCost} 粮`}>
+          {def.supplyCost}
+        </span>
+      )}
       <div className={styles.art}>
         <Portrait id={def.id} nameZh={def.name.zh} doctrine={def.doctrine} />
       </div>

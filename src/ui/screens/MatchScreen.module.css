@@ -904,6 +904,46 @@
   z-index: 22;
 }
 
+/* ---- 天时 ----
+   放在战场环境横幅**上方**同一列:两者都是「牌桌层面的规则」,
+   摞在一起玩家扫一眼就能把这类信息读完,不用满屏找。
+   --sky 由组件按当前时段传进来,一个变量同时染边框、字色和辉光。 */
+.skyBanner {
+  position: absolute;
+  top: 52px;
+  left: 12px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(12, 12, 16, 0.86);
+  border: 1px solid color-mix(in srgb, var(--sky) 55%, transparent);
+  box-shadow: 0 0 14px -4px var(--sky);
+  pointer-events: none;
+  z-index: 22;
+}
+
+.skyGlyph {
+  font-size: 14px;
+  line-height: 1;
+  color: var(--sky);
+}
+
+.skyName {
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: var(--sky);
+}
+
+/* 下一段刻意做得很淡:它是**预告**,不该和「现在是什么时候」抢读法 */
+.skyNext {
+  font-size: 10px;
+  color: var(--parchment-faint);
+  opacity: 0.75;
+}
+
 .fieldName {
   font-family: var(--font-display);
   font-size: 13px;
