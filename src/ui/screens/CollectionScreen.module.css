@@ -296,3 +296,51 @@
   border: none;
   cursor: pointer;
 }
+
+/* ---- 「更多筛选」抽屉 ----
+   稀有度/费用/朝代/兵种/机制/排序六组控件原本平铺,在看到第一张卡之前
+   就吃掉 270px 的竖向空间 —— 而图鉴要卖的是那两千多张立绘。
+   收起后只留一行标题;正在生效的筛选写在标题右侧,
+   否则「为什么只剩 6 张」会变成找不到原因的谜。 */
+.moreBox {
+  width: 100%;
+}
+
+.moreSummary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 2px;
+  cursor: pointer;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: var(--parchment-faint);
+  list-style: none;
+  user-select: none;
+}
+
+.moreSummary::-webkit-details-marker {
+  display: none;
+}
+
+/* 自绘展开箭头:▸ 收起 / ▾ 展开。用伪元素而不是字符,免得跟着文字被选中 */
+.moreSummary::before {
+  content: '▸';
+  font-size: 10px;
+  transition: transform 0.15s ease;
+}
+
+.moreBox[open] .moreSummary::before {
+  transform: rotate(90deg);
+}
+
+.moreSummary:hover {
+  color: var(--parchment-dim);
+}
+
+/* 生效中的筛选:金色,和「这是你自己设的」对应上 */
+.moreActive {
+  color: var(--gold);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}

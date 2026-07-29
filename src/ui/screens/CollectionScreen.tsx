@@ -149,6 +149,22 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
   const [mech, setMech] = useState<MechKey | 'all'>('all')
   const [troop, setTroop] = useState<TroopType | 'all'>('all')
   const [sortKey, setSortKey] = useState<SortKey>('rarity')
+
+  // 抽屉收起时,把「正在生效的筛选」写在标题上。
+  // 不写的话「为什么只剩 6 张」就是一个找不到原因的谜 ——
+  // 收纳的代价永远是可见性,补偿它的办法是把状态提到收纳口。
+  const activeFilterNames = useMemo(() => {
+    const names: string[] = []
+    const label = <T extends string>(list: { key: T; label: LocalizedText }[], v: T) =>
+      list.find((x) => x.key === v)?.label
+    if (rarity !== 'all') names.push(pick(label(RARITY_FILTERS, rarity) ?? { zh: '', en: '' }))
+    if (costBand !== 'all') names.push(pick(label(COST_FILTERS, costBand) ?? { zh: '', en: '' }))
+    // 朝代与兵种没有 FILTERS 常量表 —— 它们直接从内容层的名称表渲染下拉
+    if (dynasty !== 'all') names.push(pick(DYNASTY_NAME[dynasty] ?? { zh: dynasty, en: dynasty }))
+    if (troop !== 'all') names.push(pick(TROOP_NAME[troop] ?? { zh: troop, en: troop }))
+    if (mech !== 'all') names.push(pick(label(MECH_FILTERS, mech) ?? { zh: '', en: '' }))
+    return names.filter(Boolean)
+  }, [rarity, costBand, dynasty, troop, mech, pick])
   const [limit, setLimit] = useState(PAGE)
   const [inspect, setInspect] = useState<CardDef | null>(null)
   const customDecks = useCollection((s) => s.customDecks)
@@ -359,6 +375,19 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
             {t('仅看已拥有', 'Owned only')}
           </button>
         </div>
+        {/* 稀有度/费用/朝代/兵种/机制/排序收进抽屉。
+            展开状态下这四行控件在**看到第一张卡之前**就占掉 270px ——
+            而图鉴要卖的是那两千多张立绘,不是筛选器。
+            主义标签和搜索框留在外面:那两个是最常用的入口。
+            默认收起,但**用到的筛选会写在标题上**,否则「为什么只剩 6 张」
+            会变成一个找不到原因的谜。 */}
+        <details className={styles.moreBox}>
+          <summary className={styles.moreSummary}>
+            {t('更多筛选', 'More filters')}
+            {activeFilterNames.length > 0 && (
+              <span className={styles.moreActive}>{activeFilterNames.join(' · ')}</span>
+            )}
+          </summary>
         <div className={styles.toolsRow}>
           {RARITY_FILTERS.map((r) => (
             <button
@@ -440,10 +469,11 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
               </option>
             ))}
           </select>
-          <span className={styles.resultCount}>
-            {t(`${filtered.length} 张`, `${filtered.length} cards`)}
-          </span>
         </div>
+        </details>
+        <span className={styles.resultCount}>
+          {t(`${filtered.length} 张`, `${filtered.length} cards`)}
+        </span>
       </div>
 
       <div className={styles.grid}>

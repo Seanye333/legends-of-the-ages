@@ -1,28 +1,68 @@
+/* 主帅面板 —— 帅案。
+   对局画面改成中轴对称之后,这一块从「角落里的一个信息框」变成了**画面焦点**:
+   它现在正对着屏幕上下的中线,是玩家一抬眼就会落到的地方。
+   而它原来是一个圆角 14px 的半透明素方框,配不上这个位置。
+
+   四层,仍然零素材:
+   1. 木质底(两道叠加的线性渐变 + 一层极淡的横纹),而不是纯半透明黑。
+      牌桌上的东西应该是**有材质的**,哪怕只是暗示。
+   2. 上缘高光 / 下缘暗边 —— 光从上方来的那套老办法,给它厚度。
+   3. 左右两条竖向包边(::before),像案几的立柱,把中间的信息夹住。
+      这一条让它读起来是「一件器物」而不是一个 div。
+   4. 圆角收到 8px:大圆角是现代 UI 的语汇,而这里要的是木器。 */
 .plate {
   position: relative; /* 伏兵徽记绝对定位在右上角 */
   display: flex;
   align-items: center;
   gap: clamp(8px, 1.4vw, 16px);
-  padding: clamp(4px, 0.8vh, 8px) clamp(8px, 1.4vw, 14px);
-  border-radius: 14px;
-  background: linear-gradient(180deg, rgba(26, 21, 13, 0.72), rgba(14, 11, 6, 0.78));
+  padding: clamp(5px, 0.9vh, 9px) clamp(12px, 1.8vw, 20px);
+  border-radius: 8px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 236, 180, 0.022) 0 3px,
+      rgba(0, 0, 0, 0) 3px 9px
+    ),
+    linear-gradient(180deg, rgba(58, 45, 26, 0.86), rgba(30, 23, 13, 0.9) 46%, rgba(16, 12, 6, 0.92));
   box-shadow:
-    inset 0 0 0 1px rgba(212, 168, 74, 0.22),
-    inset 0 1px 0 rgba(255, 236, 180, 0.08),
-    0 4px 12px rgba(0, 0, 0, 0.45);
+    inset 0 1px 0 rgba(255, 236, 180, 0.16),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.7),
+    inset 0 0 0 1px rgba(212, 168, 74, 0.3),
+    0 6px 18px rgba(0, 0, 0, 0.55);
   -webkit-user-select: none;
   user-select: none;
 }
 
+/* 案几的两根立柱。用一个伪元素画两条竖边(左右各一),
+   不加 DOM、不改 tsx。 */
+.plate::before {
+  content: '';
+  position: absolute;
+  inset: 3px 0;
+  pointer-events: none;
+  border-radius: 6px;
+  background:
+    linear-gradient(180deg, transparent, rgba(212, 168, 74, 0.5) 22%, rgba(212, 168, 74, 0.5) 78%, transparent)
+      2px 0 / 2px 100% no-repeat,
+    linear-gradient(180deg, transparent, rgba(212, 168, 74, 0.5) 22%, rgba(212, 168, 74, 0.5) 78%, transparent)
+      calc(100% - 2px) 0 / 2px 100% no-repeat;
+}
+
+/* 主帅像:上限抬到 96px,并给一圈金边。
+   和单位/卡面同一个理由 —— 原来的上限是照手机横屏定的,桌面上偏小;
+   而中轴对称之后它是画面焦点。金边让它从木质底上「浮」出来。 */
 .portraitWrap {
   position: relative;
-  width: clamp(46px, 10vh, 76px);
-  height: clamp(46px, 10vh, 76px);
+  width: clamp(46px, 10vh, 96px);
+  height: clamp(46px, 10vh, 96px);
   flex: none;
-  border-radius: 12px;
+  border-radius: 10px;
   overflow: visible;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  box-shadow:
+    0 0 0 1.5px rgba(212, 168, 74, 0.55),
+    0 3px 10px rgba(0, 0, 0, 0.6);
 }
 
 /* 描金相框 */

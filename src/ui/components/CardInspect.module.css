@@ -22,6 +22,8 @@
 }
 
 .card {
+  /* 角饰(.cardEpic/.cardLegendary::before)按 inset 定位,需要这一条 */
+  position: relative;
   display: flex;
   flex-direction: column;
   width: min(88vw, 340px);
@@ -383,4 +385,91 @@
   font-size: 11px;
   color: var(--parchment-faint);
   text-align: center;
+}
+
+/* ---- 详情页的卡框 ----
+   手牌上的小卡面(CardFace)一直有内描金线、立绘暗角、传说流光;
+   而**放大看的这一张反而什么都没有** —— 一张矩形立绘,底下一条硬边,
+   然后直接是文字。玩家花时间端详的恰恰是这一张。
+
+   四层,全是 CSS,没有新素材:
+   1. 立绘四周的内描金线(::before)—— 把图「嵌」进框里,而不是贴上去
+   2. 立绘底部的渐隐(::after)—— 硬边换成向下融进底色的过渡,
+      这一条的观感提升最大:硬边是「两张图拼在一起」,渐隐是「一件东西」
+   3. 四角的角饰,只给史诗与传说 —— 稀有度此前只体现在边框颜色上,
+      而颜色是最弱的区分手段(尤其对色觉障碍)。形状是最强的
+   4. 传说的外发光呼吸 */
+
+.portrait::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  z-index: 2;
+  pointer-events: none;
+  border: 1px solid rgba(224, 190, 118, 0.45);
+  border-radius: 6px;
+  box-shadow: inset 0 0 22px rgba(0, 0, 0, 0.5);
+}
+
+.portrait::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 34%;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent, rgba(20, 16, 10, 0.9) 88%, #14100a);
+}
+
+/* 角饰:两条金线组成的直角,四个角各转 90°。
+   用 background 画而不是加四个元素 —— 这样它不进 DOM,也不用改 tsx。 */
+.cardEpic::before,
+.cardLegendary::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  z-index: 6;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, var(--corner) 0 18px, transparent 18px) 0 0 / 100% 1.5px no-repeat,
+    linear-gradient(180deg, var(--corner) 0 18px, transparent 18px) 0 0 / 1.5px 100% no-repeat,
+    linear-gradient(270deg, var(--corner) 0 18px, transparent 18px) 100% 0 / 100% 1.5px no-repeat,
+    linear-gradient(180deg, var(--corner) 0 18px, transparent 18px) 100% 0 / 1.5px 100% no-repeat,
+    linear-gradient(90deg, var(--corner) 0 18px, transparent 18px) 0 100% / 100% 1.5px no-repeat,
+    linear-gradient(0deg, var(--corner) 0 18px, transparent 18px) 0 100% / 1.5px 100% no-repeat,
+    linear-gradient(270deg, var(--corner) 0 18px, transparent 18px) 100% 100% / 100% 1.5px no-repeat,
+    linear-gradient(0deg, var(--corner) 0 18px, transparent 18px) 100% 100% / 1.5px 100% no-repeat;
+}
+
+.cardEpic {
+  --corner: rgba(196, 140, 232, 0.85);
+}
+
+.cardLegendary {
+  --corner: rgba(247, 225, 168, 0.95);
+  animation:
+    inspectCard 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.1) both,
+    legendBreath 3.6s ease-in-out 0.3s infinite;
+}
+
+@keyframes legendBreath {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 0 0 4px rgba(24, 16, 5, 0.9),
+      0 0 60px rgba(0, 0, 0, 0.8),
+      0 0 26px rgba(232, 178, 58, 0.32);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 0 4px rgba(24, 16, 5, 0.9),
+      0 0 60px rgba(0, 0, 0, 0.8),
+      0 0 44px rgba(232, 178, 58, 0.6);
+  }
+}
+
+:root[data-reduced-motion='true'] .cardLegendary {
+  animation: none;
 }

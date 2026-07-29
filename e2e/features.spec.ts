@@ -119,7 +119,8 @@ test('collection: merit badge and craft/disenchant controls', async ({ page }) =
   await page.goto('/')
   await page.getByRole('button', { name: '名将图鉴' }).click()
   await expect(page.getByText(/✦ \d+/)).toBeVisible()
-  // 稀有度/费用筛选条
+  // 稀有度/费用筛选条现在收在「更多筛选」抽屉里(平铺时占 270px),先展开
+  await page.getByText(/更多筛选|More filters/).click()
   await page.getByRole('button', { name: '传说', exact: true }).click()
   await page.getByPlaceholder('搜索名将…').fill('關羽')
   await page.getByText('關羽').first().click()
@@ -296,6 +297,10 @@ test('collection: dynasty / mechanic filters, sorting, and infinite scroll', asy
   await page.goto('/')
   await page.getByRole('button', { name: '名将图鉴' }).click()
   await expect(page.getByRole('heading', { name: '名将图鉴' })).toBeVisible()
+
+  // 稀有度/费用/朝代/兵种/机制/排序收进了「更多筛选」抽屉 ——
+  // 六组控件平铺时在看到第一张卡之前就占掉 270px。先展开。
+  await page.getByText(/更多筛选|More filters/).click()
 
   // 机制筛选:伏兵是第四卡包引入的,数量固定
   await page.getByLabel('按机制筛选').selectOption('secret')

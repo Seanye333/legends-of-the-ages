@@ -88,8 +88,16 @@ export function CardInspect({ def, onClose, forge = false }: CardInspectProps) {
 
   return (
     <div className={styles.overlay} onClick={onClose}>
+      {/* 稀有度用**形状**区分,不只用颜色:史诗与传说加四角角饰。
+          颜色是最弱的区分手段(对色觉障碍尤其如此),而这里本来就只靠边框颜色。 */}
       <div
-        className={styles.card}
+        className={`${styles.card} ${
+          def.rarity === 'legendary'
+            ? styles.cardLegendary
+            : def.rarity === 'epic'
+              ? styles.cardEpic
+              : ''
+        }`}
         style={{ borderColor: DOCTRINE_COLORS[def.doctrine] }}
         onClick={(e) => e.stopPropagation()}
       >
