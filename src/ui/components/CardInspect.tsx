@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
 import type { CardDef } from '../../engine/types'
 import { useSettings } from '../../app/settingsStore'
 import {
@@ -39,6 +40,9 @@ export function CardInspect({ def, onClose, forge = false }: CardInspectProps) {
   const pickCompact = usePickCompact()
   const t = useT()
   const lang = useSettings((s) => s.language)
+  // 设置页的手动开关。系统偏好(prefers-reduced-motion)由 CSS 那一层接住 ——
+  // 但视差是 JS 算出来的内联 transform,CSS 关不掉它,所以这里必须自己判一次。
+  const reducedMotion = useSettings((s) => s.reducedMotion)
   const merit = useCollection((s) => s.merit)
   const have = useCollection((s) => s.owned[def.id] ?? 0)
   const craft = useCollection((s) => s.craft)
@@ -86,11 +90,37 @@ export function CardInspect({ def, onClose, forge = false }: CardInspectProps) {
     }
   }
 
+  // 分层:指针在卡面上移动时,卡整体倾斜、立绘朝**反方向**微移。
+  //
+  // 一张卡此前是完全平的一块 —— 立绘、边框、宝石、文字都贴在同一个平面上。
+  // 反向视差是最省的一招「有厚度」:两层往相反方向动,大脑立刻读成
+  // 「立绘在框的后面」。位移量刻意压得很小(±6px / ±7°),
+  // 大了会从「有厚度」变成「在晃」,那反而更假。
+  //
+  // 入场动画在**外层**(.cardWrap)、倾斜在内层(.card):
+  // animation-fill-mode: both 会把 to 帧的 transform 一直按着,
+  // 两者放在同一个元素上的话内联的倾斜永远生效不了 —— 动画声明优先级更高。
+  const tiltRef = useRef<HTMLDivElement>(null)
+  const [tilt, setTilt] = useState({ x: 0, y: 0 })
+  const onTiltMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (reducedMotion) return
+    const r = tiltRef.current?.getBoundingClientRect()
+    if (!r) return
+    setTilt({
+      x: ((e.clientY - r.top) / r.height - 0.5) * -2,
+      y: ((e.clientX - r.left) / r.width - 0.5) * 2,
+    })
+  }
+
+  const living = def.rarity === 'legendary' || def.rarity === 'epic'
+
   return (
     <div className={styles.overlay} onClick={onClose}>
+      <div className={styles.cardWrap}>
       {/* 稀有度用**形状**区分,不只用颜色:史诗与传说加四角角饰。
           颜色是最弱的区分手段(对色觉障碍尤其如此),而这里本来就只靠边框颜色。 */}
       <div
+        ref={tiltRef}
         className={`${styles.card} ${
           def.rarity === 'legendary'
             ? styles.cardLegendary
@@ -98,10 +128,20 @@ export function CardInspect({ def, onClose, forge = false }: CardInspectProps) {
               ? styles.cardEpic
               : ''
         }`}
-        style={{ borderColor: DOCTRINE_COLORS[def.doctrine] }}
+        style={
+          {
+            borderColor: DOCTRINE_COLORS[def.doctrine],
+            '--tilt-x': `${tilt.x * 7}deg`,
+            '--tilt-y': `${tilt.y * 7}deg`,
+            '--art-x': `${tilt.y * -6}px`,
+            '--art-y': `${tilt.x * 6}px`,
+          } as CSSProperties
+        }
+        onPointerMove={onTiltMove}
+        onPointerLeave={() => setTilt({ x: 0, y: 0 })}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className={styles.portrait}>
+        <div className={`${styles.portrait} ${living && !reducedMotion ? styles.living : ''}`}>
           <Portrait id={def.id} nameZh={def.name.zh} doctrine={def.doctrine} full />
           <span className={styles.cost}>{def.cost}</span>
           {def.type === 'general' && (
@@ -248,6 +288,7 @@ export function CardInspect({ def, onClose, forge = false }: CardInspectProps) {
             )}
           </div>
         </div>
+      </div>
       </div>
     </div>
   )
