@@ -162,6 +162,58 @@ export const RELICS: RelicDef[] = [
     bonusHp: 10,
     modifiers: { startArmor: 4, bonusHandSize: 1 },
   },
+  // ---- 雙將 ----
+  //
+  // 副将技和主公技**共用**每回合一次的额度(引擎保证),所以这两件宝物加的
+  // 不是每回合的输出,而是「这回合该用哪一个」的决策。
+  // 白送一次额外主公技那条路我们在减费宝物上试过 —— 一开就再也调不回来:
+  // 每回合多一次 2 费的效果,三十回合是 60 点法力凭空多出来。
+  {
+    id: 'relic-fujiang-mou',
+    name: { zh: '副將 · 謀士', en: 'Vice-General: The Strategist' },
+    text: {
+      zh: '獲得副將技「借籌」(2 費:抽一張牌,糧道 +1)。副將技與主公技每回合只能用其一。',
+      en: 'Gain the vice power "Borrowed Counsel" (2 mana: draw a card and gain 1 Supply). Vice and Hero Power share one use per turn.',
+    },
+    rarity: 'epic',
+    modifiers: {
+      vicePower: {
+        id: 'hp-vice-jiechou',
+        name: { zh: '借籌', en: 'Borrowed Counsel' },
+        text: { zh: '抽一張牌,糧道 +1。', en: 'Draw a card and gain 1 Supply.' },
+        cost: 2,
+        script: {
+          ops: [
+            { op: 'draw', count: 1 },
+            { op: 'gainSupply', amount: 1 },
+          ],
+        },
+      },
+    },
+  },
+  {
+    id: 'relic-fujiang-xian',
+    name: { zh: '副將 · 先鋒', en: 'Vice-General: The Vanguard' },
+    text: {
+      zh: '獲得副將技「擂鼓」(2 費:士氣 +1,對敵方主公造成 1 點傷害)。副將技與主公技每回合只能用其一。',
+      en: 'Gain the vice power "Roll of Drums" (2 mana: gain 1 Morale and deal 1 damage to the enemy hero). Vice and Hero Power share one use per turn.',
+    },
+    rarity: 'epic',
+    modifiers: {
+      vicePower: {
+        id: 'hp-vice-leigu',
+        name: { zh: '擂鼓', en: 'Roll of Drums' },
+        text: { zh: '士氣 +1,對敵方主公造成 1 點傷害。', en: 'Gain 1 Morale and deal 1 damage to the enemy hero.' },
+        cost: 2,
+        script: {
+          ops: [
+            { op: 'gainMorale', amount: 1 },
+            { op: 'damage', amount: 1, target: 'enemyHero' },
+          ],
+        },
+      },
+    },
+  },
 ]
 
 export const RELICS_BY_ID: Record<string, RelicDef> = Object.fromEntries(RELICS.map((r) => [r.id, r]))
@@ -186,6 +238,9 @@ export function combineRelics(relicIds: string[]): {
     if (m.handCostDelta) mod.handCostDelta = (mod.handCostDelta ?? 0) + m.handCostDelta
     if (m.heroPowerCostDelta) mod.heroPowerCostDelta = (mod.heroPowerCostDelta ?? 0) + m.heroPowerCostDelta
     if (m.startTokens) tokens.push(...m.startTokens)
+    // 副将只留**最后拿到的那一个**:两件副将宝物同时在身上时,
+    // 引擎只认 RunModifiers 上的一个字段 —— 与其悄悄丢一个,不如把规则写明白。
+    if (m.vicePower) mod.vicePower = m.vicePower
   }
   if (tokens.length > 0) mod.startTokens = tokens
   return { bonusHp, modifiers: mod }

@@ -274,6 +274,27 @@ describe('卡面文本与机制一致', () => {
     expect(bad).toEqual([])
   })
 
+  it('军需(supplyCost)必须写在卡面上 —— 打不出来却不说为什么是最糟的一种', () => {
+    const bad = COLLECTIBLE_CARDS.filter((c) => (c.supplyCost ?? 0) > 0)
+      .filter((c) => !(c.text?.zh ?? '').includes(`軍需 ${c.supplyCost}`))
+      .map((c) => `${c.id}(${c.name.zh}) 軍需 ${c.supplyCost} 没写在卡面上`)
+    expect(bad).toEqual([])
+  })
+
+  it('阵形必须写清「几人成阵、谁吃增益」—— 只写阵名等于没写', () => {
+    const bad: string[] = []
+    for (const c of COLLECTIBLE_CARDS) {
+      const f = c.formation
+      if (!f) continue
+      const zh = c.text?.zh ?? ''
+      if (!zh.includes(f.name.zh)) bad.push(`${c.id}(${c.name.zh}) 卡面没写阵名「${f.name.zh}」`)
+      // 数值必须出现:形状决定「谁吃」,数值决定「吃多少」,两个都得说
+      const stat = `+${f.attack}/+${f.health}`
+      if (!zh.includes(stat)) bad.push(`${c.id}(${c.name.zh}) 卡面没写增益 ${stat}`)
+    }
+    expect(bad).toEqual([])
+  })
+
   // 钉的是**管线不变量**而不是最终卡面:签名卡在生成层就该是白板,
   // 效果全部由 signature.ts 或后续卡包手写叠上去(项羽的过载、荆轲的连击就来自 pack4,
   // 那是正当的)。在生成层查,既精确又不会冤枉后续卡包。

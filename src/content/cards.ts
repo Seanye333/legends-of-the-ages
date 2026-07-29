@@ -32,6 +32,7 @@ import { deriveTroop } from './troops'
 import { PACK18_CARDS } from './overrides/pack18'
 import { PACK19_CARDS } from './overrides/pack19'
 import { PACK20_CARDS } from './overrides/pack20'
+import { PACK21_CARDS } from './overrides/pack21'
 import { CAMPAIGN_TOKENS } from './overrides/campaign-tokens'
 import { HISTORY_TOKENS } from './history-tokens'
 
@@ -190,6 +191,7 @@ const MERGED_CARDS: CardDef[] = [
   ...PACK18_CARDS,
   ...PACK19_CARDS,
   ...PACK20_CARDS,
+  ...PACK21_CARDS,
   ...CAMPAIGN_TOKENS,
   ...HISTORY_TOKENS,
 ].map(withKeywordText)
