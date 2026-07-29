@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { LESSONS_BY_ID } from '../content/lessons'
 import { LETHAL_PUZZLES } from '../content/lethalPuzzles'
-import { daysBetween } from '../content/dailyPuzzle'
+import { DAILY_SLOTS, daysBetween } from '../content/dailyPuzzle'
 import { useCollection } from './collectionStore'
 import { useAchievements } from './achievementStore'
 
@@ -30,13 +30,20 @@ interface LethalState {
   dailySolvedDate: string | null // 每日谜题最近一次解开的日期(YYYY-MM-DD)
   dailyStreak: number // 当前连续解题天数
   dailyBestStreak: number // 历史最长连续
+  // 每日三题:今天解开了哪几阵。**可选持久字段** —— 老存档没有它,
+  // 读作「今天一阵都没解」;而 dailySolvedDate 仍然是连击的唯一依据,
+  // 所以老玩家的连击一天都不会丢。
+  dailySlots?: { date: string; slots: number[] }
   isSolved(id: string): boolean
   solvedCount(): number
   // 记一次成功。返回本次实际发放的奖励(幂等:重解返回 firstSolve:false、零奖励)
   solve(id: string): PuzzleReward
   isDailySolved(date: string): boolean
-  // 记一次每日谜题成功。同一天重解幂等(firstSolve:false、零奖励)
-  solveDaily(date: string): PuzzleReward
+  // 今天这一阵解了没有
+  isSlotSolved(date: string, slot: number): boolean
+  solvedSlots(date: string): number[]
+  // 记一次每日谜题成功。同一天同一阵重解幂等(firstSolve:false、零奖励)
+  solveDaily(date: string, slot?: number): PuzzleReward
   // 连击是否仍然连续(今天没解、但昨天解了 → 仍显示当前连击;隔了两天以上 → 已断)
   streakAsOf(today: string): number
   reset(): void
@@ -60,6 +67,16 @@ export const useLethal = create<LethalState>()(
         return get().dailySolvedDate === date
       },
 
+      isSlotSolved(date, slot) {
+        const d = get().dailySlots
+        return d?.date === date && d.slots.includes(slot)
+      },
+
+      solvedSlots(date) {
+        const d = get().dailySlots
+        return d?.date === date ? d.slots : []
+      },
+
       streakAsOf(today) {
         const { dailySolvedDate, dailyStreak } = get()
         if (!dailySolvedDate) return 0
@@ -68,22 +85,41 @@ export const useLethal = create<LethalState>()(
         return gap <= 1 ? dailyStreak : 0
       },
 
-      solveDaily(date) {
-        if (get().dailySolvedDate === date) {
+      solveDaily(date, slot = 0) {
+        if (get().isSlotSolved(date, slot)) {
           return { firstSolve: false, merit: 0, packs: 0, allComplete: false }
         }
-        // 连击:昨天刚解过则 +1,否则从 1 重新起
-        const prev = get().dailySolvedDate
-        const streak = prev && daysBetween(prev, date) === 1 ? get().dailyStreak + 1 : 1
+        const prevSlots = get().solvedSlots(date)
+        const nextSlots = [...prevSlots, slot].sort((a, b) => a - b)
+        // 连击按**天**算,不按阵算:今天解开第一阵就续上,后两阵不再动连击。
+        // 三阵全解才续连击的话,断连的门槛会从「今天没空」变成「今天没空全打完」,
+        // 那正好是连击机制最不该惩罚的那种人。
+        const firstOfDay = prevSlots.length === 0
+        const prevDate = get().dailySolvedDate
+        const streak = firstOfDay
+          ? prevDate && daysBetween(prevDate, date) === 1
+            ? get().dailyStreak + 1
+            : 1
+          : get().dailyStreak
         set({
           dailySolvedDate: date,
           dailyStreak: streak,
           dailyBestStreak: Math.max(get().dailyBestStreak, streak),
+          dailySlots: { date, slots: nextSlots },
         })
-        useCollection.setState({ merit: useCollection.getState().merit + DAILY_MERIT })
+        // 三阵均分,合计仍是原来一题的额度 —— 这次改动对功勋经济零净影响。
+        // 三阵同档(挖矿池全部 difficulty 2),按难度差别给钱是在给一个
+        // 不存在的梯度定价。
+        const merit = Math.round(DAILY_MERIT / DAILY_SLOTS)
+        useCollection.setState({ merit: useCollection.getState().merit + merit })
         useAchievements.getState().bump('puzzlesSolved')
-        useAchievements.getState().bump('bestPuzzleStreak', streak) // MAX 统计,记最长
-        return { firstSolve: true, merit: DAILY_MERIT, packs: 0, allComplete: false }
+        if (firstOfDay) useAchievements.getState().bump('bestPuzzleStreak', streak) // MAX 统计
+        return {
+          firstSolve: true,
+          merit,
+          packs: 0,
+          allComplete: nextSlots.length >= DAILY_SLOTS,
+        }
       },
 
       solvedCount() {
@@ -135,6 +171,7 @@ export const useLethal = create<LethalState>()(
           dailySolvedDate: null,
           dailyStreak: 0,
           dailyBestStreak: 0,
+          dailySlots: undefined,
         })
       },
     }),

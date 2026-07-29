@@ -1,5 +1,5 @@
 import { LETHAL_PUZZLES, type LethalPuzzle } from '../../content/lethalPuzzles'
-import { dailyPuzzleFor, dayKey } from '../../content/dailyPuzzle'
+import { dailyPuzzleFor, dailyPuzzleSetFor, dayKey, SLOT_NAME } from '../../content/dailyPuzzle'
 import { useState } from 'react'
 import { createGame } from '../../engine/init'
 import { CARDS_BY_ID } from '../../content/cards'
@@ -30,18 +30,24 @@ export function LethalScreen({ onBack, onEnterMatch }: LethalScreenProps) {
   const t = useT()
   const pick = usePickText()
   const solved = useLethal((s) => s.solved)
-  const dailySolvedDate = useLethal((s) => s.dailySolvedDate)
+  const solvedSlots = useLethal((s) => s.solvedSlots)
   const streakAsOf = useLethal((s) => s.streakAsOf)
   const solvedSet = new Set(solved)
   const [codeInput, setCodeInput] = useState('')
   const [codeMsg, setCodeMsg] = useState<string | null>(null)
 
   const today = dayKey()
+  // 分享码仍然只给**第一阵** —— 「今天大家都在打的那一道」得是同一道,
+  // 三道都能分享的话「今日残局码」这句话就不成立了。
   const daily = dailyPuzzleFor(today)
-  const dailyDone = dailySolvedDate === today
+  const dailySet = dailyPuzzleSetFor(today)
+  const doneSlots = solvedSlots(today)
   const streak = streakAsOf(today)
 
-  const launch = (p: LethalPuzzle, extra?: { daily: boolean; dailyDate: string }) => {
+  const launch = (
+    p: LethalPuzzle,
+    extra?: { daily: boolean; dailyDate: string; dailySlot: number },
+  ) => {
     playSfx('duel')
     haptic('impact')
     launchMatch({
@@ -53,6 +59,7 @@ export function LethalScreen({ onBack, onEnterMatch }: LethalScreenProps) {
       puzzleId: p.id,
       daily: extra?.daily,
       dailyDate: extra?.dailyDate,
+      dailySlot: extra?.dailySlot,
     })
     onEnterMatch()
   }
@@ -149,34 +156,53 @@ export function LethalScreen({ onBack, onEnterMatch }: LethalScreenProps) {
       </div>
       {codeMsg && <p className={styles.shareMsg}>{codeMsg}</p>}
 
-      {daily && (
-        <button
-          className={`${styles.daily} ${dailyDone ? styles.solved : ''}`}
-          onClick={() => launch(daily, { daily: true, dailyDate: today })}
-        >
-          <div className={styles.dailyBadge}>{t('每日谜题', 'Daily')}</div>
-          {streak > 0 && (
-            <div className={styles.streak}>{t(`连续 ${streak} 天`, `${streak}-day streak`)}</div>
-          )}
-          <div className={styles.portrait}>
-            <Portrait
-              id={daily.heroes[0]}
-              nameZh={HEROES_BY_ID[daily.heroes[0]]?.name.zh ?? daily.heroes[0]}
-              doctrine={HEROES_BY_ID[daily.heroes[0]]?.doctrine ?? 'neutral'}
-            />
-            {dailyDone && <span className={styles.check}>✓</span>}
+      {/* 每日三题。一天一题的问题是它只有两个状态:没做 / 做完了 ——
+          做完之后这一屏当天就死了,而每日内容的价值恰恰是「今天还有事可做」。
+          三阵按残局复杂度由简到繁排,连击仍然按**天**算(解开第一阵就续上):
+          三阵全解才续连击的话,断连的门槛会从「今天没空」变成「今天没空全打完」,
+          那正好是连击最不该惩罚的那种人。 */}
+      {dailySet.length > 0 && (
+        <div className={styles.dailySet}>
+          <div className={styles.dailySetHead}>
+            <span className={styles.dailyBadge}>{t('每日三題', 'Daily Three')}</span>
+            <span className={styles.dailySetDate}>{today}</span>
+            {streak > 0 && (
+              <span className={styles.streak}>{t(`连续 ${streak} 天`, `${streak}-day streak`)}</span>
+            )}
+            <span className={styles.dailySetCount}>
+              {doneSlots.length} / {dailySet.length}
+            </span>
           </div>
-          <div className={styles.body}>
-            <div className={styles.row}>
-              <span className={styles.name}>{pick(daily.title)}</span>
-              <span className={styles.date}>{today}</span>
-            </div>
-            <div className={styles.situation}>{pick(daily.situation)}</div>
-          </div>
-          <div className={styles.go}>
-            {dailyDone ? t('已解 · 再战 ›', 'Solved · Replay ›') : t('挑战 ›', 'Solve ›')}
-          </div>
-        </button>
+          {dailySet.map((p, slot) => {
+            const slotDone = doneSlots.includes(slot)
+            return (
+              <button
+                key={p.id}
+                className={`${styles.daily} ${slotDone ? styles.solved : ''}`}
+                onClick={() => launch(p, { daily: true, dailyDate: today, dailySlot: slot })}
+              >
+                <div className={styles.portrait}>
+                  <Portrait
+                    id={p.heroes[0]}
+                    nameZh={HEROES_BY_ID[p.heroes[0]]?.name.zh ?? p.heroes[0]}
+                    doctrine={HEROES_BY_ID[p.heroes[0]]?.doctrine ?? 'neutral'}
+                  />
+                  {slotDone && <span className={styles.check}>✓</span>}
+                </div>
+                <div className={styles.body}>
+                  <div className={styles.row}>
+                    <span className={styles.name}>{pick(p.title)}</span>
+                    <span className={styles.date}>{pick(SLOT_NAME[slot] ?? SLOT_NAME[0])}</span>
+                  </div>
+                  <div className={styles.situation}>{pick(p.situation)}</div>
+                </div>
+                <div className={styles.go}>
+                  {slotDone ? t('已解 · 再战 ›', 'Solved · Replay ›') : t('挑战 ›', 'Solve ›')}
+                </div>
+              </button>
+            )
+          })}
+        </div>
       )}
 
       <div className={styles.list}>

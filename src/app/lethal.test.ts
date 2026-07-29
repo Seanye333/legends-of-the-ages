@@ -17,6 +17,10 @@ describe('lethalStore', () => {
       dailySolvedDate: null,
       dailyStreak: 0,
       dailyBestStreak: 0,
+      // 每日三题的槽位。**这一行漏了的话上面那些用例会互相污染** ——
+      // 这里是手写的字段清单,不是 store 的 reset(),加了新持久字段就得补进来。
+      // 三题上线时就是这么红的:「解谜计入成就」那条突然只涨了 1。
+      dailySlots: undefined,
     })
     useCollection.setState({ merit: 0 })
     useAchievements.setState({ stats: {}, claimed: [] })
@@ -126,6 +130,36 @@ describe('lethalStore', () => {
     expect(L().streakAsOf('2026-07-23')).toBe(2) // 当天
     expect(L().streakAsOf('2026-07-24')).toBe(2) // 昨天解的,连击还在
     expect(L().streakAsOf('2026-07-25')).toBe(0) // 隔两天,已断
+  })
+
+  it('每日三题:三阵各记各的,同一阵重解不重复发奖', () => {
+    const L = () => useLethal.getState()
+    const day = '2026-07-20'
+    expect(L().solveDaily(day, 0).firstSolve).toBe(true)
+    expect(L().solveDaily(day, 0).firstSolve).toBe(false) // 同一阵重解幂等
+    expect(L().solveDaily(day, 2).firstSolve).toBe(true)
+    expect(L().solvedSlots(day)).toEqual([0, 2])
+    expect(L().isSlotSolved(day, 1)).toBe(false)
+    // 三阵全解才算 allComplete
+    expect(L().solveDaily(day, 1).allComplete).toBe(true)
+  })
+
+  it('每日三题:连击按天算,解开第一阵就续上,后两阵不再动它', () => {
+    const L = () => useLethal.getState()
+    L().solveDaily('2026-07-20', 0)
+    L().solveDaily('2026-07-21', 0)
+    expect(L().dailyStreak).toBe(2)
+    // 同一天再解两阵,连击不该跳到 4
+    L().solveDaily('2026-07-21', 1)
+    L().solveDaily('2026-07-21', 2)
+    expect(L().dailyStreak).toBe(2)
+  })
+
+  it('每日三题:三阵合计的功勋不超过原来一题的额度(经济零净影响)', () => {
+    const before = useCollection.getState().merit
+    const L = () => useLethal.getState()
+    for (const slot of [0, 1, 2]) L().solveDaily('2026-07-20', slot)
+    expect(useCollection.getState().merit - before).toBeLessThanOrEqual(30)
   })
 
   it('解谜计入永久成就进度 puzzlesSolved', () => {

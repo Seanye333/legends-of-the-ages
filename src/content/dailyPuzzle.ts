@@ -44,17 +44,69 @@ export function daysBetween(a: string, b: string): number {
   return Math.round((pb - pa) / 86_400_000)
 }
 
+function hash32(str: string): number {
+  let h = 2166136261
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i)
+    h = Math.imul(h, 16777619)
+  }
+  return Math.abs(h >>> 0)
+}
+
 // 日期 → 池中一题(确定性,FNV-1a 哈希取模)。池空则返回 null。
 export function dailyPuzzleFor(dateStr: string): LethalPuzzle | null {
   if (DAILY_POOL.length === 0) return null
-  let h = 2166136261
-  for (let i = 0; i < dateStr.length; i++) {
-    h ^= dateStr.charCodeAt(i)
-    h = Math.imul(h, 16777619)
-  }
-  const idx = Math.abs(h >>> 0) % DAILY_POOL.length
-  return toLethalPuzzle(DAILY_POOL[idx])
+  return toLethalPuzzle(DAILY_POOL[hash32(dateStr) % DAILY_POOL.length])
 }
+
+// 每日**三题**。
+//
+// 【为什么从一题改成三题】
+// 一天一题的问题是它只有两个状态:没做 / 做完了。做完之后这一屏当天就死了,
+// 而每日内容的价值恰恰在于「今天还有事可做」。三题给了中间状态。
+//
+// 【为什么不是易/中/难】
+// 挖矿池里 24 道**全部是 difficulty 2** —— 池子本身没有难度梯度。
+// 硬编一个「初/中/难」的标签是在假装有一条我们保证不了的曲线。
+// 这里只做一件能保证的事:按**残局的复杂度**(要考虑的东西有多少)排序,
+// 于是三题确实是由简到繁的,但名字叫「三阵」而不是「三个难度」。
+//
+// 【为什么奖励是平均的】
+// 同上 —— 三题同档,按难度差别给钱就是在给一个不存在的梯度定价。
+// 三题合计仍是原来一题的 30 功勋,**这次改动对功勋经济零净影响**。
+export const DAILY_SLOTS = 3
+
+// 复杂度代理:手牌 + 场面(双方)。要考虑的东西越多,解起来越费劲。
+// 这是个代理不是真难度 —— 但它是确定性的、不需要人工标注的,
+// 而且和「这一题看起来吓不吓人」高度相关。
+function complexityOf(p: LethalPuzzle): number {
+  const [me, foe] = p.scenario.players
+  return me.hand.length + me.board.length * 2 + foe.board.length * 2
+}
+
+export function dailyPuzzleSetFor(dateStr: string): LethalPuzzle[] {
+  if (DAILY_POOL.length === 0) return []
+  const n = Math.min(DAILY_SLOTS, DAILY_POOL.length)
+  const picked: number[] = []
+  // 线性探测取 n 个**互不相同**的下标:同一天出现两道一样的题会让
+  // 「三题」看起来像个 bug,而池子只有 24 道,撞车概率并不低。
+  for (let k = 0; picked.length < n; k++) {
+    const idx = hash32(`${dateStr}#${k}`) % DAILY_POOL.length
+    let probe = idx
+    while (picked.includes(probe)) probe = (probe + 1) % DAILY_POOL.length
+    picked.push(probe)
+  }
+  return picked
+    .map((i) => toLethalPuzzle(DAILY_POOL[i]))
+    .sort((a, b) => complexityOf(a) - complexityOf(b))
+}
+
+// 三阵的名字。刻意不叫「简单/普通/困难」—— 见上面为什么。
+export const SLOT_NAME = [
+  { zh: '初陣', en: 'First Position' },
+  { zh: '中陣', en: 'Second Position' },
+  { zh: '決陣', en: 'Third Position' },
+] as const
 
 // MatchScreen 用:按 id 找题面(手搓题 + 生成题都能找到,供结算面板取标题/提示)
 export function puzzleDefById(id: string): LethalPuzzle | undefined {

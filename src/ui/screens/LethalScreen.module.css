@@ -273,3 +273,38 @@
   font-size: 12px;
   color: #e8c878;
 }
+
+
+/* ---- 每日三題 ---- */
+/* 三张卡合在一个框里,而不是三张各自漂着 —— 它们是**同一件事的三个部分**,
+   分开摆的话读起来像「今天有三个不同的活动」。 */
+.dailySet {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+  padding: 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(212, 168, 74, 0.32);
+  background: linear-gradient(180deg, rgba(40, 32, 18, 0.55), rgba(18, 14, 8, 0.55));
+}
+
+.dailySetHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px 2px;
+}
+
+/* 计数推到最右:它是这一组的进度,和左边那堆标签不是一类信息 */
+.dailySetCount {
+  margin-left: auto;
+  font-family: var(--font-display);
+  font-size: 13px;
+  color: var(--gold-mid);
+}
+
+.dailySetDate {
+  font-size: 11px;
+  color: var(--parchment-faint);
+}
