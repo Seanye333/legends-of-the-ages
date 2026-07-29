@@ -37,6 +37,7 @@ import { TutorialCoach } from '../components/TutorialCoach'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { TurnRope } from '../components/TurnRope'
 import { BossVoice } from '../components/BossVoice'
+import { GeneralVoice } from '../components/GeneralVoice'
 import { TargetArrow } from '../components/TargetArrow'
 import { GraveyardPanel } from '../components/GraveyardPanel'
 import { EmoteWheel } from '../components/EmoteWheel'
@@ -788,6 +789,10 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
 
       {/* 关底 Boss 的战场台词 —— 十六个历史人物打起来之后不该再是同一个沉默的机器 */}
       <BossVoice bossId={bossId} state={state} events={lastEvents} />
+
+      {/* 名将出阵台词。59 位名将的单挑台词从导入那天起就躺在 lore.gen.ts 里,
+          却只有翻「名将列传」才看得到 —— 真打起来时关羽和一个 7/7 白板没区别。 */}
+      <GeneralVoice events={lastEvents} />
 
       {/* 竖屏提示:牌桌是按横屏设计的,窄屏竖着会被压扁(纯 CSS 控制显隐) */}
       <div className={styles.rotateHint}>

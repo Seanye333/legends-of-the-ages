@@ -40,6 +40,47 @@ export const ERA_OF: Record<DynastyTag, Era> = {
   qing: 'ming-qing',
 }
 
+// 年代跨度与一句话画像。
+//
+// 这两张表原来只**写在上面那段注释里** —— 也就是说只有读源码的人看得到。
+// 时代长卷要把六块时代摆成一条路给玩家看,那段判断(每一块的战争形态)
+// 正是长卷唯一值得说的东西,所以把它从注释提成数据。
+export const ERA_SPAN: Record<Era, LocalizedText> = {
+  'pre-qin': { zh: '前 770 — 前 221', en: '770–221 BC' },
+  'qin-han': { zh: '前 221 — 220', en: '221 BC – AD 220' },
+  'three-kingdoms': { zh: '184 — 420', en: 'AD 184–420' },
+  'sui-tang': { zh: '420 — 960', en: 'AD 420–960' },
+  'song-yuan': { zh: '960 — 1368', en: 'AD 960–1368' },
+  'ming-qing': { zh: '1368 — 1912', en: 'AD 1368–1912' },
+}
+
+export const ERA_BLURB: Record<Era, LocalizedText> = {
+  'pre-qin': {
+    zh: '百家爭鳴,士與刺客。一句話能換一座城,一把匕首能改一國之運。',
+    en: 'A hundred schools, wandering scholars, and assassins. A sentence could buy a city; a dagger could redirect a state.',
+  },
+  'qin-han': {
+    zh: '軍功爵與郡縣。大兵團遠征三千里,重騎踏出的路就是版圖。',
+    en: 'Rank by merit, rule by commandery. Armies marched three thousand li, and the road the cavalry cut became the border.',
+  },
+  'three-kingdoms': {
+    zh: '勢力對峙。這是唯一一個「他站在誰那邊」比「他多能打」更要緊的時代。',
+    en: 'Three powers in deadlock — the one age where whose side a man stood on mattered more than how well he fought.',
+  },
+  'sui-tang': {
+    zh: '府兵與藩鎮。騎將衝陣,先動手的那一方通常也就贏了。',
+    en: 'Militia armies and warlord provinces. Cavalry charged, and whoever moved first usually won.',
+  },
+  'song-yuan': {
+    zh: '一邊是城防重甲,一邊是騎射長驅。守與破在這裡打了四百年。',
+    en: 'Walls and heavy armour on one side, horse archers on the other. Four centuries of siege against speed.',
+  },
+  'ming-qing': {
+    zh: '火器、水師、邊軍。殺傷第一次不再取決於一個人有多強。',
+    en: 'Guns, fleets, frontier garrisons. For the first time, killing power no longer depended on how strong one man was.',
+  },
+}
+
 export const ERA_NAME: Record<Era, LocalizedText> = {
   'pre-qin': { zh: '先秦', en: 'Pre-Qin' },
   'qin-han': { zh: '秦漢', en: 'Qin and Han' },

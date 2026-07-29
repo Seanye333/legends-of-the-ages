@@ -78,6 +78,10 @@ export function GeneralToken({ inst, ready, selected, targetable, floats, fx, on
     <div
       className={cls}
       data-fxkey={`gen-${inst.iid}`}
+      // 出阵台词要从 iid 反查是谁(单挑事件里没有 defId)。挂在 DOM 上而不是
+      // 让组件之间传一张 iid→defId 的表:那张表得跟着场面每一次变动同步,
+      // 而这里的真相本来就在渲染这个单位的地方。
+      data-def={inst.defId}
       style={{ '--doctrine': DOCTRINE_COLORS[doctrine], ...fxVars } as CSSProperties}
       {...(onInspect ? longPress.handlers : {})}
       role={interactive ? 'button' : undefined}

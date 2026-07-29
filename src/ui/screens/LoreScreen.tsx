@@ -7,6 +7,9 @@ import { Portrait } from '../components/Portrait'
 import { DOCTRINE_COLORS, dynastyName } from '../doctrineColors'
 import { usePickCompact, usePickText, useT } from '../i18n'
 import { ALL_BONDS, ALL_RIVALS, bondRoster, cardName, rivalLore } from '../../content/relations'
+import { EraScroll } from '../components/EraScroll'
+import { ERA_OF, type Era } from '../../content/eras'
+import { RelationWeb } from '../components/RelationWeb'
 import { playSfx } from '../sound'
 import styles from './LoreScreen.module.css'
 
@@ -25,7 +28,12 @@ export function LoreScreen({ onBack }: Props) {
   const owned = useCollection((s) => s.owned)
   const [selected, setSelected] = useState<string | null>(null)
   const [dynFilter, setDynFilter] = useState<string>('all')
-  const [showGraph, setShowGraph] = useState(false)
+  // 三种读法:列传(按人)/ 關係圖譜(按关系)/ 時代長卷(按时间)。
+  // 同一批内容,三个不同的问题 —— 一屏塞不下,但一个 tab 装得下。
+  const [view, setView] = useState<'lives' | 'graph' | 'era'>('lives')
+  // 默认落在长卷的**第一块**:横滚容器初始位置在最左,
+  // 选中块要是落在视野外,「哪一块是选中的」就成了看不见的信息。
+  const [eraFilter, setEraFilter] = useState<Era>('pre-qin')
 
   // 有列传的签名卡,按朝代分组
   const entries = useMemo(
@@ -41,7 +49,14 @@ export function LoreScreen({ onBack }: Props) {
     return seen
   }, [entries])
 
-  const shown = dynFilter === 'all' ? entries : entries.filter((id) => CARDS_BY_ID[id].dynasty === dynFilter)
+  // 列传页按朝代筛,长卷页按时代块筛 —— 两个视图问的是不同粒度的问题,
+  // 共用一个筛选器会互相踩(选了「魏」再切到长卷,长卷该高亮哪一块?)。
+  const shown =
+    view === 'era'
+      ? entries.filter((id) => ERA_OF[CARDS_BY_ID[id].dynasty] === eraFilter)
+      : dynFilter === 'all'
+        ? entries
+        : entries.filter((id) => CARDS_BY_ID[id].dynasty === dynFilter)
   const unlocked = entries.filter((id) => (owned[id] ?? 0) > 0).length
   const sel = selected ? CARDS_BY_ID[selected] : null
   const selLore = selected ? LORE[selected] : null
@@ -77,27 +92,38 @@ export function LoreScreen({ onBack }: Props) {
           而「通览」正是这个模式(名将列传 = 博物馆)该干的事。
           不做力导向图:那在手机上点不准,也读不出「谁和谁」。列表按关系本身分组更清楚。 */}
       <div className={styles.filters}>
-        <button
-          className={showGraph ? styles.filterBtn : styles.filterActive}
-          onClick={() => {
-            playSfx('buttonTap')
-            setShowGraph(false)
-          }}
-        >
-          {t('列传', 'Lives')}
-        </button>
-        <button
-          className={showGraph ? styles.filterActive : styles.filterBtn}
-          onClick={() => {
-            playSfx('buttonTap')
-            setShowGraph(true)
-          }}
-        >
-          {t('關係圖譜', 'Relations')}
-        </button>
+        {(
+          [
+            ['lives', t('列传', 'Lives')],
+            ['graph', t('關係圖譜', 'Relations')],
+            ['era', t('時代長卷', 'The Scroll')],
+          ] as const
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            className={view === key ? styles.filterActive : styles.filterBtn}
+            onClick={() => {
+              playSfx('buttonTap')
+              setView(key)
+            }}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
-      {showGraph && (
+      {view === 'era' && (
+        <EraScroll
+          selected={eraFilter}
+          onSelectEra={(era) => {
+            playSfx('buttonTap')
+            setEraFilter(era)
+          }}
+          onPickCard={(id) => setSelected(id)}
+        />
+      )}
+
+      {view === 'graph' && (
         <div className={styles.relationList}>
           <div className={styles.relationHead}>
             {t(`羈絆 · ${ALL_BONDS.length} 條`, `Bonds · ${ALL_BONDS.length}`)}
@@ -109,7 +135,7 @@ export function LoreScreen({ onBack }: Props) {
               onClick={() => {
                 playSfx('buttonTap')
                 setSelected(ref.anchor.id)
-                setShowGraph(false)
+                setView('lives')
               }}
             >
               <span className={styles.relationName}>{pickCompact(ref.bond.name)}</span>
@@ -130,7 +156,7 @@ export function LoreScreen({ onBack }: Props) {
               onClick={() => {
                 playSfx('buttonTap')
                 setSelected(ref.anchor.id)
-                setShowGraph(false)
+                setView('lives')
               }}
             >
               <span className={styles.relationName}>{pickCompact(ref.rival.name)}</span>
@@ -145,7 +171,7 @@ export function LoreScreen({ onBack }: Props) {
         </div>
       )}
 
-      {!showGraph && (
+      {view === 'lives' && (
       <div className={styles.filters}>
         <button
           className={dynFilter === 'all' ? styles.filterActive : styles.filterBtn}
@@ -172,7 +198,7 @@ export function LoreScreen({ onBack }: Props) {
 
       )}
 
-      {!showGraph && (
+      {(view === 'lives' || view === 'era') && (
       <div className={styles.grid}>
         {shown.map((id) => {
           const card = CARDS_BY_ID[id]
@@ -221,6 +247,10 @@ export function LoreScreen({ onBack }: Props) {
                 <p className={styles.bio}>{pick(selLore.bio)}</p>
                 {selLore.quote && <p className={styles.quote}>「{pick(selLore.quote)}」</p>}
                 {selLore.line && <p className={styles.line}>{pick(selLore.line)}</p>}
+                {/* 这一位的关系网。通览那张表在「關係圖譜」页;这里回答的是
+                    另一个问题 —— **我点开的这个人跟谁有关系**。
+                    点节点直接跳过去,列传于是能一路顺着关系翻下去。 */}
+                <RelationWeb centerId={sel.id} onPick={(id) => setSelected(id)} />
               </>
             ) : (
               <p className={styles.bio}>
