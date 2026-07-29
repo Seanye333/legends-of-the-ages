@@ -21,7 +21,7 @@
 import type { CardInstance, CardLibrary, Command, GameState, PlayerIdx, PlayerState } from '../engine/types'
 import { applyCommand } from '../engine/reducer'
 import { legalCommands } from '../engine/legal'
-import { evaluate, type EvalWeights } from './greedy'
+import { evaluate, stopScore, type EvalWeights } from './greedy'
 
 export interface PlanResult {
   line: Command[] // 到达最优局面的命令序列(不含最后的 EndTurn)
@@ -86,17 +86,6 @@ function stateKey(state: GameState, player: PlayerIdx): string {
 
 // 「就在这里收手」值多少分。与 greedy 的 EndTurn 罚项保持一致 ——
 // 否则规划器会算出一条「留着法力不花」的线,而贪心那边认为那是亏的,两个档位打法会分裂。
-function stopScore(
-  state: GameState,
-  player: PlayerIdx,
-  lib: CardLibrary,
-  foresight: boolean,
-  weights?: Partial<EvalWeights>,
-): number {
-  const base = evaluate(state, player, lib, foresight, weights)
-  return base - (0.05 + state.players[player].mana.current * 0.18)
-}
-
 // 规划整个回合。返回预算内评分最高的那条线(可能是空 —— 意思是「直接结束回合」)。
 export function planTurn(
   state: GameState,

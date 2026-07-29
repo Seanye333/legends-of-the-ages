@@ -309,6 +309,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
               { k: 'veteran', zh: '宿将', en: 'Veteran', d: { zh: '偶尔失误', en: 'Occasional blunders' } },
               { k: 'general', zh: '名将', en: 'Legend', d: { zh: '零失误,必算斩杀', en: 'No blunders; always finds lethal' } },
               { k: 'marshal', zh: '军神', en: 'Marshal', d: { zh: '规划整个回合,看得见先亏后赚的组合', en: 'Plans the whole turn; sees setups that lose tempo to win value' } },
+              { k: 'oracle', zh: '天機', en: 'Oracle', d: { zh: '蒙特卡洛树搜索 —— 不会把「起手最差」的线永久饿死', en: 'Monte-Carlo tree search — never starves a line just because its first move looks bad' } },
             ] as const
           ).map((o) => (
             <button
@@ -331,7 +332,8 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
               { zh: '宿将', en: 'Veteran' },
               { zh: '名将', en: 'Legend' },
               { zh: '军神', en: 'Marshal' },
-            ][['recruit', 'veteran', 'general', 'marshal'].indexOf(s.difficulty)] ?? { zh: '', en: '' },
+              { zh: '天機', en: 'Oracle' },
+            ][['recruit', 'veteran', 'general', 'marshal', 'oracle'].indexOf(s.difficulty)] ?? { zh: '', en: '' },
           )}
           {' — '}
           {pick(
@@ -340,7 +342,8 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
               { zh: '偶尔失误', en: 'Blunders occasionally' },
               { zh: '零失误,每回合先算一遍斩杀', en: 'No blunders; checks for lethal every turn' },
               { zh: '规划整个回合 —— 会为了后面赚回来而先走一步亏分的', en: 'Plans the entire turn, including moves that lose value now to gain more later' },
-            ][['recruit', 'veteran', 'general', 'marshal'].indexOf(s.difficulty)] ?? { zh: '', en: '' },
+              { zh: '树搜索 —— 对军神实测 58.3%、对名将 72.2%', en: 'Tree search — measured 58.3% against Marshal and 72.2% against Legend' },
+            ][['recruit', 'veteran', 'general', 'marshal', 'oracle'].indexOf(s.difficulty)] ?? { zh: '', en: '' },
           )}
         </p>
       </section>

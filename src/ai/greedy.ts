@@ -24,6 +24,7 @@ import { legalCommands } from '../engine/legal'
 import { canAttackNow, maxAttacksOf } from '../engine/combat'
 import { rngNext } from '../engine/rng'
 import { plannedStep } from './planner'
+import { mctsStep } from './mcts'
 
 export interface AiConfig {
   // 失误概率:以该概率选次优解(难度调节)
@@ -36,6 +37,10 @@ export interface AiConfig {
   // 整回合规划(planner.ts):不再一次只看一步,而是对整个回合的命令空间做 DFS,
   // 挑「收手时局面最好」的那条线。只给军神档开 —— 它比贪心贵一个量级。
   planner?: boolean
+  // 蒙特卡洛树搜索(mcts.ts):换的不是搜索深度,是**预算怎么分配**。
+  // planner 的最好优先排序会把「第一步最差、三步后最好」的线永久饿死;
+  // UCT 让试得少的线始终有机会被再试一次。只给天機档开。
+  mcts?: boolean
   // 评分权重覆盖:同一套引擎、不同的性格(见 evaluate 的 weights 参数)。
   weights?: Partial<EvalWeights>
 }
@@ -56,6 +61,7 @@ export const AI_LEVELS = {
   veteran: { blunderChance: 0.12, lethalSearch: false },
   general: { blunderChance: 0, lethalSearch: true, foresight: true },
   marshal: { blunderChance: 0, lethalSearch: true, foresight: true, planner: true },
+  oracle: { blunderChance: 0, lethalSearch: true, foresight: true, mcts: true },
 } as const satisfies Record<string, AiConfig>
 
 // ---------- 估值 ----------
@@ -155,9 +161,27 @@ export interface EvalWeights {
   myHp: number // 自己的血(越高越苟)
   foeHp: number // 敌方的血(越高越凶)
   hand: number // 手牌资源
+  // 浮费:收手时每点没花出去的法力扣多少分。
+  //
+  // **它只在 stopScore 里生效,不进 evaluate。** evaluate 打的是「局面好不好」,
+  // 而没花的法力不是局面的一部分 —— 它是「这一步走完之后还能不能再走一步」。
+  // 混进 evaluate 会让每一次中途打分都带上一笔和局面无关的偏置,
+  // 而 sim-balance / sim-campaign 的全部历史数字都是拿 evaluate 量的(铁律 9)。
+  //
+  // 抽成权重之后它顺带成了一条**新的性格轴**:值高 = 这个 AI 见不得手里有钱,
+  // 见牌就打;值低 = 它愿意攥着法力等一个更好的时机。
+  mana: number
 }
 
-export const DEFAULT_WEIGHTS: EvalWeights = { board: 1, myHp: 0.6, foeHp: 0.6, hand: 0.4 }
+// 数值与抽出来之前**逐字相同**(greedy 的 EndTurn 分支与 planner 的 stopScore
+// 各写过一份 `0.05 + mana * 0.18`)—— 所以这次归并对所有历史数字零影响。
+export const DEFAULT_WEIGHTS: EvalWeights = {
+  board: 1,
+  myHp: 0.6,
+  foeHp: 0.6,
+  hand: 0.4,
+  mana: 0.18,
+}
 
 export function evaluate(
   state: GameState,
@@ -226,6 +250,26 @@ export function evaluate(
   }
 
   return score
+}
+
+// 「就此收手」的分数 —— 局面分减去浮费。
+//
+// 这个函数此前在两个地方各写了一份(greedy 的 EndTurn 分支、planner 的 stopScore),
+// 常数一模一样却互相不知道。第三个消费者(MCTS)出现时,归并已经不是洁癖问题了:
+// 三份各自漂移的话,「军神和天機谁更强」量出来的就不是搜索方式的差别,
+// 而是三个人对浮费的看法的差别。
+export function stopScore(
+  state: GameState,
+  player: PlayerIdx,
+  lib: CardLibrary,
+  foresight = false,
+  weights: Partial<EvalWeights> = {},
+): number {
+  const w = { ...DEFAULT_WEIGHTS, ...weights }
+  const base = evaluate(state, player, lib, foresight, weights)
+  // 那个 0.05 的常数项不是浮费,是**收手本身**的一点点代价:
+  // 没有它,「结束回合」会和「打出一张零收益的牌」并列第一,取谁全看排序稳定性。
+  return base - (0.05 + state.players[player].mana.current * w.mana)
 }
 
 // ---------- 斩杀搜索 ----------
@@ -326,6 +370,17 @@ export function aiStep(
     return { cmd: { type: 'ResolveChoice', index: best }, rng }
   }
 
+  // 天機:蒙特卡洛树搜索。和军神一样,斩杀是它的一个特例,不必再单独搜。
+  if (config.mcts) {
+    return {
+      cmd: mctsStep(state, player, lib, {
+        foresight: config.foresight === true,
+        weights: config.weights,
+      }),
+      rng,
+    }
+  }
+
   // 军神:整回合规划。斩杀是它的一个特例(赢 = 1e9,自然是最大值),
   // 所以这里不再单独跑 findLethal —— 跑了也只是重复一遍它已经会算的东西。
   if (config.planner) {
@@ -363,7 +418,8 @@ export function aiStep(
     if (cmd.type === 'EndTurn') {
       // 浮费惩罚:结束回合时每点没花掉的法力都是白扔的。
       // 没有这一项,AI 会因为「出牌会掉一点手牌分」而攥着牌过回合。
-      score -= 0.05 + state.players[player].mana.current * 0.18
+      // 系数在 DEFAULT_WEIGHTS.mana(与 planner / MCTS 共用一份定义)。
+      score -= 0.05 + state.players[player].mana.current * (config.weights?.mana ?? DEFAULT_WEIGHTS.mana)
     }
     return { cmd, score }
   })
