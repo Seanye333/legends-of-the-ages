@@ -5,6 +5,7 @@ import {
   battleDeck,
   battleModifiers,
   REVERSE_BY_BATTLE,
+  DIVERGENCE_BY_BATTLE,
   type HistoryBattle,
 } from '../../content/historyBattles'
 import { PRECON_DECKS } from '../../content/decks'
@@ -42,6 +43,8 @@ export function HistoryScreen({ onBack, onEnterMatch }: HistoryScreenProps) {
   const myDecks = [...PRECON_DECKS, ...customDecks]
   const reversed = useHistory((s) => s.reversed)
   const reverseOf = (id: string) => REVERSE_BY_BATTLE[id]
+  const diverged = useHistory((s) => s.diverged)
+  const divergeOf = (id: string) => DIVERGENCE_BY_BATTLE[id]
 
   const fight = (battle: HistoryBattle) => {
     const mine = myDecks[deckIndex % myDecks.length]
@@ -87,6 +90,33 @@ export function HistoryScreen({ onBack, onEnterMatch }: HistoryScreenProps) {
       // 态势也跟着换边:原本压在你头上的那些,现在是你的
       modifiersOverride: [mods[1], mods[0]],
       aiWeights: bossPersonality(boss.id),
+    })
+    onEnterMatch()
+  }
+
+  // 史实分歧点:**不换边**,换的是战场的条件 —— 东风没来、许攸没叛。
+  // 实现上就是把那一场的字段按分歧点覆盖一遍,引擎一行不动。
+  // 逐字段覆盖(而不是整份替换):分歧点只写它改动的那几项,
+  // 没写的一律沿用史实那一版 —— 「如果」改的从来只是一件事。
+  const fightDiverge = (battle: HistoryBattle) => {
+    const div = DIVERGENCE_BY_BATTLE[battle.id]
+    const mine = myDecks[deckIndex % myDecks.length]
+    if (!div || !mine) return
+    if (!begin(battle.id, false, true)) return
+    playSfx('duel')
+    haptic('impact')
+    const myHero = HEROES_BY_ID[mine.heroId]
+    const base = battleModifiers(battle)
+    launchMatch({
+      heroIds: [mine.heroId, battle.heroId],
+      deckIds: [mine.cardIds.slice(), battleDeck({ ...battle, deckTier: div.deckTier ?? battle.deckTier })],
+      history: true,
+      heroPowersOverride: [myHero?.power, battle.power],
+      heroHpsOverride: [myHero?.hp ?? START_HP, div.hp ?? battle.hp],
+      modifiersOverride: [div.playerModifiers ?? base[0], div.enemyModifiers ?? base[1]],
+      // 睢阳的分歧点要把「守成」换回普通判定,所以这里**取分歧点的值而不是回落** ——
+      // 回落的话「援军来了」还得继续守十六个回合,那正好是它想推翻的东西。
+      objective: div.objective,
     })
     onEnterMatch()
   }
@@ -243,6 +273,28 @@ export function HistoryScreen({ onBack, onEnterMatch }: HistoryScreenProps) {
                 </span>
               </div>
             )}
+            {/* 史实分歧点:同样要先按史实赢一次 ——
+                「如果没有东风」这句话,只有在你已经靠东风赢过之后才有意思。 */}
+            {divergeOf(selected.id) && cleared.includes(selected.id) && (
+              <div className={`${styles.trialBox} ${styles.divergeBox}`}>
+                <span className={styles.trialName}>
+                  {pick(divergeOf(selected.id)!.name)}
+                  {(diverged ?? []).includes(selected.id) && (
+                    <span className={styles.trialDone}> ✓</span>
+                  )}
+                </span>
+                <span className={styles.trialText}>{pick(divergeOf(selected.id)!.premise)}</span>
+                <span className={styles.trialText}>{pick(divergeOf(selected.id)!.situation)}</span>
+                <span className={styles.trialReward}>
+                  {(diverged ?? []).includes(selected.id)
+                    ? t('已成 —— 重打不再发放战利', 'Complete — no further spoils')
+                    : t(
+                        `首成战利:功勋 +${divergeOf(selected.id)!.rewardMerit}`,
+                        `First clear: +${divergeOf(selected.id)!.rewardMerit} merit`,
+                      )}
+                </span>
+              </div>
+            )}
             <div className={styles.briefActions}>
               <button className={styles.primary} onClick={() => fight(selected)}>
                 {t('出战', 'Fight')}
@@ -250,6 +302,11 @@ export function HistoryScreen({ onBack, onEnterMatch }: HistoryScreenProps) {
               {reverseOf(selected.id) && cleared.includes(selected.id) && (
                 <button className={styles.trialBtn} onClick={() => fightReverse(selected)}>
                   {t('逆位而战', 'Fight Reversed')}
+                </button>
+              )}
+              {divergeOf(selected.id) && cleared.includes(selected.id) && (
+                <button className={styles.divergeBtn} onClick={() => fightDiverge(selected)}>
+                  {t('走另一条路', 'Take the Other Path')}
                 </button>
               )}
               <button className={styles.plain} onClick={() => setSelected(null)}>

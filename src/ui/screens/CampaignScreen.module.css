@@ -549,3 +549,29 @@
   font-size: 0.82em;
   color: var(--gold-bright);
 }
+
+
+/* ---- 史实分歧点(名局重现共用这份样式表)----
+   和逆位同一个盒子形状,但换成青蓝 —— 逆位是「换边」(朱),
+   分歧点是「换条件」(青)。两者并列出现在同一屏,
+   只靠文字区分的话会被看成同一样东西的两个按钮。 */
+.divergeBox {
+  border-color: rgba(120, 170, 200, 0.5);
+  background: linear-gradient(180deg, rgba(16, 30, 40, 0.72), rgba(8, 14, 20, 0.72));
+}
+
+.divergeBtn {
+  padding: 10px 16px;
+  border-radius: 9px;
+  border: 1px solid rgba(120, 170, 200, 0.6);
+  background: linear-gradient(180deg, #14313f, #0a1820);
+  color: #a8d0e0;
+  font-family: var(--font-display);
+  font-size: clamp(13px, 3.4vw, 15px);
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+
+.divergeBtn:hover {
+  filter: brightness(1.2);
+}

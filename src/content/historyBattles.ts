@@ -621,3 +621,124 @@ export const REVERSE_BATTLES: ReverseBattle[] = [
 export const REVERSE_BY_BATTLE: Record<string, ReverseBattle> = Object.fromEntries(
   REVERSE_BATTLES.map((r) => [r.battleId, r]),
 )
+
+// ============================================================
+// 史實分歧點 —— 「如果那一件事沒有發生」。
+//
+// 【它和逆位不是一回事】
+// 逆位换的是**你站在哪一边**:这一次你是袁绍、你是项羽。
+// 分歧点不换边 —— 你还是原来那一方,变的是**战场的条件**:
+// 东风没来、许攸没叛、廉颇没被换掉。
+//
+// 每一个分歧点都钉在一件**史书上真有记载的偶然**上,而不是随便编一个「如果」。
+// 那些偶然恰恰是这些战役至今还被人反复讲的原因:赤壁赢在一阵风,
+// 官渡赢在一个人半夜跑过来。把风拿掉、把那个人留下,仗立刻是另一场。
+//
+// 【为什么它是「疯的」那一档里最有价值的一个】
+// 这套卡池的全部卖点是「这是真历史」。分歧点是唯一一个**利用了这一点**的玩法 ——
+// 它只有在玩家知道原本发生了什么的时候才成立,而这个游戏的玩家恰好知道。
+//
+// 【实现上零新机制】
+// 复用 HistoryBattle 的全部字段:改 modifiers、改 objective、改 hp/tier。
+// 引擎一行不动,只是把同一场仗的条件换一套。
+export interface Divergence {
+  battleId: string
+  name: LocalizedText
+  // 「如果」本身 —— 史料口吻,说清被拿掉/被保留的是哪一件事
+  premise: LocalizedText
+  // 这一版战场变成什么样(把下面的修正翻成人话)
+  situation: LocalizedText
+  hp?: number
+  deckTier?: number
+  playerModifiers?: RunModifiers
+  enemyModifiers?: RunModifiers
+  objective?: BattleObjective
+  rewardMerit: number
+}
+
+export const DIVERGENCES: Divergence[] = [
+  {
+    battleId: 'hb-chibi',
+    name: { zh: '赤壁 · 若無東風', en: 'Red Cliff — Without the East Wind' },
+    premise: {
+      zh: '建安十三年冬,江上刮的是西北风。黄盖的火船顺流而下,烧的是自己人 —— 史书里那阵反常的东南风,这一次没有来。',
+      en: 'Winter of 208: the wind on the river blows from the northwest, as winter winds do. Huang Gai’s fire ships would burn their own. The freak southeasterly of the histories never came.',
+    },
+    situation: {
+      zh: '火攻不成:你没有开局态势,而曹军的连环船完好 —— 敌方开局 6 甲、多抽两张。',
+      en: 'No fire: you open with nothing, while the chained fleet stands intact — the enemy takes 6 Armor and two extra cards.',
+    },
+    hp: 46,
+    playerModifiers: {},
+    enemyModifiers: { startArmor: 6, bonusHandSize: 2 },
+    rewardMerit: 420,
+  },
+  {
+    battleId: 'hb-guandu',
+    name: { zh: '官渡 · 若許攸不叛', en: 'Guandu — If Xu You Had Not Defected' },
+    premise: {
+      zh: '许攸的家人在邺城下狱,他连夜奔向曹营,带去了乌巢屯粮的位置。这一次他忍了下来 —— 乌巢的粮,一石都没少。',
+      en: 'Xu You’s family was jailed in Ye; that night he rode to Cao Cao’s camp with the location of the Wuchao granary. This time he swallowed it. Not one picul of that grain was lost.',
+    },
+    situation: {
+      zh: '粮道未断:敌方开局 8 点粮道、4 甲 —— 你只能硬啃。',
+      en: 'The supply line holds: the enemy opens with 8 Supply and 4 Armor — you will have to grind through.',
+    },
+    hp: 52,
+    deckTier: 0.25,
+    enemyModifiers: { startSupply: 8, startArmor: 4 },
+    rewardMerit: 400,
+  },
+  {
+    battleId: 'hb-changping',
+    name: { zh: '長平 · 若廉頗不去', en: 'Changping — If Lian Po Had Stayed' },
+    premise: {
+      zh: '赵孝成王中了反间计,用赵括换下了坚壁三年的廉颇。这一次那道诏书没有发出 —— 壁垒还在,老将也还在。',
+      en: 'King Xiaocheng of Zhao fell for the plant and replaced Lian Po — three years behind his walls — with Zhao Kuo. This time the edict was never sent. The walls stand, and so does the old general.',
+    },
+    situation: {
+      zh: '坚壁不出:你只要撑过 14 个回合就算赢 —— 廉颇要的从来不是胜,是不败。',
+      en: 'Hold the walls: survive 14 turns and the day is yours. Lian Po never wanted to win — only not to lose.',
+    },
+    playerModifiers: { startArmor: 8 },
+    objective: { kind: 'survive', turns: 14 },
+    rewardMerit: 380,
+  },
+  {
+    battleId: 'hb-gaixia',
+    name: { zh: '垓下 · 若渡烏江', en: 'Gaixia — If He Had Crossed the Wu' },
+    premise: {
+      zh: '乌江亭长舣船而待,曰:江东虽小,亦足王也。项羽笑而不渡 —— 这一次,他上了那条船。',
+      en: 'The ferryman waited with his boat: "Jiangdong is small, but it is enough to be king of." Xiang Yu laughed and did not cross. This time, he stepped aboard.',
+    },
+    situation: {
+      zh: '江东再起:你开局多抽两张、手牌全部 -1 费,但敌方也已成军 —— 血厚、卡组更强。',
+      en: 'Jiangdong rises again: two extra cards and every opening card 1 cheaper — but the enemy is a finished army now, with more health and a sharper deck.',
+    },
+    hp: 58,
+    deckTier: 0.15,
+    playerModifiers: { bonusHandSize: 2, handCostDelta: -1 },
+    rewardMerit: 440,
+  },
+  {
+    battleId: 'hb-suiyang',
+    name: { zh: '睢陽 · 若援軍至', en: 'Suiyang — If the Relief Column Had Come' },
+    premise: {
+      zh: '张巡守睢阳十月,食尽而无援。临淮的贺兰进明拥兵不救;城破之日,守军只剩四百人。这一次,援军来了。',
+      en: 'Zhang Xun held Suiyang for ten months until the food ran out and no one came. He Lanjinming sat at Linhuai with his army and did not move. On the day the walls fell, four hundred defenders remained. This time, the relief column arrived.',
+    },
+    situation: {
+      zh: '不再是守城:你开局 5 甲、带两队援军,目标从「撑住」变成「打赢」。',
+      en: 'No longer a siege: you open with 5 Armor and two relief units, and the objective changes from holding out to winning outright.',
+    },
+    hp: 44,
+    playerModifiers: { startArmor: 5, startTokens: ['token-shui-zhai', 'token-shui-zhai'] },
+    // objective 明确给成 undefined 读起来不明显,所以这里靠「不给」表示回到普通判定 ——
+    // 而正位的睢阳是 survive。分歧点覆盖字段时**必须逐字段覆盖**,见 historyStore 的合并。
+    rewardMerit: 400,
+  },
+]
+
+export const DIVERGENCE_BY_BATTLE: Record<string, Divergence> = Object.fromEntries(
+  DIVERGENCES.map((d) => [d.battleId, d]),
+)
