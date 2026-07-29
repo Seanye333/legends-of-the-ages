@@ -33,13 +33,17 @@ export interface ExpeditionRun {
   // 两条候选路线(关间选一条走)。非空时远征页停在选路界面。
   routeOffer: string[] | null // 当前关的战场态势修饰符 id(第 1 关为 null)
   rngState: number // 宝物/修饰符随机的种子推进(可复现)
+  // 無盡:打完 24 关不结束,绕回第一关继续 —— 每绕一圈敌将血量再涨一档。
+  // **可选字段**:老存档的 run 没有它 → undefined → 走原来的「通关即结束」,
+  // 打到一半的旧 run 不会因为这次改动变成另一个模式。
+  endless?: boolean
 }
 
 interface ExpeditionState {
   run: ExpeditionRun | null
   bestDepth: number // 历史最深:通到第几关(0–8)
   totalRuns: number
-  start(heroId: string, deck: string[]): void
+  start(heroId: string, deck: string[], endless?: boolean): void
   settle(win: boolean): void // 一场打完
   pickRelic(id: string): void
   pickCard(id: string): void // 把牌加进卡组并进下一关
@@ -85,11 +89,12 @@ export const useExpedition = create<ExpeditionState>()(
       bestDepth: 0,
       totalRuns: 0,
 
-      start(heroId, deck) {
+      start(heroId, deck, endless = false) {
         set({
           run: {
             heroId,
             deck,
+            endless,
             stage: 0,
             relics: [],
             offered: null,
@@ -114,12 +119,19 @@ export const useExpedition = create<ExpeditionState>()(
         // 高难修饰符的补偿:通关多给一件宝物 → 直接折成一个卡包(结算即得)
         const clearedMod = run.stageMod ? MODIFIERS_BY_ID[run.stageMod] : undefined
         if (clearedMod?.bonusRelic) useCollection.getState().grantPacks(1)
-        if (clearedStage >= BOSSES.length - 1) {
+        if (clearedStage >= BOSSES.length - 1 && !run.endless) {
           // 通关全部:大奖 + 满进度
           useCollection.getState().grantPacks(3)
           useCollection.setState({ merit: useCollection.getState().merit + 300 })
           set({ run: null, bestDepth: BOSSES.length })
           return
+        }
+        // 無盡:每绕完一圈发一次通关奖,然后接着走。
+        // 发奖放在这里而不是「结束时结算」—— 無盡没有结束,只有失败,
+        // 而失败之后再补发奖励读起来像安慰奖。
+        if (run.endless && (clearedStage + 1) % BOSSES.length === 0) {
+          useCollection.getState().grantPacks(3)
+          useCollection.setState({ merit: useCollection.getState().merit + 300 })
         }
         // 通一关:亮出三选一宝物
         const { offered, next } = offerRelics(run.relics, run.rngState)

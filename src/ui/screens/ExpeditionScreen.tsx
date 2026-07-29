@@ -1,5 +1,11 @@
 import { useState } from 'react'
-import { BOSSES, bossDeck, bossPersonality } from '../../content/campaign'
+import {
+  BOSSES,
+  bossDeck,
+  bossHpFor,
+  bossPersonality,
+  LEGACY_HP_PER_CYCLE,
+} from '../../content/campaign'
 import { RELICS_BY_ID, combineRelics } from '../../content/relics'
 import { CARDS_BY_ID } from '../../content/cards'
 import { MODIFIERS_BY_ID } from '../../content/expeditionModifiers'
@@ -30,16 +36,22 @@ export function ExpeditionScreen({ onBack, onEnterMatch }: ExpeditionScreenProps
   const [deckIndex, setDeckIndex] = useState(0)
   const myDecks = [...PRECON_DECKS, ...customDecks]
 
-  const beginRun = () => {
+  const beginRun = (endless = false) => {
     const mine = myDecks[deckIndex % myDecks.length]
     if (!mine) return
     playSfx('buttonTap')
-    start(mine.heroId, mine.cardIds.slice())
+    start(mine.heroId, mine.cardIds.slice(), endless)
   }
+
+  // 無盡:stage 不再封顶,绕圈复用同一批 Boss。lap = 绕了几圈,
+  // 每圈敌将血量再涨一档 —— 曲线是连续的,而宝物是台阶式的,
+  // 于是「什么时候扛不住」由这两条线交在哪儿决定,而不是某个写死的关数。
+  const lap = Math.floor(run ? run.stage / BOSSES.length : 0)
+  const bossOf = (stage: number) => BOSSES[stage % BOSSES.length]
 
   const fight = () => {
     if (!run) return
-    const boss = BOSSES[run.stage]
+    const boss = bossOf(run.stage)
     if (!boss) return
     const myHero = HEROES_BY_ID[run.heroId]
     const { bonusHp, modifiers } = combineRelics(run.relics)
@@ -56,7 +68,10 @@ export function ExpeditionScreen({ onBack, onEnterMatch }: ExpeditionScreenProps
       bossId: boss.id,
       // 远征独有:主公技可以花 5 费升阶(天梯与冒险没有 —— 见 heroes.ts 那段实测说明)
       heroPowersOverride: [withUpgrade(myHero?.power), boss.power],
-      heroHpsOverride: [(myHero?.hp ?? START_HP) + bonusHp, boss.hp + (mod?.bossHpBonus ?? 0)],
+      heroHpsOverride: [
+        (myHero?.hp ?? START_HP) + bonusHp,
+        bossHpFor(boss.hp, lap) + (mod?.bossHpBonus ?? 0),
+      ],
       modifiersOverride: [playerMods, bossMods],
       objective: mod?.objective,
       aiWeights: bossPersonality(boss.id),
@@ -240,18 +255,34 @@ export function ExpeditionScreen({ onBack, onEnterMatch }: ExpeditionScreenProps
 
   // ---- 进行中的远征:关卡进度 + 已得宝物 + 开战 ----
   if (run) {
-    const boss = BOSSES[run.stage]
+    const boss = bossOf(run.stage)
+    // 無盡绕圈时地图只画**本圈**的进度:第 25 关在地图上还是第 1 格,
+    // 圈数写在旁边。铺 48 个格子只会让每个格子都小到看不清。
+    const stageInLap = run.stage % BOSSES.length
     return (
       <div className={styles.screen}>
         {header}
+        {run.endless && (
+          <div className={styles.lapBar}>
+            {t(`無盡 · 第 ${lap + 1} 圈`, `Endless — lap ${lap + 1}`)}
+            {lap > 0 && (
+              <span className={styles.lapHp}>
+                {t(
+                  `敵將血量 +${Math.round(LEGACY_HP_PER_CYCLE * lap * 100)}%`,
+                  `Bosses +${Math.round(LEGACY_HP_PER_CYCLE * lap * 100)}% HP`,
+                )}
+              </span>
+            )}
+          </div>
+        )}
         <div className={styles.map}>
           {BOSSES.map((b, i) => (
             <div
               key={b.id}
-              className={`${styles.node} ${i < run.stage ? styles.cleared : i === run.stage ? styles.current : ''}`}
+              className={`${styles.node} ${i < stageInLap ? styles.cleared : i === stageInLap ? styles.current : ''}`}
               title={pick(b.name)}
             >
-              {i < run.stage ? '✓' : i + 1}
+              {i < stageInLap ? '✓' : i + 1}
             </div>
           ))}
         </div>
@@ -267,7 +298,12 @@ export function ExpeditionScreen({ onBack, onEnterMatch }: ExpeditionScreenProps
               </div>
               <div className={styles.bossTitle}>{pick(boss.title)}</div>
               <div className={styles.bossHp}>
-                {t(`血量 ${boss.hp + (run.stageMod ? MODIFIERS_BY_ID[run.stageMod]?.bossHpBonus ?? 0 : 0)}`, `${boss.hp + (run.stageMod ? MODIFIERS_BY_ID[run.stageMod]?.bossHpBonus ?? 0 : 0)} HP`)}
+                {(() => {
+                  const hp =
+                    bossHpFor(boss.hp, lap) +
+                    (run.stageMod ? (MODIFIERS_BY_ID[run.stageMod]?.bossHpBonus ?? 0) : 0)
+                  return t(`血量 ${hp}`, `${hp} HP`)
+                })()}
               </div>
               {run.stageMod && MODIFIERS_BY_ID[run.stageMod] && (
                 <div className={styles.modChip}>
@@ -353,7 +389,14 @@ export function ExpeditionScreen({ onBack, onEnterMatch }: ExpeditionScreenProps
           ›
         </button>
       </div>
-      <button className={styles.startBtn} onClick={beginRun}>
+      {/* 無盡:24 关打完就结束,是这个模式此前唯一的天花板 ——
+          而通关一次之后玩家想要的恰恰是「再往前走一步会怎样」。
+          两颗按钮并排而不是做成开关:开关得先被发现才会被用到,
+          而这两种打法的差别值得在开始之前就说清楚。 */}
+      <button className={styles.endlessBtn} onClick={() => beginRun(true)}>
+        {t('無盡遠征 —— 走到走不动为止', 'Endless — until you fall')}
+      </button>
+      <button className={styles.startBtn} onClick={() => beginRun(false)}>
         {t('出征', 'Set Out')}
       </button>
     </div>

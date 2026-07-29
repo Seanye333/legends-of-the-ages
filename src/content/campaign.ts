@@ -1126,6 +1126,55 @@ export function bossTrial(bossId: string): TrialDef | undefined {
 }
 
 // ============================================================
+// 傳承 —— 通关之后的第二轮、第三轮……
+//
+// 24 关打完之后,冒险模式就彻底没了 —— 而那恰恰是玩家卡池最全、
+// 最想再打一遍的时候。傳承把它变成一个圈:再启新局,关卡重置,
+// 但**双方都变强了**。
+//
+// 【为什么两边一起加,而不是只加 Boss】
+// 只加 Boss 血量的话,第二轮就是同一场仗打得更久 —— 更久不等于更难,
+// 只等于更烦。傳承同时给玩家一份开局资本(护甲 / 多抽 / 主公技减费),
+// 于是第二轮的**节奏**是不一样的:你开局就有本钱,但对面也扛得住你那一波。
+//
+// 【为什么这两条曲线的形状不同】
+// Boss 每轮 +18% 血,是连续的;玩家的傳承是**台阶**(第 1 轮护甲、第 2 轮多抽、
+// 第 3 轮主公技减费)。连续对连续会变成纯数值追赶,谁都感觉不到变化;
+// 台阶让每一轮开局时有一件**具体的新东西**,那才是「这一轮不一样」。
+//
+// 【为什么不影响 sim-campaign】
+// cycle 恒为 0 时两条曲线都退化成恒等式 —— 首轮的难度曲线一个数都没动,
+// 闸门测的还是原来那 24 关。
+export const LEGACY_HP_PER_CYCLE = 0.18
+
+export function bossHpFor(baseHp: number, cycle: number): number {
+  if (cycle <= 0) return baseHp
+  return Math.round(baseHp * (1 + LEGACY_HP_PER_CYCLE * cycle))
+}
+
+// 玩家这一轮带着的傳承。台阶式:每一轮多一件具体的东西。
+export function legacyModifiers(cycle: number): RunModifiers | undefined {
+  if (cycle <= 0) return undefined
+  const mod: RunModifiers = {}
+  // 护甲随轮次线性涨,但封顶 —— 12 点护甲已经相当于多半条命,再多就不是「资本」
+  // 而是「免打」了。
+  mod.startArmor = Math.min(12, 3 * cycle)
+  if (cycle >= 2) mod.bonusHandSize = 1
+  if (cycle >= 3) mod.heroPowerCostDelta = -1
+  return mod
+}
+
+// 傳承轮次的名字。中文用「重」(第二重、第三重),英文用 New Game+ 那套约定。
+export function legacyName(cycle: number): LocalizedText {
+  if (cycle <= 0) return { zh: '初陣', en: 'First Run' }
+  const ZH = ['', '二', '三', '四', '五', '六', '七', '八', '九', '十']
+  return {
+    zh: `第${ZH[cycle] ?? cycle}重`,
+    en: `New Game +${cycle}`,
+  }
+}
+
+// ============================================================
 // Boss 性格 —— 同一套 AI,不同的「什么叫局面好」。
 //
 // 关底战此前只有三个旋钮:血更厚、主公技更强、卡组更好。三样都是**数值**,

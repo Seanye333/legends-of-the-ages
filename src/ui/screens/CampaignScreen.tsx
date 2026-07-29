@@ -7,6 +7,10 @@ import {
   bossTrial,
   bossPersonality,
   bossField,
+  bossHpFor,
+  LEGACY_HP_PER_CYCLE,
+  legacyModifiers,
+  legacyName,
   CHAPTER_TITLES,
   type BossDef,
   type TrialDef,
@@ -38,6 +42,9 @@ export function CampaignScreen({ onBack, onEnterMatch }: CampaignScreenProps) {
   const trialsCleared = useCampaign((s) => s.trialsCleared)
   const isUnlocked = useCampaign((s) => s.isUnlocked)
   const begin = useCampaign((s) => s.begin)
+  const cycle = useCampaign((s) => s.cycle ?? 0)
+  const canAscend = useCampaign((s) => s.canAscend)
+  const ascend = useCampaign((s) => s.ascend)
   const customDecks = useCollection((s) => s.customDecks)
   const [selected, setSelected] = useState<BossDef | null>(null)
   const [deckIndex, setDeckIndex] = useState(0)
@@ -61,9 +68,17 @@ export function CampaignScreen({ onBack, onEnterMatch }: CampaignScreenProps) {
       // 关底战的不对称全在这两行:Boss 血更厚、主公技更强。
       // 玩家侧保持自己主公的正常配置 —— 不对称只加在对手身上。
       heroPowersOverride: [myHero?.power, boss.power],
-      heroHpsOverride: [myHero?.hp ?? START_HP, boss.hp],
+      // 傳承轮次:Boss 血按轮次涨,玩家带一份开局资本(见 content/campaign 的 legacyModifiers)。
+      // cycle 为 0 时两条都退化成原样 —— 首轮一个数都没变。
+      heroHpsOverride: [myHero?.hp ?? START_HP, bossHpFor(boss.hp, cycle)],
       objective: trial?.objective,
-      modifiersOverride: trial ? [trial.playerModifiers, trial.bossModifiers] : undefined,
+      // 试炼自带修正,和傳承撞车时以试炼为准:试炼的胜负条件依赖它摆上场的目标单位,
+      // 换掉就直接没法判胜负了。傳承那点护甲让一让。
+      modifiersOverride: trial
+        ? [trial.playerModifiers, trial.bossModifiers]
+        : cycle > 0
+          ? [legacyModifiers(cycle), undefined]
+          : undefined,
       // 性格:同一个难度档,不同的「什么叫局面好」
       aiWeights: bossPersonality(boss.id),
       // 地利:有些仗的地形本身就是那一仗(赤壁在烧、漠北利骑)
@@ -86,6 +101,7 @@ export function CampaignScreen({ onBack, onEnterMatch }: CampaignScreenProps) {
         </button>
         <h2 className={styles.title}>{t('群雄逐鹿', 'Contenders')}</h2>
         <span className={styles.progress}>
+          {cycle > 0 && <span className={styles.cycleBadge}>{pickCompact(legacyName(cycle))}</span>}
           {cleared.length} / {BOSSES.length}
         </span>
       </header>
@@ -105,6 +121,31 @@ export function CampaignScreen({ onBack, onEnterMatch }: CampaignScreenProps) {
           </button>
         ))}
       </div>
+
+      {/* 傳承:24 关打完之后,冒险模式此前就彻底没了 —— 而那恰恰是玩家卡池最全、
+          最想再打一遍的时候。再启新局,关卡重置,但双方都变强了。
+          按钮只在真的全通之后才出现,不做成一个常驻的灰按钮:
+          没通关的人看见它只会疑惑,通了关的人看见它才是奖励。 */}
+      {canAscend() && (
+        <button
+          className={styles.ascendBtn}
+          onClick={() => {
+            playSfx('duel')
+            haptic('impact')
+            ascend()
+          }}
+        >
+          <span className={styles.ascendName}>
+            {t('傳承 · 再啟新局', 'Legacy — Begin Again')}
+          </span>
+          <span className={styles.ascendHint}>
+            {t(
+              `關卡重置,敵將血量 +${Math.round(LEGACY_HP_PER_CYCLE * 100)}%,你帶著開局資本上路`,
+              `Stages reset. Bosses gain ${Math.round(LEGACY_HP_PER_CYCLE * 100)}% HP; you start with capital in hand.`,
+            )}
+          </span>
+        </button>
+      )}
 
       <ol className={styles.road}>
         {BOSSES.map((b, i) => {

@@ -480,3 +480,72 @@
 :root[data-reduced-motion='true'] .next .stageBtn {
   animation: none;
 }
+
+
+/* ---- 傳承:再啟新局 ---- */
+/* 只在 24 关全通之后出现。做成整条横幅而不是一颗小按钮 ——
+   它是这一屏此刻唯一该被点的东西,而玩家刚打完最后一关,眼睛还在庆祝。 */
+.ascendBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 100%;
+  margin: 4px 0 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(240, 214, 138, 0.55);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(240, 214, 138, 0.2), rgba(0, 0, 0, 0) 70%),
+    linear-gradient(180deg, #2e2413, #1a1409);
+  color: var(--gold-bright);
+  cursor: pointer;
+  box-shadow: 0 0 22px -6px rgba(240, 214, 138, 0.7);
+  animation: ascendBreath 3s ease-in-out infinite;
+}
+
+.ascendName {
+  font-family: var(--font-display);
+  font-size: clamp(15px, 4vw, 19px);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-indent: 0.18em;
+}
+
+.ascendHint {
+  font-size: 11px;
+  color: var(--parchment-dim);
+  text-align: center;
+}
+
+@keyframes ascendBreath {
+  0%,
+  100% {
+    box-shadow: 0 0 22px -6px rgba(240, 214, 138, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 30px -4px rgba(240, 214, 138, 0.95);
+  }
+}
+
+:root[data-reduced-motion='true'] .ascendBtn {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ascendBtn {
+    animation: none;
+  }
+}
+
+/* 傳承轮次角标,压在进度数字前面 */
+.cycleBadge {
+  margin-right: 7px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(240, 214, 138, 0.5);
+  background: rgba(60, 46, 20, 0.7);
+  font-family: var(--font-display);
+  font-size: 0.82em;
+  color: var(--gold-bright);
+}
