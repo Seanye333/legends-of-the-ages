@@ -1,5 +1,10 @@
 .token {
-  --tok: clamp(50px, 11.5vh, 88px);
+  /* 上限从 88px 抬到 112px。
+     这两个数原来都是照手机横屏定的:390px 高的屏上 11.5vh = 45px,取的是下限 50px,
+     上限根本用不到。而到了 1440×900 的桌面,88px 的单位散在一米宽的牌桌上 ——
+     「小」不是因为它们真的小,是因为**周围太空**。
+     clamp 的中项仍是 vh,所以手机与平板上一个像素都没变。 */
+  --tok: clamp(50px, 11.5vh, 112px);
   --doctrine: #8a8a8a;
   position: relative;
   width: var(--tok);

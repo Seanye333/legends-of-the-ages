@@ -508,7 +508,14 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
       className={`${styles.screen} ${anim.lethalFlash ? styles.slowmo : ''}`}
       onClick={() => setSelection(null)}
     >
-      {/* 顶部:敌方主帅 */}
+      {/* 战场的光。
+          底图(中国舆图)本来是**均匀打光**的,于是整屏没有明暗对比,
+          眼睛不知道该落在哪 —— 而牌桌上真正要看的东西全在正中那两排。
+          两层叠加:一层暗角把四周压下去,一层中心柔光把战场托起来。
+          纯 CSS、不拦点击、不参与布局。 */}
+      <div className={styles.vignette} aria-hidden="true" />
+
+      {/* 顶部:敌方主帅(居中) */}
       <div className={styles.top}>
         <HeroPlate
           ps={foe}
@@ -521,6 +528,8 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
             onEntityClick({ kind: 'hero', player: foeSeat })
           }}
         />
+        {/* 工具条绝对定位到右上角 —— 它**不能参与顶部这一行的布局**,
+            否则主帅会被按钮的宽度推离中轴(而按钮宽度随语言变)。 */}
         <div className={styles.topRight}>
           <button
             className={styles.plainBtn}
@@ -595,8 +604,9 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
         </div>
       </div>
 
-      {/* 底部:我方主帅 + 手牌 */}
+      {/* 底部:我方主帅(居中一行)+ 手牌(居中一行) */}
       <div className={styles.bottom}>
+        <div className={styles.heroRow}>
         <HeroPlate
           ps={me}
           targetable={activeTargets.has(`hero-${viewer}`)}
@@ -623,6 +633,11 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
             onEntityClick({ kind: 'hero', player: viewer })
           }}
         />
+        </div>
+        {/* 手牌单独占一行并整体居中。
+            从前主帅与手牌并排在同一行、一起 justify-content: center ——
+            于是主帅的宽度把手牌整体推到了偏右的位置,而**手牌是全屏唯一
+            持续操作的东西**,它偏出中轴的代价比主帅偏出去大得多。 */}
         <div className={styles.handArea}>
           <HandFan
             onInspectCard={(defId) => setInspect(CARDS_BY_ID[defId] ?? null)}

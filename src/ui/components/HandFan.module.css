@@ -1,7 +1,7 @@
 .fan {
   --n: 1;
   /* 与 CardFace 的 --card-w 同步定义,用于计算自适应叠压 */
-  --card-w: clamp(58px, 13vh, 100px);
+  --card-w: clamp(58px, 13vh, 124px);
   container-type: inline-size;
   width: 100%;
   display: flex;
@@ -11,7 +11,11 @@
   min-height: clamp(84px, 19vh, 150px);
 }
 
-/* 牌多时自动加大叠压,始终收进屏幕(90px 余量吸收扇形旋转的横向外摆) */
+/* 牌多时自动加大叠压,始终收进屏幕(90px 余量吸收扇形旋转的横向外摆)。
+   上界从 -6px 改成 +3px:**手牌少的时候要能真的分开**。
+   原来的上界是负的,意味着无论多空都至少叠 6px —— 卡面放大到 124px 之后,
+   那 6px 正好压在名字铭牌上,于是「明光鎧」显示成「明光」、「火計」显示成「火」。
+   叠压本身是对的(牌多时必须叠),错的是把它写成了下限。 */
 .slot {
   transform: rotate(var(--rot)) translateY(var(--sink));
   transform-origin: 50% 120%;
@@ -22,7 +26,7 @@
     clamp(
       calc(var(--card-w) * -0.42),
       calc((100cqw - 90px - var(--n) * var(--card-w)) / (var(--n) * 2)),
-      -6px
+      3px
     );
 }
 

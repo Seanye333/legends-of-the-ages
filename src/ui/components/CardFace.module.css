@@ -1,5 +1,5 @@
 .face {
-  --card-w: clamp(58px, 13vh, 100px);
+  --card-w: clamp(58px, 13vh, 124px);
   --doctrine: #8a8a8a;
   position: relative;
   width: var(--card-w);

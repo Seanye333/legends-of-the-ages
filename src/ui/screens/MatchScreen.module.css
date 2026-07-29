@@ -31,92 +31,152 @@
   touch-action: manipulation;
 }
 
+/* 顶部一行:敌方主帅**居中**。
+   从前是 space-between —— 主帅贴左、按钮贴右,整屏的视觉重心压在左侧,
+   而正中间是空的。牌桌游戏的眼睛落点必须在中轴上。 */
 .top {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
+  justify-content: center;
   padding: clamp(4px, 1vh, 10px) clamp(8px, 2vw, 24px) 0;
   gap: 10px;
 }
 
+/* 工具条绝对定位:按钮宽度随语言变(「认输」vs「Concede」),
+   参与布局的话主帅的居中位置会跟着语言漂。 */
 .topRight {
+  position: absolute;
+  top: clamp(4px, 1vh, 10px);
+  right: clamp(8px, 2vw, 24px);
   display: flex;
   gap: 8px;
   align-items: center;
+  z-index: 5;
 }
 
+/* 战场收进一个居中的最大宽度。
+   1440px 宽的桌面上两排原本铺满整行,七个单位散在一米开外 ——
+   牌桌应该是**一张桌子**,不是一条跑道。1100px ≈ 七张单位卡加间距。 */
 .battlefield {
+  position: relative;
+  z-index: 2;
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: clamp(4px, 1.2vh, 14px);
-  padding: 0 clamp(48px, 10vw, 140px);
+  width: min(100%, 1100px);
+  margin: 0 auto;
+  padding: 0 clamp(16px, 4vw, 48px);
 }
 
-/* 战阵行:压暗的材质长案 */
+/* 战阵行:**不画容器**。
+   原来是两条 999px 圆角的淡胶囊,单位站上去像悬空;
+   试过改成有边框的「地面盒子」,结果空场时是两个巨大的空箱子 —— 更糟。
+   问题的根子在于:凡是画了边界的东西,空的时候都读作「待填的表单」。
+
+   炉石的牌桌上没有「行容器」:地面就是背景美术本身。这里照做 ——
+   底图那张舆图本来就是战场。只留一样**有单位时才出现**的东西:
+   一条贴着底部的柔和落地影。空场时它不存在,于是空场就是干净的地图。
+
+   min-height 保留是为了布局稳定:第一个单位上场时两排不能把手牌顶下去。 */
 .row {
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
   gap: clamp(6px, 1.2vw, 16px);
   min-height: clamp(58px, 13vh, 100px);
   padding: clamp(3px, 0.8vh, 8px) clamp(8px, 2vw, 20px);
-  border-radius: 999px;
-  background:
-    radial-gradient(ellipse 70% 100% at 50% 50%, rgba(58, 44, 22, 0.30), rgba(14, 10, 5, 0.38) 100%);
-  box-shadow:
-    inset 0 0 0 1px rgba(212, 168, 74, 0.14),
-    inset 0 3px 12px rgba(0, 0, 0, 0.45);
+  /* 宽度**跟着单位数量走**,不铺满容器。
+     铺满的话落地影就是一条横贯全屏的暗带,而场上只有两个单位 ——
+     影子必须贴着实际站着的那几个,否则它说的是「这里有一排东西」,而那是假的。 */
+  width: fit-content;
+  margin: 0 auto;
 }
 
-/* 楚河汉界:饰线 + 中央菱钮 */
+/* 落地影。椭圆、边缘全透明 —— 给的是「有东西压在这儿」的暗示,不是一个框。
+   `:not(:empty)` 保证空场时一笔都不画。 */
+.row:not(:empty)::before {
+  content: '';
+  position: absolute;
+  /* 向外多探一点(-4%),让影子的柔边超出单位一圈 —— 影子边缘和物体边缘对齐
+     会显得像贴纸;探出去才像光从上方打下来。 */
+  left: -4%;
+  right: -4%;
+  bottom: 2px;
+  height: 24px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse 50% 100% at 50% 50%, rgba(0, 0, 0, 0.58), transparent 72%);
+  pointer-events: none;
+}
+
+/* 楚河汉界:饰线 + 中央菱钮。
+   两排不再有容器之后,这条线成了牌桌上**唯一的结构线** ——
+   它同时说明「哪边是你的」和「这一格是要跨过去的」,所以份量要压得住:
+   比原来加粗一点、中段更亮、菱钮更大。 */
 .divider {
   position: relative;
-  height: 9px;
-  margin: 0 clamp(10px, 4vw, 60px);
+  height: 14px;
+  /* 宽度收到 760px 以内并居中。
+     铺满 1100px 的容器时它是一条近一米长的细线,读起来像分割线而不是战线 ——
+     而单位实际总是聚在中间。760px ≈ 七张单位卡的实际占位,线正好托住牌桌。 */
+  width: min(100%, 760px);
+  margin: 0 auto;
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(212, 168, 74, 0.4) 18%,
-    rgba(212, 168, 74, 0.4) 82%,
+    rgba(212, 168, 74, 0.48) 14%,
+    rgba(232, 200, 120, 0.62) 50%,
+    rgba(212, 168, 74, 0.48) 86%,
     transparent
   );
-  -webkit-mask: linear-gradient(180deg, transparent 44%, #000 44% 56%, transparent 56%);
-  mask: linear-gradient(180deg, transparent 44%, #000 44% 56%, transparent 56%);
+  -webkit-mask: linear-gradient(180deg, transparent 46%, #000 46% 54%, transparent 54%);
+  mask: linear-gradient(180deg, transparent 46%, #000 46% 54%, transparent 54%);
 }
 
+/* 中轴的锚点。对称的布局需要一个看得见的中心,否则「对称」只停留在排版上。 */
 .divider::after {
   content: '';
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 7px;
-  height: 7px;
+  width: 10px;
+  height: 10px;
   transform: translate(-50%, -50%) rotate(45deg);
-  background: #d4a84a;
-  box-shadow: 0 0 8px rgba(232, 200, 120, 0.8);
+  background: linear-gradient(135deg, #f7e1a8, #b8863b);
+  box-shadow: 0 0 10px rgba(232, 200, 120, 0.75);
 }
 
+/* 底部拆成两行:主帅一行、手牌一行,各自独立居中。
+   从前两者并排在同一 flex 行里一起居中 —— 于是主帅的宽度把手牌整体推到偏右,
+   而**手牌是全屏唯一持续操作的东西**,它偏出中轴的代价比主帅大得多。 */
 .bottom {
+  position: relative;
+  z-index: 2;
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
   padding: 0 clamp(8px, 2vw, 24px) clamp(2px, 0.8vh, 8px);
-  column-gap: 10px;
-  row-gap: 4px;
+  row-gap: clamp(2px, 0.6vh, 8px);
 }
 
-/* 宽屏:牌位与手牌同行;窄屏(手机竖屏)自动换行,牌位居中于手牌上方 */
-.bottom > :first-child {
-  margin-bottom: clamp(4px, 1vh, 14px);
+.heroRow {
+  display: flex;
+  justify-content: center;
+  margin-bottom: clamp(2px, 0.6vh, 8px);
 }
 
+/* 必须显式给宽度。
+   `.bottom` 从 row 改成 column 之后,`flex: 1` 不再作用于**宽度**(主轴变成了纵向),
+   于是 .handArea 缩成内容宽 —— 而 HandFan 的自适应叠压是拿容器宽度
+   (100cqw)算的,容器一窄,公式立刻取到最大叠压 −0.42×卡宽,
+   表现为「手牌永远挤成一堆、名字被切掉」。查了半天才发现是 flex 主轴换向的连带后果。 */
 .handArea {
-  flex: 1;
-  min-width: min(100%, 340px);
+  width: 100%;
   display: flex;
   justify-content: center;
 }
@@ -705,11 +765,12 @@
 }
 
 /* ---- 斩杀谜题:对局中工具条 + 提示/解法面板 ---- */
+/* 靠左上角,不再是正上方中央 —— 中轴那个位置现在归敌方主帅(会撞上)。
+   放左边而不是右边:右上角已经有音/墓地/认输/战报四个按钮。 */
 .puzzleBar {
   position: absolute;
   top: 8px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: clamp(8px, 2vw, 24px);
   z-index: 30;
   display: flex;
   gap: 8px;
@@ -954,4 +1015,24 @@
 
 :root[data-reduced-motion='true'] .slowmo {
   animation: none;
+}
+
+/* ---- 战场的光 ----
+   底图(中国舆图)是均匀打光的,于是整屏没有明暗对比,眼睛不知道该落在哪 ——
+   而牌桌上真正要看的东西全在正中那两排。
+   两层叠加:暗角把四周压下去,中心柔光把牌桌托起来。
+   z-index 1,压在战场/主帅/手牌之下;不拦点击、不参与布局。 */
+.vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 44% at 50% 50%, rgba(255, 232, 176, 0.13), transparent 70%),
+    radial-gradient(
+      ellipse 92% 76% at 50% 50%,
+      transparent 38%,
+      rgba(6, 4, 2, 0.52) 80%,
+      rgba(4, 3, 1, 0.8) 100%
+    );
 }
