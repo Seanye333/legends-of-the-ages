@@ -256,6 +256,29 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
           ))}
         </div>
 
+        {/* 书法卡面。2,375 张卡里只有签名卡有真立绘,其余本来就是拓印 ——
+            混排时那种参差在图鉴里最明显。整站统一成拓印之后它是一套自洽的画风,
+            顺带一张图都不下(那层兜底早就写好了,一直只被当成占位在用)。 */}
+        <div className={styles.chipRow}>
+          {(
+            [
+              ['art', { zh: '立繪', en: 'Illustrated' }],
+              ['ink', { zh: '書法拓印', en: 'Ink Rubbing' }],
+            ] as const
+          ).map(([k, label]) => (
+            <button
+              key={k}
+              className={s.portraitStyle === k ? styles.chipActive : styles.chip}
+              onClick={() => {
+                playSfx('buttonTap')
+                s.setPortraitStyle(k)
+              }}
+            >
+              {pick(label)}
+            </button>
+          ))}
+        </div>
+
         {/* 界面缩放。**不是只改字号** —— 全站字号写的都是 clamp(px, vh, px),
             一个 rem 都没有,改根字号对它们完全没有作用(见 main.tsx 那段)。
             走 zoom 缩放整个界面,于是按钮的点击区也跟着变大 ——

@@ -35,6 +35,15 @@ interface SettingsState {
   // 默认 'trad'(即原样):卡池本来就是繁體,默认改字形等于给所有老玩家
   // 换了一次界面,而且端到端用例里那些按繁體文字找元素的断言会全红。
   zhVariant: 'trad' | 'simp'
+  // 卡面画风。'art' = 立绘;'ink' = **书法拓印**:不加载任何图片,
+  // 全部走那层本来只作兜底的拓印风(主义色晕染 + 印环 + 姓氏书法大字)。
+  // 它不只是「省流量」—— 2,375 张卡里只有签名卡有真立绘,其余本来就是拓印,
+  // 混排时那种参差感在图鉴里最明显。全站统一成拓印之后,它是一套自洽的画风。
+  portraitStyle: 'art' | 'ink'
+  // 觀星:今夜的天象是否真的作用到对局上(标题页的天象**始终**显示,
+  // 这个开关只管修正)。默认开 —— 天象双方同吃、量级压在「开局多两点护甲」,
+  // 而且**调过曲线的模式一律不吃**(见 matchStore.applyOmen)。
+  stargazing: boolean
   setLanguage: (lang: Language) => void
   setSoundEnabled: (on: boolean) => void
   setVolume: (v: number) => void
@@ -46,6 +55,8 @@ interface SettingsState {
   setColorBlind: (on: boolean) => void
   setUiScale: (v: number) => void
   setZhVariant: (v: 'trad' | 'simp') => void
+  setPortraitStyle: (v: 'art' | 'ink') => void
+  setStargazing: (on: boolean) => void
 }
 
 export const useSettings = create<SettingsState>()(
@@ -62,6 +73,8 @@ export const useSettings = create<SettingsState>()(
       colorBlind: false,
       uiScale: 1,
       zhVariant: 'trad',
+      portraitStyle: 'art',
+      stargazing: true,
       setLanguage: (language) => set({ language }),
       setSoundEnabled: (soundEnabled) => set({ soundEnabled }),
       setVolume: (volume) => set({ volume: Math.max(0, Math.min(1, volume)) }),
@@ -74,6 +87,8 @@ export const useSettings = create<SettingsState>()(
       // 夹在 0.8~1.5:再小手指点不准,再大横屏牌桌会塞不下一手牌
       setUiScale: (uiScale) => set({ uiScale: Math.max(0.8, Math.min(1.5, uiScale)) }),
       setZhVariant: (zhVariant) => set({ zhVariant }),
+      setPortraitStyle: (portraitStyle) => set({ portraitStyle }),
+      setStargazing: (stargazing) => set({ stargazing }),
     }),
     { name: 'qiangu-settings' },
   ),
