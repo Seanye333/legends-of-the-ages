@@ -14,6 +14,8 @@
 //
 // 容量:模式计数是定长的(每个模式一个整数),崩溃只留最近 20 条。
 
+import type { LocalizedText } from '../engine/types'
+
 const MODE_KEY = 'qiangu-mode-counts'
 const CRASH_KEY = 'qiangu-crashes'
 const MAX_CRASHES = 20
@@ -72,6 +74,37 @@ export function countMode(mode: ModeKey): void {
 
 export function modeCounts(): Record<string, number> {
   return readJson<Record<string, number>>(MODE_KEY, {})
+}
+
+// 模式名。**书房那一屏此前直接把这些 key 显示给玩家** ——
+// 「玩得最多的模式」那一列写着 tower / expedition / arena / quiz。
+// 埋点的 key 是给开发看的,不是给人读的;这张表是它们唯一的对外出口。
+export const MODE_NAME: Record<ModeKey, LocalizedText> = {
+  quick: { zh: '随便打', en: 'Quick Match' },
+  online: { zh: '联机对战', en: 'Online' },
+  arena: { zh: '校场点将', en: 'Arena' },
+  campaign: { zh: '群雄逐鹿', en: 'Contenders' },
+  'campaign-trial': { zh: '关底试炼', en: 'Boss Trials' },
+  expedition: { zh: '远征', en: 'Expedition' },
+  brawl: { zh: '每周乱斗', en: 'Weekly Brawl' },
+  tower: { zh: '登楼', en: 'The Tower' },
+  history: { zh: '名局重现', en: 'Great Battles' },
+  lethal: { zh: '斩杀谜题', en: 'Lethal Puzzles' },
+  'daily-puzzle': { zh: '每日三题', en: 'Daily Three' },
+  practice: { zh: '演武场', en: 'Practice' },
+  tutorial: { zh: '教学', en: 'Tutorial' },
+  quiz: { zh: '稽古', en: 'Quiz' },
+  deckbuilder: { zh: '组建卡组', en: 'Deck Builder' },
+  collection: { zh: '名将图鉴', en: 'Gallery' },
+  codex: { zh: '兵法讲堂', en: 'Codex' },
+  lore: { zh: '名将列传', en: 'Chronicles' },
+  replays: { zh: '战报回放', en: 'Replays' },
+}
+
+// 认不出的 key(老存档里可能有已经改名的模式)回落成原文而不是空白 ——
+// 显示一个陌生的英文词,总好过显示一片空。
+export function modeName(key: string): LocalizedText {
+  return MODE_NAME[key as ModeKey] ?? { zh: key, en: key }
 }
 
 export function recordCrash(error: unknown, screen?: string): void {

@@ -702,7 +702,9 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
 
       <div className={styles.galleryHead} aria-hidden="true">
         <span className={styles.galleryHeadLine} />
-        <span className={styles.galleryHeadText}>{t('名将图鉴', 'Gallery of Legends')}</span>
+        <span className={styles.galleryHeadText}>
+          {t(`名将长廊 · ${gallery.length} 位`, `Gallery of Legends · ${gallery.length}`)}
+        </span>
         <span className={styles.galleryHeadLine} />
       </div>
 

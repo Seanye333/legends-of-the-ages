@@ -1,6 +1,13 @@
 .overlay {
   position: absolute;
   inset: 0;
+  /* 统一遮罩:全站 15 个覆盖层里模糊与不模糊此前各占一半 ——
+     同一个游戏里「弹出来的东西」应该是同一种东西。
+     模糊不只是好看:牌桌底下是一整张舆图加满场立绘,不虚化的话
+     覆盖层上的字要跟底下的图抢对比度。 */
+  backdrop-filter: var(--scrim-blur);
+  -webkit-backdrop-filter: var(--scrim-blur);
+
   z-index: 40;
   display: flex;
   flex-direction: column;

@@ -12,8 +12,26 @@
     linear-gradient(180deg, rgba(9, 7, 4, 0.9), rgba(7, 5, 3, 0.96)),
     url('/art/battlefield-bg.jpg') center 30% / cover no-repeat fixed,
     #0b0805;
+  /* 底部渐隐。
+     登楼那一屏只有五层,列表到 560px 就结束了,底下 370px 是**裸露的舆图** ——
+     从「一列卡片」到「一片地图」是一条硬边,读起来像页面没画完。
+     加一层从下往上的暗渐变,列表短的时候底图淡出去,长的时候看不见这层。
+     (冒险页列表够长,所以这个问题是在登楼页才暴露的 —— 两屏共用这份样式。) */
+  position: relative;
   -webkit-user-select: none;
   user-select: none;
+}
+
+.screen::after {
+  content: '';
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 34vh;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent, rgba(7, 5, 3, 0.92) 78%);
 }
 
 .head {

@@ -9,28 +9,16 @@
 }
 
 .head {
-  display: flex;
-  align-items: baseline;
-  gap: 14px;
+  composes: head from '../uiKit.module.css';
   width: min(94vw, 760px);
 }
 
 .backBtn {
-  border: 1px solid rgba(122, 100, 58, 0.6);
-  background: rgba(20, 16, 10, 0.72);
-  color: var(--parchment-dim);
-  border-radius: 6px;
-  padding: 6px 12px;
-  cursor: pointer;
-  font-size: 13px;
+  composes: backBtn from '../uiKit.module.css';
 }
 
 .title {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: clamp(20px, 5vw, 28px);
-  letter-spacing: 0.3em;
-  color: var(--gold-bright);
+  composes: title from '../uiKit.module.css';
 }
 
 .intro {

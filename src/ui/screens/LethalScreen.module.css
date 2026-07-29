@@ -9,36 +9,20 @@
 }
 
 .head {
-  display: flex;
-  align-items: baseline;
-  gap: 14px;
+  composes: head from '../uiKit.module.css';
   width: min(94vw, 860px);
 }
 
 .backBtn {
-  border: 1px solid rgba(122, 100, 58, 0.6);
-  background: rgba(20, 16, 10, 0.72);
-  color: var(--parchment-dim);
-  border-radius: 6px;
-  padding: 6px 12px;
-  cursor: pointer;
-  font-size: 13px;
+  composes: backBtn from '../uiKit.module.css';
 }
 
 .title {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: clamp(20px, 5vw, 28px);
-  letter-spacing: 0.3em;
-  color: var(--gold-bright);
+  composes: title from '../uiKit.module.css';
 }
 
 .progress {
-  margin-left: auto;
-  font-family: var(--font-display);
-  font-size: 14px;
-  letter-spacing: 0.14em;
-  color: var(--parchment-dim);
+  composes: headRight from '../uiKit.module.css';
 }
 
 .intro {
@@ -77,11 +61,14 @@
   filter: brightness(1.12);
 }
 
+/* 「每日三題」标签。
+   **不能是 absolute** —— 它原来是给单张每日卡设计的,骑在那张卡的上边框上
+   (absolute + top:-1px + translateY(-50%))。改成三题之后它被放进了
+   `.dailySetHead` 这个普通 flex 行,而那一行没有定位上下文,
+   于是它一路找到页面根元素,钉在整屏最顶上、还被视口切掉一半。
+   截图里那个「半个药丸」找了一会儿才认出来是它。 */
 .dailyBadge {
-  position: absolute;
-  top: -1px;
-  left: 18px;
-  transform: translateY(-50%);
+  flex: none;
   padding: 2px 12px;
   border-radius: 999px;
   border: 1px solid rgba(224, 176, 96, 0.8);

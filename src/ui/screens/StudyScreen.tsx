@@ -7,7 +7,7 @@ import { useTower } from '../../app/towerStore'
 import { useExpedition } from '../../app/expeditionStore'
 import { useBossRush } from '../../app/bossRushStore'
 import { useDeckStats, winRate } from '../../app/deckStatsStore'
-import { modeCounts } from '../../app/telemetry'
+import { modeCounts, modeName } from '../../app/telemetry'
 import { BOSSES } from '../../content/campaign'
 import { HISTORY_BATTLES } from '../../content/historyBattles'
 import { eraProgress } from '../../content/collectionGoals'
@@ -259,7 +259,7 @@ export function StudyScreen({ onBack }: Props) {
             {Object.entries(counts)
               .sort((a, b) => b[1] - a[1])
               .slice(0, 5)
-              .map(([k, n]) => row(k, `${n}`))}
+              .map(([k, n]) => row(pick(modeName(k)), `${n}`))}
           </>
         )}
       </section>

@@ -5,8 +5,47 @@ import { LESSONS_BY_ID } from './lessons'
 import { LETHAL_PUZZLES_BY_ID } from './lethalPuzzles'
 import { DAILY_POOL, type GeneratedPuzzle } from './dailyPuzzles'
 import { HEROES_BY_ID } from './overrides/heroes'
+import { CARDS_BY_ID } from './cards'
+import type { LocalizedText } from '../engine/types'
 
-// 生成题 → LethalPuzzle:标题取我方主公名,提示/情境走通用文案(挖出来的题没有人写的旁白)
+// 把残局读成一句话。三个数字里挑**最扎眼的那一个**说 ——
+// 一句话里塞满「你 3 张手牌、5 费、对面 2 个守护、你 1 个单位」谁也不会读。
+function describePosition(g: GeneratedPuzzle): LocalizedText {
+  const me = g.scenario.players[g.scenario.activePlayer]
+  const foe = g.scenario.players[g.scenario.activePlayer === 0 ? 1 : 0]
+  const foeHp = foe.heroHp + (foe.armor ?? 0)
+  const guards = foe.board.filter((u) => CARDS_BY_ID[u.defId]?.keywords.includes('guard')).length
+  if (guards >= 2) {
+    return {
+      zh: `對面两道守护墙,敌主帅还剩 ${foeHp} —— 先拆墙,还是绕过去?`,
+      en: `Two Guards in the way and ${foeHp} left on the enemy hero — break through, or go around?`,
+    }
+  }
+  if (guards === 1) {
+    return {
+      zh: `一堵守护挡在前面,敌主帅剩 ${foeHp}。`,
+      en: `One Guard stands between you and ${foeHp} health.`,
+    }
+  }
+  if (me.board.length === 0) {
+    return {
+      zh: `你场上空无一人,手里 ${me.hand.length} 张、${me.mana} 费 —— 全在这一手里。`,
+      en: `An empty board, ${me.hand.length} cards and ${me.mana} mana — it is all in your hand.`,
+    }
+  }
+  if (me.hand.length >= 6) {
+    return {
+      zh: `手里 ${me.hand.length} 张牌只有 ${me.mana} 费,敌主帅剩 ${foeHp} —— 挑得出那几张吗?`,
+      en: `${me.hand.length} cards, ${me.mana} mana, ${foeHp} on the enemy hero — which ones?`,
+    }
+  }
+  return {
+    zh: `你场上 ${me.board.length} 员、手里 ${me.hand.length} 张,敌主帅剩 ${foeHp}。`,
+    en: `${me.board.length} on the field, ${me.hand.length} in hand, ${foeHp} on the enemy hero.`,
+  }
+}
+
+// 生成题 → LethalPuzzle:标题取我方主公名,提示走通用文案(挖出来的题没有人写的旁白)
 export function toLethalPuzzle(g: GeneratedPuzzle): LethalPuzzle {
   const hero = HEROES_BY_ID[g.heroes[0]]
   const heroZh = hero?.name.zh ?? g.heroes[0]
@@ -14,10 +53,13 @@ export function toLethalPuzzle(g: GeneratedPuzzle): LethalPuzzle {
   return {
     id: g.id,
     title: { zh: `${heroZh} · 杀机`, en: `${heroEn}'s Opening` },
-    situation: {
-      zh: '取自真实对局的残局 —— 这一回合就能了结。',
-      en: 'A position lifted from a real game — it ends this turn.',
-    },
+    // 局面**从残局本身读出来**,而不是所有挖矿题共用一句。
+    //
+    // 每日三题上线后三条描述一字不差(「取自真实对局的残局 —— 这一回合就能了结」),
+    // 连着三条看着像 bug,而且它什么都没告诉玩家:三道题的难点根本不一样,
+    // 有的是「对面站着一堵墙」,有的是「你手里七张牌但只有四费」。
+    // 这几个数字残局里现成就有,不读白不读。
+    situation: describePosition(g),
     hint: {
       zh: '一回合之内存在必杀线,出牌、主公技、攻击次序都要算到。',
       en: 'A lethal exists this turn — weigh cards, hero power, and attack order.',
