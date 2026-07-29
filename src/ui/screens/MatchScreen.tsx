@@ -34,6 +34,7 @@ import { TutorialCoach } from '../components/TutorialCoach'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { TurnRope } from '../components/TurnRope'
 import { BossVoice } from '../components/BossVoice'
+import { TargetArrow } from '../components/TargetArrow'
 import { GraveyardPanel } from '../components/GraveyardPanel'
 import { EmoteWheel } from '../components/EmoteWheel'
 import type { CardDef } from '../../engine/types'
@@ -602,6 +603,30 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
             />
           ))}
         </div>
+
+        {/* 选目标提示条。**必须挂在战场里**,不能挂在 .screen 上 ——
+            挂在 .screen 上时它是按 `bottom: 26vh` 定位的,而中轴改版把我方主帅
+            移到了那个高度,于是提示条正好盖住法力水晶。
+            放进战场并贴着它的下沿,无论主帅面板多高都不会撞上。 */}
+        {selection && targeting && (
+          <div className={styles.targetBar} onClick={(e) => e.stopPropagation()}>
+            <span className={styles.targetHint}>
+              {selection.kind === 'attacker'
+                ? t('选择攻击目标', 'Choose attack target')
+                : selection.kind === 'heroPower'
+                  ? t('主公技:选择目标', 'Hero Power — choose a target')
+                  : t('选择目标', 'Choose a target')}
+            </span>
+            {directPlay && (
+              <button className={styles.goldBtn} onClick={() => sendAndClear(directPlay)}>
+                {t('直接上场', 'Play without target')}
+              </button>
+            )}
+            <button className={styles.plainBtn} onClick={() => setSelection(null)}>
+              {t('取消', 'Cancel')}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 底部:我方主帅(居中一行)+ 手牌(居中一行) */}
@@ -681,27 +706,6 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
           {t('结束回合', 'End Turn')}
         </button>
       </div>
-
-      {/* 选目标提示条 */}
-      {selection && targeting && (
-        <div className={styles.targetBar} onClick={(e) => e.stopPropagation()}>
-          <span className={styles.targetHint}>
-            {selection.kind === 'attacker'
-              ? t('选择攻击目标', 'Choose attack target')
-              : selection.kind === 'heroPower'
-                ? t('主公技:选择目标', 'Hero Power — choose a target')
-                : t('选择目标', 'Choose a target')}
-          </span>
-          {directPlay && (
-            <button className={styles.goldBtn} onClick={() => sendAndClear(directPlay)}>
-              {t('直接上场', 'Play without target')}
-            </button>
-          )}
-          <button className={styles.plainBtn} onClick={() => setSelection(null)}>
-            {t('取消', 'Cancel')}
-          </button>
-        </div>
-      )}
 
       {/* 对方回合遮罩(本地 AI 即时,一般一闪而过) */}
       {state.phase === 'main' && state.activePlayer === 1 && (
@@ -978,6 +982,19 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
           </div>
         </div>
       )}
+
+      {/* 指向箭:选中攻击者 / 主公技待指定目标时,从来源拉一条弧线到指针。
+          手牌待选目标时不画 —— 那时来源是手上的一张牌,它自己已经飞起来高亮了,
+          再拉一条线反而和「拖拽出牌」的语汇冲突。 */}
+      <TargetArrow
+        fromKey={
+          selection?.kind === 'attacker'
+            ? `gen-${selection.iid}`
+            : selection?.kind === 'heroPower'
+              ? `hero-${viewer}`
+              : null
+        }
+      />
 
       {/* 「这张牌为什么打不出」——点了灰牌之后的即时回答,2.6 秒后自己消失。
           位置放在手牌正上方:视线刚从被点的那张牌抬起来就看得到。 */}

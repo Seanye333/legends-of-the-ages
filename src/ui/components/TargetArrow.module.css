@@ -1,0 +1,47 @@
+/* 指向箭的覆盖层。
+   z-index 要在战场之上、覆盖层(结算/调度/发现)之下 ——
+   那些覆盖层出现时选择状态已经被清掉了,但保险起见留在 55。
+   pointer-events: none 至关重要:箭正好横在玩家要点的目标上方。 */
+.layer {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  pointer-events: none;
+  overflow: visible;
+}
+
+/* 暗描边:保证在亮天空、金色帅案、白色闪光上都看得清。
+   先画粗的暗线再叠细的亮线,是描边最省的做法(不用 filter,也不用两个图层)。 */
+.stroke {
+  fill: none;
+  stroke: rgba(10, 7, 3, 0.85);
+  stroke-width: 9;
+  stroke-linecap: round;
+}
+
+.line {
+  fill: none;
+  stroke: #f0cf7e;
+  stroke-width: 4;
+  stroke-linecap: round;
+  /* 虚线 + 位移动画:线本身在**流动**,方向感比静态线强得多。
+     只动 stroke-dashoffset,不触发布局也不触发重绘之外的开销。 */
+  stroke-dasharray: 14 10;
+  animation: arrowFlow 0.55s linear infinite;
+}
+
+@keyframes arrowFlow {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+.head {
+  fill: #f7e1a8;
+  stroke: rgba(10, 7, 3, 0.85);
+  stroke-width: 2;
+}
+
+:root[data-reduced-motion='true'] .line {
+  animation: none;
+}

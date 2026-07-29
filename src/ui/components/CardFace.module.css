@@ -2,7 +2,18 @@
   --card-w: clamp(58px, 13vh, 124px);
   --doctrine: #8a8a8a;
   position: relative;
+  /* **绝不超出所在的格子。**
+     卡面在三处被放进网格里(图鉴 minmax(108px)、构筑器卡池 minmax(96px)、
+     卡组预览),而 --card-w 是按屏幕高度算的 —— 上一轮把上限从 100px 抬到 124px
+     之后,124px 的卡被塞进 96px 的格子里,于是相邻两张互相压住,
+     攻血宝石正好盖在名字上。现象看着像「卡面自己坏了」,其实是溢出格子。
+     写成 `width: var(--card-w)` + `max-width: 100%`,**不能**写成 `width: min(…, 100%)`:
+     图鉴里卡面的父容器是 `.cardWrap { width: fit-content }` ——
+     父宽取决于子宽,而 min() 里的 100% 又取决于父宽,于是形成循环依赖,
+     浏览器把它解成最小内容宽,卡面直接塌成 4px×6px(端到端用例抓到的:
+     「元素存在但 hidden」)。max-width 的百分比在收缩容器里有明确的解析规则,不成环。 */
   width: var(--card-w);
+  max-width: 100%;
   aspect-ratio: 5 / 7;
   container-type: inline-size;
   border: 2px solid color-mix(in srgb, var(--doctrine) 72%, #3a2f1a);

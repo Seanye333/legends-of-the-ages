@@ -304,10 +304,12 @@
     0 0 8px 2px rgba(212, 168, 74, 0.3);
 }
 
+/* 贴着战场的下沿(它现在是 .battlefield 的子元素)。
+   原来按 `bottom: 26vh` 挂在整屏上,中轴改版把主帅移到了那个高度 —— 正好盖住法力水晶。 */
 .targetBar {
   position: absolute;
   left: 50%;
-  bottom: clamp(140px, 26vh, 210px);
+  bottom: -4px;
   transform: translateX(-50%);
   z-index: 18;
   display: flex;
@@ -436,26 +438,39 @@
 
 /* —— 战斗动效层 —— */
 
-/* 阵亡残影:原位放大消散 */
+/* 阵亡残影:**倒下去**,不是升上去。
+   原来是 scale(1→1.28) + translateY(-8px) —— 放大并向上飘,
+   那是「消散/升天」的语汇,像灵魂离体。而这是一款战争游戏:
+   一员大将阵亡该是**倒下**,重量往下走。
+
+   改成:先被击中的一顿(scale 1.06)→ 侧倾着往下沉 → 变暗、缩小、透明。
+   grayscale 提到 0.9 并压暗,让它在沉下去的过程中「退色」,
+   而不是保持原样只变透明 —— 后者读起来像图层被关掉。 */
 .ghost {
   position: fixed;
   z-index: 40;
   pointer-events: none;
   border-radius: 50%;
   overflow: hidden;
-  animation: ghostOut 0.55s ease-out both;
-  filter: grayscale(0.7);
+  animation: ghostOut 0.6s cubic-bezier(0.45, 0, 0.7, 1) both;
   box-shadow: 0 0 24px rgba(0, 0, 0, 0.6);
 }
 
 @keyframes ghostOut {
   0% {
     opacity: 0.95;
-    transform: scale(1);
+    transform: scale(1) rotate(0deg);
+    filter: grayscale(0.35) brightness(1);
+  }
+  18% {
+    opacity: 1;
+    transform: scale(1.06) rotate(-3deg);
+    filter: grayscale(0.5) brightness(1.25);
   }
   100% {
     opacity: 0;
-    transform: scale(1.28) translateY(-8px);
+    transform: scale(0.82) rotate(-16deg) translateY(26px);
+    filter: grayscale(0.95) brightness(0.45);
   }
 }
 
