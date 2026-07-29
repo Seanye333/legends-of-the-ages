@@ -1,0 +1,102 @@
+.panel {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid rgba(120, 150, 200, 0.32);
+  background: linear-gradient(180deg, rgba(20, 24, 38, 0.82), rgba(10, 12, 20, 0.82));
+  overflow: hidden;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 星本身要会眨:天象是这一屏唯一「活的」东西,
+   而一颗不动的星在深色底上会被读成一个图标。 */
+.star {
+  flex: none;
+  font-size: 13px;
+  color: #a8c0f0;
+  text-shadow: 0 0 8px rgba(140, 180, 255, 0.7);
+  animation: twinkle 3.6s ease-in-out infinite;
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.75;
+  }
+  45% {
+    opacity: 1;
+    text-shadow: 0 0 14px rgba(160, 200, 255, 0.95);
+  }
+}
+
+.name {
+  flex: 1;
+  font-family: var(--font-display);
+  font-size: clamp(13px, 3.4vw, 15px);
+  letter-spacing: 0.12em;
+  color: #cddaf5;
+}
+
+.chevron {
+  flex: none;
+  font-size: 10px;
+  color: var(--parchment-faint);
+}
+
+.body {
+  padding: 0 12px 10px;
+}
+
+/* 占辞:史书口吻。缩进 + 楷体感 + 偏冷的墨色,和下面那句规则说明分开。 */
+.sign {
+  margin: 0 0 6px;
+  padding-left: 10px;
+  border-left: 2px solid rgba(120, 150, 200, 0.4);
+  font-family: var(--font-display);
+  font-size: 12px;
+  line-height: 1.75;
+  color: #9fb0cd;
+}
+
+.effect {
+  margin: 0 0 4px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--parchment-dim);
+}
+
+.off {
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: #d4a84a;
+}
+
+.note {
+  margin: 6px 0 0;
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--parchment-faint);
+  opacity: 0.85;
+}
+
+:root[data-reduced-motion='true'] .star {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .star {
+    animation: none;
+  }
+}

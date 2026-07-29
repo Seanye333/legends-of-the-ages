@@ -868,3 +868,11 @@
     0 1px 2px rgba(12, 8, 3, 0.95),
     0 0 12px rgba(0, 0, 0, 0.7);
 }
+
+
+/* 觀星臺那一行。宽度跟着长廊走 —— 它们在视觉上是同一列。 */
+.starRow {
+  width: min(100%, 720px);
+  margin: 10px auto 2px;
+  padding: 0 12px;
+}

@@ -31,6 +31,7 @@ import { reportWin } from './leaderboard'
 import type { EmoteId } from './protocol'
 import { EMPTY_STATS, foldStats, type MatchStats } from './matchStats'
 import { useRecords } from './recordsStore'
+import { omenFor } from '../content/stargazing'
 
 // 本地日期。应用层允许非确定性(引擎那边一律不许碰 Date)。
 function todayKey(d = new Date()): string {
@@ -172,6 +173,33 @@ function settleQuests(events: GameEvent[], state: GameState | null): void {
   const heroId = state.players[0].heroId
   useQuests.getState().recordMatch(events, heroId)
   useAchievements.getState().recordMatch(events, heroId)
+}
+
+// 觀星:今夜的天象落到开局修正上。
+//
+// **只作用于没有调过曲线的模式**(随便打 / 热座 / 演武场 / 天梯)。
+// 冒险、远征、名局、爬塔、连斩、谜题的难度是逐关量出来的
+// (sim-campaign 那 24 格、远征的宝物台阶、谜题的唯一解),
+// 往里塞一份天象等于把那些数字全部作废 —— 而且天象是玩家选不了的,
+// 「今天不适合打第 16 关」不是趣味,是恶心人。
+//
+// 天象**双方同吃**(和战场环境同一个原则:天是天的事,不是谁的技能),
+// 所以它在对称的模式里不偏袒任何一方。
+// 已有修正(远征宝物等)按字段合并,天象只填**没被占用的**那几格 ——
+// 那些模式本来也进不了这个函数,这一层只是防御。
+function applyOmen(
+  args: StartMatchArgs,
+  base: [RunModifiers | undefined, RunModifiers | undefined] | undefined,
+): [RunModifiers | undefined, RunModifiers | undefined] | undefined {
+  const tuned =
+    args.campaign || args.expedition || args.history || args.tower || args.bossRush || args.puzzle
+  if (tuned) return base
+  if (!useSettings.getState().stargazing) return base
+  const omen = omenFor(todayKey())
+  const m = omen.modifiers
+  if (Object.keys(m).length === 0) return base
+  const merge = (b: RunModifiers | undefined): RunModifiers => ({ ...m, ...(b ?? {}) })
+  return [merge(base?.[0]), merge(base?.[1])]
 }
 
 // 個人紀錄:整局口径,和上面那批成就同一个时机。
@@ -356,7 +384,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
           (args.tutorial ? [undefined, undefined] : [heroDefs[0]?.power, heroDefs[1]?.power]),
         heroHps:
           args.heroHpsOverride ?? [heroDefs[0]?.hp ?? START_HP, heroDefs[1]?.hp ?? START_HP],
-        modifiers: args.modifiersOverride,
+        modifiers: applyOmen(args, args.modifiersOverride),
         // 斩杀谜题:给定则 createGame 按残局铺场(跳过发牌)
         scenario: args.scenario,
         // 名局特殊胜负目标(守成等)

@@ -16,6 +16,7 @@ import { launchMatch } from '../matchSetup'
 import { initSound, playSfx, startMusic, stopMusic } from '../sound'
 import { useCollection } from '../../app/collectionStore'
 import { InstallPrompt } from '../components/InstallPrompt'
+import { StarPanel } from '../components/StarPanel'
 import { useArena } from '../../app/arenaStore'
 import { useCampaign } from '../../app/campaignStore'
 import { BOSSES } from '../../content/campaign'
@@ -691,6 +692,12 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
             {pick(name)}
           </button>
         ))}
+      </div>
+
+      {/* 觀星臺:今夜的天象。放在图鉴长廊**之前** —— 那条长廊是「随便看看」,
+          而天象是「今天的情况」,该在往下逛之前先说。 */}
+      <div className={styles.starRow}>
+        <StarPanel />
       </div>
 
       <div className={styles.galleryHead} aria-hidden="true">
