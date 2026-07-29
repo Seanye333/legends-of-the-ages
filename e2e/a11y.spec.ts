@@ -30,3 +30,14 @@ test('字形切到简体之后,卡池文案跟着变', async ({ page }) => {
   const trad = await page.getByText('戰吼').count()
   expect(trad).toBe(0)
 })
+
+// 讲堂的规则说明里有 16 处 `**着重**`,此前星号原样露在界面上 ——
+// 写文案的人在源码里读它,那里星号是对的,所以谁都没发现。
+test('兵法讲堂不会把 markdown 星号原样显示出来', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: '兵法讲堂' }).click()
+  await expect(page.getByRole('heading', { name: /兵法讲堂|Codex/ })).toBeVisible()
+  expect(await page.getByText('**').count()).toBe(0)
+  // 着重号确实渲染出来了(而不是被删掉)
+  await expect(page.locator('strong').first()).toBeVisible()
+})

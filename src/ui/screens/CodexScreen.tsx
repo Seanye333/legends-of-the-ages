@@ -7,6 +7,7 @@ import { fakeInstance } from './CollectionScreen'
 import { usePickText, useT } from '../i18n'
 import { lessonForMechanic } from '../../content/lessons'
 import { playSfx } from '../sound'
+import { emphasize } from '../components/Emphasis'
 import styles from './CodexScreen.module.css'
 
 interface CodexScreenProps {
@@ -84,7 +85,10 @@ export function CodexScreen({ onBack, onStartLesson }: CodexScreenProps) {
                     }}
                   >
                     <span className={styles.term}>{pick(entry.term)}</span>
-                    <span className={styles.rule}>{pick(entry.rule)}</span>
+                    {/* 讲堂的说明文字里有 16 处 `**着重**`。它们是纯文本塞进
+                        <span> 的,星号此前原样露在界面上 —— 写文案的人在源码里
+                        读它,那里星号是对的,所以谁都没发现。 */}
+                    <span className={styles.rule}>{emphasize(pick(entry.rule))}</span>
                     {(entry.note || ex) && (
                       <span className={styles.chevron} aria-hidden="true">
                         {open ? '▾' : '▸'}
