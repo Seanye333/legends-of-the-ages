@@ -122,6 +122,14 @@ CI 在 `.github/workflows/ci.yml`:lint / 构建 / 单测 / e2e 一个 job,**平�
 - 图标源图 `assets/logo.svg`;改设计后跑 `node scripts/make-logo.mjs` 重出位图,再 `npx tauri icon assets/logo-1024.png`
 - 对战画面是**横屏**布局。Info.plist 允许竖屏,窄屏竖持时 `MatchScreen` 会盖一层「请横持设备」(纯 CSS 控制,不锁转向 —— 平板/桌面竖窗是合理的)
 - TestFlight:App Store Connect 建记录(bundle id `com.seanye.qiangulegends`)→ Xcode 设一次签名 Team → `npx tauri ios build --export-method app-store-connect`
+- **构建核实(2026-07)**:`npx tauri ios build --debug` 在 Xcode 26.6 / rustc 1.96 / tauri-cli 2.11.4 下
+  一路走到**代码签名**才停,报的是 `Signing for "app_iOS" requires a development team` ——
+  也就是说前端构建、资源目录、`aarch64-apple-ios` 的 Rust 编译全部通过,唯一缺的是 Apple 开发者团队(账号设置,不是代码问题)。
+  单独核实 Rust 侧:`cargo build --manifest-path src-tauri/Cargo.toml --target aarch64-apple-ios --release` 干净通过(1m17s,只有 vendor/wry 的 unsafe 警告)。
+  **不要试图用 `xcodebuild ... CODE_SIGNING_ALLOWED=NO` 绕过签名去验证**:
+  Xcode 工程里的「Build Rust Code」阶段会回调 `tauri ios xcode-script`,而它要连 tauri CLI 起的
+  WebSocket —— 脱离 `tauri ios build` 单独跑 xcodebuild 一定会 `ConnectionRefused` panic。
+  要单独验 Rust 就直接 cargo,别绕 Xcode。
 
 ## 联机
 
@@ -217,6 +225,10 @@ Logs/Tail 只能看 console 输出),按 `evt` 聚合:
 取图三层在 `src/ui/portraitSource.ts` 收口(**所有取立绘 URL 的地方都走 `portraitCandidates()`,不要再手拼路径**):随包 → `VITE_PORTRAIT_CDN`(可选)→ 拓印兜底。判断「本地有没有」读的是 `manifest.json`,所以不会对不存在的文件发请求。CDN 产物用 `npm run export-portraits` 生成(439MB,`portraits-cdn/` 已 gitignore),托管需开 CORS,否则卡面导出会污染 canvas。
 
 PWA(`vite-plugin-pwa`)只在 web 构建挂载:立绘 CacheFirst 运行时缓存,app shell precache,`.webp` 一律不进 precache。Tauri 构建靠 `TAURI_ENV_PLATFORM` 整体跳过插件 —— 自定义协议下 SW 注册无效。
+
+`art/*.jpg`(5 张、1.5MB)**必须进 precache**:它们是标题/牌桌/调度/结算四屏的底图,而底图没有兜底(立绘缺了还有拓印)。少了它们,离线打开的不是「少几张图的游戏」,是四块黑屏。这 1.5MB 发生在首屏之后(SW 装完才 precache),`npm run perf-budget` 量的首屏预算一个字节不受影响。
+
+`npm run build && npm run check-offline` 守着这一条:读 workbox 清单,逐条核对 HTML/脚本/样式/底图/图标都在里面。**离线坏掉的方式是局部的** —— app shell 还在,所以打得开、能开局,只是底图变黑;人手在有网机器上按 devtools 的 offline 是试不出来的(SW 那时早就缓存好了),真正会挂的是从没访问过那一屏的新玩家在地铁里打开。
 
 ## 构建期环境变量
 

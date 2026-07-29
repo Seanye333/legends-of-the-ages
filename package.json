@@ -26,7 +26,8 @@
     "perf-budget": "node --import tsx scripts/perf-budget.ts",
     "price-cards": "node --import tsx scripts/price-cards.ts",
     "lint-content": "node --import tsx scripts/lint-content.ts",
-    "replay-diff": "node --import tsx scripts/replay-diff.ts"
+    "replay-diff": "node --import tsx scripts/replay-diff.ts",
+    "check-offline": "node --import tsx scripts/check-offline.ts"
   },
   "dependencies": {
     "react": "^19.0.0",

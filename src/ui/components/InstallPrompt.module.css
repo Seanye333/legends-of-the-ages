@@ -1,0 +1,103 @@
+/* 安装横幅。
+   固定在底部而不是顶部:顶部是标题与导航的地方,而这是一条**可以无视**的建议。
+   底部安全区要读 —— iPhone 上不读的话它会压在 Home 条底下,关闭按钮点不到。 */
+.bar {
+  position: fixed;
+  left: max(10px, var(--safe-left));
+  right: max(10px, var(--safe-right));
+  bottom: calc(10px + var(--safe-bottom));
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(212, 168, 74, 0.5);
+  background: linear-gradient(180deg, rgba(36, 29, 17, 0.97), rgba(18, 14, 8, 0.97));
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.7);
+  animation: installIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes installIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.glyph {
+  flex: none;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--gold);
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--gold-bright);
+}
+
+.hint {
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--parchment-dim);
+}
+
+.go {
+  flex: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--gold-mid);
+  background: linear-gradient(180deg, #4a3a18, #2a2010);
+  color: var(--gold-bright);
+  font-family: var(--font-display);
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+
+.go:hover {
+  filter: brightness(1.18);
+}
+
+/* 关闭按钮做得小而淡,但**点击区不小于 32px** ——
+   视觉上不该抢戏,手指上必须够得着。 */
+.close {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--parchment-faint);
+  font-size: 15px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.close:hover {
+  color: var(--parchment);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar {
+    animation: none;
+  }
+}
+
+:root[data-reduced-motion='true'] .bar {
+  animation: none;
+}

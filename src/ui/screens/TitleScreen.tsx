@@ -15,6 +15,7 @@ import { portraitCandidates } from '../portraitSource'
 import { launchMatch } from '../matchSetup'
 import { initSound, playSfx, startMusic, stopMusic } from '../sound'
 import { useCollection } from '../../app/collectionStore'
+import { InstallPrompt } from '../components/InstallPrompt'
 import { useArena } from '../../app/arenaStore'
 import { useCampaign } from '../../app/campaignStore'
 import { BOSSES } from '../../content/campaign'
@@ -724,6 +725,10 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
           />
         )}
       </Suspense>
+
+      {/* 装到主屏。**打过至少一局才问** —— 第一次打开就被要求安装,答案基本
+          一定是「不」,而 beforeinstallprompt 一局只给一次机会,浪费掉就没了。 */}
+      <InstallPrompt ready={wins + losses >= 1} />
     </div>
   )
 }
