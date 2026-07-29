@@ -23,6 +23,18 @@ interface SettingsState {
   reducedMotion: boolean
   // 卡背:唯一一样**对手也看得见**的成就展示(见 content/cardBacks.ts)
   cardBack: string
+  // 色觉辅助:凡是**只靠颜色**传达的信息,补一层形状/文字。
+  // 主义符号(DOCTRINE_GLYPH)是一直开着的,这个开关管的是剩下那几处:
+  // 稀有度玉印(四种颜色、同一个形状)、场上单位的「可攻击 / 可被指定」两圈光。
+  colorBlind: boolean
+  // 界面缩放。**不是只改字号** —— 见 main.tsx 那段说明:全站字号几乎都写成
+  // clamp(px, vh, px),单改根字号对它们一点作用都没有。
+  uiScale: number
+  // 字形:卡池文案是繁體(从姊妹仓库导入),界面文案是手写的简体 ——
+  // 同一屏两种字形混排。这个开关把**卡池那一半**转成简体。
+  // 默认 'trad'(即原样):卡池本来就是繁體,默认改字形等于给所有老玩家
+  // 换了一次界面,而且端到端用例里那些按繁體文字找元素的断言会全红。
+  zhVariant: 'trad' | 'simp'
   setLanguage: (lang: Language) => void
   setSoundEnabled: (on: boolean) => void
   setVolume: (v: number) => void
@@ -31,6 +43,9 @@ interface SettingsState {
   setDifficulty: (d: Difficulty) => void
   setReducedMotion: (on: boolean) => void
   setCardBack: (id: string) => void
+  setColorBlind: (on: boolean) => void
+  setUiScale: (v: number) => void
+  setZhVariant: (v: 'trad' | 'simp') => void
 }
 
 export const useSettings = create<SettingsState>()(
@@ -44,6 +59,9 @@ export const useSettings = create<SettingsState>()(
       difficulty: 'veteran',
       reducedMotion: false,
       cardBack: 'back-default',
+      colorBlind: false,
+      uiScale: 1,
+      zhVariant: 'trad',
       setLanguage: (language) => set({ language }),
       setSoundEnabled: (soundEnabled) => set({ soundEnabled }),
       setVolume: (volume) => set({ volume: Math.max(0, Math.min(1, volume)) }),
@@ -52,6 +70,10 @@ export const useSettings = create<SettingsState>()(
       setDifficulty: (difficulty) => set({ difficulty }),
       setReducedMotion: (reducedMotion) => set({ reducedMotion }),
       setCardBack: (cardBack) => set({ cardBack }),
+      setColorBlind: (colorBlind) => set({ colorBlind }),
+      // 夹在 0.8~1.5:再小手指点不准,再大横屏牌桌会塞不下一手牌
+      setUiScale: (uiScale) => set({ uiScale: Math.max(0.8, Math.min(1.5, uiScale)) }),
+      setZhVariant: (zhVariant) => set({ zhVariant }),
     }),
     { name: 'qiangu-settings' },
   ),

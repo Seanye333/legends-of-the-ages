@@ -289,8 +289,11 @@ test('settings: music can be turned off independently of sfx', async ({ page }) 
   await expect(page.getByText('背景音乐')).toBeVisible()
   await expect(page.getByText(/音乐音量/)).toBeVisible()
   await expect(page.getByText(/音效音量/)).toBeVisible()
-  // 音乐与音效是两个独立开关
-  await expect(page.getByRole('slider')).toHaveCount(2)
+  // 音乐与音效是两个独立开关。
+  // **按「音效」那一节来数,不要数整页** —— 原来写的是整页 slider 数量 = 2,
+  // 于是设置页每加一个滑块(界面缩放)这条就红,而它跟音频毫无关系。
+  const audio = page.locator('section').filter({ has: page.getByRole('heading', { name: '音效' }) })
+  await expect(audio.getByRole('slider')).toHaveCount(2)
 })
 
 test('collection: dynasty / mechanic filters, sorting, and infinite scroll', async ({ page }) => {

@@ -210,6 +210,73 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
             onChange={(e) => s.setReducedMotion(e.target.checked)}
           />
         </label>
+
+        {/* 色觉辅助。主义符号是**一直开着**的(六个主义只靠颜色的问题上一轮就修了),
+            这个开关管的是剩下两处只靠颜色的地方:稀有度玉印、以及牌桌上
+            「可攻击」(绿)与「可被指定」(红)那两圈光 —— 恰好是最常见的
+            那种色觉异常分不开的一对,而它们是对局里最要紧的两个状态。 */}
+        <label className={styles.toggleRow}>
+          <span>
+            {t('色觉辅助', 'Colour-blind aid')}
+            <small className={styles.hint}>
+              {t(
+                '给稀有度与场上状态补形状标记 —— 不再只靠红绿分辨',
+                'Adds shape markers to rarity and board state, so red/green is not the only cue',
+              )}
+            </small>
+          </span>
+          <input
+            type="checkbox"
+            checked={s.colorBlind}
+            onChange={(e) => s.setColorBlind(e.target.checked)}
+          />
+        </label>
+
+        {/* 字形。卡池文案是繁體(导入自姊妹仓库),界面文案是手写的简体,
+            同一屏两种字形混排。**只做繁→简,不做简→繁** ——
+            繁→简是多对一(發/髮 都作发),纯查表永远不会错;
+            简→繁是一对多(发 到底是 發 还是 髮 要看词),没有词典会错得看不出来。 */}
+        <div className={styles.chipRow}>
+          {(
+            [
+              ['trad', { zh: '繁體(原文)', en: 'Traditional (as written)' }],
+              ['simp', { zh: '简体', en: 'Simplified' }],
+            ] as const
+          ).map(([k, label]) => (
+            <button
+              key={k}
+              className={s.zhVariant === k ? styles.chipActive : styles.chip}
+              onClick={() => {
+                playSfx('buttonTap')
+                s.setZhVariant(k)
+              }}
+            >
+              {pick(label)}
+            </button>
+          ))}
+        </div>
+
+        {/* 界面缩放。**不是只改字号** —— 全站字号写的都是 clamp(px, vh, px),
+            一个 rem 都没有,改根字号对它们完全没有作用(见 main.tsx 那段)。
+            走 zoom 缩放整个界面,于是按钮的点击区也跟着变大 ——
+            对手抖的人比单放大文字更有用。 */}
+        <label className={styles.sliderRow}>
+          <span>
+            {t(`界面缩放 ${Math.round(s.uiScale * 100)}%`, `Interface scale ${Math.round(s.uiScale * 100)}%`)}
+            <small className={styles.hint}>
+              {t('整体放大,按钮也跟着变大', 'Scales the whole interface, buttons included')}
+            </small>
+          </span>
+          <input
+            type="range"
+            min={0.8}
+            max={1.5}
+            step={0.05}
+            value={s.uiScale}
+            onChange={(e) => s.setUiScale(Number(e.target.value))}
+            aria-label={t('界面缩放', 'Interface scale')}
+          />
+        </label>
       </section>
 
       {/* ---- 卡背 ---- */}

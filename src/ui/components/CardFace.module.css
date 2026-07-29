@@ -374,3 +374,42 @@
   pointer-events: none;
   z-index: 3;
 }
+
+
+/* ---- 色觉辅助:稀有度 ----
+   稀有度玉印是四种颜色、**同一个菱形** —— 也就是说它完全靠颜色说话,
+   而蓝(稀有)与紫(史诗)在多种色觉异常下几乎不可分。
+   开启后按稀有度在玉印下方补一排点:1/2/3/4 颗。
+   数点比认颜色慢,但它至少是**可能的**。 */
+:root[data-colorblind='true'] .rarity::after {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  /* 玉印本身被 rotate(45deg) 转过,角标要转回来才是正的 */
+  transform: translate(-50%, 2px) rotate(-45deg);
+  font-size: 6px;
+  line-height: 1;
+  letter-spacing: -0.5px;
+  color: inherit;
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.95);
+  white-space: nowrap;
+}
+
+:root[data-colorblind='true'] .common::after {
+  content: '·';
+}
+
+:root[data-colorblind='true'] .rare::after {
+  content: '··';
+  color: #8ac0f0;
+}
+
+:root[data-colorblind='true'] .epic::after {
+  content: '···';
+  color: #d09af0;
+}
+
+:root[data-colorblind='true'] .legendary::after {
+  content: '····';
+  color: #ffe9a8;
+}

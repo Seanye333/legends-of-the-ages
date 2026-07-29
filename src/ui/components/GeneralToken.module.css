@@ -396,3 +396,43 @@
     animation: none;
   }
 }
+
+
+/* ---- 色觉辅助 ----
+   「可攻击」(绿圈)与「可被指定」(红圈)是牌桌上最要紧的两个状态,
+   而它们在此之前**只靠红绿区分** —— 恰好是最常见的那种色觉异常分不开的一对。
+   开启后各补一个角标:▲ 是「它能动」(向前),◎ 是「打它」(靶心)。
+   形状不占额外空间(压在令牌右上/左上角),而且和颜色叠加,不影响正常视觉的人。 */
+:root[data-colorblind='true'] .ready::after,
+:root[data-colorblind='true'] .targetable::before {
+  position: absolute;
+  z-index: 8;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 800;
+  pointer-events: none;
+  border: 1px solid rgba(0, 0, 0, 0.85);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+:root[data-colorblind='true'] .ready::after {
+  content: '▲';
+  top: -3px;
+  right: -3px;
+  background: #1c2a18;
+  color: #b0f2a8;
+}
+
+:root[data-colorblind='true'] .targetable::before {
+  content: '◎';
+  top: -3px;
+  left: -3px;
+  background: #2a1614;
+  color: #ff8a72;
+}

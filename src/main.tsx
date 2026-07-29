@@ -28,6 +28,8 @@ function applySettings(s: {
   soundEnabled: boolean
   musicEnabled: boolean
   musicVolume: number
+  colorBlind: boolean
+  uiScale: number
 }): void {
   setMasterVolume(s.volume)
   setMusicVolume(s.musicVolume)
@@ -36,6 +38,22 @@ function applySettings(s: {
   const prefersLess =
     typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
   document.documentElement.dataset.reducedMotion = String(s.reducedMotion || prefersLess)
+  document.documentElement.dataset.colorblind = String(s.colorBlind)
+
+  // 界面缩放走 **zoom**,不是根字号。
+  //
+  // 全站的字号几乎都写成 `clamp(12px, 2vh, 16px)` —— 两端是 px、中间是 vh,
+  // 一个 rem 都没有。也就是说改 `html { font-size }` 对它们**完全没有作用**,
+  // 那条最常见的做法在这个代码库里是无效的。
+  //
+  // zoom 缩放的是布局视口:px 跟着变,vh 的参照也跟着变,于是那些 clamp
+  // 整体等比放大 —— 这正是「界面大一点」该有的行为(它缩放的是整个界面,
+  // 而不只是文字,所以按钮的点击区也跟着变大,这对手抖的人比单放大字更有用)。
+  //
+  // 挂在 documentElement 而不是 #root:#root 是定位上下文,牌桌里那些
+  // position: fixed 的层(指向箭、台词气泡、安装横幅)会以它为参照,
+  // 缩放 #root 会让它们和牌桌错位。缩放根元素则一切都在同一个坐标系里。
+  document.documentElement.style.zoom = s.uiScale === 1 ? '' : String(s.uiScale)
 }
 applySettings(useSettings.getState())
 useSettings.subscribe(applySettings)
