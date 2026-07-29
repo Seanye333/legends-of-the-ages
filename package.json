@@ -23,7 +23,10 @@
     "mine-puzzles": "node --import tsx scripts/mine-puzzles.ts",
     "sim-ai-tiers": "node --import tsx scripts/sim-ai-tiers.ts",
     "sim-cards": "node --import tsx scripts/sim-cards.ts",
-    "perf-budget": "node --import tsx scripts/perf-budget.ts"
+    "perf-budget": "node --import tsx scripts/perf-budget.ts",
+    "price-cards": "node --import tsx scripts/price-cards.ts",
+    "lint-content": "node --import tsx scripts/lint-content.ts",
+    "replay-diff": "node --import tsx scripts/replay-diff.ts"
   },
   "dependencies": {
     "react": "^19.0.0",
