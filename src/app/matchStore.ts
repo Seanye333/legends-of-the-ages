@@ -30,6 +30,12 @@ import { useDeckStats } from './deckStatsStore'
 import { reportWin } from './leaderboard'
 import type { EmoteId } from './protocol'
 import { EMPTY_STATS, foldStats, type MatchStats } from './matchStats'
+import { useRecords } from './recordsStore'
+
+// 本地日期。应用层允许非确定性(引擎那边一律不许碰 Date)。
+function todayKey(d = new Date()): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 import {
   RemoteMatch,
   loadSession,
@@ -74,6 +80,8 @@ export interface StartMatchArgs {
   // 每日谜题:胜利走「按天」奖励(solveDaily),而不是按谜题 id 的静态奖励
   daily?: boolean
   dailyDate?: string
+  // 每日三题:这一局打的是哪一阵(0/1/2)
+  dailySlot?: number
   // 热座:双人同机,轮流出牌,没有 AI。不记战绩/军令/成就(那是两个人的局)
   hotSeat?: boolean
   // 演武场:自选双方 + 难度的自由练习,不记战绩/军令/成就/战报
@@ -119,6 +127,7 @@ interface MatchStoreState {
   puzzleReward: PuzzleReward | null
   daily: boolean
   dailyDate: string | null
+  dailySlot: number
   // 谜题撤销栈(每步前的快照)+ 是否看过解法(看过则不发奖)
   puzzleHistory: GameState[]
   puzzlePeeked: boolean
@@ -163,6 +172,18 @@ function settleQuests(events: GameEvent[], state: GameState | null): void {
   const heroId = state.players[0].heroId
   useQuests.getState().recordMatch(events, heroId)
   useAchievements.getState().recordMatch(events, heroId)
+}
+
+// 個人紀錄:整局口径,和上面那批成就同一个时机。
+//
+// **不分模式**:冒险、远征、天梯、演武的纪录都算。
+// 「我最狠的一场」不该因为它发生在远征里就不算数 —— 那是玩家自己的记忆,
+// 不是排行榜的公平性问题(这一份一个字节都不出设备)。
+// 谜题/教学局不走这里(它们不产生 GameEnded 的常规结算路径)。
+function settleRecords(events: GameEvent[], stats: MatchStats): void {
+  const ended = events.find((e) => e.type === 'GameEnded')
+  if (!ended || ended.type !== 'GameEnded') return
+  useRecords.getState().submit(stats, ended.winner === 0, todayKey())
 }
 
 // 整局口径的成就:tallyStats 每批调用一次,看不到「整局」。
@@ -289,6 +310,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
   puzzleReward: null,
   daily: false,
   dailyDate: null,
+  dailySlot: 0,
   puzzleHistory: [],
   puzzlePeeked: false,
   practice: false,
@@ -368,6 +390,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       puzzleReward: null,
       daily: args.daily === true,
       dailyDate: args.dailyDate ?? null,
+      dailySlot: args.dailySlot ?? 0,
       puzzleHistory: [],
       puzzlePeeked: false,
       practice: args.practice === true,
@@ -444,7 +467,8 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
         if (won && !get().puzzlePeeked) {
           const st = get()
           // 每日谜题走「按天」奖励;其余走按题静态奖励
-          if (st.daily && st.dailyDate) puzzleReward = useLethal.getState().solveDaily(st.dailyDate)
+          if (st.daily && st.dailyDate)
+            puzzleReward = useLethal.getState().solveDaily(st.dailyDate, st.dailySlot)
           else if (st.puzzleId) puzzleReward = useLethal.getState().solve(st.puzzleId)
         }
       }
@@ -514,6 +538,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
     recordReplayFrame(last.state, events)
     const nextStats = foldStats(get().stats, events, last.state)
     settleWholeMatchAchievements(events, nextStats, false)
+    settleRecords(events, nextStats)
     set({ state: last.state, lastEvents: events, stats: nextStats, error: null })
   },
 
@@ -573,6 +598,7 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       puzzleReward: null,
       daily: false,
       dailyDate: null,
+      dailySlot: 0,
       puzzleHistory: [],
       puzzlePeeked: false,
       practice: false,

@@ -96,3 +96,46 @@
   font-family: var(--font-display);
   color: var(--parchment);
 }
+
+
+/* 纪录的日期:小、淡、跟在名字后面。
+   纪录没有日期就只是一个数字 —— 「去年夏天那一场」才是玩家真正记得的东西。 */
+.recordDate {
+  margin-left: 8px;
+  font-size: 0.78em;
+  color: var(--parchment-faint);
+  opacity: 0.8;
+}
+
+.emptyHint {
+  margin: 4px 0 2px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--parchment-faint);
+}
+
+
+/* 生涯档案的出图按钮:推到标题右边。
+   做成描边小按钮 —— 它是这一屏的一个动作,不是这一屏的内容。 */
+.shareBtn {
+  margin-left: auto;
+  padding: 6px 12px;
+  border-radius: 7px;
+  border: 1px solid rgba(212, 168, 74, 0.5);
+  background: rgba(40, 32, 18, 0.6);
+  color: var(--gold);
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.shareBtn:hover {
+  filter: brightness(1.18);
+}
+
+.exportMsg {
+  margin: -2px 0 8px;
+  font-size: 12px;
+  color: var(--gold-mid);
+}
