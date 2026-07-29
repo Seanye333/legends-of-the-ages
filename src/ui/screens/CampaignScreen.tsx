@@ -122,7 +122,12 @@ export function CampaignScreen({ onBack, onEnterMatch }: CampaignScreenProps) {
             )}
             <li
               key={b.id}
-              className={`${styles.stage} ${done ? styles.done : ''} ${!open ? styles.locked : ''}`}
+              // `next` = 已解锁但还没通 —— 也就是**下一场该打的**。
+              // 二十四行长得一模一样时,玩家进来第一件事是找「我打到哪了」,
+              // 而这个信息此前只能靠「哪一行是亮的、且它下面全是灰的」倒推。
+              className={`${styles.stage} ${done ? styles.done : ''} ${!open ? styles.locked : ''} ${
+                open && !done ? styles.next : ''
+              }`}
               style={{ '--doctrine': DOCTRINE_COLORS[b.doctrine] } as CSSProperties}
             >
               <button

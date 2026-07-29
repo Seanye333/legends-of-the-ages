@@ -1,7 +1,17 @@
+/* 冒险页原来是一张**平铺在纯黑上的列表** —— 二十四关排下去将近两千像素,
+   全程没有任何氛围,读起来像一份后台任务清单,而它讲的是从汉末到明清的一条路。
+
+   底图复用**已有的**战场图(不新增素材,包体红线 150MB 里立绘已占 59.6MB),
+   压到极暗 + fixed 视差:列表滚动而底图不动,滚起来才有「走过一段路」的感觉。
+   这一条零成本,是这一屏投入产出最高的改动。 */
 .screen {
   min-height: 100dvh;
   padding: max(20px, env(safe-area-inset-top) + 8px) 16px max(28px, env(safe-area-inset-bottom));
-  background: radial-gradient(ellipse at 50% 0%, #1d1710 0%, #0b0805 65%);
+  background:
+    radial-gradient(ellipse 110% 70% at 50% 0%, rgba(58, 44, 22, 0.42), transparent 62%),
+    linear-gradient(180deg, rgba(9, 7, 4, 0.9), rgba(7, 5, 3, 0.96)),
+    url('/art/battlefield-bg.jpg') center 30% / cover no-repeat fixed,
+    #0b0805;
   -webkit-user-select: none;
   user-select: none;
 }
@@ -145,10 +155,14 @@
   transform: translateX(3px);
 }
 
+/* 未解锁:压暗但**看得清是谁**。
+   原来 opacity 0.42 + grayscale 0.7 叠在本来就暗的底上,二十三个头像全是黑块 ——
+   和图鉴那条一模一样的毛病:这一屏的作用之一就是「让你想打下一个」,
+   而看不清脸的对手不会让人想打。 */
 .stageBtn:disabled {
   cursor: not-allowed;
-  opacity: 0.42;
-  filter: grayscale(0.7);
+  opacity: 0.72;
+  filter: grayscale(0.55) brightness(0.82);
 }
 
 .stageBtn:focus-visible {
@@ -435,4 +449,34 @@
   letter-spacing: 0.24em;
   color: var(--parchment-faint);
   text-align: center;
+}
+
+/* 「下一场」:唯一一行带呼吸金晕的。
+   二十四行长得一样时,玩家进来第一件事是找「我打到哪了」——
+   此前这个信息只能靠「哪一行是亮的、下面全是灰的」倒推。
+   只做外发光不动尺寸:改尺寸会让整条路的节奏断掉。 */
+.next .stageBtn {
+  border-color: var(--gold-mid);
+  box-shadow:
+    0 0 0 1px rgba(212, 168, 74, 0.35),
+    0 0 18px rgba(212, 168, 74, 0.28);
+  animation: nextBreath 2.6s ease-in-out infinite;
+}
+
+@keyframes nextBreath {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(212, 168, 74, 0.3),
+      0 0 14px rgba(212, 168, 74, 0.2);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(212, 168, 74, 0.5),
+      0 0 26px rgba(212, 168, 74, 0.42);
+  }
+}
+
+:root[data-reduced-motion='true'] .next .stageBtn {
+  animation: none;
 }
