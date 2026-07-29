@@ -109,10 +109,15 @@ export function createGame(cfg: GameConfig, lib: CardLibrary): GameState {
       heroPowerUsed: false,
       heroPowerCostDelta: mod?.heroPowerCostDelta ?? 0,
       heroPower: cfg.heroPowers?.[side],
+      // 副将可以来自开局配置(双将模式)或远征宝物 —— 宝物优先,它是这一局临时拿到的
+      vicePower: mod?.vicePower ?? cfg.vicePowers?.[side],
       secrets: [],
       overloadNext: 0,
       overloadLocked: 0,
       cardsPlayedThisTurn: 0,
+      morale: mod?.startMorale ?? 0,
+      supply: mod?.startSupply ?? 0,
+      chain: 0,
     }
   }) as [PlayerState, PlayerState]
 
@@ -196,10 +201,16 @@ function createScenarioGame(
       heroPowerUsed: spec.heroPowerUsed ?? false,
       heroPowerCostDelta: spec.heroPowerCostDelta ?? 0,
       heroPower: cfg.heroPowers?.[side],
+      vicePower: cfg.vicePowers?.[side],
       secrets,
       overloadNext: 0,
       overloadLocked: 0,
       cardsPlayedThisTurn: 0,
+      // 谜题是「这一回合之内解决战斗」,不该有任何隐藏的历史包袱:
+      // 士气 0、粮道 0、链 0。题面上写着的才算数。
+      morale: 0,
+      supply: spec.supply ?? 0,
+      chain: 0,
     }
   }
 

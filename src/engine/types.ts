@@ -90,6 +90,11 @@ export interface EffectCondition {
   // ---- 第六卡包:关键词羁绊 ----
   // 我方场上带某关键词的武将达到 atLeast 张(吸血流/潜行流/冲锋流的门槛 payoff)
   ifKeywordCount?: { keyword: Keyword; atLeast: number }
+  // ---- 第二十一卡包:士气 / 粮道 / 天时 ----
+  ifMorale?: { atLeast: number } // 我方士气不低于 N(负数也能写:atLeast: -2 表示「哀兵」)
+  ifSupply?: { atLeast: number } // 我方屯粮不低于 N
+  ifSky?: Sky // 当前天时是某一时段(见 skyOf)
+  ifChain?: { atLeast: number } // 本回合已结算的锦囊数(见 PlayerState.chain)
 }
 
 // 计数来源:buffPer 按它数出一个倍数。全部只数**我方场面**(payoff 是自己铺出来的)。
@@ -161,6 +166,11 @@ export type EffectOp =
   // ---- 第十九卡包:战场环境 ----
   // 布下一片战场环境(天时地利)。**双方同吃**,覆盖当前环境(同时只有一片战场)。
   | { op: 'setField'; rule: FieldRule; turns?: number }
+  // ---- 第二十一卡包:士气 / 粮道 ----
+  // 鼓舞 / 挫敌:改变某一方的士气(正数给自己涨,负数写成 target:'enemy' 更直白)。
+  | { op: 'gainMorale'; amount: number; side?: 'friendly' | 'enemy' }
+  // 屯粮:我方粮道 +N(上限 SUPPLY_CAP)。
+  | { op: 'gainSupply'; amount: number }
 
 export interface EffectScript {
   ops: EffectOp[]
@@ -270,6 +280,12 @@ export interface CardDef {
   overload?: number // 过载:下回合锁定的水晶数
   // ---- 第五卡包 ----
   choose?: ChooseDef // 抉择:打出时选一个模式(替代 battlecry/spell)
+  // ---- 第二十一卡包 ----
+  // 军需:除法力外还要花掉 N 点粮道才能打出(见 PlayerState.supply)。
+  // 只有新卡带它,所以老卡池的定价一个字都不用动。
+  supplyCost?: number
+  // 阵形:此牌在场时,若己方战线满足 shape,按定义发增益(见 FormationDef)。
+  formation?: FormationDef
 }
 
 // 主公技:每回合一次的主动技能,六主义各一。
@@ -365,6 +381,24 @@ export interface PlayerState {
   heroPowerCostDelta: number // 主公技费用修正(远征宝物,整局有效)
   // 主公技随状态走(而不是查 HeroDef 表),这样引擎依旧零外部依赖、状态自足可序列化。
   heroPower?: HeroPowerDef
+  // ---- 第二十一卡包:双将 ----
+  // 副将技。**与主公技共用 heroPowerUsed** —— 一回合仍然只能用一个。
+  // 这是有意的:双将要加的是「这回合该用哪一个」的决策,不是每回合多一次伤害。
+  // 白送一次额外主公技等于给每个主义凭空加一条曲线,那条路我们在远征宝物上试过,
+  // 一开就再也调不回来。整份嵌在状态里(不查表),理由同 heroPower。
+  vicePower?: HeroPowerDef
+  // ---- 第二十一卡包:士气 / 粮道 / 计谋链 ----
+  // 全部 **可选字段**:老存档/老战报没有它 → undefined → 视作 0,迁移零风险(铁律 6)。
+  //
+  // 士气 [-MORALE_CAP, MORALE_CAP]。己方武将阵亡 -1,斩掉敌将 +1;
+  // 每逢自己的回合开始向 0 收敛一格 —— 没有这条收敛它就是滚雪球,
+  // 有了它就是**一段时间窗**:赢下一波交换,你的优势只维持到下一个回合。
+  morale?: number
+  // 粮道 [0, SUPPLY_CAP]。每逢自己的回合结束 +1,由带 supplyCost 的军需卡花掉。
+  supply?: number
+  // 计谋链:本回合已结算的锦囊数。**回合开始清零** ——
+  // 「连环」讲的是一口气使出来的一串,跨回合攒够四张不叫连环计,叫存牌。
+  chain?: number
 }
 
 export type GamePhase = 'mulligan' | 'main' | 'ended'
@@ -428,6 +462,47 @@ export interface FieldState {
   turnsLeft?: number
 }
 
+// ---------- 第二十一卡包:天时 ----------
+//
+// 战场环境(FieldRule)是**被打出来的**:一张牌布下赤壁的火,双方同吃。
+// 天时不是 —— 它是这局从开始就在走的钟,谁也改不了,双方都看得见下一格是什么。
+//
+// 这是全游戏唯一一个**零状态**的机制:它完全由 `turn` 推出(见 skyOf),
+// 因此 GameState 一个字节都不用加、migrate 一行都不用写、回放天然一致。
+// 想「等到天黑再劫营」是玩家自己排回合排出来的,不是靠某张牌抽中的运气。
+export type Sky = 'dawn' | 'noon' | 'dusk' | 'night'
+
+// 每个时段占几个回合。取 2 = 双方各轮到一次,所以先后手拿到的天时序列完全一样
+// (先手 1/3/5/7 → 晨午暮夜,后手 2/4/6/8 → 同样四段),不给任何一方结构性优势。
+export const SKY_SPAN = 2
+export const SKY_CYCLE = ['dawn', 'noon', 'dusk', 'night'] as const
+
+// ---------- 第二十一卡包:阵形 ----------
+//
+// `AuraDef.scope === 'adjacent'` 让「摆在哪儿」第一次有了意义,但它只看**左右邻居**。
+// 阵形看的是**整条战线的形状**:人够不够多、两翼有没有人、是不是清一色同兵种。
+//
+// 定义整份挂在锚点卡上(和 bond / rival 同源),而不是在引擎里建一张 id → 规则的表 ——
+// 引擎不查表这条铁律在主公技和战场环境上已经交过两次学费:存 id 去内容层查,
+// 服务端权威对局和老战报就会依赖内容版本。
+//
+// 判定是 board 与 lib 的纯函数,每次场面变动由 refreshAuras 整轮重算,
+// 走的还是光环那条附魔路径 —— 阵形一散,增益自动收回,不需要任何反向登记。
+export type FormationShape =
+  | 'wedge' // 锋矢:己方 ≥3 人 → 最左那名(阵头)吃增益
+  | 'crane' // 鹤翼:己方 ≥4 人 → 最左与最右(两翼)吃增益
+  | 'scale' // 鱼鳞:己方有 ≥3 名与锚点同兵种者 → 这些同袍一起吃
+  | 'serpent' // 长蛇:己方满员 → 全体吃
+
+export interface FormationDef {
+  id: string
+  name: LocalizedText
+  shape: FormationShape
+  attack: number
+  health: number
+  keywords?: Keyword[]
+}
+
 // 历史名战的特殊胜负目标(座位 0 = 玩家视角)。引擎在 checkGameEnd 里判。
 // 三类共用一个钩子:守成看回合数;斩将/护送按 iid 标记一个单位,靠 GeneralDied 事件判死。
 // targetIid 由 createGame 解析(开局在 targetSide 场上找 targetDefId 的实例),内容层只给选择器。
@@ -453,7 +528,8 @@ export type Command =
   | { type: 'Mulligan'; keepIids: number[] }
   | { type: 'PlayCard'; iid: number; boardPos?: number; target?: TargetRef; mode?: number }
   | { type: 'Attack'; attackerIid: number; target: TargetRef }
-  | { type: 'UseHeroPower'; target?: TargetRef }
+  // vice: true 时用的是副将技(见 PlayerState.vicePower)。两者共用每回合一次的额度。
+  | { type: 'UseHeroPower'; target?: TargetRef; vice?: boolean }
   // 升级主公技:花 upgradeCost 把 heroPower 换成 heroPower.upgrade。一局一次。
   | { type: 'UpgradeHeroPower' }
   | { type: 'EndTurn' }
@@ -512,6 +588,13 @@ export type GameEvent =
   | { type: 'HeroPowerUpgraded'; player: PlayerIdx; powerId: string }
   // 战场环境布下 / 消散(rule 为 undefined 表示消散)
   | { type: 'FieldChanged'; rule?: FieldRule }
+  // ---- 第二十一卡包 ----
+  | { type: 'MoraleChanged'; player: PlayerIdx; morale: number; delta: number }
+  | { type: 'SupplyChanged'; player: PlayerIdx; supply: number; delta: number }
+  | { type: 'ChainAdvanced'; player: PlayerIdx; chain: number }
+  | { type: 'ChainTriggered'; player: PlayerIdx; defId: string }
+  // 天时换段。零状态(由 turn 推出),事件只是给 UI 一个「该播报了」的信号。
+  | { type: 'SkyChanged'; sky: Sky; turn: number }
   | { type: 'GeneralDied'; player: PlayerIdx; iid: number; defId: string }
   | {
       type: 'AttackResolved'
@@ -587,6 +670,9 @@ export interface RunModifiers {
   startTokens?: string[] // 开局场上的衍生物 defId
   handCostDelta?: number // 起手全部手牌费用 +N(负=更便宜)
   heroPowerCostDelta?: number // 主公技费用 +N(负=更便宜),整局有效
+  startMorale?: number // 开局士气
+  startSupply?: number // 开局屯粮
+  vicePower?: HeroPowerDef // 副将:多一个可选的主公技(仍然每回合只能用一个)
 }
 
 // ---------- 斩杀谜题:指定残局 ----------
@@ -614,6 +700,7 @@ export interface PuzzleSide {
   secrets?: string[] // 预置伏兵 defId(敌方伏兵可作谜题元素)
   heroPowerUsed?: boolean // 默认 false(本回合可用主公技)
   heroPowerCostDelta?: number
+  supply?: number // 预置粮道(军需卡入题时要给,否则那张牌打不出来)
 }
 export interface PuzzleScenario {
   players: [PuzzleSide, PuzzleSide]
@@ -652,6 +739,8 @@ export interface GameConfig {
   first: PlayerIdx
   // 可选:不给则无主公技、血量按 START_HP(旧测试与教学局走这条路)
   heroPowers?: [HeroPowerDef | undefined, HeroPowerDef | undefined]
+  // 双将:副将技,按座位。不给则该座位没有副将。
+  vicePowers?: [HeroPowerDef | undefined, HeroPowerDef | undefined]
   heroHps?: [number, number]
   // 远征宝物修正,按座位。只有远征模式会给。
   modifiers?: [RunModifiers | undefined, RunModifiers | undefined]
@@ -677,3 +766,8 @@ export const TURN_LIMIT = 200
 export const DECK_SIZE = 30
 export const SECRET_LIMIT = 5 // 伏兵区上限
 export const OPENING_HAND = [3, 4] as const
+// ---- 第二十一卡包 ----
+export const MORALE_CAP = 3 // 士气绝对值上限
+export const MORALE_THRESHOLD = 2 // |士气| 达到它才产生场面效果(±1 攻)
+export const SUPPLY_CAP = 10 // 粮道上限
+export const CHAIN_TRIGGER = 3 // 本回合第 CHAIN_TRIGGER+1 张锦囊结算两次

@@ -8,11 +8,20 @@ import type {
   TargetRef,
   Winner,
 } from './types'
-import { BOARD_LIMIT, HAND_LIMIT, MANA_CAP, SECRET_LIMIT, TURN_LIMIT } from './types'
+import {
+  BOARD_LIMIT,
+  CHAIN_TRIGGER,
+  HAND_LIMIT,
+  MANA_CAP,
+  SECRET_LIMIT,
+  TURN_LIMIT,
+} from './types'
 import type { EffectScript } from './types'
 import { rngShuffle } from './rng'
 import {
   addEnchant,
+  changeMorale,
+  changeSupply,
   chosenTargetPool,
   damageGeneral,
   refreshAuras,
@@ -26,6 +35,7 @@ import {
   processDeaths,
   requiresChosenTarget,
   runScript,
+  skyOf,
 } from './resolve'
 import { hasKeyword, performAttack, performDuel } from './combat'
 import { fireEnemySecret, hasSecretNamed } from './secrets'
@@ -110,7 +120,7 @@ export function applyCommand(
       return { ok: true, state: next, events }
     }
     case 'UseHeroPower': {
-      const error = useHeroPower(next, player, cmd.target, events, lib)
+      const error = useHeroPower(next, player, cmd.target, cmd.vice ?? false, events, lib)
       if (error) return { ok: false, error }
       checkGameEnd(next, events)
       return { ok: true, state: next, events }
@@ -146,18 +156,21 @@ export function applyCommand(
 }
 
 // 主公技:每回合一次,费用与效果由 PlayerState.heroPower 携带。
+// 双将:vice=true 时改用副将技 —— 但 heroPowerUsed 是**共用**的一次额度,
+// 所以双将加的是「这回合该用哪一个」的决策,不是每回合两次输出。
 function useHeroPower(
   state: GameState,
   player: PlayerIdx,
   target: TargetRef | undefined,
+  vice: boolean,
   events: GameEvent[],
   lib: CardLibrary,
 ): string | null {
   if (state.phase !== 'main') return 'not-main-phase'
   if (player !== state.activePlayer) return 'not-your-turn'
   const p = state.players[player]
-  const power = p.heroPower
-  if (!power) return 'no-hero-power'
+  const power = vice ? p.vicePower : p.heroPower
+  if (!power) return vice ? 'no-vice-power' : 'no-hero-power'
   if (p.heroPowerUsed) return 'hero-power-used'
   // 远征宝物可以让主公技更便宜(整局有效)
   const powerCost = Math.max(0, power.cost + p.heroPowerCostDelta)
@@ -224,6 +237,10 @@ function playCard(
   // 有效费用 = 卡面费 + 实例 costDelta(费用消减)。扣费、事件都走它。
   const cost = effectiveCost(inst, lib)
   if (cost > p.mana.current) return 'not-enough-mana'
+  // 军需:除法力外还要花粮道。**先判后扣**,和法力一个待遇 ——
+  // 校验失败必须不产生任何变化,否则 legalCommands 与 applyCommand 的契约就破了。
+  const supplyCost = def.supplyCost ?? 0
+  if (supplyCost > (p.supply ?? 0)) return 'not-enough-supply'
 
   // ---- 连击:本回合此牌**之前**已经打出过牌,就改用 combo 脚本 ----
   // 「改用」而不是「追加」:追加的话一张连击牌在连击时价值翻倍,定价没法做。
@@ -297,6 +314,7 @@ function playCard(
 
   // ---- 执行 ----
   p.mana.current -= cost
+  if (supplyCost > 0) changeSupply(state, player, -supplyCost, events)
   p.hand.splice(handIndex, 1)
   events.push({ type: 'CardPlayed', player, iid, defId: inst.defId, cost })
   if (def.choose) {
@@ -386,13 +404,32 @@ function playCard(
       sourceDefId: inst.defId,
       kind: comboActive ? 'combo' : 'spell',
     })
-    runScript(state, events, lib, script!, {
-      player,
-      sourceDefId: inst.defId,
-      chosen: chosenForScript,
-      // 连击脚本也算锦囊,照吃法术伤害加成
-      kind: 'spell',
-    })
+    // ---- 计谋链:本回合第 CHAIN_TRIGGER+1 张锦囊结算**两次** ----
+    //
+    // 为什么按回合清零(见 PlayerState.chain):跨回合攒够四张不叫连环计,叫存牌。
+    // 一口气使出四条计策要么靠一堆一费锦囊、要么靠费用消减,那是一条得真的去搭的路线,
+    // 而且它对既有卡池近乎零影响 —— 现有的贪心 AI 一个回合基本不会甩出四张锦囊。
+    const chained = (p.chain ?? 0) >= CHAIN_TRIGGER
+    if (chained) {
+      p.chain = 0
+      events.push({ type: 'ChainTriggered', player, defId: inst.defId })
+    } else {
+      p.chain = (p.chain ?? 0) + 1
+      events.push({ type: 'ChainAdvanced', player, chain: p.chain })
+    }
+    const castOnce = () =>
+      runScript(state, events, lib, script!, {
+        player,
+        sourceDefId: inst.defId,
+        chosen: chosenForScript,
+        // 连击脚本也算锦囊,照吃法术伤害加成
+        kind: 'spell',
+      })
+    castOnce()
+    // 第二次结算:目标可能已经被第一次打死,runScript 内部按 iid 现查现用,
+    // 查不到就跳过 —— 所以「重复施放」不需要任何额外的目标复检。
+    // 挂起(发现)时不重复:那次施法还没走完,别在挂起态上再叠一层。
+    if (chained && !state.pendingChoice) castOnce()
     p.graveyard.push(inst.defId)
     // 法术流 payoff:锦囊结算后,自己在场的 onSpellCast 武将各触发一次。
     // 若这张锦囊触发了发现(pendingChoice 挂起),就先不触发 —— 这次施法还没走完,
@@ -465,6 +502,10 @@ function endTurn(
     })
   }
   expireTemporaryEnchants(state, lib, events)
+  // 粮道:每逢自己的回合结束囤一格。放在回合**末**而不是回合初,
+  // 是为了让「这回合我打不打得起那张军需卡」在回合开始时就已经定死 ——
+  // 回合初再加一格,玩家得先心算一次才知道自己有多少粮。
+  changeSupply(state, player, 1, events)
   for (const unit of state.players[player].board) {
     if (unit.frozen) {
       unit.frozen = false
@@ -479,11 +520,16 @@ function endTurn(
 }
 
 function beginTurn(state: GameState, events: GameEvent[], lib: CardLibrary): void {
+  const skyBefore = skyOf(state.turn)
   state.turn += 1
   if (state.turn > TURN_LIMIT) {
     endGame(state, events, 'draw')
     return
   }
+  // 天时换段。零状态 —— 事件只是给 UI 一个「该播报了」的信号,状态里什么都不存,
+  // 所以哪怕这条事件丢了,天时本身也不会错(见 types.ts Sky 的说明)。
+  const sky = skyOf(state.turn)
+  if (sky !== skyBefore) events.push({ type: 'SkyChanged', sky, turn: state.turn })
   const active = state.activePlayer
   const p = state.players[active]
   p.mana.max = Math.min(MANA_CAP, p.mana.max + 1)
@@ -497,7 +543,15 @@ function beginTurn(state: GameState, events: GameEvent[], lib: CardLibrary): voi
     events.push({ type: 'ManaLocked', player: active, amount: p.overloadLocked })
   }
   p.cardsPlayedThisTurn = 0
+  p.chain = 0
   p.heroPowerUsed = false
+  // 士气向 0 收敛一格。没有这条它就是滚雪球(赢的人越赢身材越好),
+  // 有了它就是一段**时间窗**:一波赚下来的优势只维持到你下个回合开始。
+  const morale = p.morale ?? 0
+  if (morale !== 0) {
+    changeMorale(state, active, morale > 0 ? -1 : 1, events)
+    refreshAuras(state, lib)
+  }
   for (const unit of p.board) {
     unit.exhausted = false
     unit.attacksUsed = 0

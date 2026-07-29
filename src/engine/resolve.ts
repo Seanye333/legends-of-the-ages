@@ -15,16 +15,97 @@ import type {
   EffectScript,
   Enchant,
   GameEvent,
+  FormationDef,
   GameState,
   Keyword,
   PlayerIdx,
+  Sky,
   TargetRef,
 } from './types'
-import { BOARD_LIMIT, HAND_LIMIT, MANA_CAP, START_HP } from './types'
+import {
+  BOARD_LIMIT,
+  HAND_LIMIT,
+  MANA_CAP,
+  MORALE_CAP,
+  MORALE_THRESHOLD,
+  SKY_CYCLE,
+  SKY_SPAN,
+  START_HP,
+  SUPPLY_CAP,
+} from './types'
 import { rngInt } from './rng'
 
 export function other(p: PlayerIdx): PlayerIdx {
   return p === 0 ? 1 : 0
+}
+
+// ---------- 天时 ----------
+
+// 当前时段。**纯函数 of turn**,不读也不写任何状态 —— 所以天时天然可回放、
+// 天然对双方一致、天然不需要迁移。turn 从 1 起算,每 SKY_SPAN 个回合换一段。
+export function skyOf(turn: number): Sky {
+  const idx = Math.floor(Math.max(0, turn - 1) / SKY_SPAN) % SKY_CYCLE.length
+  return SKY_CYCLE[idx]
+}
+
+// ---------- 士气 / 粮道 ----------
+
+// 士气变化的唯一入口。夹到 [-MORALE_CAP, MORALE_CAP],无变化时不发事件
+// (顶到上限还在赢的局面很常见,那时候再播一次「士气高涨」纯属噪音)。
+// **不在这里 refreshAuras** —— 调用点往往要连改两侧(一死一杀),
+// 让调用点改完再统一刷一次,省掉一半的整轮重算。
+export function changeMorale(
+  state: GameState,
+  player: PlayerIdx,
+  delta: number,
+  events: GameEvent[],
+): void {
+  const p = state.players[player]
+  const before = p.morale ?? 0
+  const after = Math.max(-MORALE_CAP, Math.min(MORALE_CAP, before + delta))
+  if (after === before) return
+  p.morale = after
+  events.push({ type: 'MoraleChanged', player, morale: after, delta: after - before })
+}
+
+export function changeSupply(
+  state: GameState,
+  player: PlayerIdx,
+  delta: number,
+  events: GameEvent[],
+): void {
+  const p = state.players[player]
+  const before = p.supply ?? 0
+  const after = Math.max(0, Math.min(SUPPLY_CAP, before + delta))
+  if (after === before) return
+  p.supply = after
+  events.push({ type: 'SupplyChanged', player, supply: after, delta: after - before })
+}
+
+// 阵形判定:返回该锚点此刻实际吃到增益的友军下标。
+// 纯函数 of (board, 锚点下标, lib) —— 没有任何隐藏状态,所以 refreshAuras 每次整轮重算
+// 的结果一定和上一次一致,阵形不会「记得」它上一帧成立过。
+export function formationBeneficiaries(
+  board: CardInstance[],
+  anchorIndex: number,
+  formation: FormationDef,
+  lib: CardLibrary,
+): number[] {
+  const n = board.length
+  switch (formation.shape) {
+    case 'wedge':
+      return n >= 3 ? [0] : []
+    case 'crane':
+      return n >= 4 ? [0, n - 1] : []
+    case 'scale': {
+      const troop = lib[board[anchorIndex].defId]?.troop
+      if (!troop) return []
+      const same = board.map((u, i) => (lib[u.defId]?.troop === troop ? i : -1)).filter((i) => i >= 0)
+      return same.length >= 3 ? same : []
+    }
+    case 'serpent':
+      return n >= BOARD_LIMIT ? board.map((_, i) => i) : []
+  }
 }
 
 export interface GeneralLoc {
@@ -178,6 +259,23 @@ export function refreshAuras(state: GameState, lib: CardLibrary): void {
         refreshInstance(inst, lib)
       }
     }
+    // 阵形:锚点在场 + 整条战线满足形状 → 按 shape 圈定的那几个位置发增益。
+    // 同样蹭光环这条路,所以「死了一个人阵形就散」是自动的。
+    for (let si = 0; si < board.length; si++) {
+      const source = board[si]
+      if (source.silenced) continue
+      const formation = lib[source.defId]?.formation
+      if (!formation) continue
+      for (const i of formationBeneficiaries(board, si, formation, lib)) {
+        board[i].enchants.push({
+          attack: formation.attack,
+          health: formation.health,
+          keywords: formation.keywords,
+          auraFrom: source.iid,
+        })
+        refreshInstance(board[i], lib)
+      }
+    }
   }
   // 战场环境:双方全体(或某个兵种)吃一份增益。
   // 走光环的附魔路径 —— 环境消散(turnsLeft 归零或被下一片覆盖)时增益自动收回。
@@ -198,6 +296,22 @@ export function refreshAuras(state: GameState, lib: CardLibrary): void {
           refreshInstance(inst, lib)
         }
       }
+    }
+  }
+
+  // 士气:|士气| 过线时,那一方全场 ±1 攻。
+  //
+  // 只动**攻击**不动血:士气该改变的是这支队伍敢不敢打,不是他们有多硬。
+  // 加血还会引出「士气掉下来会不会打死人」这一整类边角,不值得。
+  // auraFrom 用 -2(战场环境占了 -1):场上不会有负 iid,所以它天然不撞车,
+  // 而开头那轮「撤掉所有 auraFrom 附魔」照样清得干净。
+  for (const player of [0, 1] as const) {
+    const morale = state.players[player].morale ?? 0
+    if (Math.abs(morale) < MORALE_THRESHOLD) continue
+    const delta = morale > 0 ? 1 : -1
+    for (const inst of state.players[player].board) {
+      inst.enchants.push({ attack: delta, health: 0, auraFrom: -2 })
+      refreshInstance(inst, lib)
     }
   }
 
@@ -501,6 +615,16 @@ export function processDeaths(state: GameState, events: GameEvent[], lib: CardLi
     for (const d of dead) {
       events.push({ type: 'GeneralDied', player: d.player, iid: d.inst.iid, defId: d.inst.defId })
     }
+    // 士气:己方倒下一个 -1,对面倒下一个 +1。
+    //
+    // 一换一的交换于是净变化为零(双方各 +1 -1),而**白赚一个**才是 2 点摆动 ——
+    // 这正是「士气」该奖励的东西:不是打得多,是打得划算。
+    // 放在亡语**之前**:亡语能召唤新单位,而这一波士气讲的是「刚刚倒下了谁」。
+    for (const d of dead) {
+      changeMorale(state, d.player, -1, events)
+      changeMorale(state, other(d.player), 1, events)
+    }
+    refreshAuras(state, lib)
     // 傳承:阵亡者身上带 heirloom 的附魔(装备)改挂到另一名友军身上。
     //
     // 放在亡语**之前**:亡语可能召唤新单位,而「刀应该传给谁」讲的是
@@ -633,6 +757,10 @@ function conditionMet(
     const count = state.players[player].board.filter((c) => c.keywords.includes(keyword)).length
     if (count < atLeast) return false
   }
+  if (cond.ifMorale && (state.players[player].morale ?? 0) < cond.ifMorale.atLeast) return false
+  if (cond.ifSupply && (state.players[player].supply ?? 0) < cond.ifSupply.atLeast) return false
+  if (cond.ifSky && skyOf(state.turn) !== cond.ifSky) return false
+  if (cond.ifChain && (state.players[player].chain ?? 0) < cond.ifChain.atLeast) return false
   return true
 }
 
@@ -1262,6 +1390,17 @@ export function runScript(
         state.field = { rule: op.rule, turnsLeft: op.turns }
         events.push({ type: 'FieldChanged', rule: op.rule })
         refreshAuras(state, lib)
+        break
+      }
+      case 'gainMorale': {
+        // 鼓舞给自己,挫敌给对面。改完立刻刷光环 —— 过线/掉线要当场反映在身材上,
+        // 不然「打出鼓舞」和「全场 +1 攻」中间会隔着一次不相干的场面变动。
+        changeMorale(state, op.side === 'enemy' ? other(player) : player, op.amount, events)
+        refreshAuras(state, lib)
+        break
+      }
+      case 'gainSupply': {
+        changeSupply(state, player, op.amount, events)
         break
       }
       default: {

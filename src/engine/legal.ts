@@ -31,6 +31,9 @@ export function legalCommands(state: GameState, player: PlayerIdx, lib: CardLibr
   for (const card of p.hand) {
     const def = lib[card.defId]
     if (!def || effectiveCost(card, lib) > p.mana.current) continue
+    // 军需:粮不够就打不出。和法力同一个待遇 —— 这里漏判会直接违反
+    // 「legalCommands 给的每条命令 applyCommand 都必须接受」的契约(fuzz 盯着)。
+    if ((def.supplyCost ?? 0) > (p.supply ?? 0)) continue
     // 连击态要在这里就判掉:combo 脚本和基础脚本的**目标要求可能不同**,
     // 这里按基础脚本列命令、applyCommand 按 combo 脚本校验,就会漏出
     // 「legalCommands 给的命令被 applyCommand 拒绝」—— fuzz 测试专门盯这个契约。
@@ -74,10 +77,17 @@ export function legalCommands(state: GameState, player: PlayerIdx, lib: CardLibr
       // 但无差别枚举位置会把每张随从牌的分支乘以 7,而 99.9% 的局面里位置
       // 语义上毫无差别。所以只在「场上或手上这张有 adjacent 光环」时才展开 ——
       // 精确、且对既有搜索成本零影响。
+      //
+      // 阵形(第二十卡包)同理:锋矢只加最左、鹤翼只加两翼 —— 位置直接决定谁吃增益,
+      // 所以场上或手上这张带 formation 时也要展开。判成 false 的话 AI 会把
+      // 鹤翼阵的锚点永远塞在最右,阵形对它同样等于不存在。
       const positionMatters =
         p.board.length > 0 &&
         (def.aura?.scope === 'adjacent' ||
-          p.board.some((u) => lib[u.defId]?.aura?.scope === 'adjacent'))
+          def.formation !== undefined ||
+          p.board.some(
+            (u) => lib[u.defId]?.aura?.scope === 'adjacent' || lib[u.defId]?.formation !== undefined,
+          ))
       const positions = positionMatters
         ? Array.from({ length: p.board.length + 1 }, (_, i) => i)
         : [undefined]
@@ -116,14 +126,22 @@ export function legalCommands(state: GameState, player: PlayerIdx, lib: CardLibr
     }
   }
 
-  // 主公技(每回合一次)
-  if (p.heroPower && !p.heroPowerUsed && Math.max(0, p.heroPower.cost + p.heroPowerCostDelta) <= p.mana.current) {
-    if (requiresChosenTarget(p.heroPower.script)) {
-      for (const target of chosenTargetPool(state, player, p.heroPower.script)) {
-        commands.push({ type: 'UseHeroPower', target })
+  // 主公技(每回合一次)。双将:主将技与副将技共用这一次额度,所以两条都要列 ——
+  // 少列一条,AI 就永远只会用主将技,副将在它手里等于不存在。
+  if (!p.heroPowerUsed) {
+    for (const [power, vice] of [
+      [p.heroPower, false],
+      [p.vicePower, true],
+    ] as const) {
+      if (!power) continue
+      if (Math.max(0, power.cost + p.heroPowerCostDelta) > p.mana.current) continue
+      if (requiresChosenTarget(power.script)) {
+        for (const target of chosenTargetPool(state, player, power.script)) {
+          commands.push({ type: 'UseHeroPower', target, vice })
+        }
+      } else {
+        commands.push({ type: 'UseHeroPower', vice })
       }
-    } else {
-      commands.push({ type: 'UseHeroPower' })
     }
   }
 

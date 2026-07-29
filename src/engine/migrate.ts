@@ -19,6 +19,14 @@ export function migrateState(raw: GameState): GameState {
     p.overloadNext ??= 0
     p.overloadLocked ??= 0
     p.cardsPlayedThisTurn ??= 0
+    // ---- 第二十一卡包 ----
+    // 三个都是**可选字段**,引擎里一律 `?? 0` 读,所以严格来说这一段不补也跑得动。
+    // 还是补:裁剪层与 UI 直接读 `p.morale` 时,`undefined` 和 `0` 会渲染成
+    // 「—」和「0」两种东西,老战报打开来会缺一格。补齐比在四处写兜底便宜。
+    // 副将(vicePower)刻意**不补** —— 它没有「零值」,没有就是没有。
+    p.morale ??= 0
+    p.supply ??= 0
+    p.chain ??= 0
   }
   return raw
 }
