@@ -21,6 +21,7 @@ import { CardInspect } from '../components/CardInspect'
 import { FoilLayer } from '../components/FoilLayer'
 import { useT, usePickText } from '../i18n'
 import { playSfx } from '../sound'
+import { EmptyState } from '../components/EmptyState'
 import styles from './CollectionScreen.module.css'
 
 const DOCTRINE_TABS: { key: Doctrine | 'neutral' | 'all'; zh: string; en: string }[] = [
@@ -497,7 +498,16 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
         {shown.length < filtered.length &&
           t(`载入中… ${shown.length}/${filtered.length}`, `Loading… ${shown.length}/${filtered.length}`)}
       </div>
-      {filtered.length === 0 && <p className={styles.empty}>{t('没有符合条件的卡', 'No cards match')}</p>}
+      {filtered.length === 0 && (
+        <EmptyState
+          glyph="空"
+          title={t('没有符合条件的卡', 'Nothing matches')}
+          hint={t(
+            '把筛选放宽一点 —— 或者换个词搜:卡名、势力、关键词都能搜到。',
+            'Loosen the filters, or search by another term — names, factions and keywords all work.',
+          )}
+        />
+      )}
 
       {inspect && <CardInspect def={inspect} forge onClose={() => setInspect(null)} />}
     </div>

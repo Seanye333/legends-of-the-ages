@@ -1,0 +1,45 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: clamp(28px, 8vh, 64px) 20px;
+  text-align: center;
+}
+
+/* 印章式的字形:朱砂方框里一个字。
+   用字而不是线性图标 —— 这套界面的视觉语言是书法与印章,
+   插一个线框图标进来会立刻像是别的软件的零件。 */
+.glyph {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--r-sm);
+  border: 2px solid rgba(197, 59, 44, 0.45);
+  background: linear-gradient(160deg, rgba(60, 24, 18, 0.55), rgba(28, 12, 8, 0.55));
+  font-family: var(--font-display);
+  font-size: 26px;
+  color: rgba(232, 138, 122, 0.85);
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: var(--fs-section);
+  letter-spacing: 0.16em;
+  text-indent: 0.16em;
+  color: var(--parchment-dim);
+}
+
+.hint {
+  margin: 0;
+  max-width: 30em;
+  font-size: var(--fs-small);
+  line-height: 1.7;
+  color: var(--parchment-faint);
+}
+
+.action {
+  margin-top: 6px;
+}

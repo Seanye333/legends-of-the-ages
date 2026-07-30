@@ -72,3 +72,83 @@
   letter-spacing: 0.12em;
   color: var(--parchment-dim);
 }
+
+/* ---- 按钮 ----
+ *
+ * 全站数出来 **36 个不同的 `*Btn` 类名**。它们里绝大多数只是同一件事写了很多遍:
+ * 一个金框深底的主按钮、一个描边的次按钮、一个胶囊筛选片。
+ * 真正需要自己长相的只有几个(出征、傳承、無盡、分歧点)—— 那些留着。
+ *
+ * 三个变体就够。**刻意不做第四个** —— 一有第四个,下次就会有第五个,
+ * 而这份文件存在的全部意义就是阻止那件事。
+ */
+
+/* 主:这一屏此刻最该被点的那一个。一屏最多一个。 */
+.btnPrimary {
+  padding: 10px 20px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--gold-mid);
+  background: linear-gradient(180deg, #4a3a18, #2a2010);
+  color: var(--gold-bright);
+  font-family: var(--font-display);
+  font-size: var(--fs-body);
+  letter-spacing: 0.14em;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    filter 0.15s ease,
+    transform 0.12s ease;
+}
+
+.btnPrimary:hover:not(:disabled) {
+  filter: brightness(1.18);
+}
+
+.btnPrimary:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btnPrimary:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* 次:描边、透底。「还有别的可以做」的那些。 */
+.btnGhost {
+  padding: 9px 16px;
+  border-radius: var(--r-md);
+  border: 1px solid rgba(122, 100, 58, 0.6);
+  background: rgba(20, 16, 10, 0.72);
+  color: var(--parchment-dim);
+  font-size: var(--fs-body);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.btnGhost:hover:not(:disabled) {
+  color: var(--parchment);
+  border-color: var(--gold-dark);
+}
+
+.btnGhost:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* 片:胶囊,用于筛选/切换。选中态由各屏自己叠(主义色不一样)。 */
+.btnChip {
+  padding: 5px 13px;
+  border-radius: var(--r-pill);
+  border: 1px solid rgba(122, 100, 58, 0.55);
+  background: rgba(20, 16, 10, 0.6);
+  color: var(--parchment-faint);
+  font-size: var(--fs-small);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s ease;
+}
+
+.btnChip:hover {
+  color: var(--parchment-dim);
+}

@@ -18,6 +18,7 @@ import { playSfx } from '../sound'
 import type { CardDef } from '../../engine/types'
 import { scanReplayAsync, type MissedLethal } from '../../app/coach'
 import { describeSolution } from '../puzzleSolution'
+import { EmptyState } from '../components/EmptyState'
 import styles from './ReplayScreen.module.css'
 
 const EMPTY_SET: ReadonlySet<number> = new Set()
@@ -39,9 +40,14 @@ export function ReplayScreen({ onBack }: ReplayScreenProps) {
         <div className={styles.listPanel}>
           <h1 className={styles.title}>{t('战报回放', 'Battle Replays')}</h1>
           {replays.length === 0 && (
-            <p className={styles.empty}>
-              {t('还没有战报——打完一局便会自动留档(最近 5 场)', 'No replays yet — finish a match and it will be recorded (last 5).')}
-            </p>
+            <EmptyState
+              glyph="卷"
+              title={t('尚无战报', 'No replays yet')}
+              hint={t(
+                '打完一局便会自动留档,最近 5 场随时可以重看。',
+                'Finish a match and it is recorded automatically — the last five are always here.',
+              )}
+            />
           )}
           {replays.map((r) => {
             const my = pickCompact(heroName(r.heroIds[0]))

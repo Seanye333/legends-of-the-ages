@@ -44,7 +44,10 @@ test('replays: empty state, then a finished match is recorded and playable', asy
   await page.goto('/')
   await page.getByRole('button', { name: '战报回放' }).click()
   await expect(page.getByRole('heading', { name: '战报回放' })).toBeVisible()
-  await expect(page.getByText(/还没有战报/)).toBeVisible()
+  // 空态从「居中一行小字」换成了统一的 EmptyState 组件(印章字形 + 标题 + 去路)。
+  // 断言跟着换成标题 —— 原来那句提示文案现在是 hint 那一行。
+  await expect(page.getByText('尚无战报')).toBeVisible()
+  await expect(page.getByText(/最近 5 场/)).toBeVisible()
   await page.getByRole('button', { name: '返回标题' }).click()
 
   // 打一局并认输 → 留档
