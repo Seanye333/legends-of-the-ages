@@ -21,6 +21,13 @@ const FIELD_TINT: Record<string, string> = {
   'field-steppe': 'rgba(200, 176, 110, 0.16)', // 平原走马
   'field-river': 'rgba(80, 150, 190, 0.18)', // 江河天险
 }
+
+// 战场环境 → 天气元素(与染色同一批 id;认不出的环境只染色、不下雪)
+const WEATHER_OF: Record<string, 'snow' | 'ember' | 'mist'> = {
+  'field-snow': 'snow',
+  'field-chibi': 'ember',
+  'field-river': 'mist',
+}
 import { CARDS_BY_ID } from '../../content/cards'
 import { useMatch } from '../../app/matchStore'
 import { usePickCompact, usePickText, useT } from '../i18n'
@@ -290,6 +297,18 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
     return () => window.clearTimeout(timer)
   }, [myTurnNo])
 
+  // 对手回合也要有开场:横扫光与横幅此前只在 myTurn 挂,
+  // 对手那侧的回合开始是凭空的。热座没有「敌军」可言,不触发。
+  const foeTurnNo =
+    state?.phase === 'main' && !hotSeat && state.activePlayer === 1 ? state.turn : null
+  const [foeBanner, setFoeBanner] = useState(0)
+  useEffect(() => {
+    if (foeTurnNo === null) return
+    setFoeBanner((n) => n + 1)
+    const timer = window.setTimeout(() => setFoeBanner(0), 1400)
+    return () => window.clearTimeout(timer)
+  }, [foeTurnNo])
+
   // Esc 取消选择
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -534,10 +553,23 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
   const targeting = activeTargets.size > 0 || directPlay !== undefined
   const castDef = anim.cast ? CARDS_BY_ID[anim.cast.defId] : null
 
+  // 桌震:挂在牌桌的三个布局区块上,**绝不挂 .screen**(transform 会把
+  // fixed 后代全部重锚 —— 认输按钮点不动的那次事故)。HUD 不震,桌子震。
+  const quakeCls = anim.quake && !reduceFx ? ` ${styles.quake}` : ''
+
+  // 环境元素层:战场规则给天气(雪/火屑/江雾),夜里给流萤。
+  // 全站此前零粒子 —— 十几个纯 CSS 动画的 <i> 就是入场券,不引擎、不 canvas。
+  const weather: 'snow' | 'ember' | 'mist' | 'firefly' | undefined = state.field
+    ? WEATHER_OF[state.field.rule.id]
+    : skyOf(state.turn) === 'night'
+      ? 'firefly'
+      : undefined
+
   return (
     <div
       className={`${styles.screen} ${anim.lethalFlash ? styles.slowmo : ''}`}
       data-table={tableStyle}
+      style={{ '--quake-power': anim.quake?.power ?? 1 } as CSSProperties}
       onClick={() => setSelection(null)}
     >
       {/* 战场的光。
@@ -547,8 +579,27 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
           纯 CSS、不拦点击、不参与布局。 */}
       <div className={styles.vignette} aria-hidden="true" />
 
+      {/* 紧张度渗入画面:BGM 的 setMusicTension 用的就是这个 0-1,
+          声画同源 —— 残血时暗角收紧、朱砂从边缘渗进来,和音乐一起绷。 */}
+      <div
+        className={styles.tensionScrim}
+        style={{ opacity: tension * 0.55 }}
+        aria-hidden="true"
+      />
+
+      {weather && !reduceFx && (
+        <div className={styles.weather} data-weather={weather} aria-hidden="true">
+          {Array.from({ length: 14 }, (_, i) => (
+            <i key={i} />
+          ))}
+        </div>
+      )}
+
+      {/* 回合收束的烛暗一拍 */}
+      {anim.turnEbb > 0 && <div key={anim.turnEbb} className={styles.turnEbb} aria-hidden="true" />}
+
       {/* 顶部:敌方主帅(居中) */}
-      <div className={styles.top}>
+      <div className={styles.top + quakeCls}>
         <HeroPlate
           ps={foe}
           enemy
@@ -600,7 +651,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
 
       {/* 中部:两行战场 */}
       <div
-        className={styles.battlefield}
+        className={styles.battlefield + quakeCls}
         style={
           {
             // 天时与战场环境**染牌桌**,不只是角落两条横幅。
@@ -672,7 +723,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
       </div>
 
       {/* 底部:我方主帅(居中一行)+ 手牌(居中一行) */}
-      <div className={styles.bottom}>
+      <div className={styles.bottom + quakeCls}>
         <div className={styles.heroRow}>
         <HeroPlate
           ps={me}
@@ -772,6 +823,25 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
       {turnBanner > 0 && myTurn && (
         <div key={turnBanner} className={styles.turnBanner} role="status" aria-live="polite">
           {t('轮到你了', 'Your Turn')}
+        </div>
+      )}
+
+      {/* 敌军回合的开场:同一道横扫光反向走(交接的方向反过来),朱砂调。 */}
+      {foeBanner > 0 && (
+        <div
+          key={`fsweep-${foeBanner}`}
+          className={`${styles.turnSweep} ${styles.sweepFoe}`}
+          aria-hidden="true"
+        />
+      )}
+      {foeBanner > 0 && (
+        <div
+          key={`fbanner-${foeBanner}`}
+          className={`${styles.turnBanner} ${styles.bannerFoe}`}
+          role="status"
+          aria-live="polite"
+        >
+          {t('敌军回合', 'Enemy Turn')}
         </div>
       )}
 
@@ -929,23 +999,66 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
         </div>
       )}
 
-      {/* 阵亡残影:从原位放大消散 */}
+      {/* 阵亡残影:倒下 + 一缕升起的魂魄;守护者带着那堵墙一起塌;放逐向上散 */}
       {anim.ghosts.map((g) => {
         const def = CARDS_BY_ID[g.defId]
         return (
-          <div
-            key={g.id}
-            className={styles.ghost}
-            style={{ left: g.left, top: g.top, width: g.width, height: g.height }}
-          >
-            <Portrait
-              id={g.defId}
-              nameZh={def?.name.zh ?? g.defId}
-              doctrine={def?.doctrine ?? 'neutral'}
-            />
+          <div key={g.id} style={{ display: 'contents' }}>
+            <div
+              className={`${styles.ghost} ${g.banish ? styles.ghostBanish : ''}`}
+              style={{ left: g.left, top: g.top, width: g.width, height: g.height }}
+            >
+              <Portrait
+                id={g.defId}
+                nameZh={def?.name.zh ?? g.defId}
+                doctrine={def?.doctrine ?? 'neutral'}
+              />
+            </div>
+            {!g.banish && (
+              <span
+                className={styles.soul}
+                style={{ left: g.left + g.width / 2, top: g.top + g.height * 0.3 }}
+                aria-hidden="true"
+              />
+            )}
+            {g.guard && (
+              <span
+                className={styles.ghostWall}
+                style={{ left: g.left, top: g.top + g.height * 0.72, width: g.width }}
+                aria-hidden="true"
+              />
+            )}
           </div>
         )
       })}
+
+      {/* 墨珠:施法处 → 落点。轨迹在 CSS 里(translate 到 --bolt-dx/dy)。 */}
+      {anim.bolts.map((b) => (
+        <span
+          key={b.id}
+          className={styles.bolt}
+          style={
+            {
+              left: b.x,
+              top: b.y,
+              animationDelay: `${b.delayMs}ms`,
+              '--bolt-dx': `${b.dx}px`,
+              '--bolt-dy': `${b.dy}px`,
+            } as CSSProperties
+          }
+          aria-hidden="true"
+        />
+      ))}
+
+      {/* 爆发环:主公技的鎏金涟漪 / 单挑交锋点的火星 */}
+      {anim.bursts.map((b) => (
+        <span
+          key={b.id}
+          className={b.kind === 'power' ? styles.burstPower : styles.burstClash}
+          style={{ left: b.x, top: b.y }}
+          aria-hidden="true"
+        />
+      ))}
 
       {/* 锦囊施放:卡面聚焦闪现 */}
       {anim.cast && castDef && (

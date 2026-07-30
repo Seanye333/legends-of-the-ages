@@ -1229,3 +1229,533 @@
     linear-gradient(180deg, #3d3524 0%, #2f2819 46%, #241e12 100%),
     #1a150d;
 }
+
+/* ==================== 第二轮:战斗的重量 ==================== */
+
+/* ---- 桌震 ----
+   只给最重的那几下(单击 ≥8 / 主帅挨 ≥6 / 致命一击)。
+   挂在 .top/.battlefield/.bottom 三个区块上,HUD(结束回合、横幅)不动 ——
+   桌子晃而界面稳,读起来才是「桌上挨了一记」而不是「屏幕坏了」。
+   **绝不能挂 .screen**:transform 会把 fixed 后代全部重新锚定。 */
+.quake {
+  animation: tableQuake 0.4s linear both;
+}
+
+@keyframes tableQuake {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  15% {
+    transform: translate(calc(-3px * var(--quake-power, 1)), calc(2px * var(--quake-power, 1)));
+  }
+  35% {
+    transform: translate(calc(3px * var(--quake-power, 1)), calc(-2px * var(--quake-power, 1)));
+  }
+  55% {
+    transform: translate(calc(-2px * var(--quake-power, 1)), 1px);
+  }
+  75% {
+    transform: translate(calc(1.5px * var(--quake-power, 1)), -1px);
+  }
+}
+
+/* ---- 回合收束的烛暗 ----
+   TurnEnded 此前没有任何表现。一拍极短的全屏压深(0.55s 进出),
+   像烛火被过堂风按了一下 —— 把回合之间的接缝标出来,不打断任何操作。 */
+.turnEbb {
+  position: fixed;
+  inset: 0;
+  z-index: 24;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 50%, rgba(2, 1, 0, 0.12) 30%, rgba(2, 1, 0, 0.42) 100%);
+  animation: ebbDip 0.55s ease-in-out both;
+}
+
+@keyframes ebbDip {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  45% {
+    opacity: 1;
+  }
+}
+
+/* ---- 墨珠 ----
+   法术/装备/主公技从施法处飞向落点的那一道。金芯墨晕,一颗一颗地去 ——
+   群体法术依次错开 70ms,轨迹本身就把「打了谁」讲完了。 */
+.bolt {
+  position: fixed;
+  z-index: 46;
+  width: 13px;
+  height: 13px;
+  margin: -7px 0 0 -7px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle at 40% 35%, #fff3d0, #e8c878 45%, rgba(30, 20, 6, 0.9) 78%);
+  box-shadow:
+    0 0 10px 2px rgba(240, 208, 128, 0.85),
+    0 0 26px 8px rgba(212, 168, 74, 0.35);
+  animation: boltFly 0.26s cubic-bezier(0.35, 0, 0.85, 0.5) both;
+}
+
+@keyframes boltFly {
+  0% {
+    transform: translate(0, 0) scale(0.5);
+    opacity: 0;
+  }
+  18% {
+    opacity: 1;
+    transform: translate(calc(var(--bolt-dx, 0px) * 0.12), calc(var(--bolt-dy, 0px) * 0.12))
+      scale(1);
+  }
+  88% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--bolt-dx, 0px), var(--bolt-dy, 0px)) scale(1.15);
+    opacity: 0;
+  }
+}
+
+/* ---- 爆发环:主公技 ----
+   帅案中心起一圈鎏金涟漪。主公技每回合都在用,幅度收着点 ——
+   它要的是「技能出手了」的确认,不是一次庆典。 */
+.burstPower {
+  position: fixed;
+  z-index: 46;
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px;
+  border-radius: 50%;
+  pointer-events: none;
+  border: 2px solid rgba(240, 214, 138, 0.9);
+  box-shadow:
+    0 0 14px 3px rgba(232, 200, 120, 0.5),
+    inset 0 0 8px rgba(255, 240, 200, 0.6);
+  animation: ringOut 0.6s cubic-bezier(0.2, 0.7, 0.4, 1) both;
+}
+
+@keyframes ringOut {
+  0% {
+    transform: scale(0.35);
+    opacity: 0;
+  }
+  18% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(3.1);
+    opacity: 0;
+  }
+}
+
+/* ---- 爆发环:单挑火星 ----
+   金铁相击的交锋点。中心一点白金闪 + 两道交叉的火星线甩出去。 */
+.burstClash {
+  position: fixed;
+  z-index: 46;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, #fff8e0, rgba(255, 222, 130, 0.9) 40%, transparent 75%);
+  animation: sparkCore 0.38s ease-out both;
+}
+
+.burstClash::before,
+.burstClash::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 54px;
+  height: 2px;
+  margin: -1px 0 0 -27px;
+  border-radius: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 226, 150, 0.95) 30%,
+    #fff6dc 50%,
+    rgba(255, 226, 150, 0.95) 70%,
+    transparent
+  );
+  animation: sparkLine 0.38s ease-out both;
+}
+
+.burstClash::before {
+  transform: rotate(28deg);
+}
+
+.burstClash::after {
+  transform: rotate(-38deg);
+}
+
+@keyframes sparkCore {
+  0% {
+    transform: scale(0.4);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+@keyframes sparkLine {
+  0% {
+    scale: 0.15 1;
+    opacity: 1;
+  }
+  100% {
+    scale: 1.4 1;
+    opacity: 0;
+  }
+}
+
+/* ---- 魂魄 ----
+   残影往下倒(那是躯体的重量),同时一缕极淡的青白从原位升起 ——
+   一下一上,阵亡才完整。0.9s,比残影多活的那 0.3s 就是余韵。 */
+.soul {
+  position: fixed;
+  z-index: 41;
+  width: 16px;
+  height: 26px;
+  pointer-events: none;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 35%, rgba(205, 225, 255, 0.75), transparent 72%);
+  filter: blur(1px);
+  animation: soulRise 0.9s ease-out both;
+}
+
+@keyframes soulRise {
+  0% {
+    transform: translate(-50%, 0) scale(0.6);
+    opacity: 0;
+  }
+  30% {
+    transform: translate(-50%, -12px) scale(1);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(-50%, -46px) scale(1.25);
+    opacity: 0;
+  }
+}
+
+/* ---- 守护墙塌 ----
+   守护者阵亡,那堵石栏跟着塌:先绷一下再碎着往下掉。
+   样式与 .guard::after 同一堵墙(条石纹),否则读不出「就是它塌了」。 */
+.ghostWall {
+  position: fixed;
+  z-index: 41;
+  height: 7px;
+  border-radius: 2px;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(205, 214, 232, 0.85) 0 9px,
+    rgba(74, 82, 100, 0.9) 9px 11px
+  );
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.7);
+  animation: wallCrumble 0.55s cubic-bezier(0.5, 0, 0.8, 0.4) both;
+}
+
+@keyframes wallCrumble {
+  0% {
+    transform: translateY(0) scaleY(1);
+    opacity: 1;
+  }
+  25% {
+    transform: translateY(-2px) scaleY(1.25);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(14px) scaleY(0.25);
+    opacity: 0;
+  }
+}
+
+/* ---- 放逐 ----
+   不是阵亡:不往下倒,向上散 —— 拔起、拉长、化灰。 */
+.ghost.ghostBanish {
+  animation: ghostBanishOut 0.7s cubic-bezier(0.3, 0, 0.6, 1) both;
+}
+
+@keyframes ghostBanishOut {
+  0% {
+    opacity: 0.95;
+    transform: scale(1) translateY(0);
+    filter: grayscale(0.3) brightness(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.6, 1.5) translateY(-52px);
+    filter: grayscale(1) brightness(1.6) blur(3px);
+  }
+}
+
+/* ---- 敌军回合的开场 ----
+   同一道横扫光反向走(交接的方向反过来),压成朱砂调。 */
+.sweepFoe {
+  animation-direction: reverse;
+  filter: hue-rotate(-38deg) saturate(1.6) brightness(0.92);
+}
+
+.bannerFoe {
+  color: #f2b3a4;
+  text-shadow:
+    0 2px 10px rgba(0, 0, 0, 0.9),
+    0 0 30px rgba(197, 59, 44, 0.4);
+}
+
+/* ==================== 第二轮:牌桌的活气 ==================== */
+
+/* ---- 紧张度渗入画面 ----
+   opacity 由 MatchScreen 按 tension(与 BGM 同一个 0-1)直接写,
+   这里只负责慢慢跟上 —— 紧张是渗进来的,不是切进来的。 */
+.tensionScrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    ellipse 100% 90% at 50% 50%,
+    transparent 42%,
+    rgba(110, 22, 12, 0.34) 82%,
+    rgba(140, 26, 14, 0.5) 100%
+  );
+  transition: opacity 1.2s ease;
+}
+
+/* ---- 暗角的呼吸 ----
+   桌面此前除了事件动效完全静止。14 秒一个极缓的明暗游走 ——
+   低于注意阈值,但空气是活的。 */
+.vignette {
+  animation: vignetteBreath 14s ease-in-out infinite;
+}
+
+@keyframes vignetteBreath {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.86;
+  }
+}
+
+/* ---- 环境元素层 ----
+   战场规则给天气(大雪封山→雪、赤壁在烧→火屑、江河天险→江雾),
+   夜里给流萤。十四个纯 CSS 的 <i>,没有粒子引擎也没有 canvas。 */
+.weather {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.weather i {
+  position: absolute;
+  display: block;
+}
+
+/* 横向落点与错拍:一次写好,四种天气共用 */
+.weather i:nth-child(1) { left: 4%; animation-delay: 0s; }
+.weather i:nth-child(2) { left: 12%; animation-delay: -3.2s; }
+.weather i:nth-child(3) { left: 19%; animation-delay: -7.1s; }
+.weather i:nth-child(4) { left: 27%; animation-delay: -1.6s; }
+.weather i:nth-child(5) { left: 34%; animation-delay: -5.4s; }
+.weather i:nth-child(6) { left: 42%; animation-delay: -8.8s; }
+.weather i:nth-child(7) { left: 50%; animation-delay: -2.4s; }
+.weather i:nth-child(8) { left: 57%; animation-delay: -6.3s; }
+.weather i:nth-child(9) { left: 64%; animation-delay: -0.8s; }
+.weather i:nth-child(10) { left: 71%; animation-delay: -4.7s; }
+.weather i:nth-child(11) { left: 78%; animation-delay: -9.5s; }
+.weather i:nth-child(12) { left: 85%; animation-delay: -3.9s; }
+.weather i:nth-child(13) { left: 91%; animation-delay: -7.7s; }
+.weather i:nth-child(14) { left: 97%; animation-delay: -1.2s; }
+
+/* 雪:飘下来,带一点横摆;奇偶两种大小与速度 */
+.weather[data-weather='snow'] i {
+  top: -3%;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(225, 238, 252, 0.75);
+  filter: blur(0.5px);
+  animation: snowFall 9s linear infinite;
+}
+
+.weather[data-weather='snow'] i:nth-child(2n) {
+  width: 3px;
+  height: 3px;
+  opacity: 0.7;
+  animation-duration: 13s;
+}
+
+@keyframes snowFall {
+  0% {
+    transform: translate(0, -4vh);
+  }
+  50% {
+    transform: translate(14px, 50vh);
+  }
+  100% {
+    transform: translate(-8px, 106vh);
+  }
+}
+
+/* 火屑:从下往上飘,越高越淡 */
+.weather[data-weather='ember'] i {
+  bottom: -2%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffcf7a, #e06428 70%);
+  box-shadow: 0 0 6px 1px rgba(224, 100, 40, 0.6);
+  animation: emberRise 7s ease-in infinite;
+}
+
+.weather[data-weather='ember'] i:nth-child(2n) {
+  width: 3px;
+  height: 3px;
+  animation-duration: 10s;
+}
+
+@keyframes emberRise {
+  0% {
+    transform: translate(0, 2vh) scale(1);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate(-18px, -78vh) scale(0.4);
+    opacity: 0;
+  }
+}
+
+/* 江雾:只用前三个,大团模糊的横向漂移 */
+.weather[data-weather='mist'] i {
+  width: 46vw;
+  height: 16vh;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(150, 190, 210, 0.09), transparent 70%);
+  filter: blur(10px);
+  animation: mistDrift 26s linear infinite;
+}
+
+.weather[data-weather='mist'] i:nth-child(1) { top: 30%; }
+.weather[data-weather='mist'] i:nth-child(2) { top: 48%; animation-duration: 34s; }
+.weather[data-weather='mist'] i:nth-child(3) { top: 62%; animation-duration: 42s; }
+
+.weather[data-weather='mist'] i:nth-child(n + 4) {
+  display: none;
+}
+
+@keyframes mistDrift {
+  0% {
+    transform: translateX(-52vw);
+  }
+  100% {
+    transform: translateX(104vw);
+  }
+}
+
+/* 流萤:夜里的六只,原地缓慢游走 + 明灭 */
+.weather[data-weather='firefly'] i {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #f5e6a0;
+  box-shadow: 0 0 7px 2px rgba(240, 222, 140, 0.55);
+  animation: fireflyDrift 11s ease-in-out infinite;
+}
+
+.weather[data-weather='firefly'] i:nth-child(1) { top: 24%; }
+.weather[data-weather='firefly'] i:nth-child(2) { top: 62%; }
+.weather[data-weather='firefly'] i:nth-child(3) { top: 38%; animation-duration: 14s; }
+.weather[data-weather='firefly'] i:nth-child(4) { top: 70%; animation-duration: 9s; }
+.weather[data-weather='firefly'] i:nth-child(5) { top: 30%; animation-duration: 16s; }
+.weather[data-weather='firefly'] i:nth-child(6) { top: 55%; animation-duration: 12s; }
+
+.weather[data-weather='firefly'] i:nth-child(n + 7) {
+  display: none;
+}
+
+@keyframes fireflyDrift {
+  0%,
+  100% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.9;
+  }
+  45% {
+    transform: translate(26px, -18px);
+    opacity: 0.25;
+  }
+  70% {
+    transform: translate(-14px, 10px);
+    opacity: 0.85;
+  }
+}
+
+/* ==================== 减少动效:新效果全体 + 此前的漏网 ==================== */
+
+/* 此前的漏网(残影/展牌/白闪在开关下照常全速播):压到一帧直达终态 */
+:root[data-reduced-motion='true'] .ghost,
+:root[data-reduced-motion='true'] .castLayer,
+:root[data-reduced-motion='true'] .castCard,
+:root[data-reduced-motion='true'] .lethalFlash {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+}
+
+:root[data-reduced-motion='true'] .quake,
+:root[data-reduced-motion='true'] .vignette {
+  animation: none !important;
+}
+
+:root[data-reduced-motion='true'] .bolt,
+:root[data-reduced-motion='true'] .burstPower,
+:root[data-reduced-motion='true'] .burstClash,
+:root[data-reduced-motion='true'] .soul,
+:root[data-reduced-motion='true'] .ghostWall,
+:root[data-reduced-motion='true'] .turnEbb,
+:root[data-reduced-motion='true'] .weather {
+  display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ghost,
+  .castLayer,
+  .castCard,
+  .lethalFlash {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  .quake,
+  .vignette {
+    animation: none !important;
+  }
+
+  .bolt,
+  .burstPower,
+  .burstClash,
+  .soul,
+  .ghostWall,
+  .turnEbb,
+  .weather {
+    display: none !important;
+  }
+}

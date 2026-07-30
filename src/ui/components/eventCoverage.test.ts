@@ -187,7 +187,7 @@ describe('飘字', () => {
     expect(texts.some((t) => t.includes('+-'))).toBe(false)
   })
 
-  it('同一目标的多条飘字会错位,不会叠在一起', () => {
+  it('同一拍里同一目标的连续伤害合并成总数 + ×N,不再横排两个数字', () => {
     const floats = extractFloats(
       [
         { type: 'GeneralDamaged', player: 1, iid: 3, amount: 1, healthAfter: 4 },
@@ -195,7 +195,33 @@ describe('飘字', () => {
       ],
       1,
     )
+    // 读的人要的是总量,不是心算题
+    expect(floats).toHaveLength(1)
+    expect(floats[0].text).toBe('-3')
+    expect(floats[0].count).toBe(2)
+  })
+
+  it('不同种类的飘字仍然错位(伤害与治疗不合并)', () => {
+    const floats = extractFloats(
+      [
+        { type: 'GeneralDamaged', player: 1, iid: 3, amount: 2, healthAfter: 4 },
+        { type: 'GeneralHealed', player: 1, iid: 3, amount: 3, healthAfter: 7 },
+      ],
+      1,
+    )
     expect(floats.map((f) => f.offset)).toEqual([0, 1])
+  })
+
+  it('大数字带分量档:5 点起 w2、9 点起 w3,小伤害没有', () => {
+    const floats = extractFloats(
+      [
+        { type: 'GeneralDamaged', player: 1, iid: 3, amount: 2, healthAfter: 4 },
+        { type: 'GeneralDamaged', player: 1, iid: 4, amount: 6, healthAfter: 1 },
+        { type: 'HeroDamaged', player: 1, amount: 11, hpAfter: 8 },
+      ],
+      1,
+    )
+    expect(floats.map((f) => f.weight)).toEqual([undefined, 2, 3])
   })
 
   it('飘字 id 在同一批次内唯一(否则 React key 冲突会丢动画)', () => {
@@ -227,6 +253,13 @@ describe('架构铁律 7 的另一半:该看得见的事件要真的看得见', 
     { type: 'GeneralFrozen', player: 1, iid: 4 },
     { type: 'DivineShieldPopped', player: 1, iid: 5 },
     { type: 'ArmorGained', player: 0, amount: 3, armorAfter: 3 },
+    // 第二轮补上的死代码飘字:定义早就有,时间轴此前从不喂
+    { type: 'GeneralBanished', player: 1, iid: 13, defId: 'guan-yu' },
+    { type: 'GeneralSeized', player: 0, iid: 12, defId: 'guan-yu', from: 1, position: 2 },
+    { type: 'GeneralTransformed', player: 1, iid: 3, intoIid: 11, defId: 'token-xiangyong' },
+    { type: 'CardGenerated', player: 0, iid: 10, defId: 'guan-yu' },
+    { type: 'MoraleChanged', player: 0, morale: 2, delta: 1 },
+    { type: 'ChainTriggered', player: 0, defId: 'strat-huo-ji' },
   ]
 
   it('每条都会产出飘字', () => {
@@ -234,6 +267,30 @@ describe('架构铁律 7 的另一半:该看得见的事件要真的看得见', 
       const floats = extractFloats([ev], 1, 'zh')
       expect(floats.length, `${ev.type} 没有任何飘字`).toBeGreaterThan(0)
       expect(floats[0].text.trim().length).toBeGreaterThan(0)
+    }
+  })
+
+  it('时间轴真的会把这些事件喂给飘字层(飘字定义存在≠可达)', () => {
+    // 教训:上面这批事件在 floats.ts 里躺了很多个卡包,
+    // 但 buildTimeline 的 switch 里没有它们的 case,全部落 default 静默丢失。
+    // 战报覆盖测试(上面那组)对此完全无感 —— 只有盯着时间轴源码才拦得住回归。
+    const src = readFileSync(new URL('../useEventAnimations.ts', import.meta.url), 'utf8')
+    const wired = [
+      'ArmorGained',
+      'SecretPlayed',
+      'EquipmentAttached',
+      'GeneralBanished',
+      'GeneralSeized',
+      'GeneralTransformed',
+      'CardGenerated',
+      'MoraleChanged',
+      'SupplyChanged',
+      'ChainTriggered',
+      'GeneralSummoned',
+      'TurnEnded',
+    ]
+    for (const name of wired) {
+      expect(src, `buildTimeline 里没有 case '${name}'`).toContain(`case '${name}'`)
     }
   })
 

@@ -92,6 +92,9 @@ export function GeneralToken({ inst, ready, selected, targetable, floats, fx, on
       // 让组件之间传一张 iid→defId 的表:那张表得跟着场面每一次变动同步,
       // 而这里的真相本来就在渲染这个单位的地方。
       data-def={inst.defId}
+      // 守护快照:阵亡那一帧单位已从 DOM 移除,残影要不要塌一堵墙,
+      // 只能由上一帧的这个标记告诉动效层(见 useEventAnimations 的 guardsRef)
+      data-guard={hasGuard ? '1' : undefined}
       // FLIP 用:同一个单位在两帧里必须是同一个 key,位移才是它自己真的走了多远
       data-flip-key={String(inst.iid)}
       style={{ '--doctrine': DOCTRINE_COLORS[doctrine], ...fxVars } as CSSProperties}
@@ -156,10 +159,11 @@ export function GeneralToken({ inst, ready, selected, targetable, floats, fx, on
       {floats?.map((f) => (
         <span
           key={f.id}
-          className={`${styles.float} ${styles[f.kind]}`}
+          className={`${styles.float} ${styles[f.kind]} ${f.weight ? styles[`w${f.weight}`] : ''}`}
           style={{ marginLeft: `${f.offset * 16}px` }}
         >
           {f.text}
+          {(f.count ?? 1) > 1 && <em className={styles.multi}>×{f.count}</em>}
         </span>
       ))}
     </div>

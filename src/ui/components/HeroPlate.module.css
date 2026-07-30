@@ -241,12 +241,54 @@
   color: #ff6a55;
 }
 
+/* 治疗不砸,治疗是长出来的(与令牌侧同一语汇,见 GeneralToken 的 healUp) */
 .heal {
   color: #7ae87a;
+  animation: heroHealUp 1.4s ease-out forwards;
+}
+
+@keyframes heroHealUp {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 6px) scale(0.7);
+  }
+  30% {
+    opacity: 1;
+    transform: translate(-50%, -2px) scale(1.08);
+  }
+  70% {
+    opacity: 1;
+    transform: translate(-50%, -16px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -28px) scale(0.95);
+  }
 }
 
 .buff {
   color: #f5d78a;
+}
+
+/* 数字的分量与连击标:与令牌侧同一套规则(floats.ts 的 weightOf) */
+.w2 {
+  font-size: clamp(20px, 4.4vh, 34px);
+}
+
+.w3 {
+  font-size: clamp(25px, 5.8vh, 44px);
+  text-shadow:
+    0 2px 3px #000,
+    0 0 14px rgba(0, 0, 0, 0.9),
+    0 0 22px rgba(255, 106, 85, 0.35);
+}
+
+.multi {
+  font-style: normal;
+  font-size: 0.55em;
+  vertical-align: super;
+  margin-left: 2px;
+  opacity: 0.9;
 }
 
 @keyframes heroFloatUp {

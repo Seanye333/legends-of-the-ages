@@ -9,6 +9,16 @@ export interface FloatItem {
   text: string
   kind: 'damage' | 'heal' | 'buff'
   offset: number // 同一目标的第几个飘字,用于错位
+  count?: number // 同一拍里被合并的同类数字次数(≥2 时渲染成 ×N 连击标)
+  weight?: 2 | 3 // 分量档:大数字用更大的字(见 CSS .w2/.w3)
+}
+
+// 数字的分量。震动有 --fx-power 分级,飘字此前没有 ——
+// 打 1 点和打 12 点是同一个字号,而字号才是玩家真正读的那个通道。
+function weightOf(n: number): 2 | 3 | undefined {
+  if (n >= 9) return 3
+  if (n >= 5) return 2
+  return undefined
 }
 
 export function targetFloatKey(t: { kind: 'hero'; player: 0 | 1 } | { kind: 'general'; iid: number }): string {
@@ -23,19 +33,38 @@ export function extractFloats(events: GameEvent[], batch: number, lang: Language
     perTarget.set(targetKey, offset + 1)
     out.push({ id: `${batch}-${out.length}`, targetKey, text, kind, offset })
   }
+  // 同一拍里同一目标连挨两刀,原来是横向排开两个数字(-1、-2)——
+  // 读的人得自己心算。合并成一个总数 + ×N 连击标:总量才是他要的答案。
+  // 只合并**纯数字**的伤害/治疗;「壁碎」「沉默」这类语义字各自独立。
+  const merged = new Map<string, { item: FloatItem; total: number }>()
+  const pushNum = (targetKey: string, amount: number, kind: 'damage' | 'heal') => {
+    const key = `${targetKey}|${kind}`
+    const prev = merged.get(key)
+    if (prev) {
+      prev.total += amount
+      prev.item.text = `${kind === 'damage' ? '-' : '+'}${prev.total}`
+      prev.item.count = (prev.item.count ?? 1) + 1
+      prev.item.weight = weightOf(prev.total)
+      return
+    }
+    push(targetKey, `${kind === 'damage' ? '-' : '+'}${amount}`, kind)
+    const item = out[out.length - 1]
+    item.weight = weightOf(amount)
+    merged.set(key, { item, total: amount })
+  }
   for (const ev of events) {
     switch (ev.type) {
       case 'GeneralDamaged':
-        push(`gen-${ev.iid}`, `-${ev.amount}`, 'damage')
+        pushNum(`gen-${ev.iid}`, ev.amount, 'damage')
         break
       case 'GeneralHealed':
-        push(`gen-${ev.iid}`, `+${ev.amount}`, 'heal')
+        pushNum(`gen-${ev.iid}`, ev.amount, 'heal')
         break
       case 'HeroDamaged':
-        if (ev.amount > 0) push(`hero-${ev.player}`, `-${ev.amount}`, 'damage')
+        if (ev.amount > 0) pushNum(`hero-${ev.player}`, ev.amount, 'damage')
         break
       case 'HeroHealed':
-        push(`hero-${ev.player}`, `+${ev.amount}`, 'heal')
+        pushNum(`hero-${ev.player}`, ev.amount, 'heal')
         break
       case 'GeneralBuffed': {
         // 临时增益到期/光环撤销走同一事件,数值为负 —— 别再硬加 '+' 号
@@ -79,7 +108,10 @@ export function extractFloats(events: GameEvent[], batch: number, lang: Language
         )
         break
       case 'GeneralBanished':
-        push(`gen-${ev.iid}`, pickCompact({ zh: '放逐', en: 'BANISH' }, lang), 'damage')
+        // 挂在**主帅**上,不能挂 gen-iid:飘字是在事件之后渲染的,
+        // 而被放逐的单位那一帧已经从场上(和 DOM 里)消失了 ——
+        // 锚一个不存在的元素,字永远不会出现。
+        push(`hero-${ev.player}`, pickCompact({ zh: '放逐', en: 'BANISH' }, lang), 'damage')
         break
       case 'GeneralSeized':
         push(`gen-${ev.iid}`, pickCompact({ zh: '策反', en: 'DEFECT' }, lang), 'buff')

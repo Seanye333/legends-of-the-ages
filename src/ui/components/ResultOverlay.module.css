@@ -217,6 +217,72 @@
   justify-content: space-between;
   gap: 10px;
   font-size: 13px;
+  /* 逐行入场:延迟由 TSX 按行号写(0.55s 起步,每行 +0.07s)。
+     十二个数一次性全出的时候,没有一个会被真的读到。 */
+  animation: statRowIn 0.4s ease-out both;
+}
+
+@keyframes statRowIn {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 战利卡包:纯 CSS 的小牌背 —— 金框、朱印、一个「名」字 */
+.packChip {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 30px;
+  margin-right: 9px;
+  vertical-align: -8px;
+  border-radius: 3px;
+  border: 1px solid var(--gold-deep, #b8863b);
+  background:
+    radial-gradient(circle at 50% 42%, rgba(197, 59, 44, 0.85) 0 7px, transparent 7px),
+    linear-gradient(160deg, #3a2c12, #201607);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.6),
+    0 2px 6px rgba(0, 0, 0, 0.6),
+    0 0 12px rgba(232, 200, 120, 0.25);
+  animation: packDrop 0.5s 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+
+.packChip i {
+  font-style: normal;
+  font-family: var(--font-display);
+  font-size: 9px;
+  line-height: 1;
+  color: #f7e1a8;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.9);
+}
+
+@keyframes packDrop {
+  from {
+    opacity: 0;
+    transform: translateY(-14px) rotate(-10deg) scale(1.4);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg) scale(1);
+  }
+}
+
+:root[data-reduced-motion='true'] .statRow,
+:root[data-reduced-motion='true'] .packChip {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .statRow,
+  .packChip {
+    animation: none;
+  }
 }
 
 .statRow dt {

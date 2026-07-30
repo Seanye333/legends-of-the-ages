@@ -289,13 +289,58 @@
   color: #ff6a55;
 }
 
+/* 治疗不再和伤害共用一条「砸下弹起」—— 挨刀是砸,回血是长出来:
+   慢半拍地绽开、缓缓上浮,没有冲击帧。 */
 .heal {
   color: #7ae87a;
+  animation: healUp 1.4s ease-out forwards;
+}
+
+@keyframes healUp {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 6px) scale(0.7);
+  }
+  30% {
+    opacity: 1;
+    transform: translate(-50%, -2px) scale(1.08);
+  }
+  70% {
+    opacity: 1;
+    transform: translate(-50%, -16px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -28px) scale(0.95);
+  }
 }
 
 .buff {
   color: #f5d78a;
   font-size: clamp(12px, 2.4vh, 18px);
+}
+
+/* 数字的分量:5 点起一档、9 点起再一档(floats.ts 的 weightOf)。
+   震动早就按伤害分级了(--fx-power),字号才是玩家真正读的那个通道。 */
+.w2 {
+  font-size: clamp(20px, 4.4vh, 34px);
+}
+
+.w3 {
+  font-size: clamp(25px, 5.8vh, 44px);
+  text-shadow:
+    0 2px 3px #000,
+    0 0 14px rgba(0, 0, 0, 0.9),
+    0 0 22px rgba(255, 106, 85, 0.35);
+}
+
+/* 连击标:同一拍连挨两刀合并成总数 + ×N,总量才是要读的答案 */
+.multi {
+  font-style: normal;
+  font-size: 0.55em;
+  vertical-align: super;
+  margin-left: 2px;
+  opacity: 0.9;
 }
 
 /* 飘字:砸下弹起再飘散 */
@@ -601,5 +646,69 @@
   .token .circle::before {
     animation: none;
     opacity: 0;
+  }
+}
+
+/* ---- 守护墙的生 ----
+   守护者被打的那一拍,墙自己也要说话:白光沿墙面闪过 + 微微绷紧。
+   fx-shake 是全局类(useEventAnimations 挂的),要用 :global 接。 */
+.guard:global(.fx-shake)::after {
+  animation: wallHit 0.32s linear both;
+}
+
+@keyframes wallHit {
+  0% {
+    filter: brightness(1.9);
+    transform: scaleY(1.3);
+  }
+  40% {
+    filter: brightness(1.35);
+    transform: scaleY(0.9);
+  }
+  100% {
+    filter: brightness(1);
+    transform: scaleY(1);
+  }
+}
+
+/* ---- 兵器上身 ----
+   装备打出去之后此前只是攻血悄悄变大 —— ⚔ 角标挂载即播一次落定:
+   放大转着落下来,像兵器真的递到了手上。 */
+.equipMark {
+  animation: equipPop 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+}
+
+@keyframes equipPop {
+  0% {
+    transform: scale(2.4) rotate(-40deg);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(0.9) rotate(6deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* ---- 入场落地的减少动效(此前漏网:tokenIn 在开关下照常全速播) ---- */
+:root[data-reduced-motion='true'] .token {
+  animation: none;
+}
+
+:root[data-reduced-motion='true'] .guard:global(.fx-shake)::after,
+:root[data-reduced-motion='true'] .equipMark {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .token {
+    animation: none;
+  }
+
+  .guard:global(.fx-shake)::after,
+  .equipMark {
+    animation: none;
   }
 }

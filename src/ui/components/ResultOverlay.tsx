@@ -1,9 +1,40 @@
+import { useEffect, useState } from 'react'
 import type { Winner } from '../../engine/types'
 import type { RatingResult } from '../../app/matchStore'
 import type { MatchStats } from '../../app/matchStats'
 import { rankOf } from '../../app/protocol'
 import { useT } from '../i18n'
 import styles from './ResultOverlay.module.css'
+
+// 战绩数字滚上去,不是印上去。十二个数一次性全出的时候,
+// 没有一个会被真的读到 —— 逐行入场(CSS)+ 数字滚动(这里)给每个数一拍。
+function RollNum({ value, delay }: { value: number; delay: number }) {
+  const reduced =
+    typeof document !== 'undefined' && document.documentElement.dataset.reducedMotion === 'true'
+  const [shown, setShown] = useState(reduced ? value : 0)
+  useEffect(() => {
+    if (reduced || value <= 0) {
+      setShown(value)
+      return
+    }
+    let raf = 0
+    const timer = window.setTimeout(() => {
+      const start = performance.now()
+      const dur = 650
+      const tick = (now: number) => {
+        const k = Math.min(1, (now - start) / dur)
+        setShown(Math.round(value * (1 - Math.pow(1 - k, 3))))
+        if (k < 1) raf = requestAnimationFrame(tick)
+      }
+      raf = requestAnimationFrame(tick)
+    }, delay)
+    return () => {
+      window.clearTimeout(timer)
+      cancelAnimationFrame(raf)
+    }
+  }, [value, delay, reduced])
+  return <>{shown}</>
+}
 
 interface ResultOverlayProps {
   winner: Winner | undefined
@@ -62,7 +93,15 @@ export function ResultOverlay({
     <div className={`${styles.overlay} ${bgCls}`}>
       <div className={`${styles.glyph} ${verdictCls}`}>{glyph}</div>
       <div className={`${styles.word} ${verdictCls}`}>{word}</div>
-      {winner === 0 && <div className={styles.loot}>{t('战利:卡包 ×1', 'Spoils: 1 card pack')}</div>}
+      {winner === 0 && (
+        <div className={styles.loot}>
+          {/* 战利不再只是一行字:一只小卡包(纯 CSS 牌背)先落进来 */}
+          <span className={styles.packChip} aria-hidden="true">
+            <i>名</i>
+          </span>
+          {t('战利:卡包 ×1', 'Spoils: 1 card pack')}
+        </div>
+      )}
       {remoteRematch === 'offered' && (
         <div className={styles.loot}>{t('对手想再打一局', 'Your opponent wants a rematch')}</div>
       )}
@@ -76,10 +115,16 @@ export function ResultOverlay({
       )}
       {shownRows.length > 0 && (
         <dl className={styles.stats}>
-          {shownRows.map(([zh, en, v]) => (
-            <div key={en} className={styles.statRow}>
+          {shownRows.map(([zh, en, v], i) => (
+            <div
+              key={en}
+              className={styles.statRow}
+              style={{ animationDelay: `${0.55 + i * 0.07}s` }}
+            >
               <dt>{t(zh, en)}</dt>
-              <dd>{v}</dd>
+              <dd>
+                <RollNum value={v} delay={550 + i * 70} />
+              </dd>
             </div>
           ))}
         </dl>

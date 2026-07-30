@@ -108,10 +108,11 @@ export function HeroPlate({
         {floats?.map((f) => (
           <span
             key={f.id}
-            className={`${styles.float} ${styles[f.kind]}`}
+            className={`${styles.float} ${styles[f.kind]} ${f.weight ? styles[`w${f.weight}`] : ''}`}
             style={{ marginLeft: `${f.offset * 16}px` }}
           >
             {f.text}
+            {(f.count ?? 1) > 1 && <em className={styles.multi}>×{f.count}</em>}
           </span>
         ))}
       </div>

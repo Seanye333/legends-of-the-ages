@@ -49,6 +49,8 @@ export interface GhostFx {
   top: number
   width: number
   height: number
+  guard?: boolean // 生前是守护:残影要带着那堵墙一起塌
+  banish?: boolean // 放逐不是阵亡:向上散,不往下倒
 }
 
 export interface CastFx {
@@ -57,11 +59,38 @@ export interface CastFx {
   fromEnemy: boolean
 }
 
+// 墨珠:法术/装备/主公技从施法处飞向落点的那一道。
+// 此前锦囊只有全屏居中的展牌,和目标之间**没有任何一根线** ——
+// 群体法术打完,玩家靠飘字倒推刚才发生了什么。
+export interface BoltFx {
+  id: number
+  x: number
+  y: number
+  dx: number
+  dy: number
+  delayMs: number
+}
+
+// 爆发环:主公技的鎏金涟漪 / 单挑交锋点的火花。定位取自实测 rect。
+export interface BurstFx {
+  id: number
+  x: number
+  y: number
+  kind: 'power' | 'clash'
+}
+
 export interface EventAnimState {
   floats: FloatItem[]
   fx: ReadonlyMap<string, TokenFx>
   ghosts: GhostFx[]
   cast: CastFx | null
+  bolts: BoltFx[]
+  bursts: BurstFx[]
+  // 桌震:只给最重的那几下(单击 ≥8、主帅挨 ≥6、致命一击)。
+  // power 进 CSS 的 --quake-power;挂在 .top/.battlefield/.bottom 上,
+  // **绝不能挂 .screen**(transform 会重锚 fixed 后代 —— 认输按钮事件的教训)。
+  quake: { id: number; power: number } | null
+  turnEbb: number // 回合收束的烛暗一拍(id,0 = 无)
   lethalFlash: boolean
   myTurnPulse: boolean
   holdResult: boolean // 致命一击闪光未播完前,压住终局结算面板
@@ -83,13 +112,47 @@ interface Entry {
   events: GameEvent[] // 本条目要落地的飘字事件
   motions: MotionPlan[]
   flashes: Array<{ key: string; kind: FxFlash['kind'] }>
-  deaths: Array<{ defId: string; rect: DOMRect | null }>
+  deaths: Array<{ defId: string; rect: DOMRect | null; guard?: boolean; banish?: boolean }>
   skipShake?: Set<string> // 正在突进的单位不叠加受击震颤(避免动画中断回弹)
   cast?: { defId: string; fromEnemy: boolean }
+  // 墨珠的出发点:'cast'(展牌位置)或某个 fxkey(主公技从帅案出发)。
+  // 落点不在这里 —— 由这一拍 events 里的受影响目标在执行时实测推出。
+  boltFrom?: string
+  bursts?: Array<{ key: string; key2?: string; kind: BurstFx['kind'] }>
+  quake?: number
+  ebb?: boolean
   lethal?: boolean
   pulse?: boolean
   release?: boolean // 放行终局结算
   sfx: SfxName[]
+}
+
+// 这一拍里哪些目标该收到一颗墨珠(法术/装备/主公技的落点)。
+// 从事件反推而不是让每个 case 自己填:落点的真相本来就在事件里。
+function boltTargets(events: GameEvent[]): string[] {
+  const seen = new Set<string>()
+  for (const ev of events) {
+    switch (ev.type) {
+      case 'GeneralDamaged':
+      case 'GeneralHealed':
+      case 'GeneralFrozen':
+      case 'GeneralSilenced':
+      case 'GeneralBuffed':
+      case 'DivineShieldPopped':
+        seen.add(`gen-${ev.iid}`)
+        break
+      case 'EquipmentAttached':
+        seen.add(`gen-${ev.targetIid}`)
+        break
+      case 'HeroDamaged':
+      case 'HeroHealed':
+        seen.add(`hero-${ev.player}`)
+        break
+      default:
+        break
+    }
+  }
+  return [...seen]
 }
 
 // 音效 → 触感的映射。只挑几个真正该有手感的时刻,不是每声都震。
@@ -111,6 +174,10 @@ const EMPTY: EventAnimState = {
   fx: new Map(),
   ghosts: [],
   cast: null,
+  bolts: [],
+  bursts: [],
+  quake: null,
+  turnEbb: 0,
   lethalFlash: false,
   myTurnPulse: false,
   holdResult: false,
@@ -118,10 +185,17 @@ const EMPTY: EventAnimState = {
 
 // ---------- 时间轴编排 ----------
 
-function buildTimeline(events: GameEvent[], rects: ReadonlyMap<string, DOMRect>): Entry[] {
+function buildTimeline(
+  events: GameEvent[],
+  rects: ReadonlyMap<string, DOMRect>,
+  guards: ReadonlySet<string>,
+): Entry[] {
   const entries: Entry[] = []
   let t = 0
   let cur: Entry | null = null
+  // 刚有一次施法(锦囊/装备/主公技),效果落点的那一拍要放墨珠。
+  // 只给紧随其后的第一个松散节拍 —— 再往后的事件已经是连锁反应了。
+  let castPending: string | null = null
 
   const push = (dur: number, fill?: Partial<Entry>): Entry => {
     const e: Entry = {
@@ -140,7 +214,15 @@ function buildTimeline(events: GameEvent[], rects: ReadonlyMap<string, DOMRect>)
   }
 
   // 松散事件(法术伤害/治疗等)落进一个新节拍,与前面的动作错开
-  const loose = (): Entry => cur ?? push(LOOSE_DUR)
+  const loose = (): Entry => {
+    if (cur) return cur
+    const e = push(LOOSE_DUR)
+    if (castPending) {
+      e.boltFrom = castPending
+      castPending = null
+    }
+    return e
+  }
 
   const addSfxOnce = (e: Entry, name: SfxName) => {
     if (!e.sfx.includes(name)) e.sfx.push(name)
@@ -149,6 +231,7 @@ function buildTimeline(events: GameEvent[], rects: ReadonlyMap<string, DOMRect>)
   for (const ev of events) {
     switch (ev.type) {
       case 'TurnStarted': {
+        castPending = null
         if (ev.player === 0) {
           // 轻锣之后跟一记玉磬:水晶是逐颗点亮的(HeroPlate 里第 i 颗晚 45ms),
           // 声音跟着一起到,那一下「资源到账」才成立。
@@ -165,13 +248,24 @@ function buildTimeline(events: GameEvent[], rects: ReadonlyMap<string, DOMRect>)
         if (def?.type === 'stratagem' || def?.type === 'equipment') {
           push(520, { cast: { defId: ev.defId, fromEnemy: ev.player === 1 }, sfx: ['stratagemCast'] })
           cur = null // 锦囊/装备的效果飘字落在闪光之后
+          castPending = 'cast' // 效果落点那一拍:从展牌位置放墨珠
         } else {
           push(220, { sfx: ['cardPlay'] })
+          castPending = null
         }
         break
       }
 
+      case 'TurnEnded': {
+        // 回合的收束此前**没有任何表现** —— 开始有横扫有横幅,结束是凭空静止。
+        // 一拍极短的烛暗(全屏压深 → 回来)把接缝标出来,不打断任何东西。
+        push(160, { ebb: true })
+        cur = null
+        break
+      }
+
       case 'AttackResolved': {
+        castPending = null
         const attackerKey = `gen-${ev.attackerIid}`
         const targetKey = targetFloatKey(ev.target)
         push(170, {
@@ -190,10 +284,13 @@ function buildTimeline(events: GameEvent[], rects: ReadonlyMap<string, DOMRect>)
         impact.motions.push({ key: targetKey, kind: 'shake', power: powerOf(ev.damageToTarget) })
         impact.flashes.push({ key: targetKey, kind: 'hit' })
         impact.flashes.push({ key: attackerKey, kind: 'hit' })
+        // 桌震只留给最重的那几下 —— 每刀都震等于没有震
+        if (ev.damageToTarget >= 8) impact.quake = powerOf(ev.damageToTarget)
         break
       }
 
       case 'DuelFought': {
+        castPending = null
         const chKey = `gen-${ev.challengerIid}`
         const defKey = `gen-${ev.defenderIid}`
         const firstKey = ev.firstStrikeIid === ev.defenderIid ? defKey : chKey
@@ -223,18 +320,22 @@ function buildTimeline(events: GameEvent[], rects: ReadonlyMap<string, DOMRect>)
             },
           ],
         })
-        // 第二步:金光交锋 + 重震 + 伤害飘字
+        // 第二步:金光交锋 + 重震 + 伤害飘字 + 交锋点一簇金铁火星
         const clash = push(340, { sfx: ['attack', 'hit'] })
         clash.events.push(...stolen)
         clash.motions.push({ key: chKey, kind: 'shakeHard' }, { key: defKey, kind: 'shakeHard' })
         clash.flashes.push({ key: chKey, kind: 'clash' }, { key: defKey, kind: 'clash' })
+        clash.bursts = [{ key: chKey, key2: defKey, kind: 'clash' }]
         break
       }
 
       case 'GeneralDied': {
         push(260, {
           sfx: ['death'],
-          deaths: [{ defId: ev.defId, rect: rects.get(`gen-${ev.iid}`) ?? null }],
+          // guard 从上一帧的 DOM 快照读:事件里没有关键词,而此刻单位已经不在场上
+          deaths: [
+            { defId: ev.defId, rect: rects.get(`gen-${ev.iid}`) ?? null, guard: guards.has(`gen-${ev.iid}`) },
+          ],
         })
         cur = null // 亡语效果另起节拍
         break
@@ -246,6 +347,7 @@ function buildTimeline(events: GameEvent[], rects: ReadonlyMap<string, DOMRect>)
         e.flashes.push({ key: `hero-${ev.player}`, kind: 'hit' })
         e.motions.push({ key: `hero-${ev.player}`, kind: 'shake', power: powerOf(ev.amount) })
         addSfxOnce(e, 'hit')
+        if (ev.amount >= 6) e.quake = powerOf(ev.amount)
         if (ev.hpAfter <= 0) {
           // 致命一击:全屏白金闪光 + 慢镜,压在终局结算之前。
           //
@@ -253,7 +355,7 @@ function buildTimeline(events: GameEvent[], rects: ReadonlyMap<string, DOMRect>)
           // 玩家还没看清是哪一击结束的战斗,结算面板就盖上来了。
           // **一局四十分钟只有这一下**,值得给它一秒钟。
           // 时长同时决定了 .slowmo 的作用窗口(MatchScreen 按 lethalFlash 挂类)。
-          push(760, { lethal: true, sfx: ['lethal'] })
+          push(760, { lethal: true, sfx: ['lethal'], quake: 1.8 })
           cur = null
         }
         break
@@ -287,9 +389,15 @@ function buildTimeline(events: GameEvent[], rects: ReadonlyMap<string, DOMRect>)
       // ---- 第三卡包 ----
       case 'HeroPowerUsed': {
         // 主公技单独占一拍:它每回合都会响,给它一个稳定的节奏点,
-        // 后面的伤害/召唤飘字才不会和「按钮亮起」糊在一起
-        push(300, { sfx: ['stratagemCast'] })
+        // 后面的伤害/召唤飘字才不会和「按钮亮起」糊在一起。
+        // 此前它的全部表现是一声借来的锦囊音、零视觉 ——
+        // 现在帅案起一圈鎏金涟漪,效果落点那一拍再从帅案放墨珠。
+        push(300, {
+          sfx: ['stratagemCast'],
+          bursts: [{ key: `hero-${ev.player}`, kind: 'power' }],
+        })
         cur = null
+        castPending = `hero-${ev.player}`
         break
       }
 
@@ -302,12 +410,15 @@ function buildTimeline(events: GameEvent[], rects: ReadonlyMap<string, DOMRect>)
         // 给的时间比锦囊长(680 vs 520):这张牌是意料之外的,要留出读的时间。
         push(680, { cast: { defId: ev.defId, fromEnemy: ev.player === 1 }, sfx: ['stratagemCast'] })
         cur = null // 伏兵的效果飘字落在展示之后
+        castPending = 'cast'
         break
       }
 
       case 'SecretPlayed': {
-        // 埋下:不展示牌面(对手拿到的 defId 本来就是空的),只给一拍音效
-        push(200, { sfx: ['cardPlay'] })
+        // 埋下:不展示牌面(对手拿到的 defId 本来就是空的),音效 + 主帅上的「伏兵」飘字。
+        // 飘字在 floats.ts 里早就定义了,但这里从没把事件塞进 events —— 死代码复活。
+        const e = push(200, { sfx: ['cardPlay'] })
+        e.events.push(ev)
         break
       }
 
@@ -362,8 +473,81 @@ function buildTimeline(events: GameEvent[], rects: ReadonlyMap<string, DOMRect>)
       }
 
       case 'ArmorGained': {
-        // 得甲用「甲片」音色的那一记,和受击(闷响)听感上分得开
-        addSfxOnce(loose(), 'armorBreak')
+        // 得甲用「甲片」音色的那一记,和受击(闷响)听感上分得开。
+        // 「+N 甲」的飘字此前不可达:音效塞了,事件本身没进 events。
+        const e = loose()
+        e.events.push(ev)
+        addSfxOnce(e, 'armorBreak')
+        break
+      }
+
+      // ---- 复活的死代码飘字:floats.ts 里定义齐全,但 buildTimeline 从不喂 ----
+
+      case 'EquipmentAttached': {
+        // 装备此前的全部视觉是令牌角上的静态 ⚔:锦囊展牌之后,
+        // 墨珠飞到佩戴者身上 + 一记金闪 + 角标自己的入场动画(CSS)。
+        const e = loose()
+        e.events.push(ev) // 不出飘字(floats 无此 case),但 boltTargets 靠它找落点
+        e.flashes.push({ key: `gen-${ev.targetIid}`, kind: 'clash' })
+        addSfxOnce(e, 'bond')
+        break
+      }
+
+      case 'GeneralBanished': {
+        // 放逐不是阵亡:残影向上散(ghostBanish),飘字挂主帅(单位元素已不在)
+        const e = loose()
+        e.events.push(ev)
+        e.deaths.push({
+          defId: ev.defId,
+          rect: rects.get(`gen-${ev.iid}`) ?? null,
+          banish: true,
+        })
+        addSfxOnce(e, 'death')
+        break
+      }
+
+      case 'GeneralSeized': {
+        const e = loose()
+        e.events.push(ev)
+        e.flashes.push({ key: `gen-${ev.iid}`, kind: 'clash' })
+        addSfxOnce(e, 'bond')
+        break
+      }
+
+      case 'GeneralTransformed': {
+        const e = loose()
+        e.events.push(ev)
+        e.flashes.push({ key: `gen-${ev.intoIid}`, kind: 'clash' })
+        addSfxOnce(e, 'discover')
+        break
+      }
+
+      case 'CardGenerated': {
+        const e = loose()
+        e.events.push(ev)
+        if (ev.player === 0) addSfxOnce(e, 'draw')
+        break
+      }
+
+      case 'MoraleChanged':
+      case 'SupplyChanged': {
+        // 飘字层自己会过滤噪音(粮道每回合 +1 不飘)
+        loose().events.push(ev)
+        break
+      }
+
+      case 'ChainTriggered': {
+        const e = loose()
+        e.events.push(ev)
+        addSfxOnce(e, 'bond')
+        break
+      }
+
+      case 'GeneralSummoned': {
+        // 入场此前完全游离在时间轴外(动画靠 React 挂载即播,声音没有)。
+        // 衍生物/亡语召唤落在当前节拍并补一声落子;从手牌打出时
+        // CardPlayed 那一拍已经有同名音效,addSfxOnce 会去重。
+        addSfxOnce(loose(), 'cardPlay')
         break
       }
 
@@ -415,6 +599,7 @@ export function useEventAnimations(
   const doneRef = useRef<GameEvent[] | null>(null)
   const idRef = useRef(0)
   const rectsRef = useRef(new Map<string, DOMRect>())
+  const guardsRef = useRef(new Set<string>())
   const seqTimersRef = useRef<number[]>([]) // 时间轴条目:新批次到来即作废
   const gcTimersRef = useRef<number[]>([]) // 清理计时:只在卸载时统一清
 
@@ -434,7 +619,11 @@ export function useEventAnimations(
       const dx = to.left + to.width / 2 - (from.left + from.width / 2)
       const dy = to.top + to.height / 2 - (from.top + from.height / 2)
       const dist = Math.hypot(dx, dy) || 1
-      const k = Math.min(0.45, 96 / dist)
+      // 冲**到目标身上**,不是冲到半路折返。原来 min(0.45, 96/dist) 把突进
+      // 硬压在半程以内 —— 大部分攻击读起来像「朝那个方向比划了一下」。
+      // 现在走到距目标中心约 46px(正好贴上对方边缘)再由顿帧接住;
+      // 近身对撞至少走 1/4,免得贴脸攻击完全看不见位移。
+      const k = Math.max(0.25, Math.min(0.86, (dist - 46) / dist))
       fx.x = Math.round(dx * k)
       fx.y = Math.round(dy * k)
     } else {
@@ -459,9 +648,59 @@ export function useEventAnimations(
         top: d.rect.top,
         width: d.rect.width,
         height: d.rect.height,
+        guard: d.guard,
+        banish: d.banish,
       })
     }
     const cast: CastFx | null = e.cast ? { id: ++idRef.current, ...e.cast } : null
+
+    // 墨珠:出发点(展牌中心或帅案)→ 这一拍每个受影响目标,依次错开 70ms
+    const bolts: BoltFx[] = []
+    if (e.boltFrom) {
+      const origin =
+        e.boltFrom === 'cast'
+          ? { x: window.innerWidth / 2, y: window.innerHeight * 0.46 }
+          : (() => {
+              const r = getRect(rectsRef.current, e.boltFrom!)
+              return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null
+            })()
+      if (origin) {
+        let i = 0
+        for (const key of boltTargets(e.events)) {
+          const r = getRect(rectsRef.current, key)
+          if (!r) continue
+          bolts.push({
+            id: ++idRef.current,
+            x: origin.x,
+            y: origin.y,
+            dx: r.left + r.width / 2 - origin.x,
+            dy: r.top + r.height / 2 - origin.y,
+            delayMs: i * 70,
+          })
+          if (++i >= 5) break // 超大群体法术:五颗以后视觉已饱和
+        }
+      }
+    }
+
+    // 爆发环:单点取该元素中心,双点(单挑)取两者的交锋中点
+    const bursts: BurstFx[] = []
+    for (const b of e.bursts ?? []) {
+      const r1 = getRect(rectsRef.current, b.key)
+      if (!r1) continue
+      let x = r1.left + r1.width / 2
+      let y = r1.top + r1.height / 2
+      if (b.key2) {
+        const r2 = getRect(rectsRef.current, b.key2)
+        if (r2) {
+          x = (x + r2.left + r2.width / 2) / 2
+          y = (y + r2.top + r2.height / 2) / 2
+        }
+      }
+      bursts.push({ id: ++idRef.current, x, y, kind: b.kind })
+    }
+
+    const quake = e.quake ? { id: ++idRef.current, power: e.quake } : null
+    const ebbId = e.ebb ? ++idRef.current : 0
 
     setAnim((a) => {
       const fx = new Map(a.fx)
@@ -472,6 +711,10 @@ export function useEventAnimations(
         fx,
         ghosts: [...a.ghosts, ...ghosts],
         cast: cast ?? a.cast,
+        bolts: [...a.bolts, ...bolts],
+        bursts: [...a.bursts, ...bursts],
+        quake: quake ?? a.quake,
+        turnEbb: ebbId || a.turnEbb,
         lethalFlash: e.lethal ? true : a.lethalFlash,
         myTurnPulse: e.pulse ? true : a.myTurnPulse,
         holdResult: e.release ? false : a.holdResult,
@@ -518,7 +761,29 @@ export function useEventAnimations(
     for (const g of ghosts) {
       later(() => {
         setAnim((a) => ({ ...a, ghosts: a.ghosts.filter((x) => x.id !== g.id) }))
+      }, 950, true) // 残影 0.6s + 魂魄/墙塌的余韵
+    }
+    if (bolts.length > 0) {
+      const ids = new Set(bolts.map((b) => b.id))
+      later(() => {
+        setAnim((a) => ({ ...a, bolts: a.bolts.filter((b) => !ids.has(b.id)) }))
+      }, 700, true)
+    }
+    if (bursts.length > 0) {
+      const ids = new Set(bursts.map((b) => b.id))
+      later(() => {
+        setAnim((a) => ({ ...a, bursts: a.bursts.filter((b) => !ids.has(b.id)) }))
+      }, 750, true)
+    }
+    if (quake) {
+      later(() => {
+        setAnim((a) => (a.quake?.id === quake.id ? { ...a, quake: null } : a))
       }, 600, true)
+    }
+    if (ebbId) {
+      later(() => {
+        setAnim((a) => (a.turnEbb === ebbId ? { ...a, turnEbb: 0 } : a))
+      }, 700, true)
     }
     if (cast) {
       later(() => {
@@ -537,7 +802,7 @@ export function useEventAnimations(
     for (const id of seqTimersRef.current) window.clearTimeout(id)
     seqTimersRef.current = []
 
-    const entries = buildTimeline(lastEvents, rectsRef.current)
+    const entries = buildTimeline(lastEvents, rectsRef.current, guardsRef.current)
     const hold = entries.some((e) => e.release)
     setAnim((a) => ({ ...a, cast: null, lethalFlash: false, holdResult: hold }))
     for (const e of entries) {
@@ -557,9 +822,15 @@ export function useEventAnimations(
   // 原来在 transform 生效期间取到的 rect 是位移后的坐标,拿它换算突进向量是错的。
   useLayoutEffect(() => {
     const m = rectsRef.current
+    const g = guardsRef.current
+    g.clear()
     document.querySelectorAll<HTMLElement>('[data-fxkey]').forEach((el) => {
       const key = el.dataset.fxkey
-      if (key) m.set(key, el.getBoundingClientRect())
+      if (!key) return
+      m.set(key, el.getBoundingClientRect())
+      // 顺手快照守护状态:GeneralDied 事件里没有关键词,而死亡那一帧
+      // 单位已从 DOM 移除 —— 残影要不要塌一堵墙,只有上一帧知道。
+      if (el.dataset.guard) g.add(key)
     })
   }, [state])
 
