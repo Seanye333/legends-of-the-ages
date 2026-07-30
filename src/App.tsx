@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { LESSONS_BY_ID } from './content/lessons'
 import { HEROES_BY_ID } from './content/overrides/heroes'
 import { launchMatch } from './ui/matchSetup'
@@ -95,51 +96,70 @@ export default function App() {
   // 竞技场对局打完要回竞技场,而不是回标题页 —— 一轮里要连打好几场
   const [afterMatch, setAfterMatch] = useState<Screen>('title')
 
+  // 换屏转场。
+  //
+  // 【为什么之前一条都没有】
+  // 这里是一个 switch,直接换组件 —— 旧屏在同一帧消失、新屏在同一帧出现,
+  // 中间没有任何东西。硬切在**任何**导航里都读起来像页面重载:
+  // 玩家分不出「我点到了别处」和「它卡了一下」。
+  //
+  // 【为什么用 key 而不是动画库】
+  // 这个 switch 的每一个分支都返回一棵新树,而 React 只要 key 变了就会重挂 ——
+  // 于是「进场动画」只需要一个带 key 的包一层,连状态都不用加。
+  // 一个动画库(几十 KB)在这里能多做的只有**离场**动画,
+  // 而离场需要把旧屏留在 DOM 里,那要改的是这个 switch 本身的形状。
+  // 只做进场:0.22s 的淡入 + 极小的上移,足够把「换了一屏」说清楚。
+  const wrap = (node: ReactNode) => (
+    <div key={screen} className="screen-enter">
+      {node}
+    </div>
+  )
+
   switch (screen) {
     case 'match':
-      return (
+      return wrap(
         <Suspense fallback={<ScreenFallback />}>
           <MatchScreen onExit={() => setScreen(afterMatch)} />
         </Suspense>
       )
     case 'collection':
-      return (
+      return wrap(
         <Suspense fallback={<ScreenFallback />}>
           <CollectionScreen onBack={back} />
         </Suspense>
       )
     case 'deckbuilder':
-      return (
+      return wrap(
         <Suspense fallback={<ScreenFallback />}>
           <DeckBuilderScreen onBack={back} />
         </Suspense>
       )
     case 'replays':
-      return (
+      return wrap(
         <Suspense fallback={<ScreenFallback />}>
           <ReplayScreen onBack={back} />
         </Suspense>
       )
     case 'settings':
-      return (
+      return wrap(
         <Suspense fallback={<ScreenFallback />}>
           <SettingsScreen onBack={back} />
         </Suspense>
       )
     case 'lore':
-      return (
+      return wrap(
         <Suspense fallback={<ScreenFallback />}>
           <LoreScreen onBack={back} />
         </Suspense>
       )
     case 'quiz':
-      return (
+      return wrap(
         <Suspense fallback={<ScreenFallback />}>
           <QuizScreen onBack={back} />
         </Suspense>
       )
     case 'codex':
-      return (
+      return wrap(
         <Suspense fallback={<ScreenFallback />}>
           <CodexScreen
             onBack={back}
@@ -165,7 +185,7 @@ export default function App() {
         </Suspense>
       )
     case 'arena':
-      return (
+      return wrap(
         <Suspense fallback={<ScreenFallback />}>
           <ArenaScreen
             onBack={back}
@@ -177,7 +197,7 @@ export default function App() {
         </Suspense>
       )
     case 'expedition':
-      return (
+      return wrap(
         <Suspense fallback={<ScreenFallback />}>
           <ExpeditionScreen
             onBack={back}
@@ -189,7 +209,7 @@ export default function App() {
         </Suspense>
       )
     case 'brawl':
-      return (
+      return wrap(
         <Suspense fallback={<ScreenFallback />}>
           <BrawlScreen
             onBack={back}
@@ -201,13 +221,13 @@ export default function App() {
         </Suspense>
       )
     case 'study':
-      return (
+      return wrap(
         <Suspense fallback={<ScreenFallback />}>
           <StudyScreen onBack={back} />
         </Suspense>
       )
     case 'bossrush':
-      return (
+      return wrap(
         <Suspense fallback={<ScreenFallback />}>
           <BossRushScreen
             onBack={back}
@@ -219,7 +239,7 @@ export default function App() {
         </Suspense>
       )
     case 'lethal':
-      return (
+      return wrap(
         <Suspense fallback={<ScreenFallback />}>
           <LethalScreen
             onBack={back}
@@ -231,7 +251,7 @@ export default function App() {
         </Suspense>
       )
     case 'practice':
-      return (
+      return wrap(
         <Suspense fallback={<ScreenFallback />}>
           <PracticeScreen
             onBack={back}
@@ -243,7 +263,7 @@ export default function App() {
         </Suspense>
       )
     case 'campaign':
-      return (
+      return wrap(
         <Suspense fallback={<ScreenFallback />}>
           <CampaignScreen
             onBack={back}
@@ -255,7 +275,7 @@ export default function App() {
         </Suspense>
       )
     case 'history':
-      return (
+      return wrap(
         <Suspense fallback={<ScreenFallback />}>
           <HistoryScreen
             onBack={back}
@@ -267,7 +287,7 @@ export default function App() {
         </Suspense>
       )
     case 'tower':
-      return (
+      return wrap(
         <Suspense fallback={<ScreenFallback />}>
           <TowerScreen
             onBack={back}

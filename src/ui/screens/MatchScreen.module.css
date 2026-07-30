@@ -1189,3 +1189,43 @@
     display: none;
   }
 }
+
+
+/* ---- 牌桌 ----
+   舆图是默认的那一张(复用战场底图)。另外两张**全部程序生成、零新素材** ——
+   包体红线 150MB 里立绘已经占了 59.6MB,三张牌桌图是加不起的。
+
+   木案:两层木色渐变 + 一层几乎看不见的横向木纹,再压一圈暗角。
+   绢帛:经纬两个方向的细纹交叠 —— 织物之所以像织物,靠的就是这两向。
+
+   两者都**比舆图安静**:舆图上有山有河有海船,虽然压得很暗,
+   但满场立绘之外仍然有东西在争注意力。有人会更想要一张干净的桌子。 */
+.screen[data-table='wood'] {
+  background:
+    radial-gradient(ellipse 130% 80% at 50% 42%, transparent 26%, rgba(8, 5, 2, 0.82) 100%),
+    repeating-linear-gradient(
+      92deg,
+      rgba(255, 226, 170, 0.018) 0 3px,
+      rgba(0, 0, 0, 0.02) 3px 7px,
+      rgba(0, 0, 0, 0) 7px 16px
+    ),
+    linear-gradient(180deg, #3a2a15 0%, #2c1f0f 42%, #241a0c 72%, #170f06 100%),
+    #150e06;
+}
+
+.screen[data-table='silk'] {
+  background:
+    radial-gradient(ellipse 130% 80% at 50% 42%, transparent 30%, rgba(10, 8, 4, 0.78) 100%),
+    repeating-linear-gradient(
+      0deg,
+      rgba(232, 216, 176, 0.03) 0 1px,
+      rgba(0, 0, 0, 0) 1px 4px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(232, 216, 176, 0.026) 0 1px,
+      rgba(0, 0, 0, 0) 1px 4px
+    ),
+    linear-gradient(180deg, #3d3524 0%, #2f2819 46%, #241e12 100%),
+    #1a150d;
+}

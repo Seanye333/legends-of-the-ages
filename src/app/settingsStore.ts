@@ -44,6 +44,10 @@ interface SettingsState {
   // 这个开关只管修正)。默认开 —— 天象双方同吃、量级压在「开局多两点护甲」,
   // 而且**调过曲线的模式一律不吃**(见 matchStore.applyOmen)。
   stargazing: boolean
+  // 牌桌样式。舆图(默认,复用战场底图)/ 木案 / 绢帛。
+  // **全部程序生成,零新素材** —— 木案是两层渐变加纹理,绢帛是经纬两向的细纹。
+  // 包体红线 150MB 里立绘已经占了 59.6MB,三张牌桌图是加不起的。
+  tableStyle: 'map' | 'wood' | 'silk'
   setLanguage: (lang: Language) => void
   setSoundEnabled: (on: boolean) => void
   setVolume: (v: number) => void
@@ -57,6 +61,7 @@ interface SettingsState {
   setZhVariant: (v: 'trad' | 'simp') => void
   setPortraitStyle: (v: 'art' | 'ink') => void
   setStargazing: (on: boolean) => void
+  setTableStyle: (v: 'map' | 'wood' | 'silk') => void
 }
 
 export const useSettings = create<SettingsState>()(
@@ -75,6 +80,7 @@ export const useSettings = create<SettingsState>()(
       zhVariant: 'trad',
       portraitStyle: 'art',
       stargazing: true,
+      tableStyle: 'map',
       setLanguage: (language) => set({ language }),
       setSoundEnabled: (soundEnabled) => set({ soundEnabled }),
       setVolume: (volume) => set({ volume: Math.max(0, Math.min(1, volume)) }),
@@ -89,6 +95,7 @@ export const useSettings = create<SettingsState>()(
       setZhVariant: (zhVariant) => set({ zhVariant }),
       setPortraitStyle: (portraitStyle) => set({ portraitStyle }),
       setStargazing: (stargazing) => set({ stargazing }),
+      setTableStyle: (tableStyle) => set({ tableStyle }),
     }),
     { name: 'qiangu-settings' },
   ),

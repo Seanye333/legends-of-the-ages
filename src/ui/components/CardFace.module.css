@@ -432,3 +432,52 @@
   content: '····';
   color: #ffe9a8;
 }
+
+
+/* ---- 纸纹 ----
+   每张卡一层独一无二的纤维纹理。
+   `--grain` 由卡面按收藏号算出一个角度(见 CardFace.tsx)——
+   两千多张卡里没有两张的纹理方向是一样的。
+   这不是随机:同一张卡每次打开都长得一样,它是这张卡的一部分。
+
+   幅度压到几乎看不见(0.022 / 0.016):纸纹的作用是让卡面**不像一块纯色**,
+   一旦看得出是纹理,它就开始跟立绘抢注意力了。 */
+.face::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    repeating-linear-gradient(
+      var(--grain, 27deg),
+      rgba(255, 246, 224, 0.022) 0 1px,
+      rgba(0, 0, 0, 0) 1px 3px
+    ),
+    repeating-linear-gradient(
+      calc(var(--grain, 27deg) + 74deg),
+      rgba(0, 0, 0, 0.016) 0 1px,
+      rgba(0, 0, 0, 0) 1px 5px
+    );
+}
+
+/* 传说卡的流光画在 ::after 上,而纸纹现在也在 ::after ——
+   传说那一条自己带 background,会整个覆盖掉纸纹。
+   给它加回来(把流光叠在纸纹之上),两层都要。 */
+.frameLegendary::after {
+  background:
+    linear-gradient(
+      115deg,
+      transparent 40%,
+      rgba(247, 225, 168, 0.09) 47%,
+      rgba(255, 240, 200, 0.32) 50%,
+      rgba(247, 225, 168, 0.09) 53%,
+      transparent 60%
+    ),
+    repeating-linear-gradient(
+      var(--grain, 27deg),
+      rgba(255, 246, 224, 0.022) 0 1px,
+      rgba(0, 0, 0, 0) 1px 3px
+    );
+}

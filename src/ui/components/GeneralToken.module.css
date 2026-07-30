@@ -458,6 +458,10 @@
    一个小角标完全撑不起这个意思。在令牌下方压一段石栏:
    有守护的单位脚下有墙,没有的没有,一眼就能数清对面几堵。
    画在 ::after 上、z-index 压在令牌之下,不挡任何数字。 */
+/* **z-index 不能用 -1**:`.guard::before` 已经在这个令牌里画了旋转的守护外环,
+   而它给 .token 建了层叠上下文 —— 负 z-index 的伪元素会被压到令牌自己的背景之下,
+   于是这堵墙一个像素都看不见(第一版就是这样,截图上什么都没有)。
+   改成 0 并放在令牌**下缘之外**(bottom: -5px),既在上面又不挡任何数字。 */
 .guard::after {
   content: '';
   position: absolute;
@@ -465,7 +469,8 @@
   right: -8%;
   bottom: -5px;
   height: 7px;
-  z-index: -1;
+  z-index: 0;
+  pointer-events: none;
   border-radius: 2px;
   background:
     repeating-linear-gradient(
@@ -547,5 +552,54 @@
 @media (prefers-reduced-motion: reduce) {
   .statPop {
     animation: none;
+  }
+}
+
+
+/* ---- 出场印章 ----
+   名将上场时在令牌上盖一枚朱印,随落地那一下压下去、再淡开。
+   这是这套界面里最贴题的一个动作:整个游戏的视觉语言就是书法与印章,
+   而在此之前印章只出现在标题页的那一方朱印上。
+   挂在 .circle::before 而不是新加 DOM —— 那一层本来是空的。 */
+.token .circle::before {
+  content: '';
+  position: absolute;
+  inset: 12%;
+  z-index: 6;
+  border-radius: 4px;
+  border: 2.5px solid rgba(216, 69, 46, 0.9);
+  box-shadow: inset 0 0 0 1.5px rgba(216, 69, 46, 0.55);
+  pointer-events: none;
+  opacity: 0;
+  animation: sealStamp 0.72s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+
+@keyframes sealStamp {
+  0% {
+    opacity: 0;
+    transform: scale(1.9) rotate(-14deg);
+  }
+  22% {
+    opacity: 0.95;
+    transform: scale(0.94) rotate(3deg);
+  }
+  34% {
+    transform: scale(1) rotate(3deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1) rotate(3deg);
+  }
+}
+
+:root[data-reduced-motion='true'] .token .circle::before {
+  animation: none;
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .token .circle::before {
+    animation: none;
+    opacity: 0;
   }
 }

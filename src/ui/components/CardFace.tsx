@@ -72,7 +72,15 @@ export function CardFace({ inst, playable, selected, large, onClick, onInspect }
   return (
     <div
       className={cls}
-      style={{ '--doctrine': DOCTRINE_COLORS[def.doctrine] } as CSSProperties}
+      style={
+        {
+          '--doctrine': DOCTRINE_COLORS[def.doctrine],
+          // 纸纹角度按收藏号算 —— **不是随机**:同一张卡每次打开都长得一样,
+          // 它是这张卡的一部分。乘一个和 180 互质的数再取模,
+          // 相邻收藏号(图鉴里挨着排)的角度才不会连成一片。
+          '--grain': `${(def.collectorNo * 37) % 180}deg`,
+        } as CSSProperties
+      }
       {...(onInspect ? longPress.handlers : {})}
       role={interactive ? 'button' : undefined}
       tabIndex={interactive ? 0 : undefined}

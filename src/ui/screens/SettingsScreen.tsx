@@ -278,6 +278,31 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
           ))}
         </div>
 
+        {/* 牌桌。舆图是默认(复用战场底图),另外两张全部程序生成 ——
+            包体红线 150MB 里立绘已占 59.6MB,三张牌桌图加不起。
+            木案与绢帛都比舆图安静:舆图上有山有河有海船,虽然压得很暗,
+            但满场立绘之外仍有东西在争注意力。 */}
+        <div className={styles.chipRow}>
+          {(
+            [
+              ['map', { zh: '輿圖', en: 'Map' }],
+              ['wood', { zh: '木案', en: 'Wood' }],
+              ['silk', { zh: '絹帛', en: 'Silk' }],
+            ] as const
+          ).map(([k, label]) => (
+            <button
+              key={k}
+              className={s.tableStyle === k ? styles.chipActive : styles.chip}
+              onClick={() => {
+                playSfx('buttonTap')
+                s.setTableStyle(k)
+              }}
+            >
+              {pick(label)}
+            </button>
+          ))}
+        </div>
+
         {/* 书法卡面。2,375 张卡里只有签名卡有真立绘,其余本来就是拓印 ——
             混排时那种参差在图鉴里最明显。整站统一成拓印之后它是一套自洽的画风,
             顺带一张图都不下(那层兜底早就写好了,一直只被当成占位在用)。 */}

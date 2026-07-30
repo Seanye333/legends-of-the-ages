@@ -19,12 +19,16 @@
   animation: bgDrift 36s ease-in-out infinite alternate;
 }
 
+/* 呼吸推近 + 指针微视差。
+   视差量走 --par-x/--par-y(由 TitleScreen 按指针位置喂),
+   叠在呼吸动画的 transform 里 —— 两者共用一个 transform,
+   所以必须写在同一条链上,不能各写各的(后者会覆盖前者)。 */
 @keyframes bgDrift {
   from {
-    transform: scale(1) translateY(0);
+    transform: scale(1) translate(var(--par-x, 0px), var(--par-y, 0px));
   }
   to {
-    transform: scale(1.07) translateY(-1.2%);
+    transform: scale(1.07) translate(var(--par-x, 0px), calc(var(--par-y, 0px) - 1.2%));
   }
 }
 

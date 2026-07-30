@@ -136,6 +136,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
   const [showHint, setShowHint] = useState(false)
   const [solution, setSolution] = useState<string[] | null>(null)
   const { soundEnabled, setSoundEnabled, language: lang } = useSettings()
+  const tableStyle = useSettings((s) => s.tableStyle)
   const [selection, setSelection] = useState<Selection>(null)
   // 战线合拢:一个单位被移出数组后,右边所有人的位置在同一帧内就变了 ——
   // 没有中间态可以过渡,于是场面每死一个人就闪一下。FLIP 把它翻过来(见 useFlip)。
@@ -536,6 +537,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
   return (
     <div
       className={`${styles.screen} ${anim.lethalFlash ? styles.slowmo : ''}`}
+      data-table={tableStyle}
       onClick={() => setSelection(null)}
     >
       {/* 战场的光。

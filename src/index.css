@@ -315,3 +315,46 @@ button {
   outline-offset: 3px;
   box-shadow: 0 0 14px 3px rgba(255, 230, 168, 0.45);
 }
+
+
+/* ---- 换屏转场 ----
+   App.tsx 是一个 switch,直接换组件:旧屏在同一帧消失、新屏在同一帧出现,
+   中间什么都没有。硬切在任何导航里都读起来像页面重载 ——
+   玩家分不出「我点到了别处」和「它卡了一下」。
+
+   只做**进场**:0.22s 的淡入。
+   离场需要把旧屏留在 DOM 里,那要改的是那个 switch 本身的形状,
+   而它换来的东西远不值这个改动。
+
+   **绝对不能带 transform。**
+   第一版写的是「淡入 + 上移 8px」,结果对局画面的「认输」按钮点不动了。
+   原因:transform 会让这个包装 div 成为**所有 position: fixed 后代的包含块** ——
+   而且 animation-fill-mode: both 让终帧的 `translateY(0)` 一直留着,
+   所以动画播完之后这个陷阱依然生效。
+   牌桌上的指向箭、台词气泡、右上角工具条全部被重新锚定,
+   于是「结束回合」那一块盖住了「认输」。
+   端到端用例报的是 30 秒超时 + 「结束回合 intercepts pointer events」,
+   完全看不出和一个换屏淡入有什么关系。
+   淡入用 opacity 就够了 —— 那 8px 位移不值这个代价。 */
+.screen-enter {
+  animation: screenEnter 0.22s ease both;
+}
+
+@keyframes screenEnter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+:root[data-reduced-motion='true'] .screen-enter {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen-enter {
+    animation: none;
+  }
+}

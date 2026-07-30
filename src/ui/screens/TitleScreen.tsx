@@ -273,6 +273,22 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
     () => ({ matches: wins + losses, campaignCleared: campaignDone }),
     [wins, losses, campaignDone],
   )
+  // 微视差。**只在有精确指针的设备上装监听** —— 触屏上 pointermove 只在
+  // 按住拖动时才有,那时候玩家正在点按钮,底图跟着动纯属干扰。
+  const [par, setPar] = useState({ x: 0, y: 0 })
+  useEffect(() => {
+    if (typeof matchMedia !== 'function' || !matchMedia('(pointer: fine)').matches) return
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const onMove = (e: PointerEvent) => {
+      setPar({
+        x: (e.clientX / window.innerWidth - 0.5) * -20,
+        y: (e.clientY / window.innerHeight - 0.5) * -14,
+      })
+    }
+    window.addEventListener('pointermove', onMove)
+    return () => window.removeEventListener('pointermove', onMove)
+  }, [])
+
   const selectableDecks = useMemo(
     () => [...PRECON_DECKS, ...customDecks],
     [customDecks],
@@ -312,7 +328,14 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
 
   return (
     <div className={styles.screen}>
-      <div className={styles.bg} aria-hidden="true" />
+      {/* 英雄图微视差:指针在屏幕上移动时,底图朝**反方向**微移。
+          幅度只有 ±10px —— 它不该被注意到,只该让这一屏不像一张贴纸。
+          用 CSS 变量喂给已有的 bgDrift 动画所在的元素,不新增图层。 */}
+      <div
+        className={styles.bg}
+        aria-hidden="true"
+        style={{ '--par-x': `${par.x}px`, '--par-y': `${par.y}px` } as CSSProperties}
+      />
       <div className={styles.bgVignette} aria-hidden="true" />
 
       <header className={styles.masthead}>
