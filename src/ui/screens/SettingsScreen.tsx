@@ -78,8 +78,30 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
         <h2 className={styles.title}>{t('设置', 'Settings')}</h2>
       </header>
 
+      {/* 分组导航。
+          设置页是七张卡片竖着排下来的一长列 —— 想改个音量要滚过战绩、
+          想开色觉辅助要滚过音效和卡背。七个锚点比七次滚动便宜得多。
+          用 <a href="#id"> 而不是 scrollIntoView:锚点跳转是浏览器原生行为,
+          自带 `scroll-behavior: smooth`(在样式表里开),而且键盘可达。 */}
+      <nav className={styles.nav} aria-label={t('设置分组', 'Settings sections')}>
+        {(
+          [
+            ['set-record', { zh: '战绩', en: 'Record' }],
+            ['set-audio', { zh: '音效', en: 'Audio' }],
+            ['set-display', { zh: '显示', en: 'Display' }],
+            ['set-cardback', { zh: '卡背', en: 'Card Back' }],
+            ['set-difficulty', { zh: '敌手', en: 'Difficulty' }],
+            ['set-save', { zh: '存档', en: 'Save' }],
+          ] as const
+        ).map(([id, label]) => (
+          <a key={id} className={styles.navLink} href={`#${id}`}>
+            {pick(label)}
+          </a>
+        ))}
+      </nav>
+
       {/* ---- 战绩:一直在记录、一直在同步,但界面上从来没显示过 ---- */}
-      <section className={styles.card}>
+      <section id="set-record" className={styles.card}>
         <h3 className={styles.sectionTitle}>{t('战绩', 'Record')}</h3>
         <div className={styles.statRow}>
           <div className={styles.stat}>
@@ -113,7 +135,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
       </section>
 
       {/* ---- 音频 ---- */}
-      <section className={styles.card}>
+      <section id="set-audio" className={styles.card}>
         <h3 className={styles.sectionTitle}>{t('音效', 'Audio')}</h3>
         <label className={styles.toggleRow}>
           <span>{t('音效开关', 'Sound effects')}</span>
@@ -181,7 +203,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
       </section>
 
       {/* ---- 显示 ---- */}
-      <section className={styles.card}>
+      <section id="set-display" className={styles.card}>
         <h3 className={styles.sectionTitle}>{t('显示', 'Display')}</h3>
         <div className={styles.chipRow}>
           {(['zh', 'en', 'both'] as const).map((lang) => (
@@ -307,7 +329,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
           这件事在牌桌上是不可见的。卡背是唯一一样**对手也看得见**的东西。
           全部程序生成(CSS 渐变),零字节 —— 六张手绘卡背是六张图,
           而包体红线 150MB 里立绘已经占了 65MB。 */}
-      <section className={styles.card}>
+      <section id="set-cardback" className={styles.card}>
         <h3 className={styles.sectionTitle}>{t('卡背', 'Card Back')}</h3>
         <div className={styles.chipRow}>
           {CARD_BACKS.map((b) => {
@@ -352,7 +374,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
       {/* 客户端此前没有任何崩溃留档:错误边界显示一次,刷新就永远没了,
           而玩家往往第二天才来说「昨天闪退过」。这一层只落 localStorage、
           不上报任何服务器 —— 要不要交出去由玩家点那一下决定(见 app/telemetry.ts)。 */}
-      <section className={styles.card}>
+      <section id="set-diag" className={styles.card}>
         <h3 className={styles.sectionTitle}>{t('诊断信息', 'Diagnostics')}</h3>
         <p className={styles.hint}>
           {t(
@@ -390,7 +412,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
       </section>
 
       {/* ---- 难度 ---- */}
-      <section className={styles.card}>
+      <section id="set-difficulty" className={styles.card}>
         <h3 className={styles.sectionTitle}>{t('敌手强度', 'AI difficulty')}</h3>
         <div className={styles.chipRow}>
           {(
@@ -439,7 +461,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
       </section>
 
       {/* ---- 账号与存档 ---- */}
-      <section className={styles.card}>
+      <section id="set-save" className={styles.card}>
         <h3 className={styles.sectionTitle}>{t('存档', 'Save data')}</h3>
         <div className={styles.kvRow}>
           <span>{t('云同步', 'Cloud sync')}</span>

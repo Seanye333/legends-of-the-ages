@@ -593,3 +593,71 @@
 .divergeBtn:hover {
   filter: brightness(1.2);
 }
+
+
+/* ---- 四种模式的身份 ----
+   冒险、登楼、连斩、名局**共用这一份样式表**(它们的结构确实一样:
+   一列关卡 + 一个简报弹层)。共用是对的,长得一模一样不是 ——
+   玩家从标题页点进四个不同的入口,看到的是同一屏,只有标题不同。
+
+   最省的区分方式:一个 data-mode 属性,只换**强调色**与**底图焦点**。
+   不换结构、不加素材、不复制样式表。
+     冒险 —— 金(逐鹿天下,这是主线)
+     登楼 —— 青(往上走,冷而高)
+     连斩 —— 朱(一口气打穿,最紧张的那个)
+     名局 —— 赭(史册,纸与墨) */
+.screen[data-mode='campaign'] {
+  --mode-accent: var(--gold-mid);
+  background-position: center 30%;
+}
+
+.screen[data-mode='tower'] {
+  --mode-accent: #78aac8;
+  /* 焦点上移:登楼讲的是往高处去 */
+  background-position: center 12%;
+}
+
+.screen[data-mode='gauntlet'] {
+  --mode-accent: #c5533b;
+  background-position: center 55%;
+}
+
+.screen[data-mode='history'] {
+  --mode-accent: #c9a463;
+  background-position: center 42%;
+}
+
+/* 强调色落到这一屏最显眼的三处:标题、章节线、当前那一关。
+   其余一切不动 —— 换四套配色会让它们变成四个不同的软件,
+   而它们本来就该是同一个软件里的四个模式。 */
+.screen[data-mode] .title {
+  color: color-mix(in srgb, var(--mode-accent, var(--gold-bright)) 70%, var(--gold-bright));
+}
+
+.screen[data-mode] .chapterHead {
+  color: var(--mode-accent, var(--gold-mid));
+}
+
+.screen[data-mode] .next {
+  border-color: color-mix(in srgb, var(--mode-accent, var(--gold-mid)) 65%, transparent);
+}
+
+/* 顶部一条极细的模式色带 —— 一进屏就知道自己在哪儿,
+   而且它是四屏之间唯一「一眼可辨」的东西。 */
+.screen[data-mode]::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  z-index: 5;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--mode-accent, var(--gold-mid)) 22%,
+    var(--mode-accent, var(--gold-mid)) 78%,
+    transparent
+  );
+  opacity: 0.75;
+}

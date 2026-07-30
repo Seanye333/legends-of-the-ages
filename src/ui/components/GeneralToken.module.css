@@ -477,3 +477,75 @@
     0 2px 5px rgba(0, 0, 0, 0.7),
     inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
+
+
+/* ---- 与卡面对上号 ----
+   令牌是圆的、卡面是矩形,同一个人在手上和场上是两种形状;
+   而唯一能把它们连起来的线索(稀有度)此前只画在卡面上。
+   给外环一层同色微光:形状还是圆的(那是牌桌的语汇),身份对得上了。
+   普通卡不给 —— 全场都发光等于全场都不发光。 */
+.rarity_rare .circle {
+  box-shadow:
+    inset 0 0 10px rgba(0, 0, 0, 0.6),
+    0 0 9px 1px rgba(74, 144, 217, 0.42);
+}
+
+.rarity_epic .circle {
+  box-shadow:
+    inset 0 0 10px rgba(0, 0, 0, 0.6),
+    0 0 10px 2px rgba(164, 90, 208, 0.45);
+}
+
+.rarity_legendary .circle {
+  box-shadow:
+    inset 0 0 10px rgba(0, 0, 0, 0.6),
+    0 0 12px 2px rgba(232, 178, 58, 0.55);
+}
+
+/* 已配兵器。装备实现成一条附魔,打出去之后就只是攻血变大了 ——
+   玩家过两回合完全想不起来那把刀在谁手里。 */
+.equipMark {
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  z-index: 7;
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 1px solid rgba(10, 7, 3, 0.85);
+  background: linear-gradient(180deg, #6a5320, #3a2c0e);
+  color: #f0d68a;
+  font-size: 9px;
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* 攻血变化时弹一下。key 用数值本身,数字一变节点重建、动画自动重播 ——
+   不需要任何「上一帧是多少」的状态。 */
+.statPop {
+  animation: statPop 0.34s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+
+@keyframes statPop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.42);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+:root[data-reduced-motion='true'] .statPop {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .statPop {
+    animation: none;
+  }
+}

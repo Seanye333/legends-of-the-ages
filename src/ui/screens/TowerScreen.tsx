@@ -62,7 +62,7 @@ export function TowerScreen({ onBack, onEnterMatch }: Props) {
   // 选兵书:通三层给一次三选一。停在这一屏,选完才继续爬。
   if (offered && offered.length > 0) {
     return (
-      <div className={styles.screen}>
+      <div className={styles.screen} data-mode="tower">
         <header className={styles.head}>
           <h2 className={styles.title}>{t('登楼 · 授兵書', 'The Tower · Take a Treatise')}</h2>
         </header>

@@ -174,9 +174,17 @@ export function HeroPlate({
             `${ps.deck.length} cards left in deck${ps.fatigue > 0 ? `, fatigue ${ps.fatigue}` : ''}`,
           )}
         >
-          <span className={ps.deck.length <= 5 ? styles.deckLow : undefined}>
-            ▤ {ps.deck.length}
-          </span>
+          {/* 牌库画成一叠牌背。
+              对手手牌那一排早就画着牌背,而**自己的牌库只有一个「▤ 20」** ——
+              牌桌上最有实体感的一样东西(那叠还没摸的牌)在画面上是一个字符。
+              叠数按余量分四档,不是逐张画:三十张画三十层只会糊成一块。 */}
+          <span
+            className={`${styles.deckPile} ${ps.deck.length <= 5 ? styles.deckLow : ''}`}
+            style={{ background: backCss(cardBack) }}
+            data-thin={ps.deck.length <= 10 ? 'true' : undefined}
+            aria-hidden="true"
+          />
+          <span className={ps.deck.length <= 5 ? styles.deckLow : undefined}>{ps.deck.length}</span>
           {ps.fatigue > 0 && <span className={styles.fatigue}>☠ {ps.fatigue}</span>}
         </div>
         {(morale !== 0 || supply > 0) && (

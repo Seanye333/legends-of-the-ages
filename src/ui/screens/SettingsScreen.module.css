@@ -1,4 +1,7 @@
+/* 锚点跳转要平滑:分组导航靠 <a href="#id">,而原生跳转是瞬移的 —— 
+   瞬移之后玩家不知道自己被送到了哪儿(七张卡片长得一样)。 */
 .screen {
+  scroll-behavior: smooth;
   min-height: 100dvh;
   padding: max(20px, env(safe-area-inset-top) + 8px) 16px max(28px, env(safe-area-inset-bottom));
   background: radial-gradient(ellipse at 50% 0%, #1d1710 0%, #0b0805 65%);
@@ -214,4 +217,51 @@
 .sliderRow input:focus-visible {
   outline: 2px solid var(--gold-bright);
   outline-offset: 2px;
+}
+
+
+/* 分组导航。设置页是七张卡片竖着排下来的一长列 ——
+   想改个音量要滚过战绩,想开色觉辅助要滚过音效和卡背。
+   横向一排锚点,粘在顶上跟着滚。 */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto 12px;
+  padding: 8px 2px;
+  background: linear-gradient(180deg, rgba(12, 10, 7, 0.96), rgba(12, 10, 7, 0.82));
+  backdrop-filter: var(--scrim-blur);
+  -webkit-backdrop-filter: var(--scrim-blur);
+}
+
+.navLink {
+  padding: 5px 12px;
+  border-radius: var(--r-pill);
+  border: 1px solid rgba(122, 100, 58, 0.5);
+  background: rgba(24, 19, 11, 0.7);
+  color: var(--parchment-faint);
+  font-size: var(--fs-small);
+  text-decoration: none;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.navLink:hover {
+  color: var(--gold-bright);
+  border-color: var(--gold-dark);
+}
+
+/* 跳过去之后标题不要贴在导航条底下 */
+.card {
+  scroll-margin-top: 58px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen {
+    scroll-behavior: auto;
+  }
 }

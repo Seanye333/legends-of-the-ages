@@ -122,7 +122,7 @@ export function HistoryScreen({ onBack, onEnterMatch }: HistoryScreenProps) {
   }
 
   return (
-    <div className={styles.screen}>
+    <div className={styles.screen} data-mode="history">
       <header className={styles.head}>
         <button
           className={styles.backBtn}

@@ -31,12 +31,20 @@ export function GeneralToken({ inst, ready, selected, targetable, floats, fx, on
   const name = def ? pickCompact(def.name) : inst.defId
   const doctrine = def?.doctrine ?? 'neutral'
   const hasGuard = inst.keywords.includes('guard')
+  // 令牌是圆的、卡面是矩形 —— 同一个人在手上和场上是两种形状,
+  // 而唯一能把它们连起来的线索(稀有度)此前只画在卡面上。
+  // 给令牌一圈同色的稀有度环:形状还是圆的(那是牌桌的语汇),但身份对得上了。
+  const rarity = def?.rarity ?? 'common'
+  // 挂着装备的单位身上此前**没有任何标记** —— 装备实现成一条附魔,
+  // 打出去之后就只是攻血变大了,玩家过两回合完全想不起来那把刀在谁手里。
+  const equipped = inst.enchants.some((e) => e.heirloom !== undefined)
   const zhLabels = useLang() !== 'en'
 
   // 状态一眼可辨:铁壁描金环 / 潜行半透虚边 / 冰封蓝罩 / 沉默灰化
   const cls = [
     styles.token,
     hasGuard ? styles.guard : '',
+    styles[`rarity_${rarity}`] ?? '',
     inst.keywords.includes('divineShield') ? styles.shielded : '',
     inst.keywords.includes('stealth') ? styles.stealthed : '',
     inst.frozen ? styles.frozen : '',
@@ -119,8 +127,21 @@ export function GeneralToken({ inst, ready, selected, targetable, floats, fx, on
       {hasGuard && (
         <span className={styles.guardMark}>{pickCompact({ zh: '盾', en: 'G' })}</span>
       )}
-      <span className={styles.atk}>{inst.attack}</span>
-      <span className={`${styles.hp} ${inst.health < inst.maxHealth ? styles.hurt : ''}`}>
+      {equipped && (
+        <span className={styles.equipMark} title={pickCompact({ zh: '已配兵器', en: 'Equipped' })}>
+          ⚔
+        </span>
+      )}
+      {/* key 用数值本身:数字一变,React 会重建这个节点,
+          于是 CSS 动画自动重播 —— 不需要任何「上一帧是多少」的状态。
+          攻血变化此前是**直接跳数**的,而它是牌桌上最需要被看见的那个数字。 */}
+      <span key={`a${inst.attack}`} className={`${styles.atk} ${styles.statPop}`}>
+        {inst.attack}
+      </span>
+      <span
+        key={`h${inst.health}`}
+        className={`${styles.hp} ${styles.statPop} ${inst.health < inst.maxHealth ? styles.hurt : ''}`}
+      >
         {inst.health}
       </span>
       {inst.keywords.length > 0 && (

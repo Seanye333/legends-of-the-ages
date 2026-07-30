@@ -48,6 +48,7 @@ export function CardFace({ inst, playable, selected, large, onClick, onInspect }
     large ? styles.large : '',
     frameRarity,
     isSpell ? styles.stratagem : '',
+    def.token ? styles.tokenCard : '',
     playable ? styles.playable : '',
     selected ? styles.selected : '',
   ]

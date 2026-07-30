@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   QUIZ_LENGTH,
   QUIZ_MERIT_PER_CORRECT,
@@ -9,6 +9,9 @@ import {
 import { dayKey } from '../../content/dailyPuzzle'
 import { QUIZ_DAILY_CAP, useQuiz } from '../../app/quizStore'
 import { dynastyName } from '../doctrineColors'
+import { CARDS_BY_ID } from '../../content/cards'
+import { loadLore, loreNow } from '../../content/loreLazy'
+import { Portrait } from '../components/Portrait'
 import { usePickText, useT } from '../i18n'
 import { playSfx } from '../sound'
 import { haptic } from '../haptics'
@@ -47,6 +50,18 @@ export function QuizScreen({ onBack }: Props) {
   }, [round])
 
   const q = questions[idx]
+  // 题目主角。列传是懒加载的 144KB(见 loreLazy)—— 进这一屏就预热,
+  // 答题那几秒足够它到位;没到位就只显示立绘与名字,不显示名言。
+  const subject = q ? CARDS_BY_ID[q.subjectId] : undefined
+  const [loreReady, setLoreReady] = useState(false)
+  useEffect(() => {
+    let alive = true
+    void loadLore().then(() => alive && setLoreReady(true))
+    return () => {
+      alive = false
+    }
+  }, [])
+  const subjectLore = loreReady && q ? loreNow()[q.subjectId] : undefined
 
   const answer = (opt: string) => {
     if (chosen) return
@@ -127,6 +142,31 @@ export function QuizScreen({ onBack }: Props) {
               )
             })}
           </div>
+          {/* 答完之后**揭晓这是谁**。
+              稽古此前是「答对了 / 答错了」然后下一题 —— 一轮五题打完,
+              玩家一个人都没记住。而 subjectId 现成就在题目里,立绘、称号、
+              生平全在列传数据里躺着(名将列传那一屏用的就是它)。
+              一道题的价值从「猜中没有」变成「原来他是这么个人」。 */}
+          {chosen && subject && (
+            <div className={`${styles.reveal} ${chosen === q.answer ? styles.revealRight : styles.revealWrong}`}>
+              <span className={styles.revealPortrait}>
+                <Portrait
+                  id={subject.id}
+                  nameZh={subject.name.zh}
+                  doctrine={subject.doctrine}
+                />
+              </span>
+              <div className={styles.revealBody}>
+                <div className={styles.revealName}>
+                  {pick(subject.name)}
+                  {subjectLore?.era && <span className={styles.revealEra}>{pick(subjectLore.era)}</span>}
+                </div>
+                {subjectLore?.quote && (
+                  <p className={styles.revealQuote}>「{pick(subjectLore.quote)}」</p>
+                )}
+              </div>
+            </div>
+          )}
           {chosen && (
             <button className={styles.nextBtn} onClick={next}>
               {idx + 1 < questions.length ? t('下一题 ›', 'Next ›') : t('看结果 ›', 'Results ›')}

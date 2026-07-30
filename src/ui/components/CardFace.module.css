@@ -41,15 +41,32 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-/* 内圈描金细线 */
+/* 内圈描金细线。
+   **粗细跟着卡面宽度走**:卡面在图鉴(minmax 108px)、构筑器卡池(96px)、
+   手牌(最大 124px)三处尺寸差近三成,而这条线原来恒为 1px ——
+   小卡上它显得过粗、几乎糊成一圈实边,大卡上又太细压不住场。
+   用容器查询单位:0.9cqw 在 96px 上是 0.86px、在 124px 上是 1.1px。 */
 .face::before {
   content: '';
   position: absolute;
   inset: 1px;
-  border: 1px solid rgba(224, 190, 118, 0.42);
+  border: clamp(0.7px, 0.9cqw, 1.4px) solid rgba(224, 190, 118, 0.42);
   border-radius: 7px;
   pointer-events: none;
   z-index: 4;
+}
+
+/* 衍生物:虚线内框 + 无收藏号。
+   衍生物只能被召唤、不进卡包、不可构筑,而它在手上和场上和真卡长得**一模一样** ——
+   玩家分不出哪些是自己带的、哪些是打出来的,而这两者的价值完全不同
+   (衍生物死了不心疼,真卡死了少一张)。虚线是「它不是一张牌」最短的说法。 */
+.tokenCard::before {
+  border-style: dashed;
+  border-color: rgba(200, 200, 210, 0.4);
+}
+
+.tokenCard {
+  border-color: color-mix(in srgb, var(--doctrine) 45%, #4a4a52);
 }
 
 .large {
@@ -76,7 +93,9 @@
     0 0 11px 2px rgba(232, 178, 58, 0.5);
 }
 
-/* 传说:金光流转 */
+/* 传说:金光流转。
+   此前**只有详情页有** —— 也就是说传说卡最像传说的那一刻,是你长按查看它的时候,
+   而不是它躺在你手里、站在你场上的时候。流光挪到卡面本身,三处一起获得。 */
 .frameLegendary::after {
   content: '';
   position: absolute;

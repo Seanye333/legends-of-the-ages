@@ -88,7 +88,7 @@ export function CampaignScreen({ onBack, onEnterMatch }: CampaignScreenProps) {
   }
 
   return (
-    <div className={styles.screen}>
+    <div className={styles.screen} data-mode="campaign">
       <header className={styles.head}>
         <button
           className={styles.backBtn}

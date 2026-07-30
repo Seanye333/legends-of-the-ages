@@ -51,3 +51,131 @@
 .score { font-family: var(--font-display); font-size: 44px; color: var(--gold-bright); font-variant-numeric: tabular-nums; }
 .resultText { margin: 0; color: var(--parchment); font-family: var(--font-display); }
 .meta { margin: 0; color: var(--parchment-faint); font-size: 12.5px; }
+
+
+/* ---- 答题反馈 ----
+   对错**颜色**此前就有(optRight / optWrong),缺的是**动作**:
+   点下去之后画面是静止的,答对答错的分量一样重。
+   对:一次绿色的呼吸;错:一次短促的横向震颤(和牌桌上的受击同一个语汇)。 */
+.optRight {
+  animation: quizRight 0.5s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+
+.optWrong {
+  animation: quizWrong 0.36s linear both;
+}
+
+@keyframes quizRight {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(139, 181, 152, 0.7);
+  }
+  40% {
+    transform: scale(1.04);
+    box-shadow: 0 0 0 8px rgba(139, 181, 152, 0);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes quizWrong {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  45% {
+    transform: translateX(5px);
+  }
+  70% {
+    transform: translateX(-3px);
+  }
+}
+
+/* ---- 揭晓 ----
+   稽古此前是「答对了 / 答错了」然后下一题 —— 一轮五题打完,
+   玩家一个人都没记住。立绘、称号、名言全在列传里躺着。 */
+.reveal {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 620px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  border: 1px solid rgba(122, 100, 58, 0.45);
+  background: rgba(26, 20, 11, 0.8);
+  animation: revealIn 0.36s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.revealRight {
+  border-color: rgba(139, 181, 152, 0.55);
+}
+
+.revealWrong {
+  border-color: rgba(207, 83, 70, 0.5);
+}
+
+@keyframes revealIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.revealPortrait {
+  flex: none;
+  width: 62px;
+  height: 62px;
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  border: 1px solid var(--gold-dark);
+}
+
+.revealBody {
+  min-width: 0;
+}
+
+.revealName {
+  font-family: var(--font-display);
+  font-size: 17px;
+  letter-spacing: 0.1em;
+  color: var(--gold-bright);
+}
+
+.revealEra {
+  margin-left: 8px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--parchment-faint);
+}
+
+.revealQuote {
+  margin: 4px 0 0;
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--parchment-dim);
+}
+
+:root[data-reduced-motion='true'] .optRight,
+:root[data-reduced-motion='true'] .optWrong,
+:root[data-reduced-motion='true'] .reveal {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .optRight,
+  .optWrong,
+  .reveal {
+    animation: none;
+  }
+}

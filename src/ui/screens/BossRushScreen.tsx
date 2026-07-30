@@ -55,7 +55,7 @@ export function BossRushScreen({ onBack, onEnterMatch }: Props) {
   }
 
   return (
-    <div className={styles.screen}>
+    <div className={styles.screen} data-mode="gauntlet">
       <header className={styles.head}>
         <button
           className={styles.backBtn}
