@@ -968,3 +968,41 @@
     transition: none;
   }
 }
+
+/* 舆图 / 关卡两种读法的切换。胶囊组,与列传页的视图切换同一套语汇。 */
+.viewTabs {
+  display: flex;
+  justify-content: center; /* flex 容器默认满宽,margin:auto 居不了中 */
+  gap: 6px;
+  margin: 2px 0 6px;
+}
+
+.viewTab,
+.viewTabOn {
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  padding: 5px 16px;
+  border-radius: var(--r-pill);
+  border: 1px solid rgba(122, 100, 58, 0.55);
+  background: rgba(20, 16, 10, 0.72);
+  color: var(--parchment-faint);
+  cursor: pointer;
+  transition: color var(--dur-fast) ease;
+}
+
+.viewTab:hover {
+  color: var(--parchment-dim);
+}
+
+.viewTabOn {
+  border-color: var(--gold-deep);
+  color: var(--gold-bright);
+  background: linear-gradient(180deg, #4c3d20, #2c2210);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .viewTab {
+    transition: none;
+  }
+}

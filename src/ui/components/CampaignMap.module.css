@@ -1,0 +1,199 @@
+/* 舆图。底图复用战场那张(已经在 precache 里,不新增任何资产),
+   压得比牌桌更暗 —— 这里的主角是路线与人,不是地形。 */
+.wrap {
+  position: relative;
+  width: min(96vw, 900px);
+  margin: 0 auto;
+  align-self: center;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--r-lg);
+  border: 1px solid rgba(122, 100, 58, 0.4);
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 120% 90% at 50% 45%, transparent 30%, rgba(6, 4, 2, 0.86) 100%),
+    linear-gradient(180deg, rgba(24, 18, 9, 0.82), rgba(14, 10, 5, 0.9)),
+    url('/art/battlefield-bg.webp') center 40% / cover no-repeat,
+    #12100c;
+  box-shadow: var(--shadow-2);
+}
+
+/* 路线。preserveAspectRatio="none" + viewBox 0 0 100 100 让坐标就是百分比;
+   代价是线宽会被拉伸 —— vector-effect 把它钉住。 */
+.paths {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.pathTodo,
+.pathDone {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+/* 没走过的:暗虚线 —— 「那边还有路,但你还没去」 */
+.pathTodo {
+  stroke: rgba(212, 168, 74, 0.28);
+  stroke-width: 2;
+  stroke-dasharray: 5 5;
+}
+
+/* 走过的:金实线,带一点辉光 */
+.pathDone {
+  stroke: var(--gold-mid, #d4a84a);
+  stroke-width: 3;
+  filter: drop-shadow(0 0 4px rgba(232, 200, 120, 0.55));
+}
+
+.node {
+  position: absolute;
+  translate: -50% -50%;
+  display: grid;
+  place-items: center;
+  width: clamp(38px, 6.4vw, 58px);
+  aspect-ratio: 1;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid var(--doctrine, var(--gold-deep));
+  background: rgba(16, 12, 6, 0.9);
+  cursor: pointer;
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    filter var(--dur-fast) ease;
+}
+
+.node:hover:not(:disabled) {
+  transform: scale(1.12);
+  filter: brightness(1.15);
+}
+
+.face {
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.face > * {
+  width: 100%;
+  height: 100%;
+}
+
+/* 序号压在左下角:24 个头像长得都像人,编号才是「第几关」 */
+.no {
+  position: absolute;
+  left: -3px;
+  bottom: -3px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 3px;
+  border-radius: 999px;
+  border: 1px solid rgba(10, 7, 3, 0.9);
+  background: linear-gradient(180deg, #4c3d20, #2c2210);
+  color: var(--gold-bright);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.flag,
+.here {
+  position: absolute;
+  top: -6px;
+  right: -4px;
+  z-index: 2;
+  font-size: 13px;
+  line-height: 1;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.flag {
+  color: var(--ok, #8ce082);
+}
+
+.here {
+  color: var(--gold-bright);
+  animation: mapFlag 2.2s ease-in-out infinite;
+}
+
+@keyframes mapFlag {
+  0%,
+  100% {
+    transform: rotate(-6deg);
+  }
+  50% {
+    transform: rotate(8deg);
+  }
+}
+
+.done {
+  border-color: rgba(140, 224, 130, 0.6);
+}
+
+.done .face {
+  filter: saturate(0.7) brightness(0.85);
+}
+
+/* 下一关:整个节点呼吸 —— 24 个圆点里要一眼找到「我在这儿」 */
+.next {
+  box-shadow:
+    0 0 0 2px rgba(232, 200, 120, 0.35),
+    0 0 18px rgba(232, 200, 120, 0.5);
+  animation: mapPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes mapPulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 2px rgba(232, 200, 120, 0.3),
+      0 0 12px rgba(232, 200, 120, 0.35);
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px rgba(232, 200, 120, 0.55),
+      0 0 26px rgba(232, 200, 120, 0.7);
+  }
+}
+
+.locked {
+  cursor: default;
+  border-color: rgba(122, 100, 58, 0.45);
+}
+
+.locked .face {
+  filter: grayscale(1) brightness(0.4);
+}
+
+.legend {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  font-family: var(--font-display);
+  font-size: var(--fs-small);
+  letter-spacing: 0.1em;
+  color: var(--parchment-faint);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+}
+
+:root[data-reduced-motion='true'] .here,
+:root[data-reduced-motion='true'] .next,
+:root[data-reduced-motion='true'] .node {
+  animation: none;
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .here,
+  .next,
+  .node {
+    animation: none;
+    transition: none;
+  }
+}

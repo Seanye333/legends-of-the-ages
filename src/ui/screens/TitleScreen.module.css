@@ -6,7 +6,7 @@
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  padding: max(28px, env(safe-area-inset-top) + 12px) 20px 48px;
+  padding: max(28px, env(safe-area-inset-top) + 12px) 20px max(48px, env(safe-area-inset-bottom) + 20px);
   overflow-x: hidden;
 }
 

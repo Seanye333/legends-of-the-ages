@@ -23,6 +23,7 @@ import { useCollection } from '../../app/collectionStore'
 import { launchMatch } from '../matchSetup'
 import { DOCTRINE_COLORS, DOCTRINE_NAME } from '../doctrineColors'
 import { Portrait } from '../components/Portrait'
+import { CampaignMap } from '../components/CampaignMap'
 import { usePickCompact, usePickText, useT } from '../i18n'
 import { playSfx } from '../sound'
 import { haptic } from '../haptics'
@@ -47,6 +48,8 @@ export function CampaignScreen({ onBack, onEnterMatch }: CampaignScreenProps) {
   const ascend = useCampaign((s) => s.ascend)
   const customDecks = useCollection((s) => s.customDecks)
   const [selected, setSelected] = useState<BossDef | null>(null)
+  // 舆图视图。默认关 —— 竖列表在手机上仍是更好用的那个(也是 e2e 依赖的结构)
+  const [mapView, setMapView] = useState(false)
   const [deckIndex, setDeckIndex] = useState(0)
 
   const myDecks = [...PRECON_DECKS, ...customDecks]
@@ -147,6 +150,39 @@ export function CampaignScreen({ onBack, onEnterMatch }: CampaignScreenProps) {
         </button>
       )}
 
+      {/* 舆图 / 列传两种读法。
+          列表回答「这一关是谁、什么称号、多少血」,舆图回答「我走到哪了」——
+          两个不同的问题,一屏塞不下但一个开关装得下。列表是默认。 */}
+      <div className={styles.viewTabs}>
+        {(
+          [
+            ['list', t('關卡', 'Stages')],
+            ['map', t('輿圖', 'Map')],
+          ] as const
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            className={mapView === (key === 'map') ? styles.viewTabOn : styles.viewTab}
+            onClick={() => {
+              playSfx('buttonTap')
+              setMapView(key === 'map')
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {mapView && (
+        <CampaignMap
+          bosses={BOSSES}
+          isCleared={(id) => cleared.includes(id)}
+          isUnlocked={isUnlocked}
+          onPick={(b) => setSelected(b)}
+        />
+      )}
+
+      {!mapView && (
       <ol className={styles.road}>
         {BOSSES.map((b, i) => {
           const done = cleared.includes(b.id)
@@ -212,6 +248,7 @@ export function CampaignScreen({ onBack, onEnterMatch }: CampaignScreenProps) {
           )
         })}
       </ol>
+      )}
 
       {selected && (
         <div className={styles.overlay} onClick={() => setSelected(null)}>

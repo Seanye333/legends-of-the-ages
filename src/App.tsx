@@ -127,7 +127,10 @@ export default function App() {
       return
     }
     setExiting(prev)
-    const timer = window.setTimeout(() => setExiting(null), 200)
+    // 计时器要盖住**两者里更长的那个**:旧屏淡出 190ms,而墨扫要 420ms。
+    // 按 200ms 收的话墨会被拦腰砍断。旧屏在淡出结束后 opacity 恒为 0
+    // (animation-fill-mode: both),多挂这 240ms 完全看不见。
+    const timer = window.setTimeout(() => setExiting(null), 440)
     return () => window.clearTimeout(timer)
   }, [screen])
   // 旧屏进了 overflow: hidden 的固定壳,把它滚回玩家离开时的位置
@@ -342,6 +345,12 @@ export default function App() {
         <div key={exiting} ref={exitBoxRef} className="screen-exit" aria-hidden="true">
           {renderScreen(exiting)}
         </div>
+      )}
+      {/* 湿墨:换屏时扫过的一道墨。**必须是没有子节点的叶子** ——
+          filter 和 transform 一样会重锚 fixed 后代(见上面的转场注释),
+          所以它自己在最上层扫过去,不包任何东西。 */}
+      {exiting !== null && exiting !== screen && (
+        <div key={`ink-${exiting}`} className="ink-wipe" aria-hidden="true" />
       )}
     </>
   )

@@ -441,6 +441,61 @@ button {
   }
 }
 
+/* ---- 滚动到底 ----
+   长列表(图鉴两千格、乱斗十四条、讲堂几十条)滚到底时没有任何交代 ——
+   「是到底了还是没加载出来」分不清。给 body 一个贴底的暗渐变收口:
+   内容压到边缘之下,底部于是有了一条视觉终止线。
+   用 background-attachment 而不是伪元素 —— 全站已有 body::after(纸纹),
+   再加一层会打架。 */
+body {
+  background-attachment: fixed;
+}
+
+/* ---- 湿墨 ----
+   换屏时扫过的一道墨:feTurbulence 位移滤镜(与纸纹同一套技术,零字节资产)
+   把这道墨的边缘搅出宣纸吃墨的毛边,而不是一条干净的渐变带。
+
+   【为什么它必须是个没有子节点的叶子】
+   filter 和 transform 一样,会让元素成为**所有 fixed 后代的包含块**。
+   把它套在换屏容器上等于重演「认输按钮点不动」那次事故
+   (见 App.tsx 的转场注释)。所以这里是一个独立的、childless 的固定层,
+   自己在最上面扫过去,不包任何东西。pointer-events: none 保证它不吃点击。 */
+.ink-wipe {
+  position: fixed;
+  inset: 0;
+  z-index: 998;
+  pointer-events: none;
+  filter: url('#inkBleed');
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    rgba(18, 14, 8, 0.55) 44%,
+    rgba(10, 8, 4, 0.72) 50%,
+    rgba(18, 14, 8, 0.55) 56%,
+    transparent 70%
+  );
+  animation: inkWipe 0.42s cubic-bezier(0.4, 0, 0.4, 1) both;
+}
+
+@keyframes inkWipe {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+:root[data-reduced-motion='true'] .ink-wipe {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ink-wipe {
+    display: none;
+  }
+}
+
 /* ---- 领取的统一仪式 ----
    校场/每日/成就/图鉴四处的「领取」原来都是按钮文字变一下就完了。
    全局类:点下的瞬间挂上,金环从按钮胀开 + 按钮自己弹一下。
