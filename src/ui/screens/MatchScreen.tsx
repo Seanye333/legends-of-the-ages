@@ -5,13 +5,22 @@ import type {
   Command,
   GameEvent,
   GameState,
-  LocalizedText,
   TargetRef,
 } from '../../engine/types'
 import { legalCommands } from '../../engine/legal'
 import { skyOf } from '../../engine/resolve'
+import { useFlip } from '../useFlip'
 import { SKY_SPAN } from '../../engine/types'
 import { SKY_COLOR, SKY_GLYPH, SKY_NAME } from '../doctrineColors'
+
+// 战场环境 → 牌桌底色。按规则 id 查,认不出的用一层中性土色 ——
+// 内容层随时会加新环境,而「加了一片新战场,牌桌就不染色了」是最难查的那种缺失。
+const FIELD_TINT: Record<string, string> = {
+  'field-chibi': 'rgba(224, 96, 40, 0.20)', // 赤壁在烧
+  'field-snow': 'rgba(150, 190, 230, 0.16)', // 大雪封山
+  'field-steppe': 'rgba(200, 176, 110, 0.16)', // 平原走马
+  'field-river': 'rgba(80, 150, 190, 0.18)', // 江河天险
+}
 import { CARDS_BY_ID } from '../../content/cards'
 import { useMatch } from '../../app/matchStore'
 import { usePickCompact, usePickText, useT } from '../i18n'
@@ -28,7 +37,8 @@ import { solveLethal } from '../../ai/lethalSolver'
 import { describeSolution } from '../puzzleSolution'
 import { retryLast } from '../matchSetup'
 import { BattleLog } from '../components/BattleLog'
-import { cardName, formatEvent, heroName } from '../components/eventText'
+import { cardName, eventKind, formatEvent, heroName } from '../components/eventText'
+import type { LogLine } from '../components/BattleLog'
 import { targetFloatKey } from '../components/floats'
 import { matchErrorText } from '../components/errorText'
 import { Portrait } from '../components/Portrait'
@@ -127,6 +137,10 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
   const [solution, setSolution] = useState<string[] | null>(null)
   const { soundEnabled, setSoundEnabled, language: lang } = useSettings()
   const [selection, setSelection] = useState<Selection>(null)
+  // 战线合拢:一个单位被移出数组后,右边所有人的位置在同一帧内就变了 ——
+  // 没有中间态可以过渡,于是场面每死一个人就闪一下。FLIP 把它翻过来(见 useFlip)。
+  const foeRowRef = useRef<HTMLDivElement>(null)
+  const myRowRef = useRef<HTMLDivElement>(null)
   // 抉择卡的模式选择器(非空 = 正在选模式)
   const [modeChoice, setModeChoice] = useState<{ iid: number; modes: ChooseMode[] } | null>(null)
   // 「这张牌为什么打不出」的即时提示。自动消失,不需要玩家关 ——
@@ -137,7 +151,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
     const timer = window.setTimeout(() => setWhyToast(null), 2600)
     return () => window.clearTimeout(timer)
   }, [whyToast])
-  const [log, setLog] = useState<LocalizedText[]>([])
+  const [log, setLog] = useState<LogLine[]>([])
   const [toast, setToast] = useState<string | null>(null)
   const [inspect, setInspect] = useState<CardDef | null>(null)
   // 认输确认原来用的是 window.confirm —— 在一个全自绘的界面里弹系统框太出戏,
@@ -259,7 +273,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
       defName: (defId: string) => cardName(defId),
       heroName: (p: 0 | 1) => heroName(state.players[p].heroId),
     }
-    const entries = lastEvents.map((ev) => formatEvent(ev, ctx))
+    const entries = lastEvents.map((ev) => ({ ...formatEvent(ev, ctx), kind: eventKind(ev) }))
     if (entries.length > 0) setLog((prev) => [...prev, ...entries].slice(-300))
   }, [state, lastEvents])
 
@@ -329,6 +343,12 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
   const foeSeat: 0 | 1 = viewer === 0 ? 1 : 0
   const me = state.players[viewer]
   const foe = state.players[foeSeat]
+
+  // 战线合拢。依赖是**这一行的 iid 串** —— 只有真的有人进出才重排,
+  // 而攻血变化(每回合都在发生)不该触发一次 FLIP。
+  const reduceFx = useSettings((s) => s.reducedMotion)
+  useFlip(foeRowRef, [foe.board.map((c) => c.iid).join(','), reduceFx], !reduceFx)
+  useFlip(myRowRef, [me.board.map((c) => c.iid).join(','), reduceFx], !reduceFx)
   // 观战席没有「我方回合」可言:一切操作入口都要关掉,
   // 否则会出现「点了没反应」的迷惑体验(服务器本来就会丢弃观战席的指令)
   const myTurn = !spectating && state.phase === 'main' && state.activePlayer === viewer
@@ -530,6 +550,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
         <HeroPlate
           ps={foe}
           enemy
+          acting={state.phase === 'main' && !myTurn}
           targetable={activeTargets.has(`hero-${foeSeat}`)}
           floats={floatsFor(`hero-${foeSeat}`)}
           fx={fxFor(`hero-${foeSeat}`)}
@@ -576,8 +597,18 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
       </div>
 
       {/* 中部:两行战场 */}
-      <div className={styles.battlefield}>
-        <div className={styles.row}>
+      <div
+        className={styles.battlefield}
+        style={
+          {
+            // 天时与战场环境**染牌桌**,不只是角落两条横幅。
+            // 极淡:它们是底色不是滤镜,浓到能认出颜色的话卡面主义色就失真了。
+            '--sky-tint': SKY_COLOR[skyOf(state.turn)],
+            '--field-tint': state.field ? FIELD_TINT[state.field.rule.id] ?? 'rgba(140,120,90,0.10)' : 'transparent',
+          } as CSSProperties
+        }
+      >
+        <div className={styles.row} ref={foeRowRef}>
           {foe.board.map((c) => (
             <GeneralToken
               key={c.iid}
@@ -594,7 +625,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
           ))}
         </div>
         <div className={styles.divider} />
-        <div className={styles.row}>
+        <div className={styles.row} ref={myRowRef}>
           {me.board.map((c) => (
             <GeneralToken
               key={c.iid}
@@ -647,6 +678,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
           floats={floatsFor(`hero-${viewer}`)}
           fx={fxFor(`hero-${viewer}`)}
           pulse={anim.myTurnPulse}
+          acting={state.phase === 'main' && myTurn}
           powerUsable={myTurn && powerCmds.length > 0}
           powerSelected={selection?.kind === 'heroPower' && !selection.vice}
           onUsePower={(e) => {
@@ -728,6 +760,13 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
         </div>
       )}
 
+      {/* 换手转场:一道横扫过牌桌的光。
+          横幅本身只是「一块字出现又消失」—— 它告诉你轮到谁了,但**没有把回合
+          切换这件事变成一个动作**。一道从左到右扫过的光是最省的一个转场:
+          它不遮挡任何东西,持续 0.5s,而且天然带方向(交接的方向)。 */}
+      {turnBanner > 0 && myTurn && (
+        <div key={`sweep-${turnBanner}`} className={styles.turnSweep} aria-hidden="true" />
+      )}
       {turnBanner > 0 && myTurn && (
         <div key={turnBanner} className={styles.turnBanner} role="status" aria-live="polite">
           {t('轮到你了', 'Your Turn')}

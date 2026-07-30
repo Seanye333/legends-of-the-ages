@@ -58,6 +58,39 @@ export function formatEvent(ev: GameEvent, ctx: EventTextCtx): LocalizedText {
   return { zh: line(ev, ctx, 'zh'), en: line(ev, ctx, 'en') }
 }
 
+// 战报行的类别。
+//
+// 战报此前是**一条不分层的文字流**:三十行长得一模一样,回合从哪儿开始、
+// 哪一行是有人死了,全靠一个字一个字读。
+// 分类之后每行左边有一条色带 —— 不用读也能看出这一段发生了什么形状的事。
+// 刻意只分五类:再细就又变成一片彩色噪音了。
+export type LogKind = 'turn' | 'damage' | 'heal' | 'death' | 'plain'
+
+export function eventKind(ev: GameEvent): LogKind {
+  switch (ev.type) {
+    case 'TurnStarted':
+    case 'TurnEnded':
+      return 'turn'
+    case 'GeneralDied':
+    case 'GeneralBanished':
+    case 'GameEnded':
+      return 'death'
+    case 'HeroDamaged':
+    case 'GeneralDamaged':
+    case 'FatigueDamage':
+    case 'AttackResolved':
+    case 'DuelFought':
+      return 'damage'
+    case 'HeroHealed':
+    case 'GeneralHealed':
+    case 'ArmorGained':
+    case 'GeneralBuffed':
+      return 'heal'
+    default:
+      return 'plain'
+  }
+}
+
 function line(ev: GameEvent, ctx: EventTextCtx, l: Lang): string {
   const zh = l === 'zh'
   // 中文用书名号包卡名,英文靠语序即可,加引号反而碍眼

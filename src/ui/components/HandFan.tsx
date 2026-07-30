@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { CardInstance } from '../../engine/types'
 import { CardFace } from './CardFace'
 import styles from './HandFan.module.css'
@@ -94,18 +94,29 @@ export function HandFan({ hand, playableIids, selectedIid, onCardClick, onInspec
     if (st.dy <= PLAY_LIFT && playableIids.has(st.iid)) onCardClick(st.iid)
   }
 
+  // 已经见过的手牌 iid。**首次渲染时全部算「见过」** ——
+  // 否则开局调度完那一刻,七张牌会一起播抽牌动画,像发牌机卡了一下。
+  const seenRef = useRef<Set<number>>(new Set(hand.map((c) => c.iid)))
+  useEffect(() => {
+    for (const c of hand) seenRef.current.add(c.iid)
+  }, [hand])
+
   return (
     <div className={styles.fan} style={{ '--n': Math.max(n, 1) } as React.CSSProperties}>
       {hand.map((c, i) => {
         const selected = selectedIid === c.iid
         const dragging = drag?.iid === c.iid
         const armed = dragging && drag.dy <= PLAY_LIFT && playableIids.has(c.iid)
+        // 刚摸上来的那张。抽牌此前**在手上是没有事件的** ——
+        // 战报里有一行「我方抽到关羽」,而手牌那一排只是无声地多出一张。
+        // 一局要抽三四十次,是牌桌上频率最高的事之一。
+        const fresh = !seenRef.current.has(c.iid)
         return (
           <div
             key={c.iid}
             className={`${styles.slot} ${selected ? styles.slotSelected : ''} ${
               dragging ? styles.slotDragging : ''
-            } ${armed ? styles.slotArmed : ''}`}
+            } ${armed ? styles.slotArmed : ''} ${fresh ? styles.slotDrawn : ''}`}
             onPointerDown={onPointerDown(c.iid)}
             onPointerMove={onPointerMove}
             onPointerUp={endDrag}

@@ -589,3 +589,74 @@
 :root[data-reduced-motion='true'] .gemFull {
   animation: none;
 }
+
+
+/* 「现在轮到这一侧」。
+   敌方一侧此前没有任何标记 —— 对局里最基本的一件事(现在该谁了)
+   只能靠「结束回合」按钮灰不灰去反推,而那个按钮在屏幕另一头。
+   做成沿着帅案边缘缓慢流动的一圈微光:持续、但不闪 ——
+   闪的东西会一直抢注意力,而这是一条**背景信息**。 */
+.acting {
+  box-shadow:
+    0 0 0 1px rgba(240, 214, 138, 0.5),
+    0 0 22px -6px rgba(240, 214, 138, 0.75);
+  animation: actingBreath 2.8s ease-in-out infinite;
+}
+
+@keyframes actingBreath {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(240, 214, 138, 0.35),
+      0 0 18px -8px rgba(240, 214, 138, 0.6);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(240, 214, 138, 0.6),
+      0 0 28px -4px rgba(240, 214, 138, 0.9);
+  }
+}
+
+:root[data-reduced-motion='true'] .acting {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acting {
+    animation: none;
+  }
+}
+
+
+/* 法力被花掉的那一下。
+   出一张牌最直接的代价此前在画面上**没有事件** —— 一排图标换了个颜色而已。
+   碎裂:先胀一下(把注意力拉过来),再缩小、转开、褪成空。
+   0.42s 走完,不会拖住下一次出牌。 */
+.gemSpent {
+  animation: gemShatter 0.42s cubic-bezier(0.3, 0, 0.6, 1) both;
+}
+
+@keyframes gemShatter {
+  0% {
+    transform: scale(1.35) rotate(0deg);
+    color: #a8d8ff;
+    text-shadow: 0 0 10px rgba(150, 210, 255, 1);
+  }
+  45% {
+    transform: scale(0.72) rotate(28deg);
+    color: #3f5a7c;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+:root[data-reduced-motion='true'] .gemSpent {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gemSpent {
+    animation: none;
+  }
+}

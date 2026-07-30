@@ -59,6 +59,25 @@
 /* 战场收进一个居中的最大宽度。
    1440px 宽的桌面上两排原本铺满整行,七个单位散在一米开外 ——
    牌桌应该是**一张桌子**,不是一条跑道。1100px ≈ 七张单位卡加间距。 */
+/* 牌桌染色。
+   天时(--sky)与战场环境(--field-tint)此前只出现在角落的两条横幅上 ——
+   也就是说「今天是夜半」「赤壁在烧」这两件事对**牌桌本身**没有任何影响,
+   而它们讲的恰恰是这张桌子处在什么光线、什么天气里。
+   两层都极淡(0.06 / 0.1):它们是底色,不是滤镜 ——
+   一旦浓到能看清是什么颜色,卡面的主义色就开始失真了。 */
+.battlefield::before {
+  content: '';
+  position: absolute;
+  inset: -8% -4%;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: 40%;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 50%, var(--field-tint, transparent), transparent 72%),
+    radial-gradient(ellipse 90% 70% at 50% 50%, color-mix(in srgb, var(--sky-tint, transparent) 55%, transparent), transparent 78%);
+  transition: background 1.2s ease;
+}
+
 .battlefield {
   position: relative;
   z-index: 2;
@@ -1053,6 +1072,44 @@
   animation: slowmoDip 0.76s cubic-bezier(0.16, 0.8, 0.3, 1) both;
 }
 
+/* 定格。
+   慢镜与白闪已经有了,少的是**停住的那一下** —— 格斗游戏里的 KO 之所以有分量,
+   靠的不是变慢,是先彻底停住再走。
+   做法:在致命一击那 760ms 的前 180ms 里,把牌桌上所有动画**暂停**。
+   `animation-play-state: paused` 是唯一能真正「冻住」而不是「变慢」的手段;
+   用一条自己的动画去驱动它的开关,于是不需要任何计时状态。 */
+.slowmo .row *,
+.slowmo .heroRow * {
+  animation-play-state: paused;
+}
+
+.slowmo .row,
+.slowmo .heroRow {
+  animation: lethalHold 0.76s steps(1, end) both;
+}
+
+@keyframes lethalHold {
+  0% {
+    transform: scale(1.012);
+  }
+  24% {
+    transform: scale(1.012);
+  }
+  25% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+:root[data-reduced-motion='true'] .slowmo .row,
+:root[data-reduced-motion='true'] .slowmo .heroRow,
+:root[data-reduced-motion='true'] .slowmo .row *,
+:root[data-reduced-motion='true'] .slowmo .heroRow * {
+  animation: none;
+}
+
 @keyframes slowmoDip {
   0% {
     filter: var(--era-tint, none);
@@ -1090,4 +1147,45 @@
       rgba(6, 4, 2, 0.52) 80%,
       rgba(4, 3, 1, 0.8) 100%
     );
+}
+
+
+/* 换手转场。
+   「轮到你了」横幅只是一块字出现又消失 —— 它说清了轮到谁,
+   但没有把**回合切换**这件事变成一个动作。
+   一道从左扫到右的光是最省的转场:不遮挡任何东西、自带方向(交接的方向)、
+   0.55s 走完。pointer-events: none 是必须的 —— 它横跨整个牌桌。 */
+.turnSweep {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 38%,
+    rgba(240, 214, 138, 0.14) 47%,
+    rgba(255, 240, 200, 0.3) 50%,
+    rgba(240, 214, 138, 0.14) 53%,
+    transparent 62%
+  );
+  animation: turnSweep 0.55s cubic-bezier(0.35, 0, 0.3, 1) both;
+}
+
+@keyframes turnSweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+:root[data-reduced-motion='true'] .turnSweep {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .turnSweep {
+    display: none;
+  }
 }

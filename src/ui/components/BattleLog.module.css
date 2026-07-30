@@ -110,3 +110,39 @@
   text-align: center;
   padding: 10px 0;
 }
+
+
+/* 战报此前是一条**不分层的文字流**:三十行长得一模一样,
+   回合从哪儿开始、哪一行是有人死了,全靠一个字一个字读。
+   左侧一条色带就够了 —— 不用读也能看出这一段发生了什么形状的事。
+   **只分五类**:再细就又变成一片彩色噪音。 */
+.line {
+  border-left: 2px solid transparent;
+  padding-left: 7px;
+}
+
+/* 回合行做成分隔:它是唯一一条「结构」而不是「事件」的行 */
+.turn {
+  border-left-color: var(--gold-dark);
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px solid rgba(212, 168, 74, 0.18);
+  color: var(--gold-mid);
+}
+
+.damage {
+  border-left-color: rgba(230, 70, 50, 0.65);
+}
+
+.heal {
+  border-left-color: rgba(140, 224, 130, 0.6);
+}
+
+.death {
+  border-left-color: rgba(200, 200, 210, 0.7);
+  color: var(--parchment);
+}
+
+.plain {
+  border-left-color: rgba(212, 168, 74, 0.22);
+}

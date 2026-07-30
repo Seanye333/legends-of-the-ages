@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import type { CSSProperties, MouseEvent } from 'react'
 import type { PlayerState } from '../../engine/types'
 import { MORALE_THRESHOLD } from '../../engine/types'
@@ -20,6 +21,10 @@ interface HeroPlateProps {
   floats?: FloatItem[]
   fx?: TokenFx // 受击震颤/闪光
   pulse?: boolean // 我方回合开始的金光脉动
+  // 「现在轮到这一侧」。**敌方一侧此前没有任何标记** —— 对局里最基本的一件事
+  // (现在该谁了)只能从「结束回合」按钮灰不灰去反推。
+  // 我方那个 pulse 是回合开始时闪一下就没了,这个是**持续**的。
+  acting?: boolean
   onClick?: (e: MouseEvent) => void
   // 主公技:可用时高亮可点。敌方一侧只展示不可点。
   powerUsable?: boolean
@@ -40,6 +45,7 @@ export function HeroPlate({
   floats,
   fx,
   pulse,
+  acting,
   onClick,
   powerUsable,
   onUsePower,
@@ -68,15 +74,23 @@ export function HeroPlate({
   // 士气 / 粮道:两条**全队**状态,不属于任何一个单位,所以挂在帅案上。
   // 只在非零时画 —— 绝大多数回合它们都是 0,常驻两个「0」会把已经很挤的
   // 帅案再占掉一行,而且天天见的零值等于没有信息。
+  // 上一帧的法力值。用 ref 而不是 state:它只是用来给「刚花掉」加个类名,
+  // 存进 state 会为每一次法力变化多触发一轮渲染。
+  const prevManaRef = useRef(ps.mana.current)
+  useEffect(() => {
+    prevManaRef.current = ps.mana.current
+  }, [ps.mana.current])
+
   const morale = ps.morale ?? 0
   const supply = ps.supply ?? 0
 
   return (
     <div
       className={`${styles.plate} ${enemy ? styles.enemy : ''} ${pulse ? styles.pulse : ''} ${
-        fx?.motion ? MOTION_CLASS[fx.motion.kind] : ''
-      }`}
+        acting ? styles.acting : ''
+      } ${fx?.motion ? MOTION_CLASS[fx.motion.kind] : ''}`}
       data-fxkey={`hero-${enemy ? 1 : 0}`}
+      style={{ '--fx-power': `${fx?.motion?.power ?? 1}` } as CSSProperties}
     >
       <div
         className={`${styles.portraitWrap} ${targetable ? styles.targetable : ''}`}
@@ -109,10 +123,16 @@ export function HeroPlate({
           {Array.from({ length: ps.mana.max }, (_, i) => {
             const locked = i >= ps.mana.max - ps.overloadLocked
             const filled = i < ps.mana.current
+            // 刚刚被花掉的那几颗:上一帧还亮着、这一帧灭了。
+            // 法力此前只是「变暗」—— 出一张牌最直接的代价在画面上是**没有事件**的,
+            // 玩家看到的只是一排图标换了颜色。给它一个碎裂。
+            const justSpent = !filled && !locked && i < prevManaRef.current
             return (
               <span
                 key={i}
-                className={locked ? styles.gemLocked : filled ? styles.gemFull : styles.gemEmpty}
+                className={`${locked ? styles.gemLocked : filled ? styles.gemFull : styles.gemEmpty} ${
+                  justSpent ? styles.gemSpent : ''
+                }`}
                 // 逐颗点亮:第 i 颗晚 i×45ms 亮。
                 // 回合开始时水晶是整排瞬间刷新的,读起来像「数字变了」;
                 // 一颗一颗亮起来读起来像「资源到账了」—— 同样的信息,后者有分量。

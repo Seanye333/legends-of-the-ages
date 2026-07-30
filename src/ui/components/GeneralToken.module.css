@@ -355,6 +355,21 @@
   outline-offset: 3px;
 }
 
+/* 三个状态叠在一起时不能各叠各的 filter。
+   冰封(去饱和 0.5)+ 沉默(灰度 0.85)+ 潜行(透明 0.62)同时挂上去时,
+   令牌会变成一坨认不出是谁的灰泥 —— 而这三个状态恰恰是玩家最需要看清
+   「这是谁、还剩多少血」的时刻。
+   收敛成一条:同时中招时只保留**最要紧的那一个**(冰封 > 沉默),
+   剩下的靠各自的轮廓/罩色区分。 */
+.frozen.silenced .circle {
+  filter: saturate(0.55) brightness(0.82);
+}
+
+.stealthed.frozen,
+.stealthed.silenced {
+  opacity: 0.78;
+}
+
 /* 冰封:蓝罩 + 去饱和,并压掉待命高光 */
 .frozen .circle {
   filter: saturate(0.5) brightness(0.85);
@@ -435,4 +450,30 @@
   left: -3px;
   background: #2a1614;
   color: #ff8a72;
+}
+
+
+/* ---- 守护:一堵墙 ----
+   守护此前只有一个「盾」角标 —— 而它在规则上是**一堵必须先拆的墙**,
+   一个小角标完全撑不起这个意思。在令牌下方压一段石栏:
+   有守护的单位脚下有墙,没有的没有,一眼就能数清对面几堵。
+   画在 ::after 上、z-index 压在令牌之下,不挡任何数字。 */
+.guard::after {
+  content: '';
+  position: absolute;
+  left: -8%;
+  right: -8%;
+  bottom: -5px;
+  height: 7px;
+  z-index: -1;
+  border-radius: 2px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(205, 214, 232, 0.85) 0 9px,
+      rgba(74, 82, 100, 0.9) 9px 11px
+    );
+  box-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }

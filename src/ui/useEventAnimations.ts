@@ -19,6 +19,17 @@ export interface FxMotion {
   x?: number // 突进位移(px)
   y?: number
   delayMs?: number // 单挑后手的延迟起步
+  // 力度(0.6 ~ 1.8)。**打 1 点和打 12 点此前是同一个抖动** ——
+  // 牌桌上最该被感觉到的差别(这一下疼不疼)在画面上完全不存在。
+  // 由伤害值折算,喂给 CSS 的 --fx-power,只乘在位移与形变上。
+  power?: number
+}
+
+// 伤害 → 力度。4 点是基准(一次普通交换),往下不低于 0.6(再小就看不见了),
+// 往上封在 1.8(再大整个令牌会飞出格子,而且高伤害本来就不需要靠幅度强调,
+// 它自带一个巨大的飘字)。
+export function powerOf(damage: number): number {
+  return Math.max(0.6, Math.min(1.8, 0.6 + damage / 5))
 }
 
 export interface FxFlash {
@@ -61,6 +72,7 @@ export interface EventAnimState {
 interface MotionPlan {
   key: string
   kind: FxMotion['kind']
+  power?: number
   towardKey?: string // 突进方向:执行时按 DOM 实测位置换算
   fallbackY?: number
   delayMs?: number
@@ -175,7 +187,7 @@ function buildTimeline(events: GameEvent[], rects: ReadonlyMap<string, DOMRect>)
         })
         // 冲撞落点:受击方震颤 + 红光,随后的伤害事件都归到这一拍
         const impact = push(280, { sfx: ['hit'] })
-        impact.motions.push({ key: targetKey, kind: 'shake' })
+        impact.motions.push({ key: targetKey, kind: 'shake', power: powerOf(ev.damageToTarget) })
         impact.flashes.push({ key: targetKey, kind: 'hit' })
         impact.flashes.push({ key: attackerKey, kind: 'hit' })
         break
@@ -232,7 +244,7 @@ function buildTimeline(events: GameEvent[], rects: ReadonlyMap<string, DOMRect>)
         if (ev.amount > 0) loose().events.push(ev)
         const e = loose()
         e.flashes.push({ key: `hero-${ev.player}`, kind: 'hit' })
-        e.motions.push({ key: `hero-${ev.player}`, kind: 'shake' })
+        e.motions.push({ key: `hero-${ev.player}`, kind: 'shake', power: powerOf(ev.amount) })
         addSfxOnce(e, 'hit')
         if (ev.hpAfter <= 0) {
           // 致命一击:全屏白金闪光 + 慢镜,压在终局结算之前。
@@ -252,7 +264,7 @@ function buildTimeline(events: GameEvent[], rects: ReadonlyMap<string, DOMRect>)
         e.events.push(ev)
         // 攻击结算的节拍里受击方已有震颤;松散伤害(法术/亡语)补上
         if (!e.motions.some((m) => m.key === `gen-${ev.iid}`)) {
-          e.motions.push({ key: `gen-${ev.iid}`, kind: 'shake' })
+          e.motions.push({ key: `gen-${ev.iid}`, kind: 'shake', power: powerOf(ev.amount) })
           e.flashes.push({ key: `gen-${ev.iid}`, kind: 'hit' })
         }
         addSfxOnce(e, 'hit')
@@ -414,7 +426,7 @@ export function useEventAnimations(
 
   // 执行时按 DOM 实测位置换算突进向量
   const resolveMotion = (m: MotionPlan): FxMotion => {
-    const fx: FxMotion = { id: ++idRef.current, kind: m.kind, delayMs: m.delayMs }
+    const fx: FxMotion = { id: ++idRef.current, kind: m.kind, delayMs: m.delayMs, power: m.power }
     if (m.kind !== 'lunge') return fx
     const from = getRect(rectsRef.current, m.key)
     const to = m.towardKey ? getRect(rectsRef.current, m.towardKey) : null

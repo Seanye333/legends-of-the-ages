@@ -62,3 +62,37 @@
 .fan {
   touch-action: none;
 }
+
+
+/* 抽牌落手。
+   抽牌此前在手上是**没有事件的** —— 战报里有一行「我方抽到关羽」,
+   而手牌那一排只是无声地多出一张。一局要抽三四十次。
+   从牌库那一侧(右下)斜着滑进来、带一点过冲,落定即归位;
+   0.34s,短到不会挡住你下一步点它。 */
+.slotDrawn {
+  animation: cardDrawn 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes cardDrawn {
+  0% {
+    opacity: 0;
+    transform: translate(46px, 34px) rotate(14deg) scale(0.82);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(var(--rot)) scale(1);
+  }
+}
+
+:root[data-reduced-motion='true'] .slotDrawn {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slotDrawn {
+    animation: none;
+  }
+}

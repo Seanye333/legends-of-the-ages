@@ -58,6 +58,8 @@ export function GeneralToken({ inst, ready, selected, targetable, floats, fx, on
         '--fx-x': `${fx.motion.x ?? 0}px`,
         '--fx-y': `${fx.motion.y ?? 0}px`,
         '--fx-delay': `${fx.motion.delayMs ?? 0}ms`,
+        // 力度:由伤害折算,只乘在位移与形变上(见 useEventAnimations.powerOf)
+        '--fx-power': `${fx.motion.power ?? 1}`,
       } as CSSProperties)
     : {}
 
@@ -82,6 +84,8 @@ export function GeneralToken({ inst, ready, selected, targetable, floats, fx, on
       // 让组件之间传一张 iid→defId 的表:那张表得跟着场面每一次变动同步,
       // 而这里的真相本来就在渲染这个单位的地方。
       data-def={inst.defId}
+      // FLIP 用:同一个单位在两帧里必须是同一个 key,位移才是它自己真的走了多远
+      data-flip-key={String(inst.iid)}
       style={{ '--doctrine': DOCTRINE_COLORS[doctrine], ...fxVars } as CSSProperties}
       {...(onInspect ? longPress.handlers : {})}
       role={interactive ? 'button' : undefined}

@@ -197,21 +197,26 @@ button {
 /* 受击。第一帧加了一个**压缩**(scaleX 收、scaleY 缩)——
    原来纯位移的抖动读起来像「被戳了一下」,而挨一刀应该先有一个吸收冲击的形变。
    和上场落地那一下是同一个道理:形变才是重量,位移只是位置。 */
+/* --fx-power 由伤害折算(见 useEventAnimations.powerOf):
+   打 1 点和打 12 点此前是同一个抖动 —— 牌桌上最该被感觉到的差别
+   在画面上完全不存在。位移与压缩幅度都乘上它;时长不乘
+   (时长一变,后续节拍的编排就全乱了)。 */
 @keyframes fxShake {
   0% {
-    transform: translate(0, 0) scale(0.93, 0.9);
+    transform: translate(0, 0)
+      scale(calc(1 - 0.07 * var(--fx-power, 1)), calc(1 - 0.1 * var(--fx-power, 1)));
   }
   20% {
-    transform: translate(-4px, 1px) scale(1.02, 0.98);
+    transform: translate(calc(-4px * var(--fx-power, 1)), 1px) scale(1.02, 0.98);
   }
   40% {
-    transform: translate(4px, -2px);
+    transform: translate(calc(4px * var(--fx-power, 1)), calc(-2px * var(--fx-power, 1)));
   }
   60% {
-    transform: translate(-3px, 2px);
+    transform: translate(calc(-3px * var(--fx-power, 1)), 2px);
   }
   80% {
-    transform: translate(2px, -1px);
+    transform: translate(calc(2px * var(--fx-power, 1)), -1px);
   }
   100% {
     transform: translate(0, 0) scale(1);
