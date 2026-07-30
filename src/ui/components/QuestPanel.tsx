@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { questText, useQuests } from '../../app/questStore'
 import { useCollection } from '../../app/collectionStore'
 import { usePickText, useT } from '../i18n'
@@ -18,11 +18,16 @@ export function QuestPanel({ onClose }: QuestPanelProps) {
 
   useEffect(() => refreshIfNewDay(), [refreshIfNewDay])
 
+  // 领取的仪式挂在**行**上而不是按钮上 —— 领完按钮立刻换成「已领取」,
+  // 挂按钮的话金环还没胀开元素就没了
+  const [pulseId, setPulseId] = useState<string | null>(null)
   const onClaim = (id: string) => {
     const reward = claim(id)
     if (reward > 0) {
       grantPacks(reward)
       playSfx('victory')
+      setPulseId(id)
+      window.setTimeout(() => setPulseId((p) => (p === id ? null : p)), 650)
     }
   }
 
@@ -36,7 +41,10 @@ export function QuestPanel({ onClose }: QuestPanelProps) {
           const done = q.progress >= q.goal
           const pct = Math.min(100, Math.round((q.progress / q.goal) * 100))
           return (
-            <div key={q.id} className={`${styles.quest} ${q.claimed ? styles.questDone : ''}`}>
+            <div
+              key={q.id}
+              className={`${styles.quest} ${q.claimed ? styles.questDone : ''} ${pulseId === q.id ? 'claim-pulse' : ''}`}
+            >
               <div className={styles.questHead}>
                 <span className={styles.questText}>{pick(questText(q))}</span>
                 <span className={styles.reward}>{t(`卡包 ×${q.reward}`, `${q.reward} pack`)}</span>

@@ -9,6 +9,7 @@ import { lessonForMechanic } from '../../content/lessons'
 import { playSfx } from '../sound'
 import { emphasize } from '../components/Emphasis'
 import styles from './CodexScreen.module.css'
+import { EmptyState } from '../components/EmptyState'
 
 interface CodexScreenProps {
   onBack: () => void
@@ -130,7 +131,13 @@ export function CodexScreen({ onBack, onStartLesson }: CodexScreenProps) {
         </section>
       ))}
 
-      {sections.length === 0 && <p className={styles.empty}>{t('没有匹配的条目', 'No matching entries')}</p>}
+      {sections.length === 0 && (
+        <EmptyState
+          glyph="索"
+          title={t('没有匹配的条目', 'No matching entries')}
+          hint={t('换个关键词试试 —— 每条机制都配了一张真卡当例子。', 'Try another keyword — every mechanic has a real card as its example.')}
+        />
+      )}
       {inspect && <CardInspect def={inspect} onClose={() => setInspect(null)} />}
     </div>
   )

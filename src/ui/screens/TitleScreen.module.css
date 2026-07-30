@@ -829,6 +829,8 @@
   display: block;
   height: 100%;
   background: linear-gradient(90deg, var(--gold-dark), var(--gold-bright));
+  /* 打完一局回来,涨的那一截是走过去的,不是瞬移的 */
+  transition: width 0.6s var(--ease-out);
 }
 
 /* 大厅分组抬头:两侧金线夹一个居中的组名,与冒险页的章节分隔同一套语言 */
@@ -866,6 +868,9 @@
   color: var(--gold);
   background: rgba(46, 35, 16, 0.72);
   border: 1px solid rgba(212, 168, 74, 0.4);
+  /* 此前无进出场:setTimeout 一到直接从 DOM 消失。进场浮现;
+     退场没法给(元素是条件渲染的),但至少出现的那一下是软的。 */
+  animation: panelRise 0.3s var(--ease-out) both;
 }
 
 /* ---- 亮天空上的小字要读得出来 ----
@@ -904,4 +909,66 @@
   width: min(100%, 720px);
   margin: 10px auto 2px;
   padding: 0 12px;
+}
+
+/* 面板懒加载的等待帧:一枚呼吸的将印压在遮罩上。
+   fallback={null} 的那一拍在慢网络上长到会让人再点一次按钮。 */
+.panelWait {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  background: var(--scrim);
+  animation: overlayIn 0.18s ease both;
+}
+
+.panelWait span {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  border: 2px solid var(--cinnabar);
+  color: var(--cinnabar);
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 700;
+  transform: rotate(-4deg);
+  animation: panelWaitPulse 1.3s ease-in-out infinite;
+}
+
+@keyframes panelWaitPulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ---- 减少动效:此前漏网的四条常驻动画 ----
+   底图呼吸推近 / 长廊扫光 / 待领呼吸 / 新手邀请辉光,
+   开关打开后照常无限循环 —— 恰恰是最该被关掉的那种。 */
+:root[data-reduced-motion='true'] .bg,
+:root[data-reduced-motion='true'] .frameLegendary::after,
+:root[data-reduced-motion='true'] .navGlow,
+:root[data-reduced-motion='true'] .tutorialInvite,
+:root[data-reduced-motion='true'] .streakToast,
+:root[data-reduced-motion='true'] .panelWait,
+:root[data-reduced-motion='true'] .panelWait span {
+  animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bg,
+  .frameLegendary::after,
+  .navGlow,
+  .tutorialInvite,
+  .streakToast,
+  .panelWait,
+  .panelWait span {
+    animation: none !important;
+  }
 }

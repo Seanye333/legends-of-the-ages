@@ -32,9 +32,13 @@ export function AchievementPanel({ onClose }: AchievementPanelProps) {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
+  // 领取的仪式挂在行上(领完按钮立刻换成「已领」,挂按钮的话环还没胀开元素就没了)
+  const [pulseId, setPulseId] = useState<string | null>(null)
   const onClaim = (id: string) => {
     const def = claim(id)
     if (!def) return
+    setPulseId(id)
+    window.setTimeout(() => setPulseId((p) => (p === id ? null : p)), 650)
     playSfx('victory')
     haptic('reward')
     useCollection.setState({ merit: useCollection.getState().merit + def.merit })
@@ -80,7 +84,7 @@ export function AchievementPanel({ onClose }: AchievementPanelProps) {
             return (
               <div
                 key={a.id}
-                className={`${styles.row} ${claimed ? styles.claimed : ''} ${complete && !claimed ? styles.ready : ''}`}
+                className={`${styles.row} ${claimed ? styles.claimed : ''} ${complete && !claimed ? styles.ready : ''} ${pulseId === a.id ? 'claim-pulse' : ''}`}
               >
                 <div className={styles.rowMain}>
                   <div className={styles.name}>{pick(a.name)}</div>

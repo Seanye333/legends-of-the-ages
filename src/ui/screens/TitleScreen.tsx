@@ -739,7 +739,15 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
 
       {/* 懒加载面板统一挂在一个 Suspense 下:fallback 是 null 而不是转圈 ——
           这些 chunk 都在几十 KB 量级,同源加载通常一帧就到,转圈反而更闪。 */}
-      <Suspense fallback={null}>
+      {/* 面板懒加载的等待帧。fallback={null} 意味着点了按钮之后
+          有一拍什么都不发生 —— 慢网络上这一拍长到会让人再点一次。 */}
+      <Suspense
+        fallback={
+          <div className={styles.panelWait} aria-hidden="true">
+            <span>將</span>
+          </div>
+        }
+      >
         {questsOpen && <QuestPanel onClose={() => setQuestsOpen(false)} />}
         {dailyGenOpen && <DailyGeneralPanel onClose={() => setDailyGenOpen(false)} />}
         {achOpen && <AchievementPanel onClose={() => setAchOpen(false)} />}

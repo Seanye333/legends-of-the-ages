@@ -10,9 +10,10 @@
   padding: 24px;
   background:
     radial-gradient(circle at 50% 42%, rgba(212, 168, 74, 0.12), transparent 55%),
-    rgba(8, 6, 3, 0.94);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+    rgba(6, 5, 3, 0.94); /* 刻意比 --scrim(0.72)黑:开包是仪式,后面的标题页要完全退场 */
+  backdrop-filter: var(--scrim-blur);
+  -webkit-backdrop-filter: var(--scrim-blur);
+  animation: overlayIn 0.18s ease both;
 }
 
 .titleLine {
@@ -348,4 +349,14 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   width: fit-content;
+}
+
+:root[data-reduced-motion='true'] .overlay {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay {
+    animation: none;
+  }
 }

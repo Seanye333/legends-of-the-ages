@@ -22,6 +22,7 @@ import { FoilLayer } from '../components/FoilLayer'
 import { useT, usePickText } from '../i18n'
 import { playSfx } from '../sound'
 import { EmptyState } from '../components/EmptyState'
+import { useClaimPulse } from '../useClaimPulse'
 import styles from './CollectionScreen.module.css'
 
 const DOCTRINE_TABS: { key: Doctrine | 'neutral' | 'all'; zh: string; en: string }[] = [
@@ -171,6 +172,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
   const customDecks = useCollection((s) => s.customDecks)
   const collectionClaimed = useCollection((s) => s.collectionClaimed)
   const claimGoal = useCollection((s) => s.claimCollectionGoal)
+  const [goalPulseCls, fireGoalPulse] = useClaimPulse()
   const progress = useMemo(() => eraProgress(owned), [owned])
   const claimable = useMemo(
     () => claimableGoals(owned, collectionClaimed),
@@ -283,7 +285,8 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
           没有任何东西回答「你收了多少」。于是开包的唯一价值是「能不能组出更强的牌」,
           而绝大多数卡永远进不了任何一副牌组,对玩家等于不存在。
           按时代块(6 块,每块二百到六百张)而不是朝代(18 个,太细)或主义(6 个,太粗)。 */}
-      <details className={styles.goalBox}>
+      {/* 领取的仪式挂在整个盒子上 —— 领取按钮领完就从列表里消失了 */}
+      <details className={`${styles.goalBox} ${goalPulseCls}`}>
         <summary className={styles.goalSummary}>
           {t('收藏度', 'Collection progress')}
           {claimable.length > 0 && (
@@ -325,6 +328,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
               className={styles.goalClaim}
               onClick={() => {
                 playSfx('stratagemCast')
+                fireGoalPulse()
                 claimGoal(g.id)
               }}
             >
@@ -493,10 +497,21 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
         })}
       </div>
 
-      {/* 滚到这里就自动加载下一页;同时兼作「还有多少」的进度提示 */}
+      {/* 滚到这里就自动加载下一页。原来是一行「载入中…」灰字 ——
+          骨架卡让「下面还有」这件事长得就像下面还有,而不是像出了错 */}
       <div ref={sentinelRef} className={styles.sentinel}>
-        {shown.length < filtered.length &&
-          t(`载入中… ${shown.length}/${filtered.length}`, `Loading… ${shown.length}/${filtered.length}`)}
+        {shown.length < filtered.length && (
+          <>
+            <div className={styles.skelRow} aria-hidden="true">
+              {Array.from({ length: 6 }, (_, i) => (
+                <span key={i} className={styles.skelCard} />
+              ))}
+            </div>
+            <span className={styles.pageCount}>
+              {t(`${shown.length}/${filtered.length}`, `${shown.length}/${filtered.length}`)}
+            </span>
+          </>
+        )}
       </div>
       {filtered.length === 0 && (
         <EmptyState

@@ -89,6 +89,19 @@ body {
   /* 弹层遮罩:全站 15 个 overlay 里模糊与不模糊各半 —— 统一成一份 */
   --scrim: rgba(6, 5, 3, 0.72);
   --scrim-blur: blur(6px);
+
+  /* 动效令牌。全站 93 个 keyframes 的时长与缓动全是各写各的十六进制拍脑袋 ——
+     同「旧值不强行统一」策略:新动效一律用这四个,旧的顺手换。 */
+  --dur-fast: 0.18s; /* 反馈:按下、闪现 */
+  --dur-med: 0.32s; /* 进出场:面板、条目 */
+  --dur-slow: 0.6s; /* 仪式:结算、揭晓 */
+  --ease-out: cubic-bezier(0.2, 0.9, 0.3, 1); /* 常规收尾 */
+  --ease-spring: cubic-bezier(0.2, 0.9, 0.3, 1.4); /* 带过冲的落定 */
+
+  /* 阴影三档(169 处 box-shadow 各写各的,新代码从这里取) */
+  --shadow-1: 0 2px 8px rgba(0, 0, 0, 0.45);
+  --shadow-2: 0 4px 16px rgba(0, 0, 0, 0.55);
+  --shadow-3: 0 10px 34px rgba(0, 0, 0, 0.65);
 }
 
 body {
@@ -349,12 +362,107 @@ button {
   }
 }
 
-:root[data-reduced-motion='true'] .screen-enter {
+/* 离场:旧屏以固定层的身份在新屏上面淡出 0.19s,与进场叠成交叉淡化。
+   实现在 App.tsx(旧屏保持原 key 多活一拍,状态不丢)。
+   规矩不变:**只有 opacity**,没有 transform(fixed 后代重锚的老坑);
+   pointer-events: none 让它一帧都拦不了点击。 */
+.screen-exit {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  pointer-events: none;
+  overflow: hidden;
+  animation: screenExit 0.19s ease both;
+}
+
+@keyframes screenExit {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* ---- 弹层进出场(全局 keyframes) ----
+   全站 15 个 overlay 里 12 个是硬切出现。名字**刻意定义在这里**(非模块):
+   CSS Modules 只哈希本文件声明的 @keyframes,引用一个本文件没有的名字
+   会原样保留 —— 于是各模块直接写 animation: overlayIn / panelRise 即可。 */
+@keyframes overlayIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes panelRise {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---- 领取的统一仪式 ----
+   校场/每日/成就/图鉴四处的「领取」原来都是按钮文字变一下就完了。
+   全局类:点下的瞬间挂上,金环从按钮胀开 + 按钮自己弹一下。
+   挂在按钮上要求它能定位(这里补 position: relative,不影响原布局)。 */
+.claim-pulse {
+  position: relative;
+  animation: claimPop 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.4);
+}
+
+.claim-pulse::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  pointer-events: none;
+  border: 2px solid rgba(240, 214, 138, 0.9);
+  box-shadow: 0 0 18px 4px rgba(232, 200, 120, 0.5);
+  animation: claimRing 0.55s ease-out both;
+}
+
+@keyframes claimPop {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes claimRing {
+  0% {
+    opacity: 1;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+
+:root[data-reduced-motion='true'] .screen-enter,
+:root[data-reduced-motion='true'] .screen-exit,
+:root[data-reduced-motion='true'] .claim-pulse,
+:root[data-reduced-motion='true'] .claim-pulse::after {
   animation: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .screen-enter {
+  .screen-enter,
+  .screen-exit,
+  .claim-pulse,
+  .claim-pulse::after {
     animation: none;
   }
 }

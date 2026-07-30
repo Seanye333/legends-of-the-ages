@@ -26,6 +26,7 @@ import { fakeInstance } from './CollectionScreen'
 import { usePickCompact, usePickText, useT } from '../i18n'
 import { playSfx } from '../sound'
 import styles from './DeckBuilderScreen.module.css'
+import { EmptyState } from '../components/EmptyState'
 
 interface DeckBuilderScreenProps {
   onBack: () => void
@@ -447,7 +448,13 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
                   </button>
                 )
               })}
-            {total === 0 && <p className={styles.hint}>{t('点左侧卡牌加入卡组', 'Tap cards to add')}</p>}
+            {total === 0 && (
+              <EmptyState
+                glyph="募"
+                title={t('卡组还是空的', 'Your deck is empty')}
+                hint={t('点左侧卡牌加入卡组。', 'Tap cards on the left to add them.')}
+              />
+            )}
           </div>
           {/* 体检:曲线之外的骨架指标。和 `npm run deck-stats` 共用同一份定义,
               让玩家看见调平衡时才看得到的那几项。 */}

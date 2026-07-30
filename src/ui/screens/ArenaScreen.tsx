@@ -24,6 +24,8 @@ import { usePickCompact, usePickText, useT } from '../i18n'
 import { playSfx } from '../sound'
 import { haptic } from '../haptics'
 import styles from './ArenaScreen.module.css'
+import { EmptyState } from '../components/EmptyState'
+import { useClaimPulse } from '../useClaimPulse'
 
 interface ArenaScreenProps {
   onBack: () => void
@@ -41,6 +43,7 @@ export function ArenaScreen({ onBack, onEnterMatch }: ArenaScreenProps) {
   const [inspect, setInspect] = useState<CardDef | null>(null)
   const [confirmAbandon, setConfirmAbandon] = useState(false)
   const [claimed, setClaimed] = useState<{ packs: number; merit: number } | null>(null)
+  const [claimPulseCls, fireClaimPulse] = useClaimPulse()
 
   // 已抽卡组按费用排一下,让曲线一眼可见
   const pickedSorted = useMemo(
@@ -117,12 +120,14 @@ export function ArenaScreen({ onBack, onEnterMatch }: ArenaScreenProps) {
               : t('报名参战', 'Enter the Arena')}
           </button>
           {merit < ARENA_ENTRY_MERIT && (
-            <p className={styles.hint}>
-              {t(
-                '功勋来自分解重复卡与对局失利的安慰奖。',
-                'Merit comes from disenchanting duplicates and from losses.',
+            <EmptyState
+              glyph="勳"
+              title={t('功勋还不够', 'Not enough merit yet')}
+              hint={t(
+                '功勋来自分解重复卡与对局失利的安慰奖 —— 去图鉴清一清重复卡最快。',
+                'Merit comes from disenchanting duplicates and from losses — the collection screen is the fastest way.',
               )}
-            </p>
+            />
           )}
         </div>
       </div>
@@ -226,7 +231,9 @@ export function ArenaScreen({ onBack, onEnterMatch }: ArenaScreenProps) {
     return (
       <div className={styles.screen}>
         {header}
-        <div className={styles.card}>
+        {/* 领取的仪式挂在卡上:领完按钮立刻换成「已领取」,挂按钮的话
+            金环还没胀开元素就没了 */}
+        <div className={`${styles.card} ${claimPulseCls}`}>
           <p className={styles.step}>
             {arena.wins >= ARENA_MAX_WINS
               ? t('十二连捷 · 校场无敌手', 'Twelve wins — undefeated')
@@ -257,6 +264,7 @@ export function ArenaScreen({ onBack, onEnterMatch }: ArenaScreenProps) {
                 onClick={() => {
                   playSfx('victory')
                   haptic('reward')
+                  fireClaimPulse()
                   setClaimed(arena.claim())
                 }}
               >

@@ -1,6 +1,11 @@
 .screen {
   min-height: 100vh;
   min-height: 100dvh;
+  /* 屏幕身份色(图鉴:鎏金)。此前这屏没有自己的背景,落到 body 渐变 ——
+     七个模式一个样,换屏读不出「到了别处」。极淡:是底色不是招牌。 */
+  background:
+    radial-gradient(ellipse 100% 46% at 50% 0%, rgba(212, 168, 74, 0.07), transparent 62%),
+    radial-gradient(ellipse at 50% 30%, #26221b, #12100c);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -204,8 +209,67 @@
   min-height: 40px;
   display: grid;
   place-items: center;
+  gap: 6px;
   font-size: 12px;
-  opacity: 0.6;
+}
+
+/* 名字里刻意不含 sentinel:e2e 用 [class*="sentinel"] 找哨兵,别跟它撞车 */
+.pageCount {
+  opacity: 0.55;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 骨架卡:和真卡同一个格子比例,一道微光来回扫。
+   「下面还有」长得就该像下面还有,而不是像出了错。 */
+.skelRow {
+  display: flex;
+  gap: 10px;
+}
+
+.skelCard {
+  width: 74px;
+  aspect-ratio: 3 / 4.2;
+  border-radius: 8px;
+  border: 1px solid rgba(122, 100, 58, 0.25);
+  background:
+    linear-gradient(
+        100deg,
+        transparent 30%,
+        rgba(232, 216, 176, 0.07) 46%,
+        rgba(232, 216, 176, 0.12) 50%,
+        rgba(232, 216, 176, 0.07) 54%,
+        transparent 70%
+      )
+      0 0 / 220% 100%,
+    rgba(30, 24, 14, 0.65);
+  animation: skelSweep 1.4s linear infinite;
+}
+
+.skelCard:nth-child(2n) {
+  animation-delay: -0.5s;
+}
+
+.skelCard:nth-child(3n) {
+  animation-delay: -0.9s;
+}
+
+@keyframes skelSweep {
+  from {
+    background-position: 120% 0, 0 0;
+  }
+  to {
+    background-position: -120% 0, 0 0;
+  }
+}
+
+:root[data-reduced-motion='true'] .skelCard {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skelCard {
+    animation: none;
+  }
 }
 
 /* ---- 收藏度 ---- */
@@ -264,6 +328,8 @@
   display: block;
   height: 100%;
   background: linear-gradient(90deg, var(--gold-dark), var(--gold-bright));
+  /* 开包回来那一截是走过去的,不是瞬移的 */
+  transition: width 0.6s var(--ease-out);
 }
 
 .goalNum {

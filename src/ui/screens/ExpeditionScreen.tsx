@@ -20,6 +20,7 @@ import { usePickText, useT } from '../i18n'
 import { playSfx } from '../sound'
 import { haptic } from '../haptics'
 import styles from './ExpeditionScreen.module.css'
+import { EmptyState } from '../components/EmptyState'
 
 interface ExpeditionScreenProps {
   onBack: () => void
@@ -322,7 +323,11 @@ export function ExpeditionScreen({ onBack, onEnterMatch }: ExpeditionScreenProps
             {t(`已得宝物(${run.relics.length})`, `Relics (${run.relics.length})`)}
           </div>
           {run.relics.length === 0 ? (
-            <span className={styles.relicsEmpty}>{t('尚无 —— 通关即可择宝', 'None yet — clear a stage to choose one')}</span>
+            <EmptyState
+              glyph="寶"
+              title={t('尚无宝物', 'No relics yet')}
+              hint={t('通关即可三选一。', 'Clear a stage to choose one of three.')}
+            />
           ) : (
             <div className={styles.relicsList}>
               {run.relics.map((id) => {

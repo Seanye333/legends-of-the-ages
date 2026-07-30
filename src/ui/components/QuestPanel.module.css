@@ -6,15 +6,17 @@
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(8, 6, 3, 0.9);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
+  background: var(--scrim);
+  backdrop-filter: var(--scrim-blur);
+  -webkit-backdrop-filter: var(--scrim-blur);
+  animation: overlayIn 0.18s ease both;
 }
 
 .panel {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  animation: panelRise 0.24s var(--ease-out) both;
   width: min(92vw, 420px);
   max-height: 86vh;
   overflow-y: auto;
@@ -162,4 +164,18 @@
   background: rgba(20, 16, 10, 0.72);
   color: var(--parchment-dim);
   cursor: pointer;
+}
+
+:root[data-reduced-motion='true'] .overlay,
+:root[data-reduced-motion='true'] .panel,
+:root[data-reduced-motion='true'] .claimBtn {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .panel,
+  .claimBtn {
+    animation: none;
+  }
 }

@@ -6,12 +6,15 @@
   align-items: center;
   justify-content: center;
   padding: max(16px, env(safe-area-inset-top)) 14px max(16px, env(safe-area-inset-bottom));
-  background: rgba(6, 4, 2, 0.74);
-  backdrop-filter: blur(3px);
+  background: var(--scrim);
+  backdrop-filter: var(--scrim-blur);
+  -webkit-backdrop-filter: var(--scrim-blur);
+  animation: overlayIn 0.18s ease both;
 }
 
 .panel {
   width: min(560px, 100%);
+  animation: panelRise 0.24s var(--ease-out) both;
   max-height: 86vh;
   display: flex;
   flex-direction: column;
@@ -111,4 +114,16 @@
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--gold-bright);
+}
+
+:root[data-reduced-motion='true'] .overlay,
+:root[data-reduced-motion='true'] .panel {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .panel {
+    animation: none;
+  }
 }

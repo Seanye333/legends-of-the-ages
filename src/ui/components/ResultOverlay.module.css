@@ -273,14 +273,23 @@
   }
 }
 
+/* 结算的全部动画此前都没有减少动效兜底(遮罩淡入/大字砸落/词句/战利) */
 :root[data-reduced-motion='true'] .statRow,
-:root[data-reduced-motion='true'] .packChip {
+:root[data-reduced-motion='true'] .packChip,
+:root[data-reduced-motion='true'] .overlay,
+:root[data-reduced-motion='true'] .glyph,
+:root[data-reduced-motion='true'] .word,
+:root[data-reduced-motion='true'] .loot {
   animation: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .statRow,
-  .packChip {
+  .packChip,
+  .overlay,
+  .glyph,
+  .word,
+  .loot {
     animation: none;
   }
 }

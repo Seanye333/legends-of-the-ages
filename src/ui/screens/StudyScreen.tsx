@@ -17,6 +17,7 @@ import { COLLECTIBLE_CARDS } from '../../content/cards'
 import { useLang, usePickText, useT } from '../i18n'
 import { playSfx } from '../sound'
 import styles from './StudyScreen.module.css'
+import { EmptyState } from '../components/EmptyState'
 
 interface Props {
   onBack: () => void
@@ -223,12 +224,11 @@ export function StudyScreen({ onBack }: Props) {
       <section className={styles.card}>
         <h3 className={styles.sectionTitle}>{t('個人紀錄', 'Personal Bests')}</h3>
         {RECORD_ORDER.every((k) => !best[k]) ? (
-          <p className={styles.emptyHint}>
-            {t(
-              '还没有纪录 —— 打完一局就会有第一条。',
-              'No records yet — your first match will set them all.',
-            )}
-          </p>
+          <EmptyState
+            glyph="錄"
+            title={t('还没有纪录', 'No records yet')}
+            hint={t('打完一局就会有第一条。', 'Your first match will set them all.')}
+          />
         ) : (
           RECORD_ORDER.filter((k) => best[k]).map((k) => (
             <div className={styles.row} key={k}>
