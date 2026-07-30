@@ -58,7 +58,9 @@ for (const m of html.matchAll(/rel="modulepreload"[^>]+href="([^"]+)"/g)) {
 
 // 2:底图
 const artDir = join(DIST, 'art')
-const art = existsSync(artDir) ? readdirSync(artDir).filter((f) => /\.(jpg|jpeg|png)$/i.test(f)) : []
+const art = existsSync(artDir)
+  ? readdirSync(artDir).filter((f) => /\.(webp|jpg|jpeg|png)$/i.test(f))
+  : []
 if (art.length === 0) {
   missing.push('dist/art/ —— 一张底图都没有,构建可能没把 public/art 拷过去')
 }

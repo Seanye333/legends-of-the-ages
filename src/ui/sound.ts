@@ -4,6 +4,7 @@
 // - 所有音色由振荡器 + 滤波噪声分层合成,短促克制,厚重不刺耳
 
 import { useSettings } from '../app/settingsStore'
+import { haptic } from './haptics'
 
 // 音效名字清单在 sfxNames.ts(那个文件不依赖 DOM,见其中的注释)。
 // 这里 re-export,既有的 `import type { SfxName } from './sound'` 一律不用改。
@@ -285,6 +286,10 @@ const SFX: Record<SfxName, (c: AudioContext, t: number) => void> = {
 // ---------- 播放入口 ----------
 
 export function playSfx(name: SfxName): void {
+  // UI 轻击的触感挂在这里而不是 138 个调用点上:
+  // 「按钮响」和「按钮有手感」是同一件事的两个通道,不该分开维护。
+  // 战斗内的重触感(HAPTIC_FOR)另有一套,跟事件时间轴走。
+  if (name === 'buttonTap') haptic('tap')
   if (!useSettings.getState().soundEnabled) return
   const c = getCtx()
   if (!c || !master) return

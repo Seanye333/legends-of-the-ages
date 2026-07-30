@@ -53,18 +53,21 @@ export default defineConfig({
               // 只 precache app shell —— 立绘(.webp)一律不进 precache,
               // 否则随包的 27MB 签名卡立绘会在首次访问时被一次性下载。
               //
-              // **但 art/*.jpg 必须进**(5 张共 1.5MB):它们是标题、牌桌、调度、
-              // 结算这四屏的底图 —— 缺了它们离线打开的不是「少几张立绘的游戏」,
-              // 而是四块黑屏。立绘缺了还有拓印兜底,底图没有兜底。
-              // 这 1.5MB 发生在首屏**之后**(precache 是 SW 装完才跑),
-              // 所以 perf-budget 量的首屏预算一个字节都不受影响。
-              globPatterns: ['**/*.{js,css,html,svg,woff2,png,ico}', 'art/*.jpg'],
+              // **但 art/*.webp 必须进**(5 张,JPG 转 WebP 后共 0.65MB):
+              // 它们是标题、牌桌、调度、结算这四屏的底图 —— 缺了它们离线打开的
+              // 不是「少几张立绘的游戏」,而是四块黑屏。立绘缺了还有拓印兜底,
+              // 底图没有兜底。这 0.65MB 发生在首屏**之后**(precache 是 SW 装完
+              // 才跑),所以 perf-budget 量的首屏预算一个字节都不受影响。
+              // 注意:下面立绘的 runtimeCaching 也按 .webp 匹配 —— art/ 这五张
+              // 会先被 precache 命中,不会落进 LRU 的立绘桶,两者不冲突。
+              globPatterns: ['**/*.{js,css,html,svg,woff2,png,ico}', 'art/*.webp'],
               navigateFallbackDenylist: [/^\/api\//],
               cleanupOutdatedCaches: true,
               runtimeCaching: [
                 {
                   // 立绘按需缓存:随包的(同源 /portraits/)和 CDN 的(跨源)都命中,
-                  // 用扩展名匹配,这样换 CDN 基址不用改这里。全站只有立绘是 .webp。
+                  // 用扩展名匹配,这样换 CDN 基址不用改这里。
+                  // art/ 底图也是 .webp,但它们已被 precache 抢先接住(见上)。
                   urlPattern: /\.webp(\?.*)?$/i,
                   handler: 'CacheFirst',
                   options: {

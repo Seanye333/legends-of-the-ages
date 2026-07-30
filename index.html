@@ -9,6 +9,9 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <meta name="theme-color" content="#12100c" />
+    <!-- 标题底图是首屏唯一的美术(87KB WebP),却要等 CSS 解析完才开始下载 ——
+         preload 让它和 JS 并行走,慢网络上第一眼不再是纯色底。 -->
+    <link rel="preload" as="image" type="image/webp" href="/art/title-hero.webp" />
   </head>
   <body>
     <div id="root"></div>

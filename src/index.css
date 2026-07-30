@@ -58,6 +58,14 @@ body {
   /* 显示字体:宋体书法感;正文保持 PingFang */
   --font-display: 'Songti SC', 'STSong', 'Kaiti SC', 'Noto Serif SC', 'PingFang SC', serif;
 
+  /* 毛笔字:只给仪式性的大字(勝敗和斬、牌匾、印章、空态字形)。
+     此前全站的「书法感」全押在 Songti SC 上 —— Windows 三档字体全落空,
+     直接退到默认 serif,牌匾和结算大字瞬间变成宋体报纸。
+     自托管的子集只有 28 个字、8.8KB(马善政毛笔楷,OFL,
+     许可证在 public/fonts/OFL-MaShanZheng.txt)—— 不在字集里的字
+     会逐字回落到后面的宋体链,所以动态文本也可以放心用它。 */
+  --font-brush: 'BrushZh', 'Songti SC', 'STSong', 'Kaiti SC', 'Noto Serif SC', serif;
+
   /* ---- 设计令牌 ----
      全站数出来的现状:**16 种不同的圆角**(3/4/5/6/7/8/9/10/12/14/16/999px…)、
      每一屏各写一遍的 clamp() 字号、以及散在各处的状态色。
@@ -102,6 +110,31 @@ body {
   --shadow-1: 0 2px 8px rgba(0, 0, 0, 0.45);
   --shadow-2: 0 4px 16px rgba(0, 0, 0, 0.55);
   --shadow-3: 0 10px 34px rgba(0, 0, 0, 0.65);
+}
+
+/* 毛笔字体:子集化到 28 个仪式字(scripts 见提交说明)。
+   swap —— 字体没到之前先用宋体顶着,别让「勝」字空一拍。 */
+@font-face {
+  font-family: 'BrushZh';
+  src: url('/fonts/brush.woff2') format('woff2');
+  font-display: swap;
+}
+
+/* 宣纸颗粒。全站的「纸感」此前全靠渐变手绘 —— 零纹理资产。
+   这里用内联 feTurbulence 生成噪点(**零字节资产**,SVG filter 全站首次启用),
+   一层压在一切之上:opacity 0.05 + overlay 混合,低于注意阈值,
+   但每一块纯色区域都不再是数码平涂。pointer-events: none,一帧都不拦点击。
+   静态图案,与减少动效无关;打印/截图里它就是纸。 */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 240px 240px;
 }
 
 body {

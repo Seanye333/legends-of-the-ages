@@ -14,7 +14,7 @@
   border-radius: 10px;
   border: 2px solid rgba(212, 168, 74, 0.55);
   background: linear-gradient(180deg, rgba(58, 42, 16, 0.7), rgba(28, 20, 8, 0.7));
-  font-family: var(--font-display);
+  font-family: var(--font-brush);
   font-size: 38px;
   color: var(--gold-bright, #f0d090);
   animation: sealPulse 1.3s ease-in-out infinite;

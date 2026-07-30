@@ -17,7 +17,7 @@
   background:
     radial-gradient(ellipse 120% 90% at 50% 40%, transparent 30%, rgba(6, 4, 2, 0.9) 100%),
     linear-gradient(180deg, rgba(8, 6, 3, 0.82), rgba(8, 6, 3, 0.66) 40%, rgba(6, 4, 2, 0.88)),
-    url('/art/mulligan-bg.jpg') center 30% / cover no-repeat,
+    url('/art/mulligan-bg.webp') center 30% / cover no-repeat,
     #0c0a07;
   animation: overlayIn 0.35s ease;
 }
