@@ -168,6 +168,37 @@
   font-size: 13px;
   font-weight: 700;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+  /* 落章:从大而斜到小而正,带一点过冲的落定。挂在 mount 上 ——
+     每次进屏都会播一次(接受:角标小,重播不吵),换「只播解开那一刻」要在 store 里记时间戳,不值。 */
+  animation: checkStamp var(--dur-med) var(--ease-spring) both;
+}
+
+@keyframes checkStamp {
+  from {
+    opacity: 0;
+    transform: scale(1.6) rotate(-14deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* 「日」字小章:每日块抬头的印记。朱底描金、微斜 —— 章是盖的,不是排的 */
+.dayStamp {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-sm);
+  background: linear-gradient(160deg, #b03520, #7c1f12);
+  color: #ffe9d8;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  transform: rotate(-3deg);
+  box-shadow: inset 0 0 0 1px rgba(255, 235, 215, 0.55);
 }
 
 .body {
@@ -191,15 +222,21 @@
   color: var(--gold-bright);
 }
 
+/* 难度星:三颗独立 span(金实心 / 暗空心),不再是 repeat 出来的字符串 ——
+   字符间距交给 gap,空心档换 '☆' 字形,不靠透明度硬压。 */
 .stars {
+  display: inline-flex;
+  gap: 2px;
   font-size: 13px;
-  letter-spacing: 1px;
-  color: #e0b060;
   white-space: nowrap;
 }
 
-.starDim {
-  color: rgba(120, 100, 60, 0.5);
+.starOn {
+  color: #e0b060;
+}
+
+.starOff {
+  color: rgba(120, 100, 60, 0.55);
 }
 
 .situation {
@@ -222,6 +259,19 @@
   .card {
     transition: none;
   }
+
+  .check {
+    animation: none;
+  }
+}
+
+/* 设置页手动开关(data-reduced-motion)与系统偏好各挡一路 */
+:root[data-reduced-motion='true'] .card {
+  transition: none;
+}
+
+:root[data-reduced-motion='true'] .check {
+  animation: none;
 }
 
 /* ---- 残局分享 ---- */

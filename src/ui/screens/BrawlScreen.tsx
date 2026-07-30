@@ -181,11 +181,17 @@ export function BrawlScreen({ onBack, onEnterMatch }: BrawlScreenProps) {
               className={`${styles.brawlCard} ${isWeekly ? styles.weeklyCard : ''}`}
               onClick={() => fight(i)}
             >
-              <div className={styles.brawlName}>
-                {pick(b.name)}
-                {isWeekly && (
-                  <span className={styles.weeklyTag}>{t('本周', 'This week')}</span>
-                )}
+              {/* 行首字章:取规则名首字。装饰性重复,读屏跳过 */}
+              <div className={styles.brawlHead}>
+                <span className={styles.seal} aria-hidden="true">
+                  {pick(b.name).charAt(0)}
+                </span>
+                <div className={styles.brawlName}>
+                  {pick(b.name)}
+                  {isWeekly && (
+                    <span className={styles.weeklyTag}>{t('本周', 'This week')}</span>
+                  )}
+                </div>
               </div>
               <div className={styles.brawlText}>{pick(b.text)}</div>
               <div className={styles.brawlGo}>

@@ -143,6 +143,23 @@
   color: rgba(232, 200, 120, 0.55);
 }
 
+/* 待翻的卡背按**那张卡**的稀有度渗边缘光:epic 紫 / legendary 金,其余不渗 ——
+   翻之前就有盼头。静态渗光,不脉动:脉动是 .next(轮到它了)的专属语言,
+   nextGlow 动画会整段接管 box-shadow,轮到那张时金色脉动照旧盖过这层。 */
+.slotEpic:not(.shown) .back {
+  border-color: rgba(164, 90, 208, 0.65);
+  box-shadow:
+    inset 0 0 0 3px rgba(24, 16, 5, 0.9),
+    0 0 14px rgba(164, 90, 208, 0.4);
+}
+
+.slotLegendary:not(.shown) .back {
+  border-color: rgba(240, 168, 80, 0.75);
+  box-shadow:
+    inset 0 0 0 3px rgba(24, 16, 5, 0.9),
+    0 0 16px rgba(240, 168, 80, 0.5);
+}
+
 .front {
   transform: rotateY(180deg);
   display: flex;
@@ -349,6 +366,19 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   width: fit-content;
+  /* 第五张落定后它是硬切出现的 —— 全场唯一没有进场的元素。panelRise 是全局 keyframes。 */
+  animation: panelRise var(--dur-med) var(--ease-out) both;
+}
+
+/* 减少动效:功勋行不升起(数字的滚动由 RollMerit 自己看 data-reduced-motion) */
+:root[data-reduced-motion='true'] .meritLine {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .meritLine {
+    animation: none;
+  }
 }
 
 :root[data-reduced-motion='true'] .overlay {

@@ -273,20 +273,37 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
     () => ({ matches: wins + losses, campaignCleared: campaignDone }),
     [wins, losses, campaignDone],
   )
-  // 微视差。**只在有精确指针的设备上装监听** —— 触屏上 pointermove 只在
-  // 按住拖动时才有,那时候玩家正在点按钮,底图跟着动纯属干扰。
+  // 微视差。精确指针设备跟指针;触屏(pointermove 只在按住拖动时才有,
+  // 那时玩家正在点按钮)改跟**滚动**:标题页够长,滚到长廊时底图缓缓退后,
+  // 一样能读出「布景在牌匾后面」的层次。两条通道喂同一对 --par 变量。
   const [par, setPar] = useState({ x: 0, y: 0 })
   useEffect(() => {
-    if (typeof matchMedia !== 'function' || !matchMedia('(pointer: fine)').matches) return
+    if (typeof matchMedia !== 'function') return
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    const onMove = (e: PointerEvent) => {
-      setPar({
-        x: (e.clientX / window.innerWidth - 0.5) * -20,
-        y: (e.clientY / window.innerHeight - 0.5) * -14,
+    if (matchMedia('(pointer: fine)').matches) {
+      const onMove = (e: PointerEvent) => {
+        setPar({
+          x: (e.clientX / window.innerWidth - 0.5) * -20,
+          y: (e.clientY / window.innerHeight - 0.5) * -14,
+        })
+      }
+      window.addEventListener('pointermove', onMove)
+      return () => window.removeEventListener('pointermove', onMove)
+    }
+    // 触屏:滚动视差(rAF 节流 —— scroll 事件密,直接 setState 会抖)
+    let raf = 0
+    const onScroll = () => {
+      if (raf) return
+      raf = requestAnimationFrame(() => {
+        raf = 0
+        setPar({ x: 0, y: Math.min(28, window.scrollY * 0.05) })
       })
     }
-    window.addEventListener('pointermove', onMove)
-    return () => window.removeEventListener('pointermove', onMove)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      cancelAnimationFrame(raf)
+    }
   }, [])
 
   const selectableDecks = useMemo(

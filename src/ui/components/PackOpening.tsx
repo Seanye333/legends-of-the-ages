@@ -1,5 +1,5 @@
 import { haptic } from '../haptics'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { CARDS_BY_ID } from '../../content/cards'
 import { useCollection, type PackResult } from '../../app/collectionStore'
@@ -12,6 +12,36 @@ import styles from './PackOpening.module.css'
 
 interface PackOpeningProps {
   onClose: () => void
+}
+
+// 功勋数字的短滚动 —— ResultOverlay.RollNum 的精简版(那份为 stats 网格排期,这里用不上)。
+// 减少动效时直接落终值:data-reduced-motion 由 main.tsx 汇总系统偏好与设置页开关,查它就够。
+function RollMerit({ value, delay }: { value: number; delay: number }) {
+  const reduced =
+    typeof document !== 'undefined' && document.documentElement.dataset.reducedMotion === 'true'
+  const [shown, setShown] = useState(reduced ? value : 0)
+  useEffect(() => {
+    if (reduced || value <= 0) {
+      setShown(value)
+      return
+    }
+    let raf = 0
+    const timer = window.setTimeout(() => {
+      const start = performance.now()
+      const dur = 500
+      const tick = (now: number) => {
+        const k = Math.min(1, (now - start) / dur)
+        setShown(Math.round(value * (1 - Math.pow(1 - k, 3))))
+        if (k < 1) raf = requestAnimationFrame(tick)
+      }
+      raf = requestAnimationFrame(tick)
+    }, delay)
+    return () => {
+      window.clearTimeout(timer)
+      cancelAnimationFrame(raf)
+    }
+  }, [value, delay, reduced])
+  return <>{shown}</>
 }
 
 // 开包典礼:点封泥启封 → 五张依次翻面 → 稀有度辉光 + NEW 标记。
@@ -99,13 +129,13 @@ export function PackOpening({ onClose }: PackOpeningProps) {
         </div>
       )}
 
-      {/* 重复卡折算的功勋:以前这些卡直接蒸发,界面还只标一个「不是新的」*/}
+      {/* 重复卡折算的功勋:以前这些卡直接蒸发,界面还只标一个「不是新的」。
+          数字单拆出来滚一小段(进场 220ms 后起滚,先站稳再报数)。 */}
       {allRevealed && result && result.meritGained > 0 && (
         <div className={styles.meritLine} role="status">
-          {t(
-            `重复卡折算 功勋 +${result.meritGained}`,
-            `Duplicates converted — +${result.meritGained} merit`,
-          )}
+          {t('重复卡折算 功勋 +', 'Duplicates converted — +')}
+          <RollMerit value={result.meritGained} delay={220} />
+          {t('', ' merit')}
         </div>
       )}
 

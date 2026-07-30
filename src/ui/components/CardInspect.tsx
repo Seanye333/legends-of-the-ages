@@ -112,6 +112,42 @@ export function CardInspect({ def, onClose, forge = false }: CardInspectProps) {
     })
   }
 
+  // 手机上把卡举起来转手腕,卡面跟着反光 —— 手上有实体卡的那种感觉。
+  //
+  // 【为什么值得接】倾斜与闪卡层早就做好了,但它们全靠 pointermove 驱动,
+  // 而触屏上 pointermove 只在**按住拖动**时才有 —— 也就是说这套效果
+  // 在手机上几乎不存在。设备朝向是同一件事的另一个输入通道,喂同一对变量。
+  //
+  // 【为什么不请求 iOS 权限】DeviceOrientationEvent.requestPermission 必须
+  // 由用户手势触发,而这里没有一个自然的「请允许读取朝向」时机 ——
+  // 为一个装饰效果弹系统权限框是本末倒置。iOS 上没有授权就静默不生效
+  // (Android 与已授权的 iOS 照常),这正是渐进增强该有的样子。
+  useEffect(() => {
+    if (reducedMotion) return
+    if (typeof window === 'undefined' || !('DeviceOrientationEvent' in window)) return
+    // 有精确指针的设备(桌面)已经有 pointermove,不必再听朝向
+    if (typeof matchMedia === 'function' && matchMedia('(pointer: fine)').matches) return
+    let raf = 0
+    let pending: { x: number; y: number } | null = null
+    const onOrient = (e: DeviceOrientationEvent) => {
+      const beta = e.beta ?? 0 // 前后倾,°
+      const gamma = e.gamma ?? 0 // 左右倾,°
+      // 以「举在面前约 45° 」为中位,±22° 打满;超出就夹住,免得转成筋斗
+      const clamp = (v: number) => Math.max(-1, Math.min(1, v))
+      pending = { x: clamp((beta - 45) / 22), y: clamp(gamma / 22) }
+      if (raf) return
+      raf = requestAnimationFrame(() => {
+        raf = 0
+        if (pending) setTilt(pending)
+      })
+    }
+    window.addEventListener('deviceorientation', onOrient)
+    return () => {
+      window.removeEventListener('deviceorientation', onOrient)
+      cancelAnimationFrame(raf)
+    }
+  }, [reducedMotion])
+
   const living = def.rarity === 'legendary' || def.rarity === 'epic'
 
   return (

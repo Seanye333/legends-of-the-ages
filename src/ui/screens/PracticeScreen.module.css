@@ -189,3 +189,67 @@
 @media (prefers-reduced-motion: reduce) {
   .arrow, .diffBtn, .fightBtn { transition: none; }
 }
+
+/* ---- 对峙 ----
+   左右两张立绘卡相对而立,却完全静止 —— 这一屏讲的是「两个人要打一架」,
+   而画面上读不出任何张力。极缓的呼吸,两侧反相(一起一伏,像在互相试探);
+   幅度 3px,低于注意阈值,但空气是活的。 */
+.side {
+  animation: standoff 4.6s ease-in-out infinite;
+}
+
+.side:last-of-type {
+  animation-delay: -2.3s;
+}
+
+@keyframes standoff {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+/* 中间的「对」字:呼吸辉光,与两侧同一个周期 */
+.vs {
+  animation: vsGlow 4.6s ease-in-out infinite;
+}
+
+@keyframes vsGlow {
+  0%,
+  100% {
+    text-shadow: 0 0 8px rgba(212, 168, 74, 0.3);
+  }
+  50% {
+    text-shadow:
+      0 0 16px rgba(240, 214, 138, 0.75),
+      0 0 34px rgba(212, 168, 74, 0.35);
+  }
+}
+
+/* 悬停开战按钮时两侧各向中间靠一点 —— 「就要撞上了」 */
+.screen:has(.fightBtn:hover) .side {
+  transition: transform var(--dur-med) var(--ease-out);
+}
+
+.screen:has(.fightBtn:hover) .side:first-of-type {
+  transform: translateX(4px);
+}
+
+.screen:has(.fightBtn:hover) .side:last-of-type {
+  transform: translateX(-4px);
+}
+
+:root[data-reduced-motion='true'] .side,
+:root[data-reduced-motion='true'] .vs {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .side,
+  .vs {
+    animation: none;
+  }
+}

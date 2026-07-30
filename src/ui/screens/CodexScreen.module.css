@@ -63,6 +63,16 @@
   border: 1px solid rgba(212, 168, 74, 0.18);
   background: rgba(16, 12, 7, 0.6);
   overflow: hidden;
+  /* hover 的提亮走 background/border 过渡,不用 filter ——
+     纪律是不给可能有 fixed 后代的容器加 filter,条目虽小也照规矩来 */
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
+}
+
+.entry:hover {
+  background: rgba(26, 20, 11, 0.72);
+  border-color: rgba(212, 168, 74, 0.3);
 }
 
 .entryOpen {
@@ -109,6 +119,12 @@
 .chevron {
   color: var(--parchment-faint);
   font-size: 12px;
+  /* 箭头是纯文本小元素、无 fixed 后代 —— transform 安全 */
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.chevronOpen {
+  transform: rotate(90deg);
 }
 
 .detail {
@@ -117,6 +133,8 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 16px;
+  /* 展开内容原来是 {open && …} 硬切;panelRise 是全局 keyframes(定义在 index.css) */
+  animation: panelRise var(--dur-med) var(--ease-out) both;
 }
 
 .note {
@@ -174,6 +192,27 @@
     grid-row: 1;
     grid-column: 2;
   }
+}
+
+/* 减少动效:系统偏好与设置页手动开关(data-reduced-motion)各挡一路 */
+@media (prefers-reduced-motion: reduce) {
+  .detail {
+    animation: none;
+  }
+
+  .chevron,
+  .entry {
+    transition: none;
+  }
+}
+
+:root[data-reduced-motion='true'] .detail {
+  animation: none;
+}
+
+:root[data-reduced-motion='true'] .chevron,
+:root[data-reduced-motion='true'] .entry {
+  transition: none;
 }
 
 /* 实练入口:讲堂里唯一一个会把你带走的按钮,所以做得比正文显眼一档 */

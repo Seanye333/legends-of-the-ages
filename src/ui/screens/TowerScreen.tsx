@@ -66,23 +66,25 @@ export function TowerScreen({ onBack, onEnterMatch }: Props) {
         <header className={styles.head}>
           <h2 className={styles.title}>{t('登楼 · 授兵書', 'The Tower · Take a Treatise')}</h2>
         </header>
-        <div className={styles.deckPicker}>
-          {offered.map((id) => {
+        {/* 三选一从纯文字按钮升级成三张竖排「兵书」:深底金框、书名竖排如书脊题签。
+            语义不变 —— 仍是 button,onClick 原样;--book-i 只用来给进场动画错开节拍。 */}
+        <div className={styles.bookRow}>
+          {offered.map((id, i) => {
             const b = WAR_BOOKS_BY_ID[id]
             if (!b) return null
             return (
               <button
                 key={id}
-                className={styles.deckBtn}
+                className={styles.bookCard}
+                style={{ '--book-i': i } as CSSProperties}
                 onClick={() => {
                   playSfx('cardPlay')
                   haptic('impact')
                   pickBook(id)
                 }}
               >
-                <b>{pickCompact(b.name)}</b>
-                <br />
-                {pickCompact(b.text)}
+                <span className={styles.bookName}>{pickCompact(b.name)}</span>
+                <span className={styles.bookText}>{pickCompact(b.text)}</span>
               </button>
             )
           })}
@@ -167,7 +169,7 @@ export function TowerScreen({ onBack, onEnterMatch }: Props) {
         })}
       </ol>
 
-      <p style={{ textAlign: 'center', opacity: 0.65, fontSize: 13, padding: '0 20px' }}>
+      <p className={styles.footNote}>
         {t(
           `越往上敌人卡组越强、血越厚、开局阵仗越大。摔下来从第一层重爬 —— 最高层永远留在你名下。`,
           `Each floor brings a stronger deck, more health, and a bigger opening. Fall and you restart at floor 1 — your best floor is yours forever.`,

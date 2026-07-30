@@ -49,6 +49,7 @@
 }
 
 .node {
+  position: relative; /* 圆圈间连线的定位锚 */
   width: 34px;
   height: 34px;
   border-radius: 50%;
@@ -59,6 +60,32 @@
   color: var(--parchment-faint);
   font-size: 13px;
   font-weight: 700;
+}
+
+/* 行军线:圆圈之间的短横线。用伪元素而不是插真元素 ——
+   连线不占布局宽度,8 个格子在 375px 上的排布一寸不变;
+   代价是 320px 级别的极窄屏换行时,行首那格会有一截线悬在左边(可接受的罕见档)。
+   线属于**右侧**节点:走到第 i 格,就点亮通向它的那一段。 */
+.node:not(:first-child)::before {
+  content: '';
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  width: 8px; /* 与 .map 的 gap 同宽,正好填满缝隙 */
+  height: 2px;
+  margin-top: -1px;
+  /* 未过段:暗虚线(3px 线 + 3px 空) */
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(122, 100, 58, 0.5) 0 3px,
+    transparent 3px 6px
+  );
+}
+
+/* 已过段(该格已到达或正驻扎):金实线 */
+.node.cleared::before,
+.node.current::before {
+  background: linear-gradient(90deg, var(--gold-dark), var(--gold-mid));
 }
 
 .cleared {
@@ -195,6 +222,8 @@
   gap: clamp(10px, 3vw, 24px);
   flex-wrap: wrap;
   justify-content: center;
+  /* 三选一的翻入需要透视深度;卡内部没有 fixed 后代,transform 安全 */
+  perspective: 900px;
 }
 
 .relicCard {
@@ -210,6 +239,29 @@
   cursor: pointer;
   transition: transform 0.14s ease, filter 0.14s ease;
   text-align: left;
+  /* 揭示感:进场从侧立(90°)翻正。fill 用 backwards 而不是 both ——
+     动画结束后要把 transform 交还给 hover 的 translateY,forwards 会把它焊死。 */
+  animation: relicFlipIn var(--dur-med) var(--ease-out) backwards;
+}
+
+/* 三张依次 0.07s 错拍:一起翻是洗牌,错开才是揭宝 */
+.relicRow .relicCard:nth-child(2) {
+  animation-delay: 0.07s;
+}
+
+.relicRow .relicCard:nth-child(3) {
+  animation-delay: 0.14s;
+}
+
+@keyframes relicFlipIn {
+  from {
+    opacity: 0;
+    transform: rotateY(90deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .relicCard:hover {
@@ -238,6 +290,16 @@
 .rare { border-color: rgba(120, 170, 255, 0.6); }
 .epic { border-color: rgba(200, 120, 255, 0.6); }
 .legendary { border-color: rgba(255, 180, 70, 0.75); }
+
+/* 稀有度字形符(◇稀 ◆史诗 ★传说):颜色之外再给一层形状差异 ——
+   边框色是这三档唯一的区分,而蓝紫在小面积上恰是难分的一对。纯文本,不用图。 */
+.rarityGlyph {
+  margin-right: 4px;
+  font-size: 0.85em;
+}
+.rare .rarityGlyph { color: rgba(120, 170, 255, 0.9); }
+.epic .rarityGlyph { color: rgba(200, 120, 255, 0.9); }
+.legendary .rarityGlyph { color: rgba(255, 180, 70, 0.95); }
 
 /* ---- 选牌 ---- */
 .deckPick {
@@ -289,6 +351,13 @@
 
 @media (prefers-reduced-motion: reduce) {
   .current, .relicCard { animation: none; transition: none; }
+}
+
+/* 设置页手动开关(main.tsx 落成 data-reduced-motion)与系统偏好各挡一路 */
+:root[data-reduced-motion='true'] .current,
+:root[data-reduced-motion='true'] .relicCard {
+  animation: none;
+  transition: none;
 }
 
 /* 战场态势修饰符 */

@@ -164,6 +164,10 @@ export function LethalScreen({ onBack, onEnterMatch }: LethalScreenProps) {
       {dailySet.length > 0 && (
         <div className={styles.dailySet}>
           <div className={styles.dailySetHead}>
+            {/* 「日」字小章:装饰性重复(旁边就是「每日三題」),读屏跳过 */}
+            <span className={styles.dayStamp} aria-hidden="true">
+              日
+            </span>
             <span className={styles.dailyBadge}>{t('每日三題', 'Daily Three')}</span>
             <span className={styles.dailySetDate}>{today}</span>
             {streak > 0 && (
@@ -226,9 +230,17 @@ export function LethalScreen({ onBack, onEnterMatch }: LethalScreenProps) {
               <div className={styles.body}>
                 <div className={styles.row}>
                   <span className={styles.name}>{pick(p.title)}</span>
+                  {/* 三颗独立星:实心金 = 难度,空心暗 = 余档。aria-label 保持在容器上不变 */}
                   <span className={styles.stars} aria-label={`difficulty ${p.difficulty}`}>
-                    {'★'.repeat(p.difficulty)}
-                    <span className={styles.starDim}>{'★'.repeat(3 - p.difficulty)}</span>
+                    {[0, 1, 2].map((i) => (
+                      <span
+                        key={i}
+                        className={i < p.difficulty ? styles.starOn : styles.starOff}
+                        aria-hidden="true"
+                      >
+                        {i < p.difficulty ? '★' : '☆'}
+                      </span>
+                    ))}
                   </span>
                 </div>
                 <div className={styles.situation}>{pick(p.situation)}</div>

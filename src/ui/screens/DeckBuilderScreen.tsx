@@ -1,4 +1,4 @@
-import { useDeferredValue, useMemo, useState } from 'react'
+import { useDeferredValue, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { CardDef, CardType, HeroDef, LocalizedText } from '../../engine/types'
 import { DECK_SIZE } from '../../engine/types'
@@ -25,6 +25,8 @@ import { Portrait } from '../components/Portrait'
 import { fakeInstance } from './CollectionScreen'
 import { usePickCompact, usePickText, useT } from '../i18n'
 import { playSfx } from '../sound'
+import { useFlip } from '../useFlip'
+import { useClaimPulse } from '../useClaimPulse'
 import styles from './DeckBuilderScreen.module.css'
 import { EmptyState } from '../components/EmptyState'
 
@@ -57,6 +59,7 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
   const pick = usePickText()
   const pickCompact = usePickCompact()
   const lang = useSettings((s) => s.language)
+  const reduceFx = useSettings((s) => s.reducedMotion)
   const owned = useCollection((s) => s.owned)
   const customDecks = useCollection((s) => s.customDecks)
   const saveDeck = useCollection((s) => s.saveDeck)
@@ -129,6 +132,24 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
     [counts],
   )
 
+  // 卡组行按费排序,所以加/减卡会让**别的行**在同一帧里挪位置 ——
+  // 布局变化本身不可过渡,没有 FLIP 就是瞬移(缘由详见 useFlip 的注释)。
+  // 行序提出来做 memo,渲染和 FLIP 的 deps 才是同一份。
+  const deckRows = useMemo(
+    () =>
+      Object.entries(counts).sort(
+        ([a], [b]) =>
+          (CARDS_BY_ID[a]?.cost ?? 0) - (CARDS_BY_ID[b]?.cost ?? 0) || a.localeCompare(b),
+      ),
+    [counts],
+  )
+  const deckListRef = useRef<HTMLDivElement | null>(null)
+  useFlip(deckListRef, [deckRows.map(([id]) => id).join(','), reduceFx], !reduceFx)
+
+  // 保存成功的那一拍:金环从按钮胀开(全局 .claim-pulse)。
+  // 「已保存」那行字在按钮上方两三个面板之外,光靠它反馈太远了。
+  const [savePulse, firePulse] = useClaimPulse()
+
   const add = (id: string) => {
     const have = counts[id] ?? 0
     if (total >= DECK_SIZE) return
@@ -159,6 +180,7 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
     setErrors(errs)
     if (errs.length === 0) {
       setSavedMsg(true)
+      firePulse()
       playSfx('heal')
     }
   }
@@ -418,36 +440,42 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
           <div className={styles.curve}>
             {curve.map((n, cost) => (
               <div key={cost} className={styles.curveCol} title={t(`${cost}${cost === 7 ? '+' : ''}费 ×${n}`, `${cost}${cost === 7 ? '+' : ''} mana ×${n}`)}>
-                <div className={styles.curveBar} style={{ height: `${(n / curveMax) * 100}%` }} />
+                <div className={styles.curveBar} style={{ height: `${(n / curveMax) * 100}%` }}>
+                  {/* 数量原来只藏在 title 悬停里 —— 触屏根本没有悬停。
+                      标签挂在柱子上绝对定位:不占布局,柱高过渡时数字跟着柱顶走。 */}
+                  {n > 0 && <span className={styles.curveVal}>{n}</span>}
+                </div>
                 <span className={styles.curveLabel}>{cost === 7 ? '7+' : cost}</span>
               </div>
             ))}
           </div>
-          <div className={styles.deckList}>
-            {Object.entries(counts)
-              .sort(
-                ([a], [b]) =>
-                  (CARDS_BY_ID[a]?.cost ?? 0) - (CARDS_BY_ID[b]?.cost ?? 0) ||
-                  a.localeCompare(b),
+          <div className={styles.deckList} ref={deckListRef}>
+            {deckRows.map(([id, n]) => {
+              const def = CARDS_BY_ID[id]
+              return (
+                <button
+                  key={id}
+                  data-flip-key={id}
+                  className={styles.deckRow}
+                  style={{ '--doctrine': DOCTRINE_COLORS[def?.doctrine ?? 'neutral'] } as CSSProperties}
+                  onClick={() => remove(id)}
+                  title={t('点击移除一张', 'Click to remove one')}
+                >
+                  <span className={styles.rowPortrait}>
+                    <Portrait id={id} nameZh={def?.name.zh ?? id} doctrine={def?.doctrine ?? 'neutral'} />
+                  </span>
+                  <span className={styles.rowCost}>{def?.cost ?? '?'}</span>
+                  <span className={styles.rowName}>
+                    {pickCompact(def?.name ?? { zh: id, en: id })}
+                  </span>
+                  {/* key 用数值本身:份数一变节点重建,CSS 动画自动重播
+                      (手法同 GeneralToken 的 statPop)—— 不需要记「上一帧是几」。 */}
+                  <span key={n} className={`${styles.rowCount} ${styles.countPop}`}>
+                    ×{n}
+                  </span>
+                </button>
               )
-              .map(([id, n]) => {
-                const def = CARDS_BY_ID[id]
-                return (
-                  <button
-                    key={id}
-                    className={styles.deckRow}
-                    style={{ '--doctrine': DOCTRINE_COLORS[def?.doctrine ?? 'neutral'] } as CSSProperties}
-                    onClick={() => remove(id)}
-                    title={t('点击移除一张', 'Click to remove one')}
-                  >
-                    <span className={styles.rowCost}>{def?.cost ?? '?'}</span>
-                    <span className={styles.rowName}>
-                      {pickCompact(def?.name ?? { zh: id, en: id })}
-                    </span>
-                    <span className={styles.rowCount}>×{n}</span>
-                  </button>
-                )
-              })}
+            })}
             {total === 0 && (
               <EmptyState
                 glyph="募"
@@ -559,7 +587,7 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
           )}
           {savedMsg && <div className={styles.savedOk}>{t('已保存!可在标题页选用', 'Saved!')}</div>}
           <div className={styles.actions}>
-            <button className={styles.saveBtn} disabled={total !== DECK_SIZE} onClick={onSave}>
+            <button className={`${styles.saveBtn} ${savePulse}`} disabled={total !== DECK_SIZE} onClick={onSave}>
               {t(`保存卡组(${total}/${DECK_SIZE})`, `Save (${total}/${DECK_SIZE})`)}
             </button>
             <button className={styles.backBtn} onClick={() => { playSfx('buttonTap'); onBack() }}>

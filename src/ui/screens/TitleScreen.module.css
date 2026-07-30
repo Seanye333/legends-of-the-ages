@@ -15,7 +15,7 @@
   position: fixed;
   inset: -4vh -4vw;
   z-index: -2;
-  background: url('/art/title-hero.jpg') center 18% / cover no-repeat, #12100c;
+  background: url('/art/title-hero.webp') center 18% / cover no-repeat, #12100c;
   animation: bgDrift 36s ease-in-out infinite alternate;
 }
 
@@ -63,7 +63,8 @@
 }
 
 .title {
-  font-family: var(--font-display);
+  /* 牌匾用毛笔字 —— 这四个字是全站的门面,Windows 上也不能塌成默认 serif */
+  font-family: var(--font-brush);
   font-size: clamp(52px, 15vw, 96px);
   font-weight: 700;
   margin: 0;
@@ -103,7 +104,7 @@
 }
 
 .seal span {
-  font-family: var(--font-display);
+  font-family: var(--font-brush);
   font-size: clamp(15px, 4vw, 23px);
   font-weight: 700;
   line-height: 1.05;

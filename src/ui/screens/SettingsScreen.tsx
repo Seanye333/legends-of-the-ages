@@ -370,19 +370,9 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
                   s.setCardBack(b.id)
                 }}
               >
-                <span
-                  style={{
-                    display: 'inline-block',
-                    width: 14,
-                    height: 20,
-                    borderRadius: 3,
-                    marginRight: 6,
-                    verticalAlign: 'middle',
-                    background: b.css,
-                    border: '1px solid rgba(212,168,74,0.5)',
-                    opacity: unlocked ? 1 : 0.3,
-                  }}
-                />
+                {/* 预览的形状/边框/锁定态都进了 CSS(.backSwatch);
+                    background 留在内联 —— 每张卡背的渐变是内容层数据(b.css) */}
+                <span className={styles.backSwatch} style={{ background: b.css }} />
                 {unlocked ? pick(b.name) : '???'}
               </button>
             )

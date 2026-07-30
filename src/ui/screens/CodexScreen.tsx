@@ -90,9 +90,13 @@ export function CodexScreen({ onBack, onStartLesson }: CodexScreenProps) {
                         <span> 的,星号此前原样露在界面上 —— 写文案的人在源码里
                         读它,那里星号是对的,所以谁都没发现。 */}
                     <span className={styles.rule}>{emphasize(pick(entry.rule))}</span>
+                    {/* 箭头固定用 '▸',展开靠 rotate 过渡 —— 换字符是硬切,转过去才连贯 */}
                     {(entry.note || ex) && (
-                      <span className={styles.chevron} aria-hidden="true">
-                        {open ? '▾' : '▸'}
+                      <span
+                        className={`${styles.chevron} ${open ? styles.chevronOpen : ''}`}
+                        aria-hidden="true"
+                      >
+                        ▸
                       </span>
                     )}
                   </button>

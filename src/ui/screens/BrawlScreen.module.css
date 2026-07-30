@@ -90,7 +90,52 @@
 .brawlText { font-size: 13px; line-height: 1.55; color: var(--parchment-dim); flex: 1; }
 .brawlGo { font-size: 13px; font-weight: 700; color: #e0b060; align-self: flex-end; }
 
-@media (prefers-reduced-motion: reduce) { .brawlCard { transition: none; } }
+/* 行首字章:十四条规则原来是十四段纯文字,一眼扫过去全长一个样。
+   取规则名首字作一枚圆印(深底金字、微斜)—— 像盖上去的,不是排上去的。 */
+.brawlHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.seal {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgba(212, 168, 74, 0.55);
+  background: radial-gradient(circle at 35% 30%, #3a2c14, #1c1408 75%);
+  color: var(--gold);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  transform: rotate(-3deg);
+  box-shadow: inset 0 0 0 2px rgba(24, 16, 5, 0.8);
+  transition:
+    box-shadow var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+/* 行本身已有 hover 抬升(.brawlCard),这里补章的亮起 */
+.brawlCard:hover .seal {
+  color: var(--gold-bright);
+  box-shadow:
+    inset 0 0 0 2px rgba(24, 16, 5, 0.8),
+    0 0 12px rgba(232, 200, 120, 0.45);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brawlCard,
+  .seal { transition: none; }
+}
+
+/* 设置页手动开关(data-reduced-motion)与系统偏好各挡一路 */
+:root[data-reduced-motion='true'] .brawlCard,
+:root[data-reduced-motion='true'] .seal {
+  transition: none;
+}
 
 /* 本周当值乱斗:高亮 + 角标(每周一换,给回访一个理由) */
 .weeklyCard {

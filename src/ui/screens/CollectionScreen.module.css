@@ -126,16 +126,56 @@
   border-radius: 10px;
 }
 
-/* 未拥有:压成灰,但**要看得清**。
-   原来是 grayscale(0.85) + brightness(0.62),叠在本来就暗的卡面上,
-   结果整张几乎是纯黑 —— 项羽、荊軻这些卡在图鉴里连脸都看不出来。
-   而图鉴的功能恰恰是「让你想要还没有的那些」:看不见的东西没人会想要。
+/* ---- 稀有度在网格里的存在感 ----
+   已拥有的 rare 以上给外壳一圈静态边框光,配色对齐 GeneralToken 令牌外环的
+   三档(蓝/紫/金)—— 同一个人在牌桌上和图鉴里认同一种光。
+   一层 box-shadow、无动画:两千格的网格禁不起逐格发光动效。
+   普通卡不加 —— 全场都发光等于全场都不发光。 */
+.rimRare {
+  box-shadow: 0 0 9px 1px rgba(74, 144, 217, 0.42);
+}
 
-   改成 0.7 灰 + 0.82 亮度 + 一点降对比:仍然一眼分得出没有,
-   但立绘的内容读得出来。真正承担「我没有」这条信息的是右下角的持有徽标,
-   不该指望把图压黑来传达。 */
-.unowned {
-  filter: grayscale(0.7) brightness(0.82) contrast(0.92);
+.rimEpic {
+  box-shadow: 0 0 10px 2px rgba(164, 90, 208, 0.45);
+}
+
+.rimLegendary {
+  box-shadow: 0 0 12px 2px rgba(232, 178, 58, 0.55);
+}
+
+/* 未拥有:拓印。之前的 0.7 灰 + 0.82 亮只是「褪色」,和已拥有的彩卡
+   隔得不够开 —— 扫一眼网格分不出哪片是自己的。现在往碑拓上靠:
+   灰化压暗得更狠,再用一点 sepia + 色相偏转把残留的暖调转成青灰的石色。
+   立绘轮廓仍读得出(图鉴要让人想要还没有的那些,看不见的东西没人会想要),
+   但已拥有/未拥有一眼是两个世界。
+
+   filter 挂在 cardWrap 而不是 cell 上:cell 的 ::after 要盖「未得」章,
+   挂 cell 上章会跟着一起被灰掉(filter 作用于整棵子树,包括伪元素)。 */
+.unowned .cardWrap {
+  filter: grayscale(0.95) brightness(0.68) contrast(0.88) sepia(0.24) hue-rotate(170deg)
+    saturate(0.75);
+}
+
+/* 「未得」小章:纯 CSS 伪元素,右下角,与已拥有的 ×n 徽标同位互斥。
+   2375 格每格一个伪元素没问题;静态,不加任何动画/阴影动画。
+   配色跟拓印同一套青灰 —— 它是拓片上的题记,不是彩色贴纸。 */
+.unowned::after {
+  content: '未得';
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  z-index: 3;
+  padding: 1px 5px;
+  font-family: var(--font-display);
+  font-size: 9px;
+  line-height: 1.4;
+  letter-spacing: 0.08em;
+  color: rgba(212, 220, 230, 0.72);
+  background: rgba(26, 30, 36, 0.8);
+  border: 1px solid rgba(148, 160, 176, 0.42);
+  border-radius: 3px;
+  transform: rotate(-2deg);
+  pointer-events: none;
 }
 
 .ownedBadge {
@@ -272,6 +312,26 @@
   }
 }
 
+/* 集齐一个时代:行尾盖一枚朱砂小章。
+   进度条走到头之后此前什么都不发生 —— 而「集齐」是这一屏唯一的长期目标。 */
+.eraSeal {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
+  font-family: var(--font-brush);
+  font-size: 12px;
+  line-height: 1;
+  color: #ffefe2;
+  background: linear-gradient(160deg, #d8452e, #9c2517 70%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 235, 215, 0.8),
+    0 1px 4px rgba(0, 0, 0, 0.6);
+  transform: rotate(-4deg);
+}
+
 /* ---- 收藏度 ---- */
 /* 折叠起来:它是「想看才看」的东西,不该占掉筛选栏上方的固定空间 */
 .goalBox {
@@ -309,6 +369,31 @@
   gap: 8px;
   font-size: 11px;
   color: var(--parchment);
+  /* 时代集齐的「成」章要相对本行绝对定位(见 .eraSeal) */
+  position: relative;
+}
+
+/* 时代集齐:一枚旋转 -4° 的朱砂小方章「成」,盖在进度条末端。
+   绝对定位、不占行内空间 —— 六行的进度条必须保持等长对齐,
+   谁集齐了谁的行凭空多出一截反而像坏了。
+   right = goalNum 的 74px 定宽 + 8px 行内间距 + 一点缩进,正落在条尾。
+   静态无动画:印是盖上去的,不是飘进来的。 */
+.eraSeal {
+  position: absolute;
+  right: 86px;
+  top: 50%;
+  width: 15px;
+  height: 15px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-size: 10px;
+  line-height: 1;
+  color: #f8ecd8;
+  background: linear-gradient(180deg, #c0432f, #93301f);
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px rgba(255, 235, 210, 0.3);
+  transform: translateY(-50%) rotate(-4deg);
 }
 
 .goalName {

@@ -7,6 +7,7 @@ import { Portrait } from '../components/Portrait'
 import { DOCTRINE_COLORS, dynastyName } from '../doctrineColors'
 import { usePickCompact, usePickText, useT } from '../i18n'
 import { ALL_BONDS, ALL_RIVALS, bondRoster, cardName, rivalLore } from '../../content/relations'
+import { RelationGraph } from '../components/RelationGraph'
 import { EraScroll } from '../components/EraScroll'
 import { ERA_OF, type Era } from '../../content/eras'
 import { RelationWeb } from '../components/RelationWeb'
@@ -90,7 +91,8 @@ export function LoreScreen({ onBack }: Props) {
       {/* 关系图谱:31 条羁绊 + 29 对宿敌本来就是一张网络图。
           此前它们只在结算里存在,玩家没有任何地方能**通览**这些历史关系 ——
           而「通览」正是这个模式(名将列传 = 博物馆)该干的事。
-          不做力导向图:那在手机上点不准,也读不出「谁和谁」。列表按关系本身分组更清楚。 */}
+          图用弦图不用力导向:98 个节点力导向必糊成毛线,而且要迭代(不确定);
+          弦图的布局是确定的,同一份数据每次画出来一模一样。见 RelationGraph。 */}
       <div className={styles.filters}>
         {(
           [
@@ -125,6 +127,14 @@ export function LoreScreen({ onBack }: Props) {
 
       {view === 'graph' && (
         <div className={styles.relationList}>
+          {/* 先给一张真的图。下面那两段列表保留 ——
+              它既是图例(哪条羁绊叫什么),也是读屏器唯一读得懂的那条路。 */}
+          <RelationGraph
+            onPick={(id) => {
+              setSelected(id)
+              setView('lives')
+            }}
+          />
           <div className={styles.relationHead}>
             {t(`羈絆 · ${ALL_BONDS.length} 條`, `Bonds · ${ALL_BONDS.length}`)}
           </div>

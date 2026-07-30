@@ -1,0 +1,130 @@
+.wrap {
+  width: min(94vw, 620px);
+  margin: 0 auto;
+  /* 父级是 flex 列 —— 交叉轴上 margin:auto 不居中,得显式 align-self */
+  align-self: center;
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 62vh;
+  overflow: visible; /* 悬停时的名字会探出 viewBox */
+}
+
+/* 边:一律细、一律半透明。98 个点上千条线,任何一条画重了整张网就糊了。
+   nonScalingStroke 让线宽不随 viewBox 缩放变粗 —— 手机上尤其明显。 */
+.bond,
+.rival {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+  transition:
+    stroke-opacity var(--dur-fast) ease,
+    stroke-width var(--dur-fast) ease;
+}
+
+.bond {
+  stroke: var(--gold-mid, #d4a84a);
+  stroke-width: 1;
+  stroke-opacity: 0.3;
+}
+
+/* 宿敌用虚线而不只是换色:色盲模式下颜色不可靠,线型永远可靠 */
+.rival {
+  stroke: var(--cinnabar, #c53b2c);
+  stroke-width: 1;
+  stroke-opacity: 0.34;
+  stroke-dasharray: 4 3;
+}
+
+.lit {
+  stroke-width: 2;
+  stroke-opacity: 0.95;
+}
+
+/* 选中一个人时,与他无关的线压下去 —— 高亮的意义在于其余的要让开 */
+.dim {
+  stroke-opacity: 0.07;
+}
+
+.node {
+  fill: var(--parchment-dim, #c9bfa8);
+  cursor: pointer;
+  transition:
+    r var(--dur-fast) ease,
+    fill var(--dur-fast) ease;
+}
+
+.node:hover {
+  fill: var(--gold-bright, #f7e1a8);
+}
+
+.nodeOn {
+  fill: var(--gold-bright, #f7e1a8);
+  filter: drop-shadow(0 0 6px rgba(232, 200, 120, 0.9));
+}
+
+.node:focus-visible {
+  outline: none;
+  stroke: var(--gold-bright, #f7e1a8);
+  stroke-width: 2;
+}
+
+.label {
+  font-family: var(--font-display);
+  font-size: 13px;
+  fill: var(--gold-bright, #f7e1a8);
+  paint-order: stroke;
+  stroke: rgba(8, 6, 3, 0.9);
+  stroke-width: 4;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  justify-content: center;
+  margin-top: 6px;
+  font-size: var(--fs-small);
+  color: var(--parchment-faint);
+}
+
+.legendBond::before,
+.legendRival::before {
+  content: '';
+  display: inline-block;
+  width: 18px;
+  height: 0;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.legendBond::before {
+  border-top: 2px solid var(--gold-mid);
+}
+
+.legendRival::before {
+  border-top: 2px dashed var(--cinnabar);
+}
+
+.legendHint {
+  opacity: 0.7;
+}
+
+:root[data-reduced-motion='true'] .bond,
+:root[data-reduced-motion='true'] .rival,
+:root[data-reduced-motion='true'] .node {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bond,
+  .rival,
+  .node {
+    transition: none;
+  }
+}

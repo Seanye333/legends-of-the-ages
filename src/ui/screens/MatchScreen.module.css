@@ -13,7 +13,7 @@
       rgba(48, 36, 17, 0.85) 62%,
       rgba(30, 21, 9, 0.94) 100%
     ),
-    url('/art/battlefield-bg.jpg') center 40% / cover no-repeat,
+    url('/art/battlefield-bg.webp') center 40% / cover no-repeat,
     #12100c;
   background-blend-mode: normal, multiply, normal;
   /* 战场按时代变色:同一张底图,不同的色温。

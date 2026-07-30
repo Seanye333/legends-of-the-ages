@@ -32,12 +32,15 @@ export function BossRushScreen({ onBack, onEnterMatch }: Props) {
   const myDecks = [...PRECON_DECKS, ...customDecks]
   const boss = BOSSES[stage]
 
+  // 血条用的当前/上限:没有进行中的连斩时,显示所选卡组主公的满血
+  const mine = myDecks[deckIndex % myDecks.length]
+  const myMaxHp = (mine ? HEROES_BY_ID[mine.heroId]?.hp : undefined) ?? START_HP
+  const curHp = hp ?? myMaxHp
+
   const fight = () => {
-    const mine = myDecks[deckIndex % myDecks.length]
     if (!mine || !boss) return
     const myHero = HEROES_BY_ID[mine.heroId]
-    const startHp = myHero?.hp ?? START_HP
-    begin(startHp)
+    begin(myMaxHp)
     playSfx('duel')
     haptic('impact')
     launchMatch({
@@ -47,7 +50,7 @@ export function BossRushScreen({ onBack, onEnterMatch }: Props) {
       bossId: boss.id,
       heroPowersOverride: [myHero?.power, boss.power],
       // 继承来的血量在这里落地 —— 这一行就是整个模式
-      heroHpsOverride: [hp ?? startHp, boss.hp],
+      heroHpsOverride: [curHp, boss.hp],
       aiWeights: bossPersonality(boss.id),
       field: bossField(boss.id),
     })
@@ -72,7 +75,7 @@ export function BossRushScreen({ onBack, onEnterMatch }: Props) {
         </span>
       </header>
 
-      <p className={styles.briefIntro} style={{ maxWidth: 720, margin: '0 auto 14px' }}>
+      <p className={`${styles.briefIntro} ${styles.rushIntro}`}>
         {t(
           `十六位群雄按序而来,中途不换卡组、不回满血 —— 每胜一场只回 ${BOSS_RUSH_HEAL} 点。倒下即从头再来。`,
           `Sixteen contenders in a row. No new deck, no full heal — only ${BOSS_RUSH_HEAL} HP between fights. Fall once and start over.`,
@@ -99,14 +102,9 @@ export function BossRushScreen({ onBack, onEnterMatch }: Props) {
 
       {boss && (
         <div
-          className={styles.brief}
-          style={
-            {
-              '--doctrine': DOCTRINE_COLORS[boss.doctrine],
-              margin: '0 auto',
-              width: 'min(400px, 100%)',
-            } as CSSProperties
-          }
+          className={`${styles.brief} ${styles.rushBrief}`}
+          // --doctrine 是逐 Boss 的动态值,只能留在内联;定位样式移进了 .rushBrief
+          style={{ '--doctrine': DOCTRINE_COLORS[boss.doctrine] } as CSSProperties}
         >
           <div className={styles.briefPortrait}>
             <Portrait id={boss.heroId} nameZh={boss.name.zh} doctrine={boss.doctrine} full />
@@ -116,11 +114,22 @@ export function BossRushScreen({ onBack, onEnterMatch }: Props) {
             {pick(boss.name)}
             <span className={styles.briefTitle}>{pick(boss.title)}</span>
           </h3>
-          <div className={styles.briefStats}>
-            <span>
-              {t('你的血量', 'Your HP')}{' '}
-              <b>{hp ?? (HEROES_BY_ID[myDecks[deckIndex % myDecks.length]?.heroId]?.hp ?? START_HP)}</b>
+          {/* 血量继承是这个模式的全部机制 —— 从一行字升级成真血条:
+              轨道 + 红转金的填充,宽度直接画出「还剩多少本钱进下一阵」。
+              数值仍以文字给出,轨道对读屏是纯装饰(aria-hidden)。 */}
+          <div className={styles.rushHpRow}>
+            <span>{t('你的血量', 'Your HP')}</span>
+            <span className={styles.rushHpTrack} aria-hidden="true">
+              <span
+                className={styles.rushHpFill}
+                style={{ '--hp': Math.max(0, Math.min(1, curHp / myMaxHp)) } as CSSProperties}
+              />
             </span>
+            <b className={styles.rushHpValue}>
+              {curHp} / {myMaxHp}
+            </b>
+          </div>
+          <div className={styles.briefStats}>
             <span>
               {t('对手', 'Foe')} <b>{boss.hp}</b>
             </span>

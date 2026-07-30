@@ -161,12 +161,30 @@ export function StudyScreen({ onBack }: Props) {
     )
   }
 
-  const row = (label: string, value: string) => (
-    <div className={styles.row} key={label}>
-      <span className={styles.rowLabel}>{label}</span>
-      <span className={styles.rowValue}>{value}</span>
-    </div>
-  )
+  // 「3 / 16」这种值自带一个比例,而这一屏此前**全是纯数字** ——
+  // 十几行「几分之几」堆在一起,没有一行能一眼看出走到哪了。
+  // 在 helper 里解析一次,所有可量化的行自动长出一条细进度条:
+  // 十几个调用点一个都不用改,以后新增的行也自动享受。
+  const row = (label: string, value: string) => {
+    // 只要**以**「a / b」开头就算 —— 收藏那几行后面还跟着「(37%)」,
+    // 用 $ 锚死的话它们全都长不出条,同一屏里一半有条一半没有最难看。
+    const m = /^(\d+)\s*\/\s*(\d+)/.exec(value.trim())
+    const ratio = m && Number(m[2]) > 0 ? Math.min(1, Number(m[1]) / Number(m[2])) : null
+    return (
+      <div className={styles.row} key={label}>
+        <span className={styles.rowLabel}>{label}</span>
+        {ratio !== null && (
+          <span className={styles.rowBar} aria-hidden="true">
+            <span
+              className={`${styles.rowFill} ${ratio >= 1 ? styles.rowFull : ''}`}
+              style={{ width: `${ratio * 100}%` }}
+            />
+          </span>
+        )}
+        <span className={styles.rowValue}>{value}</span>
+      </div>
+    )
+  }
 
   return (
     <div className={styles.screen}>

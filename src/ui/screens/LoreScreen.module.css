@@ -266,3 +266,43 @@
     animation: none;
   }
 }
+
+/* ---- 立绘的活气 ----
+   列传详情的立绘此前是完全静止的一张图。极缓的 ken-burns(16 秒一个来回)——
+   同 CardInspect 的 livingArt 一个道理:一张不动的画和一张几乎不动的画,
+   区别不在于「动」,在于后者看起来像还活着。
+   只作用于 Portrait 那一层图,容器不动(overflow: hidden 负责裁切)。 */
+.detailPortrait > * {
+  animation: livingPortrait 16s ease-in-out infinite alternate;
+  transform-origin: 50% 34%;
+}
+
+@keyframes livingPortrait {
+  from {
+    transform: scale(1.06) translate(0, 0);
+  }
+  to {
+    transform: scale(1.11) translate(-1.5%, -2%);
+  }
+}
+
+/* 列表格子悬停放大(只给精确指针 —— 触屏上没有 hover 这回事) */
+@media (pointer: fine) {
+  .entry:hover .portrait > * {
+    transform: scale(1.08);
+  }
+
+  .portrait > * {
+    transition: transform var(--dur-med) var(--ease-out);
+  }
+}
+
+:root[data-reduced-motion='true'] .detailPortrait > * {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .detailPortrait > * {
+    animation: none;
+  }
+}

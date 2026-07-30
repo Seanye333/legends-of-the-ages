@@ -177,9 +177,16 @@ export function QuizScreen({ onBack }: Props) {
 
       {done && (
         <div className={styles.result}>
-          <div className={styles.score}>
+          {/* 满分才有仪式。全对与四对一错在画面上此前是同一个样子 ——
+              而「全对」正是这个模式唯一值得追的东西。 */}
+          <div
+            className={`${styles.score} ${correct === questions.length ? styles.scorePerfect : ''}`}
+          >
             {correct} / {questions.length}
           </div>
+          {correct === questions.length && (
+            <div className={styles.gradeSeal}>{t('甲等', 'Top marks')}</div>
+          )}
           <p className={styles.resultText}>
             {earned > 0
               ? t(`稽古有成,得功勋 +${earned}`, `Well studied — +${earned} merit`)

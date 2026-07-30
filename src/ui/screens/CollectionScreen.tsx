@@ -112,6 +112,14 @@ const DYNASTIES_IN_POOL: DynastyTag[] = (() => {
   return [...count.entries()].sort((a, b) => b[1] - a[1]).map(([d]) => d)
 })()
 
+// 已拥有的 rare 以上按稀有度给格子外壳一圈静态边框光(蓝/紫/金)。
+// 用显式映射而不是 styles[`rim_${rarity}`]:拼字符串查样式表,类名改了没人报错。
+const RIM_CLASS: Partial<Record<Rarity, string>> = {
+  rare: styles.rimRare,
+  epic: styles.rimEpic,
+  legendary: styles.rimLegendary,
+}
+
 export function fakeInstance(def: CardDef): CardInstance {
   return {
     iid: -def.collectorNo,
@@ -306,6 +314,12 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
               <span className={styles.goalNum}>
                 {p.owned}/{p.total}
               </span>
+              {/* 集齐一个时代该有一次仪式 —— 进度条走到头之后原来什么都不发生 */}
+              {p.ratio >= 1 && (
+                <span className={styles.eraSeal} aria-hidden="true">
+                  成
+                </span>
+              )}
             </div>
           ))}
           {/* 分解建议:功勋入口只有三个,而收藏里通常躺着几百张从没进过任何牌组的卡 ——
@@ -484,9 +498,22 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
       <div className={styles.grid}>
         {shown.map((def) => {
           const n = owned[def.id] ?? 0
+          const rim = n > 0 ? RIM_CLASS[def.rarity] : undefined
           return (
-            <div key={def.id} className={`${styles.cell} ${n === 0 ? styles.unowned : ''}`}>
-              <div className={styles.cardWrap}>
+            <div
+              key={def.id}
+              className={`${styles.cell} ${n === 0 ? styles.unowned : ''}`}
+              // 拓印格子悬停时给一句获取途径 —— 「未得」章只说了没有,没说怎么得
+              title={
+                n === 0
+                  ? t(
+                      '尚未收录 —— 开包可得,亦可用功勋定向合成。',
+                      'Not collected yet — open packs, or craft it with merit.',
+                    )
+                  : undefined
+              }
+            >
+              <div className={`${styles.cardWrap} ${rim ?? ''}`}>
                 <CardFace inst={fakeInstance(def)} onClick={() => setInspect(def)} />
                 {/* 闪卡层:只给已拥有的 epic/legendary 挂载(FoilLayer 对低稀有返回 null) */}
                 {n > 0 && <FoilLayer rarity={def.rarity} />}

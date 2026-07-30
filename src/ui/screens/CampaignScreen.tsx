@@ -171,6 +171,13 @@ export function CampaignScreen({ onBack, onEnterMatch }: CampaignScreenProps) {
               }`}
               style={{ '--doctrine': DOCTRINE_COLORS[b.doctrine] } as CSSProperties}
             >
+              {/* 小旗只插在「下一场该打的」那一关行首:二十四行里滚到哪儿都能一眼找到它。
+                  纯装饰,aria-hidden —— 按钮自带 aria-label,读屏不需要这面旗。 */}
+              {open && !done && (
+                <span className={styles.nextFlag} aria-hidden="true">
+                  ⚑
+                </span>
+              )}
               <button
                 className={styles.stageBtn}
                 disabled={!open}
@@ -242,12 +249,21 @@ export function CampaignScreen({ onBack, onEnterMatch }: CampaignScreenProps) {
               <span className={styles.briefPowerText}>{pick(selected.power.text)}</span>
             </div>
             <p className={styles.briefReward}>
-              {cleared.includes(selected.id)
-                ? t('已通关 —— 重打不再发放战利', 'Cleared — no further spoils')
-                : t(
+              {cleared.includes(selected.id) ? (
+                t('已通关 —— 重打不再发放战利', 'Cleared — no further spoils')
+              ) : (
+                <>
+                  {/* 纯 CSS 小卡包(画法照结算页的 packChip,本文件独立实现,不跨文件 composes):
+                      「首通有包」在开打之前就看得见,而不只是一行字。 */}
+                  <i className={styles.rewardPack} aria-hidden="true">
+                    包
+                  </i>
+                  {t(
                     `首通战利:卡包 ×${selected.rewardPacks},功勋 +${selected.rewardMerit}`,
                     `First clear: ${selected.rewardPacks} packs, +${selected.rewardMerit} merit`,
                   )}
+                </>
+              )}
             </p>
             {/* 试炼:首通之后解锁的第二种打法 —— 同一个 Boss,换一个赢法 */}
             {cleared.includes(selected.id) &&

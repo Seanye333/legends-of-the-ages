@@ -91,6 +91,9 @@ export function ResultOverlay({
 
   return (
     <div className={`${styles.overlay} ${bgCls}`}>
+      {/* 长卷:所有内容装进一幅展开的卷轴。此前是「一堆东西各自淡入」——
+          每件都有动画,但它们之间没有关系;现在共享一个出场逻辑。 */}
+      <div className={styles.scroll}>
       <div className={`${styles.glyph} ${verdictCls}`}>{glyph}</div>
       <div className={`${styles.word} ${verdictCls}`}>{word}</div>
       {winner === 0 && (
@@ -129,6 +132,9 @@ export function ResultOverlay({
           ))}
         </dl>
       )}
+      </div>
+      {/* 按钮在卷轴**外面**:卷轴是这一局的记录,按钮是接下来做什么 ——
+          两者不是一回事。也是实测结果:塞进卷轴后三个按钮各自折行。 */}
       <div className={styles.buttons}>
         {canRematch && (
           <button className={styles.primary} onClick={onRematch}>

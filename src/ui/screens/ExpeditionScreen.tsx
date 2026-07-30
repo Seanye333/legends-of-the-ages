@@ -27,6 +27,14 @@ interface ExpeditionScreenProps {
   onEnterMatch: () => void
 }
 
+// 宝物稀有度的字形符(relics.ts 里实际只有这三档)。
+// 边框颜色是仅有的分级线索,给名字前补一个纯文本符号 —— 色觉辅助同款思路,不用图。
+const RARITY_GLYPH: Record<'rare' | 'epic' | 'legendary', string> = {
+  rare: '◇',
+  epic: '◆',
+  legendary: '★',
+}
+
 // 远征:单人 roguelike。选一副牌,连打 8 关 Boss,每通一关三选一宝物。
 export function ExpeditionScreen({ onBack, onEnterMatch }: ExpeditionScreenProps) {
   const t = useT()
@@ -237,7 +245,12 @@ export function ExpeditionScreen({ onBack, onEnterMatch }: ExpeditionScreenProps
                   pickRelic(id)
                 }}
               >
-                <div className={styles.relicName}>{pick(r.name)}</div>
+                <div className={styles.relicName}>
+                  <span className={styles.rarityGlyph} aria-hidden="true">
+                    {RARITY_GLYPH[r.rarity]}
+                  </span>
+                  {pick(r.name)}
+                </div>
                 <div className={styles.relicRarity}>
                   {pick(
                     { rare: { zh: '稀有', en: 'Rare' }, epic: { zh: '史诗', en: 'Epic' }, legendary: { zh: '传说', en: 'Legendary' } }[
@@ -334,6 +347,11 @@ export function ExpeditionScreen({ onBack, onEnterMatch }: ExpeditionScreenProps
                 const r = RELICS_BY_ID[id]
                 return (
                   <span key={id} className={`${styles.relicChip} ${styles[r?.rarity ?? 'rare']}`} title={r ? pick(r.text) : id}>
+                    {r && (
+                      <span className={styles.rarityGlyph} aria-hidden="true">
+                        {RARITY_GLYPH[r.rarity]}
+                      </span>
+                    )}
                     {r ? pick(r.name) : id}
                   </span>
                 )

@@ -231,14 +231,17 @@
 }
 
 /* flex: 0 0 auto 是必须的:deckPane 是个有 max-height 的 flex 列,
-   底下加了体检与羁绊两块之后,曲线会被 flex 压成 0 高(柱子整个看不见)。 */
+   底下加了体检与羁绊两块之后,曲线会被 flex 压成 0 高(柱子整个看不见)。
+   58px→68px、上内边距 4px→14px:内容高不变(柱子像素高度原样),
+   多出的 10px 全是给柱顶数值标签的头顶空间 —— 最高那根柱是 100% 高,
+   不垫这一层,它的数字就会怼到边框外。 */
 .curve {
   flex: 0 0 auto;
   display: flex;
   gap: 4px;
-  height: 58px;
+  height: 68px;
   align-items: flex-end;
-  padding: 4px 6px 0;
+  padding: 14px 6px 0;
   border-radius: 8px;
   border: 1px solid rgba(122, 100, 58, 0.3);
   background: rgba(12, 10, 7, 0.5);
@@ -255,11 +258,28 @@
 }
 
 .curveBar {
+  position: relative; /* 柱顶数值标签的定位基准 */
   width: 70%;
   min-height: 2px;
   border-radius: 2px 2px 0 0;
   background: linear-gradient(180deg, var(--gold), var(--gold-dark));
   transition: height 0.2s ease;
+}
+
+/* 柱顶数值:数量原来只在 title 悬停里,触屏看不到。
+   绝对定位而不进流式布局 —— 一进布局,标签的出现/消失会顶得柱子跳一下,
+   还会吃掉按百分比算高的空间;挂在柱子上则柱高过渡时数字跟着柱顶一起走。 */
+.curveVal {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 1px;
+  font-size: 9px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--gold-bright);
+  pointer-events: none;
 }
 
 .curveLabel {
@@ -294,6 +314,16 @@
   border-color: #c88;
 }
 
+/* 行首立绘:直径对齐费用圆点(20px),所以行高一像素都不涨。
+   Portrait 自带懒加载与拓印兜底,这里只负责裁圆。 */
+.rowPortrait {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
 .rowCost {
   width: 20px;
   height: 20px;
@@ -319,6 +349,25 @@
   margin-left: auto;
   color: var(--gold);
   font-weight: 700;
+}
+
+/* ×N 徽标弹一下:加卡点在左栏、行在右栏,行位置不动时(×1→×2)
+   画面上原本什么都不发生 —— 这一下就是「真的加进去了」的回执。
+   节点由 key 重建触发重播(见 TSX 注释),CSS 只管播一遍。 */
+.countPop {
+  animation: countPop var(--dur-med) var(--ease-spring) both;
+}
+
+@keyframes countPop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.45);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .hint {
@@ -418,9 +467,12 @@
   gap: 2px;
 }
 
+/* panelRise 是全局 keyframes(index.css)—— 模块里引用本文件未声明的名字
+   会原样保留,所以**不要**在这里重新声明它。保存成功原来只是这行字硬切出现。 */
 .savedOk {
   font-size: 13px;
   color: #a8d89a;
+  animation: panelRise var(--dur-med) var(--ease-out) both;
 }
 
 .actions {
@@ -674,5 +726,21 @@
   .screen {
     height: 100dvh;
     overflow: hidden;
+  }
+}
+
+/* ---- 减少动效 ----
+   本文件新加的两个动画一起关。行列表的 FLIP 与保存按钮的 claim-pulse
+   各有自己的开关(useFlip 的 enabled 参数 / index.css 的全局兜底),不归这里管。
+   两种写法都要:设置页的手动开关走 data-reduced-motion,系统偏好走媒体查询。 */
+:root[data-reduced-motion='true'] .countPop,
+:root[data-reduced-motion='true'] .savedOk {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .countPop,
+  .savedOk {
+    animation: none;
   }
 }
