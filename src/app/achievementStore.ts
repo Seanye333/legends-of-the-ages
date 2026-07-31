@@ -31,6 +31,9 @@ export type StatKey =
   | 'cardsCrafted'
   | 'packsOpened'
   | 'arenaBestWins'
+  // 累计竞技场胜场。arenaBestWins 取的是最大值(单轮最佳),
+  // 而战功要算的是「一共赢了多少场」—— 两个问题,两个字段。
+  | 'arenaWinsTotal'
   | 'bestTurnDamage'
   // ---- 第四卡包 ----
   | 'secretsSprung'
@@ -290,16 +293,18 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     'trialsCleared',
     { zh: '試煉', en: 'Trials' },
     (n) => ({ zh: `通过 ${n} 场关底试炼`, en: `Complete ${n} boss trials` }),
-    [1, 6, 16],
-    [80, 240, 700],
+    // 16 → 24:关卡从 16 扩到 24 时漏改了这里,打满试炼成就却停在第 16 条
+    [1, 8, 24],
+    [80, 240, 900],
   ),
   ...tier(
     'ach-gauntlet',
     'bossRushBest',
     { zh: '連斬', en: 'Gauntlet' },
     (n) => ({ zh: `群雄连斩连过 ${n} 关`, en: `Clear ${n} bouts in the Gauntlet` }),
-    [4, 10, 16],
-    [120, 350, 900],
+    // 同上:连斩打的就是那 24 关,顶格没理由停在 16
+    [4, 12, 24],
+    [120, 350, 1200],
   ),
   ...tier(
     'ach-lesson',
@@ -314,8 +319,9 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     'towerBest',
     { zh: '登樓', en: 'The Climb' },
     (n) => ({ zh: `无尽爬塔登上第 ${n} 层`, en: `Reach floor ${n} of the Endless Tower` }),
-    [5, 12, 20],
-    [80, 200, 450],
+    // 爬塔是无上限的,成就却在 20 层就满了 —— 顶格往后推到 40
+    [5, 15, 40],
+    [80, 200, 700],
   ),
   ...tier(
     'ach-history',

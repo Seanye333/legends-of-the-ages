@@ -331,3 +331,21 @@
 :root[data-reduced-motion='true'] .toggleRow input[type='checkbox']::before {
   transition: none;
 }
+
+/* 搬迁码输入框。和同排的按钮同高,占满剩余宽度 —— 码很长,
+   给它一行的空间比让它挤在角落好读。 */
+.codeInput {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid rgba(122, 100, 58, 0.55);
+  background: rgba(20, 16, 10, 0.8);
+  color: var(--parchment);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+
+.codeInput::placeholder {
+  color: var(--parchment-faint);
+}

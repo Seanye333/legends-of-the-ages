@@ -12,7 +12,7 @@ import { BOSSES } from '../../content/campaign'
 import { HISTORY_BATTLES } from '../../content/historyBattles'
 import { eraProgress } from '../../content/collectionGoals'
 import { useRecords, type RecordKey } from '../../app/recordsStore'
-import { rankOf, toNextRank, warMerit } from '../../content/ranks'
+import { useWarMerit } from '../../app/useWarMerit'
 import { COLLECTIBLE_CARDS } from '../../content/cards'
 import { useLang, usePickText, useT } from '../i18n'
 import { playSfx } from '../sound'
@@ -78,17 +78,8 @@ export function StudyScreen({ onBack }: Props) {
   const bossRushBest = useBossRush((s) => s.best)
   const records = useDeckStats((s) => s.records)
 
-  const merit = warMerit({
-    casualWins: wins,
-    campaignCleared: campaignDone,
-    trialsCleared: trialsDone,
-    historyCleared: historyDone,
-    expeditionDepth,
-    towerBest,
-    bossRushBest,
-  })
-  const rank = rankOf(merit)
-  const next = toNextRank(merit)
+  // 战功由 useWarMerit 统一采集 —— 从前这里手拼参数,漏了 ladderWins/arenaWins
+  const { merit, rank, next } = useWarMerit()
 
   const ownedCount = useMemo(
     () => COLLECTIBLE_CARDS.filter((c) => (owned[c.id] ?? 0) > 0).length,

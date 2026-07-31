@@ -23,9 +23,7 @@ import { BOSSES } from '../../content/campaign'
 import { useHistory } from '../../app/historyStore'
 import { useTower } from '../../app/towerStore'
 import { useStreak } from '../../app/streakStore'
-import { useExpedition } from '../../app/expeditionStore'
-import { useBossRush } from '../../app/bossRushStore'
-import { rankOf, toNextRank, warMerit } from '../../content/ranks'
+import { useWarMerit } from '../../app/useWarMerit'
 import { HISTORY_BATTLES } from '../../content/historyBattles'
 import { ACHIEVEMENTS, useAchievements } from '../../app/achievementStore'
 import type { DeckList } from '../../content/decks'
@@ -214,20 +212,7 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
   const campaignAllCleared = useCampaign((s) => s.cleared.length >= BOSSES.length)
   const wins = useCollection((s) => s.wins)
   const losses = useCollection((s) => s.losses)
-  const trialsDone = useCampaign((s) => s.trialsCleared.length)
-  const expeditionDepth = useExpedition((s) => s.bestDepth)
-  const bossRushBest = useBossRush((s) => s.best)
-  const merit = warMerit({
-    casualWins: wins,
-    campaignCleared: campaignDone,
-    trialsCleared: trialsDone,
-    historyCleared: historyDone,
-    expeditionDepth,
-    towerBest,
-    bossRushBest,
-  })
-  const rank = rankOf(merit)
-  const nextRank = toNextRank(merit)
+  const { merit, rank, next: nextRank } = useWarMerit()
 
   // 连日到营:今天第一次打开时签到。放在标题页而不是某个面板里 ——
   // 它奖励的是「回来」这件事本身,不该要求玩家再点一下才生效。

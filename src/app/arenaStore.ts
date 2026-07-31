@@ -21,7 +21,12 @@ import { useAchievements } from './achievementStore'
 export const ARENA_PICKS = DECK_SIZE
 export const ARENA_MAX_WINS = 12
 export const ARENA_MAX_LOSSES = 3
-export const ARENA_ENTRY_MERIT = 100
+// 报名费。**从 100 提到 150**:定这个数时按「一包 ≈ 25 功勋的期望」算,
+// 但那是新手期的数(多数卡是新的、不折算)。跑 20,000 包蒙特卡洛实测:
+// 收藏满员时一包期望折算 126.4 功勋 —— 于是 0 胜保底也净赚 26,
+// 竞技场从「功勋出口」变成了「功勋兑换点」,而全游戏只有两个出口。
+// 150 让 0 胜是一次真实的亏损(-24),12 胜仍是一笔大赚(约 +1170)。
+export const ARENA_ENTRY_MERIT = 150
 
 // 抽卡时的稀有度权重。比开包厚道得多 —— 竞技场卡组要能打,
 // 全是白板的三十张打不动任何一套预组。
@@ -98,7 +103,8 @@ function rollOffer(heroId: string): string[] {
 }
 
 // 奖励:保底一包,每两胜多一包,满 12 胜额外给功勋。
-// 报名费 100 功勋,所以 0 胜也不至于血本无归(一包 ≈ 25 功勋的期望)。
+// 与报名费的关系见 ARENA_ENTRY_MERIT 上的实测说明 ——
+// 一包的功勋价值随收藏完整度上升,所以这条线要按**成型玩家**校准,不是新手。
 export function arenaReward(wins: number): { packs: number; merit: number } {
   return {
     packs: 1 + Math.floor(wins / 2),
@@ -170,6 +176,8 @@ export const useArena = create<ArenaState>()(
         const over = wins >= ARENA_MAX_WINS || losses >= ARENA_MAX_LOSSES
         // arenaBestWins 是「取最大」型统计,重复上报同一轮不会累加
         useAchievements.getState().bump('arenaBestWins', wins)
+        // 累计胜场(战功要用):赢一场记一次,不是记最大值
+        if (win) useAchievements.getState().bump('arenaWinsTotal')
         set({ wins, losses, phase: over ? 'done' : 'ready' })
       },
 

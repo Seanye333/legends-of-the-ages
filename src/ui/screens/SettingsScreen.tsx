@@ -1,13 +1,20 @@
 import { useEffect, useState } from 'react'
 import { useSettings } from '../../app/settingsStore'
 import { useCollection } from '../../app/collectionStore'
-import { getSyncStatus, onSyncStatus, syncNow, type SyncStatus } from '../../app/profileSync'
+import {
+  exportTransferCode,
+  getSyncStatus,
+  importTransferCode,
+  onSyncStatus,
+  syncNow,
+  type SyncStatus,
+} from '../../app/profileSync'
 import { getPlayerId } from '../../app/leaderboard'
 import { COLLECTIBLE_CARDS } from '../../content/cards'
 import { useT, usePickText } from '../i18n'
 import { clearDiagnostics, crashes, diagnosticsText } from '../../app/telemetry'
 import { CARD_BACKS, isBackUnlocked } from '../../content/cardBacks'
-import { rankOf, warMerit } from '../../content/ranks'
+import { useWarMerit } from '../../app/useWarMerit'
 import { useCampaign } from '../../app/campaignStore'
 import { useBossRush } from '../../app/bossRushStore'
 import { playSfx, setMasterVolume, setMusicVolume, startMusic, stopMusic } from '../sound'
@@ -39,9 +46,11 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
   const campaignCleared = useCampaign((c) => c.cleared.length)
   const gauntletBest = useBossRush((c) => c.best)
   const ownedSize = useCollection((c) => Object.values(c.owned).filter((n) => n > 0).length)
-  const casualWins = useCollection((c) => c.wins)
+  const { rank: warRank } = useWarMerit()
   const backProgress = {
-    rankIndex: rankOf(warMerit({ casualWins, campaignCleared, bossRushBest: gauntletBest })).index,
+    // 与标题页/書房读同一个数 —— 从前这里只传 3 个字段,算出来的军衔
+    // 系统性偏低,于是「已经是都尉了但卡背还没解锁」
+    rankIndex: warRank.index,
     campaignCleared,
     gauntletBest,
     collectionSize: ownedSize,
@@ -56,6 +65,9 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
   const [sync, setSync] = useState<SyncStatus>(getSyncStatus())
   const [confirmReset, setConfirmReset] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [moveCopied, setMoveCopied] = useState(false)
+  const [moveCode, setMoveCode] = useState('')
+  const [moveMsg, setMoveMsg] = useState<string | null>(null)
 
   useEffect(() => onSyncStatus(setSync), [])
 
@@ -488,8 +500,8 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
         </div>
         <p className={styles.hint}>
           {t(
-            '存档本地优先,云端只是镜像。换设备时把这串 ID 抄过去即可延续进度 —— 目前还没有账号系统。',
-            'Saves are local-first; the cloud is only a mirror. To move devices, copy this ID over — there is no account system yet.',
+            '存档本地优先,云端只是镜像。换设备请用下面的「搬迁码」—— 它同时带着设备 ID 与归属密钥,只抄 ID 是换不过去的。搬迁码等同于账号凭据,别发给别人。',
+            'Saves are local-first; the cloud is a mirror. To move devices use the transfer code below — it carries both your ID and the ownership key; the ID alone will not work. Treat it like a password.',
           )}
         </p>
         <div className={styles.buttonRow}>
@@ -513,25 +525,75 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
           >
             {copied ? t('已复制', 'Copied') : t('复制设备 ID', 'Copy device ID')}
           </button>
+          <button
+            className={styles.action}
+            onClick={() => {
+              playSfx('buttonTap')
+              void navigator.clipboard?.writeText(exportTransferCode())
+              setMoveCopied(true)
+              window.setTimeout(() => setMoveCopied(false), 1600)
+            }}
+          >
+            {moveCopied ? t('已复制', 'Copied') : t('复制搬迁码', 'Copy transfer code')}
+          </button>
           <button className={styles.danger} onClick={() => setConfirmReset(true)}>
             {t('清空本地进度', 'Reset local progress')}
           </button>
         </div>
+        {/* 导入搬迁码:粘进来 → 本机改用那份归属 → 立刻拉一次云端。
+            这是「换设备」真正生效的那一步,此前根本不存在。 */}
+        <div className={styles.buttonRow}>
+          <input
+            className={styles.codeInput}
+            value={moveCode}
+            onChange={(e) => setMoveCode(e.target.value)}
+            placeholder={t('粘贴搬迁码', 'Paste a transfer code')}
+            aria-label={t('搬迁码', 'Transfer code')}
+          />
+          <button
+            className={styles.action}
+            disabled={!moveCode.trim()}
+            onClick={() => {
+              playSfx('buttonTap')
+              if (!importTransferCode(moveCode)) {
+                setMoveMsg(t('这串码不对', 'That code is not valid'))
+                return
+              }
+              setMoveMsg(t('已接手,正在拉取云端存档…', 'Adopted — pulling your save…'))
+              void syncNow().then((st) => {
+                setSync(st)
+                setMoveMsg(
+                  st === 'synced'
+                    ? t('存档已接过来了', 'Save restored')
+                    : t('接手了,但云端没连上 —— 稍后再同步', 'Adopted, but the cloud is unreachable — try syncing later'),
+                )
+              })
+            }}
+          >
+            {t('接手存档', 'Adopt save')}
+          </button>
+        </div>
+        {moveMsg && <p className={styles.hint}>{moveMsg}</p>}
       </section>
 
       {confirmReset && (
         <ConfirmDialog
           title={t('清空本地进度?', 'Reset local progress?')}
           body={t(
-            '收藏、卡包、功勋、战绩与自组卡组都会清空,且无法撤销。若此前同步过云端,下次同步会以清空后的版本覆盖。',
-            'Your collection, packs, merit, record and custom decks will be erased. This cannot be undone, and the next cloud sync will overwrite the server copy.',
+            '所有本机进度都会清空:收藏、卡包、功勋、战绩、自组卡组,以及冒险、登楼、远征、竞技场、成就与个人纪录。设备 ID 与搬迁码保留。无法撤销;若此前同步过云端,下次同步会以清空后的版本覆盖。',
+            'Everything on this device is erased: collection, packs, merit, record, custom decks, plus campaign, tower, expedition, arena, achievements and personal bests. Your device ID and transfer code are kept. This cannot be undone, and the next cloud sync will overwrite the server copy.',
           )}
           confirmLabel={t('清空', 'Erase')}
           cancelLabel={t('取消', 'Cancel')}
           onConfirm={() => {
-            localStorage.removeItem('qiangu-collection')
-            localStorage.removeItem('qiangu-quests')
-            localStorage.removeItem('qiangu-replays')
+            // 删掉**所有** qiangu- 开头的键,只留搬迁凭据(设备 ID 与归属密钥)——
+            // 从前只删三个,于是冒险/登楼/远征/竞技场/成就/纪录等 14 个 store
+            // 原样留着,而按钮写的是「清空本地进度」。
+            // 保留凭据是刻意的:清进度不该把云端那份变成孤儿。
+            const keep = new Set(['qiangu-player-id', 'qiangu-profile-secret'])
+            for (const k of Object.keys(localStorage)) {
+              if (k.startsWith('qiangu-') && !keep.has(k)) localStorage.removeItem(k)
+            }
             location.reload()
           }}
           onCancel={() => setConfirmReset(false)}

@@ -86,7 +86,8 @@ export function questText(q: QuestDef): { zh: string; en: string } {
   }
 }
 
-// 任务池:难度与奖励挂钩(一天最多产出 4 包,不破坏卡包经济)
+// 任务池:难度与奖励挂钩。一天的卡包总产出由 DAILY_PACK_CAP 封住 ——
+// 这条线以前只写在注释里,没有任何代码保证(见 rollDailyQuests 里的说明)。
 const POOL: QuestDef[] = [
   { kind: 'win', goal: 1, reward: 1 },
   { kind: 'win', goal: 3, reward: 2 },
@@ -115,6 +116,9 @@ const POOL: QuestDef[] = [
 ]
 
 const DAILY_COUNT = 3
+// 一天三条任务的卡包总产出上限。基线是「赢一局一包」,4 包 ≈ 白送四局,
+// 已经是很慷慨的日常了;再多就把开包节奏整个盖过去。
+const DAILY_PACK_CAP = 4
 
 // 日期字符串 → 稳定种子(同一天刷出同一组任务,跨设备也一致)
 function hashDate(date: string): number {
@@ -136,10 +140,21 @@ export function rollDailyQuests(date: string): QuestState[] {
   const picked: QuestState[] = []
   // 同 kind 不重复,保证三条任务玩法各异
   const usedKinds = new Set<QuestKind>()
+  // 三条任务的卡包总产出封在 DAILY_PACK_CAP。
+  //
+  // 上面那句「一天最多产出 4 包」从来没有被代码保证过:每条任务最多 2 包 ×
+  // 3 条 = 6 包,实测 2000 个日期的分布是 3/4/5/6(均值 4.3,9% 的日子是 6 包)。
+  // 而基线是「赢一局一包」—— 等于每天白送 3-6 局的产出,它是全游戏最大的水龙头。
+  // 这里让抽取本身守住那条线:预算不够时跳过 2 包的任务,继续找 1 包的。
+  let budget = DAILY_PACK_CAP
   while (picked.length < DAILY_COUNT && pool.length > 0) {
     const i = Math.floor(next() * pool.length)
     const [def] = pool.splice(i, 1)
     if (usedKinds.has(def.kind)) continue
+    // 留够余量给还没抽的那几条(每条至少 1 包),否则最后一条会被饿死
+    const slotsLeft = DAILY_COUNT - picked.length - 1
+    if (def.reward > budget - slotsLeft) continue
+    budget -= def.reward
     usedKinds.add(def.kind)
     picked.push({
       ...def,

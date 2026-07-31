@@ -184,7 +184,7 @@ test('arena: entry gate, hero pick, drafting, and fighting', async ({ page }) =>
   // 校场是解锁阶梯的最后一档(通 6 关),先播一个老玩家档
   await seedUnlockedProfile(page)
   await page.goto('/')
-  // 先给足功勋(报名费 100)—— 新号只有 0 功勋,入口应该是锁着的
+  // 先给足功勋(报名费见 ARENA_ENTRY_MERIT)—— 新号只有 0 功勋,入口应该是锁着的
   await page.getByRole('button', { name: '校场点将' }).click()
   await expect(page.getByRole('heading', { name: '校场点将' })).toBeVisible()
   await expect(page.getByRole('button', { name: /还差 \d+ 功勋/ })).toBeVisible()

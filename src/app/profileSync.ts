@@ -212,6 +212,48 @@ function schedulePush(): void {
 }
 
 // 应用启动时调一次:先拉,再订阅本地变更做防抖回推。
+// ---------- 搬迁码 ----------
+//
+// 【为什么必须有】
+// 设置页从前只给「复制设备 ID」,而文案写的是「换设备时把这串 ID 抄过去
+// 即可延续进度」—— 那是**做不到的**:存档归属是 TOFU,密钥
+// (qiangu-profile-secret)在每台设备本地随机生成。新设备带着旧 playerId
+// 去写,服务端认出密钥不对,回 403 profile-forbidden;pull() 抛错被 catch,
+// 玩家看到的只有「云同步:离线」。承诺兑现不了,而且是静默的。
+//
+// 搬迁码 = playerId + 密钥,两样一起搬才换得过去。
+// 它**等同于账号凭据**,所以 UI 上要说清楚别外发。
+
+interface Transfer {
+  v: 1
+  id: string
+  secret: string
+}
+
+export function exportTransferCode(): string {
+  const payload: Transfer = { v: 1, id: getPlayerId(), secret: profileSecret() }
+  // base64url:方便双击全选、粘进聊天框不被换行截断
+  return btoa(JSON.stringify(payload)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+// 成功返回 true;码不合法返回 false(不改动任何本地状态)。
+// 注意:导入之后本地的**版本号要清零**,否则本机那个更高的 version 会让
+// pull() 认为「服务器落后」,反手把本地的空存档推上去覆盖掉真存档。
+export function importTransferCode(code: string): boolean {
+  try {
+    const json = atob(code.trim().replace(/-/g, '+').replace(/_/g, '/'))
+    const t = JSON.parse(json) as Partial<Transfer>
+    if (t.v !== 1 || typeof t.id !== 'string' || typeof t.secret !== 'string') return false
+    if (!t.id || !t.secret) return false
+    localStorage.setItem('qiangu-player-id', t.id)
+    localStorage.setItem(SECRET_KEY, t.secret)
+    localStorage.setItem(VERSION_KEY, '0')
+    return true
+  } catch {
+    return false
+  }
+}
+
 export function startProfileSync(): void {
   if (started) return
   started = true

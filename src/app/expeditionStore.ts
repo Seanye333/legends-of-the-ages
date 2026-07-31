@@ -41,7 +41,11 @@ export interface ExpeditionRun {
 
 interface ExpeditionState {
   run: ExpeditionRun | null
-  bestDepth: number // 历史最深:通到第几关(0–8)
+  // 历史最深:通到第几关。上限是 BOSSES.length(现在 24,不是注释里那个 8)。
+  bestDepth: number
+  // 無盡绕过的最多圈数。**可选**:老存档没有它 → undefined → 当 0,
+  // 于是老玩家下一圈仍会正常发奖(铁律 6:新增持久字段必须可选且有默认)。
+  bestLap?: number
   totalRuns: number
   start(heroId: string, deck: string[], endless?: boolean): void
   settle(win: boolean): void // 一场打完
@@ -129,9 +133,18 @@ export const useExpedition = create<ExpeditionState>()(
         // 無盡:每绕完一圈发一次通关奖,然后接着走。
         // 发奖放在这里而不是「结束时结算」—— 無盡没有结束,只有失败,
         // 而失败之后再补发奖励读起来像安慰奖。
+        //
+        // **只在刷新纪录时发**。第一版是「每绕完一圈就发」,而無盡可以无限绕 ——
+        // 那是一个没有上限的卡包泵。登楼(只在刷新最高层时发,towerStore 的注释
+        // 明写「否则重打第 1 层就是无限功勋泵」)和连斩(first 判定只发一次)
+        // 都做了防重复,只有这里漏了。
         if (run.endless && (clearedStage + 1) % BOSSES.length === 0) {
-          useCollection.getState().grantPacks(3)
-          useCollection.setState({ merit: useCollection.getState().merit + 300 })
+          const lap = Math.floor((clearedStage + 1) / BOSSES.length)
+          if (lap > (get().bestLap ?? 0)) {
+            set({ bestLap: lap })
+            useCollection.getState().grantPacks(3)
+            useCollection.setState({ merit: useCollection.getState().merit + 300 })
+          }
         }
         // 通一关:亮出三选一宝物
         const { offered, next } = offerRelics(run.relics, run.rngState)
