@@ -54,7 +54,7 @@ const DailyGeneralPanel = lazy(() =>
   import('../components/DailyGeneralPanel').then((m) => ({ default: m.DailyGeneralPanel })),
 )
 import { useDailyGeneral } from '../../app/dailyGeneralStore'
-import { dayKey } from '../../content/dailyPuzzle'
+import { dayKey } from '../../content/dayKey'
 import { useQuests } from '../../app/questStore'
 import { shouldOfferTutorial, tutorialMatchArgs } from '../tutorial'
 import { unlockHint, type UnlockProgress } from '../../content/unlocks'

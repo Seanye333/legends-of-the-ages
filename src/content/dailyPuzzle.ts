@@ -70,21 +70,10 @@ export function toLethalPuzzle(g: GeneratedPuzzle): LethalPuzzle {
   }
 }
 
-// 本地日期 YYYY-MM-DD(应用层允许非确定性;测试传入固定值)
-export function dayKey(now = new Date()): string {
-  const y = now.getFullYear()
-  const m = String(now.getMonth() + 1).padStart(2, '0')
-  const d = String(now.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
-
-// 两个 YYYY-MM-DD 相差几天(用 UTC 解析避开时区/夏令时)。b 晚于 a 为正。
-export function daysBetween(a: string, b: string): number {
-  const pa = Date.parse(`${a}T00:00:00Z`)
-  const pb = Date.parse(`${b}T00:00:00Z`)
-  if (Number.isNaN(pa) || Number.isNaN(pb)) return NaN
-  return Math.round((pb - pa) / 86_400_000)
-}
+// 日期工具搬去了 dayKey.ts —— 那里不 import 任何内容数据。
+// 这里 re-export 只为了不破坏既有引用;**新代码请直接从 dayKey 引**,
+// 从这里引会把 60 道残局(57KB)一起拖进你的 chunk。
+export { dayKey, daysBetween } from './dayKey'
 
 function hash32(str: string): number {
   let h = 2166136261
@@ -116,7 +105,8 @@ export function dailyPuzzleFor(dateStr: string): LethalPuzzle | null {
 // 【为什么奖励是平均的】
 // 同上 —— 三题同档,按难度差别给钱就是在给一个不存在的梯度定价。
 // 三题合计仍是原来一题的 30 功勋,**这次改动对功勋经济零净影响**。
-export const DAILY_SLOTS = 3
+export { DAILY_SLOTS } from './dayKey'
+import { DAILY_SLOTS } from './dayKey'
 
 // 复杂度代理:手牌 + 场面(双方)。要考虑的东西越多,解起来越费劲。
 // 这是个代理不是真难度 —— 但它是确定性的、不需要人工标注的,

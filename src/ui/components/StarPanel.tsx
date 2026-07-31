@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { omenFor } from '../../content/stargazing'
-import { dayKey } from '../../content/dailyPuzzle'
+import { dayKey } from '../../content/dayKey'
 import { useSettings } from '../../app/settingsStore'
 import { usePickText, useT } from '../i18n'
 import { playSfx } from '../sound'

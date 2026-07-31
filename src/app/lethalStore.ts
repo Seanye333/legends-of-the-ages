@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { LESSONS_BY_ID } from '../content/lessons'
 import { LETHAL_PUZZLES } from '../content/lethalPuzzles'
-import { DAILY_SLOTS, daysBetween } from '../content/dailyPuzzle'
+import { DAILY_SLOTS, daysBetween } from '../content/dayKey'
 import { useCollection } from './collectionStore'
 import { useAchievements } from './achievementStore'
 

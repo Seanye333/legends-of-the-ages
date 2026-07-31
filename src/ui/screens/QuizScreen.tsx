@@ -6,7 +6,7 @@ import {
   personLabel,
   type QuizQuestion,
 } from '../../content/quiz'
-import { dayKey } from '../../content/dailyPuzzle'
+import { dayKey } from '../../content/dayKey'
 import { QUIZ_DAILY_CAP, useQuiz } from '../../app/quizStore'
 import { dynastyName } from '../doctrineColors'
 import { CARDS_BY_ID } from '../../content/cards'
