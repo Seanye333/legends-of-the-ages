@@ -35,7 +35,10 @@ export const safeStorage = createJSONStorage(() => {
   // 拿到之后逐个方法再各自兜写入失败。
   let ls: Storage
   try {
-    ls = window.localStorage
+    // 用 globalThis 而不是 window:tsconfig.test.json 不带 DOM lib
+    // (引擎测试跑在 node 环境里),而这个模块会被 store 间接引到。
+    ls = (globalThis as { localStorage?: Storage }).localStorage as Storage
+    if (!ls) throw new Error('no localStorage')
     // Safari 隐私模式下 getItem 存在但 setItem 会抛 —— 探一次真的写
     const probe = '__qiangu_probe__'
     ls.setItem(probe, '1')

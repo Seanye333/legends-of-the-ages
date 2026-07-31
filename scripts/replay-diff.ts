@@ -52,7 +52,7 @@ function firstDiff(a: string, b: string): string {
 
 interface Fail {
   seed: number
-  kind: 'replay' | 'frame' | 'json'
+  kind: 'replay' | 'frame' | 'json' | 'record' | 'events'
   detail: string
 }
 const fails: Fail[] = []
@@ -81,10 +81,21 @@ for (let g = 0; g < GAMES; g++) {
   let state = createGame(cfg, CARDS_BY_ID)
   const record: MatchRecord = { cfg, commands: [] }
   const frames: string[] = []
+  // 事件流也要对。**从前完全不比** —— replayMatch 一直在返回 events,
+  // 脚本一次都没用过。而 UI 动画、战报、成就统计全靠事件:
+  // 「状态对了但事件发错/漏发」这一整类 bug,对拍此前一个都抓不到。
+  const eventFrames: string[] = []
   const rngs: [number, number] = [seed ^ 0xa1, seed ^ 0xb2]
   let guard = 0
+  // 录制中断的两种情形。**从前它们是静默的** —— `break` 之后什么都不记,
+  // 于是「所有 40 局都在第 3 步就停了」这种运行,依然会打印「✓ 三道对拍全过」。
+  // 一道报告自己通过、但其实什么都没测的闸门,比没有闸门更危险。
+  let abortReason: string | null = null
   while (state.phase !== 'ended') {
-    if (++guard > 4000) break
+    if (++guard > 4000) {
+      abortReason = '步数超过 4000 —— AI 很可能卡在一个死循环里'
+      break
+    }
     const actor: PlayerIdx =
       state.phase === 'mulligan'
         ? state.players[0].mulliganDone
@@ -96,10 +107,29 @@ for (let g = 0; g < GAMES; g++) {
     const step = aiStep(state, actor, CARDS_BY_ID, rngs[actor], AI_NORMAL)
     rngs[actor] = step.rng
     const r = applyCommand(state, actor, step.cmd, CARDS_BY_ID)
-    if (!r.ok) break
+    if (!r.ok) {
+      // AI 给出了非法命令 —— 这本身就是 bug(fuzz 的 legal↔apply 契约保证不该发生)
+      abortReason = `AI 在第 ${record.commands.length + 1} 步给出非法命令 ${step.cmd.type}:${r.error}`
+      break
+    }
     record.commands.push({ player: actor, cmd: step.cmd })
     state = r.state
     frames.push(fingerprint(state))
+    eventFrames.push(JSON.stringify(r.events))
+  }
+  if (abortReason) {
+    fails.push({ seed, kind: 'record', detail: abortReason })
+    continue
+  }
+  // 录到的命令太少 = 这一局其实没测到什么。一局对局怎么也该有几十条命令,
+  // 低于 10 条说明开局就断了 —— 同样算失败,别让它混进「通过」里。
+  if (record.commands.length < 10) {
+    fails.push({
+      seed,
+      kind: 'record',
+      detail: `只录到 ${record.commands.length} 条命令就结束了 —— 这一局没有真正被对拍`,
+    })
+    continue
   }
   totalCommands += record.commands.length
   totalTurns += state.turn
@@ -135,6 +165,15 @@ for (let g = 0; g < GAMES; g++) {
       fails.push({ seed, kind: 'frame', detail: `第 ${i} 步分叉:\n  ${firstDiff(frames[i], direct)}` })
       break
     }
+    const evNow = JSON.stringify(r.events)
+    if (evNow !== eventFrames[i]) {
+      fails.push({
+        seed,
+        kind: 'events',
+        detail: `第 ${i} 步事件流不同:\n  录制 ${eventFrames[i].slice(0, 160)}\n  重放 ${evNow.slice(0, 160)}`,
+      })
+      break
+    }
     // 存读一遍再继续 —— 服务端 DO 每一步都在做同样的事
     const roundTripped = migrateState(JSON.parse(direct) as GameState)
     const after = fingerprint(roundTripped)
@@ -153,7 +192,7 @@ console.log(
 console.log(`  胜负分布:${JSON.stringify(winners)}`)
 
 if (fails.length === 0) {
-  console.log('\n✓ 三道对拍全过:重放终态一致、逐帧一致、每帧 JSON 往返一致。')
+  console.log('\n✓ 四道对拍全过:重放终态一致、逐帧一致、事件流一致、每帧 JSON 往返一致。')
   process.exit(0)
 }
 

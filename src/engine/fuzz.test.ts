@@ -230,7 +230,46 @@ function assertInvariants(state: GameState): void {
       expect(c.health).toBeGreaterThan(0) // 死亡必须已被结算
       expect(c.attacksUsed).toBeLessThanOrEqual(2)
     }
+
+    // ---- 第二批不变量(2026-07)----
+    // 上面五条是原有的。下面这些此前**没有任何断言保护** ——
+    // 而 resolve.ts 与 reducer.ts 里 throw 的数量是 0 和 0,
+    // 也就是说对局中一处运行时校验都没有,全靠「代码写对了」。
+
+    // 可用法力不能超过本回合上限(超了等于凭空多打一张牌)
+    expect(p.mana.current).toBeLessThanOrEqual(p.mana.max)
+    // 护甲不为负。gainArmor 是裸 `p.armor += n`,没有下限。
+    // (heroHp **可以**为负 —— 那是斩杀时的溢出伤害,实测能到 -3。
+    //  真正该钉的是下面那条「血 ≤ 0 就必须已结算」,不是「血非负」。)
+    expect(p.armor).toBeGreaterThanOrEqual(0)
+    // 血掉到 0 就必须已经结算成终局 —— 不能出现「0 血还在打」
+    if (p.heroHp <= 0) expect(state.phase).toBe('ended')
+    // 过载记账不为负
+    expect(p.overloadNext).toBeGreaterThanOrEqual(0)
+    expect(p.overloadLocked).toBeGreaterThanOrEqual(0)
+    // 附魔层有界:光环每次 refresh 都整批清掉重算,泄漏的话这里会无限增长。
+    // 32 是个宽松的天花板 —— 正常局面下单个单位的附魔个位数。
+    for (const c of [...p.board, ...p.hand]) {
+      expect(c.enchants.length).toBeLessThanOrEqual(32)
+    }
   }
+
+  // iid 全局唯一。**这条此前只在建局那一刻查过**(scenario.test.ts),
+  // 而 summon / addToHand / recruit / resurrect / transform / discover
+  // 全都在对局中从 nextIid 铸新 id —— 中途撞号没有任何东西会发现,
+  // 而撞号之后「按 iid 找单位」会找到错的那个。
+  const seen = new Set<number>()
+  for (const p of state.players) {
+    for (const zone of [p.board, p.hand, p.deck, p.secrets]) {
+      for (const c of zone) {
+        expect(seen.has(c.iid), `iid ${c.iid} 出现了两次`).toBe(false)
+        seen.add(c.iid)
+        // nextIid 必须始终大于所有已发出的 id,否则下一次铸号就会撞
+        expect(c.iid).toBeLessThan(state.nextIid)
+      }
+    }
+  }
+
   expect(state.turn).toBeLessThanOrEqual(TURN_LIMIT + 1)
 }
 
@@ -238,6 +277,36 @@ function runFuzzGame(seed: number): { state: GameState; record: MatchRecord; ste
   const cfg: GameConfig = {
     seed,
     heroIds: ['hero-a', 'hero-b'],
+    // 【为什么必须给主公技】
+    // 不给的话 legalCommands 永远不产出 UseHeroPower/UpgradeHeroPower ——
+    // 也就是说 fuzz 此前**一次都没走过主公技这条路**,而它每回合都会被用到,
+    // 还牵着升阶、费用调整、一回合一次这几条状态。
+    // 两边给不同的技能:一个点杀(带目标)、一个召唤 + 升阶(改变场面宽度)。
+    heroPowers: [
+      {
+        id: 'fz-hp-a',
+        name: { zh: '试', en: 'Test A' },
+        text: { zh: '造成 1 点伤害。', en: 'Deal 1 damage.' },
+        cost: 2,
+        script: { ops: [{ op: 'damage', amount: 1, target: 'chosenAny' }] },
+      },
+      {
+        id: 'fz-hp-b',
+        name: { zh: '募', en: 'Test B' },
+        text: { zh: '召唤一个 1/1。', en: 'Summon a 1/1.' },
+        cost: 2,
+        script: { ops: [{ op: 'summon', defId: 'f-van1', count: 1 }] },
+        // 升阶那条路径同样从没被 fuzz 走过
+        upgradeCost: 3,
+        upgrade: {
+          id: 'fz-hp-b2',
+          name: { zh: '募·改', en: 'Test B+' },
+          text: { zh: '召唤两个 1/1。', en: 'Summon two 1/1s.' },
+          cost: 2,
+          script: { ops: [{ op: 'summon', defId: 'f-van1', count: 2 }] },
+        },
+      },
+    ],
     deckIds: [buildDeck(seed * 7 + 1), buildDeck(seed * 13 + 5)],
     first: seed % 2 === 0 ? 0 : 1,
   }
@@ -280,7 +349,10 @@ describe('fuzz: random legal games', () => {
         runFuzzGame(seed)
       }
     },
-    20_000,
+    // 60s 而不是 20s:给主公技之后单跑要 9-12s、全量并行跑要 17-19s ——
+    // 20s 的余量太薄,实测在负载高的时候会随机超时红。
+    // 这是**唯一**一个长测试,宁可给足余量也不要一道随机翻红的闸门。
+    60_000,
   )
 
   it('replays reproduce the exact final state', () => {
