@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware'
 import { BOSSES, bossTrial } from '../content/campaign'
 import { useCollection } from './collectionStore'
 import { useAchievements } from './achievementStore'
+import { safeStorage } from './safeStorage'
 
 // 冒险模式进度。只记两件事:打通了哪几关、当前正在挑战哪一关。
 // 关卡按顺序解锁 —— 通了第 N 关才能打第 N+1 关。
@@ -115,6 +116,6 @@ export const useCampaign = create<CampaignState>()(
         set({ cleared: [], trialsCleared: [], active: null, activeTrial: false, cycle: 0 })
       },
     }),
-    { name: 'qiangu-campaign' },
+    { name: 'qiangu-campaign', storage: safeStorage },
   ),
 )

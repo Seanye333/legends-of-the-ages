@@ -407,7 +407,29 @@ export class MatchDO {
         this.sendTo(seatIdx, { type: 'error', error: 'match-not-started' })
         return
       }
-      const r = applyCommand(this.state, seatIdx, msg.cmd, CARDS_BY_ID)
+      // 【为什么整段包 try】
+      // applyCommand 的失败有两种:`{ ok: false }`(规则拒绝,下面处理)
+      // 和**抛异常**(引擎内部出错)。从前只处理了前一种,而后一种会一路冒到
+      // DO 的事件处理器外面 —— runtime 直接掐断这条连接。客户端 onclose →
+      // 自动重连 → 重连后重发同一条命令 → 再抛。**死循环到 90 秒判负**,
+      // 而玩家全程只看到「连接中断,重连中…」,不知道是自己那一步的问题。
+      //
+      // 现在转成一个普通错误回给发起方:这一步不生效,对局照常在,
+      // 另一方也不受影响。状态不推进,所以不会留下半更新的局面。
+      let r: ReturnType<typeof applyCommand>
+      try {
+        r = applyCommand(this.state, seatIdx, msg.cmd, CARDS_BY_ID)
+      } catch (err) {
+        log.error({
+          evt: 'match.engine_threw',
+          match: this.ctx.id.name,
+          seat: seatIdx,
+          cmd: msg.cmd.type,
+          err: err instanceof Error ? err.message : String(err),
+        })
+        this.sendTo(seatIdx, { type: 'error', error: 'engine-crashed' })
+        return
+      }
       if (!r.ok) {
         // 正常客户端不会发非法命令 —— 要么是 UI 有 bug,要么有人在试探
         log.warn({

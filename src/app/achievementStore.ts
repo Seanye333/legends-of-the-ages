@@ -4,6 +4,7 @@ import type { Doctrine, GameEvent, LocalizedText } from '../engine/types'
 import { CARDS_BY_ID } from '../content/cards'
 import { DOCTRINE_NAME } from '../content/names'
 import { HEROES_BY_ID } from '../content/overrides/heroes'
+import { safeStorage } from './safeStorage'
 
 // 成就「功名簿」。
 //
@@ -541,6 +542,6 @@ export const useAchievements = create<AchievementStoreState>()(
         ).length
       },
     }),
-    { name: 'qiangu-achievements' },
+    { name: 'qiangu-achievements', storage: safeStorage },
   ),
 )

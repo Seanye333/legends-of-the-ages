@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { useCollection } from './collectionStore'
+import { safeStorage } from './safeStorage'
 
 // 連日到營 —— 连续登录。
 //
@@ -63,7 +64,7 @@ export const useStreak = create<StreakState>()(
         set({ lastDay: '', streak: 0, best: 0 })
       },
     }),
-    { name: 'qiangu-streak' },
+    { name: 'qiangu-streak', storage: safeStorage },
   ),
 )
 

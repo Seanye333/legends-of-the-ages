@@ -4,6 +4,7 @@ import { towerFloor } from '../content/tower'
 import { offerBooks, shouldOfferBook } from '../content/warBooks'
 import { useCollection } from './collectionStore'
 import { useAchievements } from './achievementStore'
+import { safeStorage } from './safeStorage'
 
 // 无尽爬塔进度:当前挑战到第几层、历史最高层。
 //
@@ -80,6 +81,6 @@ export const useTower = create<TowerState>()(
         set({ floor: 1, best: 0, active: false, books: [], offered: null, rngState: 0x5eed })
       },
     }),
-    { name: 'qiangu-tower' },
+    { name: 'qiangu-tower', storage: safeStorage },
   ),
 )

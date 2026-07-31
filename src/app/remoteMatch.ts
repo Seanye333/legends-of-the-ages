@@ -352,7 +352,16 @@ export class RemoteMatch {
     this.queueWs = ws
     ws.onopen = () => onOpen(ws)
     ws.onmessage = (ev) => {
-      const msg = JSON.parse(String(ev.data)) as QueueServerMsg | RoomServerMsg
+      // JSON.parse 裸调会在 onmessage 里抛 —— 那是**错误边界接不住**的位置,
+      // 抛出去界面就冻在当前状态。服务端理论上只发 JSON,但「理论上」不该
+      // 是一条崩溃路径的全部防线。
+      let msg: QueueServerMsg | RoomServerMsg
+      try {
+        msg = JSON.parse(String(ev.data)) as QueueServerMsg | RoomServerMsg
+      } catch {
+        this.cb.onError('bad-json')
+        return
+      }
       if (msg.type === 'matched') {
         this.seat = msg.seat
         this.cb.onStatus('matched')
@@ -369,6 +378,17 @@ export class RemoteMatch {
     }
     ws.onerror = () => {
       if (!this.closed && !this.matchWs) this.cb.onError('connect-failed')
+    }
+    // 【为什么必须有 onclose】
+    // 大厅 socket 从前只有 onopen/onmessage/onerror。排队中服务端重启、
+    // QueueDO 被驱逐、或网络静默掉线时,socket 是**干净关闭**的 ——
+    // onerror 不触发,而看门狗第一句就是「还没 matchId 就不管」。
+    // 结果:玩家永远停在「匹配中…」上,没有超时、没有错误、没有出路。
+    ws.onclose = () => {
+      // 已经进对局(matchWs 建好)或自己主动关的,不算意外
+      if (this.closed || this.matchWs) return
+      this.cb.onError('connection-lost')
+      this.cb.onStatus('closed')
     }
   }
 
@@ -535,8 +555,16 @@ export class RemoteMatch {
     }
   }
 
+  // 【为什么要告诉玩家一声】
+  // 从前这里是静默 return:重连窗口里玩家出的每一张牌都被无声吞掉,
+  // 界面没有任何反馈 —— 牌还在手上,点了没反应,和「卡住了」分不开。
+  // 而这一刻恰恰是最需要解释的一刻(屏幕上正挂着「重连中…」的横幅,
+  // 但玩家不一定把两件事联系起来)。
   send(cmd: Command): void {
-    if (!this.matchWs || this.matchWs.readyState !== WebSocket.OPEN) return
+    if (!this.matchWs || this.matchWs.readyState !== WebSocket.OPEN) {
+      this.cb.onError('not-connected')
+      return
+    }
     const msg: MatchClientMsg = { type: 'cmd', cmd: flipCommand(cmd, this.seat) }
     this.matchWs.send(JSON.stringify(msg))
   }

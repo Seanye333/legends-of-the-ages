@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { MatchStats } from './matchStats'
+import { safeStorage } from './safeStorage'
 
 // 個人紀錄 —— 本地排行榜。
 //
@@ -95,6 +96,6 @@ export const useRecords = create<RecordsState>()(
         set({ best: {} })
       },
     }),
-    { name: 'qiangu-records' },
+    { name: 'qiangu-records', storage: safeStorage },
   ),
 )

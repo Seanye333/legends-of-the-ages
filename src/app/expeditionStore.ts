@@ -7,6 +7,7 @@ import { offerCards } from '../content/expeditionDraft'
 import { HEROES_BY_ID } from '../content/overrides/heroes'
 import { useCollection } from './collectionStore'
 import { useAchievements } from './achievementStore'
+import { safeStorage } from './safeStorage'
 
 // 远征(单人 roguelike):选一副牌,连打 8 关(复用关底 Boss),每通一关三选一宝物。
 // 输一场 = 本趟结束,记录走到第几关。通关全部 = 大奖 + 记入最深进度。
@@ -211,6 +212,6 @@ export const useExpedition = create<ExpeditionState>()(
         set({ run: null })
       },
     }),
-    { name: 'qiangu-expedition' },
+    { name: 'qiangu-expedition', storage: safeStorage },
   ),
 )

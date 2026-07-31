@@ -7,6 +7,7 @@ import { HEROES } from '../content/overrides/heroes'
 import type { DeckList } from '../content/decks'
 import { useCollection } from './collectionStore'
 import { useAchievements } from './achievementStore'
+import { safeStorage } from './safeStorage'
 
 // 竞技场「校场点将」。
 //
@@ -195,7 +196,7 @@ export const useArena = create<ArenaState>()(
         set({ ...EMPTY })
       },
     }),
-    { name: 'qiangu-arena' },
+    { name: 'qiangu-arena', storage: safeStorage },
   ),
 )
 

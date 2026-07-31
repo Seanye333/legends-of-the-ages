@@ -9,6 +9,7 @@ import { PRECON_DECKS, validateDeckDetailed, type DeckList } from '../content/de
 import { deckViolationText } from '../content/deckErrorText'
 import { HEROES_BY_ID } from '../content/overrides/heroes'
 import { useAchievements } from './achievementStore'
+import { safeStorage } from './safeStorage'
 
 export const PACK_SIZE = 5
 const MAX_COPIES = 2
@@ -313,6 +314,6 @@ export const useCollection = create<CollectionState>()(
         return goal.merit
       },
     }),
-    { name: 'qiangu-collection' },
+    { name: 'qiangu-collection', storage: safeStorage },
   ),
 )

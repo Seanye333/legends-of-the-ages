@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { useCollection } from './collectionStore'
+import { safeStorage } from './safeStorage'
 
 // 稽古(历史小测验)进度:只按天封顶发奖 —— 题库是生成的、几乎无限,
 // 不封顶就是无限功勋泵。答对仍然给正反馈,只是超出当日额度不再计功勋。
@@ -39,7 +40,7 @@ export const useQuiz = create<QuizState>()(
       },
       reset: () => set({ day: '', earnedToday: 0, bestStreak: 0, totalCorrect: 0 }),
     }),
-    { name: 'qiangu-quiz' },
+    { name: 'qiangu-quiz', storage: safeStorage },
   ),
 )
 export const QUIZ_DAILY_CAP = DAILY_CAP

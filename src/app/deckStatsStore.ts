@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { deckKey } from '../content/decks'
+import { safeStorage } from './safeStorage'
 
 // 卡组胜率:每套构筑卡组的胜/负/和累计。按内容哈希(deckKey)归档 ——
 // 改名延续、改牌另起。只记**你带着自己卡组打的普通对局**(随便打);
@@ -43,7 +44,7 @@ export const useDeckStats = create<DeckStatsState>()(
         set({ records: {} })
       },
     }),
-    { name: 'qiangu-deckstats' },
+    { name: 'qiangu-deckstats', storage: safeStorage },
   ),
 )
 

@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { WEEKLY_BRAWL_MERIT } from '../content/weeklyBrawl'
 import { useCollection } from './collectionStore'
+import { safeStorage } from './safeStorage'
 
 // 每周乱斗进度:只记「上一次拿到首胜的是哪一周」。
 // 奖励每周只发一次 —— 否则当值乱斗会变成刷功勋的农场。
@@ -25,6 +26,6 @@ export const useWeeklyBrawl = create<WeeklyBrawlState>()(
       },
       reset: () => set({ wonWeek: '' }),
     }),
-    { name: 'qiangu-weekly-brawl' },
+    { name: 'qiangu-weekly-brawl', storage: safeStorage },
   ),
 )

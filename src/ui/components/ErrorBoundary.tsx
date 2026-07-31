@@ -83,6 +83,39 @@ export class ErrorBoundary extends Component<Props, State> {
           >
             复制错误信息 · Copy details
           </button>
+          {/* 【为什么需要这条出路】
+              「重新载入」在**崩因是某个已持久化的坏状态**时会无限循环回同一页 ——
+              刷新 → 反序列化那份坏数据 → 再崩。玩家除了清浏览器数据没有别的办法,
+              而那会连搬迁凭据一起清掉。
+              这里只删对局相关的易变状态(当前对局、战报、各模式进行中的 run),
+              **保留收藏、功勋、成就、设置与搬迁凭据** —— 它们几乎不可能是崩因,
+              而它们才是玩家真正在意的东西。 */}
+          <button
+            type="button"
+            className={styles.secondary}
+            onClick={() => {
+              // 只清「进行中」的那一批。收藏/成就/设置/凭据一概不动。
+              const volatile = [
+                'qiangu-replays',
+                'qiangu-arena',
+                'qiangu-expedition',
+                'qiangu-tower',
+                'qiangu-bossrush',
+                'qiangu-lethal',
+                'qiangu-remote-session',
+              ]
+              for (const k of volatile) {
+                try {
+                  localStorage.removeItem(k)
+                } catch {
+                  /* 存储不可用:那就更不可能是它崩的 */
+                }
+              }
+              location.reload()
+            }}
+          >
+            清除进行中的对局再启动 · Clear in-progress runs &amp; restart
+          </button>
         </div>
       </div>
     )

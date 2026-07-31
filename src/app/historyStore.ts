@@ -4,6 +4,7 @@ import { DIVERGENCE_BY_BATTLE, REVERSE_BY_BATTLE } from '../content/historyBattl
 import { BATTLES_BY_ID } from '../content/historyBattles'
 import { useCollection } from './collectionStore'
 import { useAchievements } from './achievementStore'
+import { safeStorage } from './safeStorage'
 
 // 历史名战进度。与 campaign 不同,这些是**可自由重打的设定局**,不做线性解锁 ——
 // 想打哪场打哪场。只记两件事:通了哪几场、当前正在打哪一场(结算时认关)。
@@ -122,6 +123,6 @@ export const useHistory = create<HistoryState>()(
         })
       },
     }),
-    { name: 'qiangu-history' },
+    { name: 'qiangu-history', storage: safeStorage },
   ),
 )

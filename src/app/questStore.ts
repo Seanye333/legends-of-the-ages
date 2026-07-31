@@ -11,6 +11,7 @@ import { TROOP_NAME } from '../content/troops'
 import { ERA_NAME, ERA_OF, type Era } from '../content/eras'
 import { HEROES_BY_ID } from '../content/overrides/heroes'
 import { todayStr } from './leaderboard'
+import { safeStorage } from './safeStorage'
 
 // ---------- 任务定义 ----------
 
@@ -309,6 +310,6 @@ export const useQuests = create<QuestStoreState>()(
         return q.reward
       },
     }),
-    { name: 'qiangu-quests' },
+    { name: 'qiangu-quests', storage: safeStorage },
   ),
 )

@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware'
 import { BOSSES } from '../content/campaign'
 import { useCollection } from './collectionStore'
 import { useAchievements } from './achievementStore'
+import { safeStorage } from './safeStorage'
 
 // 群雄連斬(Boss Rush)—— 十六关一口气连打,**血量继承**。
 //
@@ -84,7 +85,7 @@ export const useBossRush = create<BossRushState>()(
         set({ stage: 0, hp: null, active: false, best: 0, cleared: false })
       },
     }),
-    { name: 'qiangu-bossrush' },
+    { name: 'qiangu-bossrush', storage: safeStorage },
   ),
 )
 

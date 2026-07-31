@@ -10,6 +10,7 @@ import type {
 } from '../engine/types'
 import { createGame } from '../engine/init'
 import { applyCommand } from '../engine/reducer'
+import { recordCrash } from './telemetry'
 import { aiStep, AI_NORMAL, type AiConfig } from '../ai/greedy'
 
 export interface MatchUpdate {
@@ -68,13 +69,36 @@ export class LocalMatch implements MatchTransport {
     this.state = s
   }
 
+  // 【为什么整段包 try】
+  // applyCommand 的失败**有两种**:一种是 `{ ok: false, error }`(规则拒绝,
+  // 正常路径);另一种是抛异常(引擎内部出错、structuredClone 撞上不可克隆的东西)。
+  // 从前只处理了第一种。而抛出来的那一种会一路穿过 React 事件处理器 ——
+  // 错误边界**接不住事件处理器里的异常**,于是表现是:牌还在手上,点了没反应,
+  // 没有 toast、没有崩溃页。玩家以为卡了,继续点,每点一次多记一条 crash。
+  //
+  // 现在把它转成一个普通的 error 码,和规则拒绝走同一条显示通路。
+  // 状态**不推进**(this.state 只在成功路径上赋值),所以再点一次仍是同一个局面,
+  // 不会把对局带进半更新的中间态。
   sendCommand(cmd: Command): { error: string } | { updates: MatchUpdate[] } {
-    const r = applyCommand(this.state, this.actor(), cmd, this.lib)
+    let r: ReturnType<typeof applyCommand>
+    try {
+      r = applyCommand(this.state, this.actor(), cmd, this.lib)
+    } catch (e) {
+      recordCrash(e, 'engine.applyCommand')
+      return { error: 'engine-crashed' }
+    }
     if (!r.ok) return { error: r.error }
     this.state = r.state
     const updates: MatchUpdate[] = [{ state: this.state, events: r.events }]
     // 轮到 AI(或调度阶段 AI 未完成)就让它走完
-    const aiEvents = this.runAi()
+    let aiEvents: GameEvent[] = []
+    try {
+      aiEvents = this.runAi()
+    } catch (e) {
+      // AI 崩了不该把玩家刚打出的那张牌一起吞掉 —— 上面那一步已经生效,
+      // 照常返回 updates,只是这一回合 AI 没走完(下一次交互会再试)。
+      recordCrash(e, 'ai.step')
+    }
     if (aiEvents.length > 0) updates.push({ state: this.state, events: aiEvents })
     return { updates }
   }

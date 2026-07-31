@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Language } from '../ui/i18n'
+import { safeStorage } from './safeStorage'
 
 // 单机 AI 难度。名字取自兵法典故,对应 greedy.ts 的失误概率。
 // 四档:新兵 / 宿将 / 名将 / 军神。
@@ -126,6 +127,6 @@ export const useSettings = create<SettingsState>()(
       setStargazing: (stargazing) => set({ stargazing }),
       setTableStyle: (tableStyle) => set({ tableStyle }),
     }),
-    { name: 'qiangu-settings' },
+    { name: 'qiangu-settings', storage: safeStorage },
   ),
 )

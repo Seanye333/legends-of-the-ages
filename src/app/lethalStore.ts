@@ -5,6 +5,7 @@ import { LETHAL_PUZZLES } from '../content/lethalPuzzles'
 import { DAILY_SLOTS, daysBetween } from '../content/dayKey'
 import { useCollection } from './collectionStore'
 import { useAchievements } from './achievementStore'
+import { safeStorage } from './safeStorage'
 
 // 斩杀谜题进度。只记「解开了哪几道」+「全套通关奖是否已发」。
 //
@@ -175,6 +176,6 @@ export const useLethal = create<LethalState>()(
         })
       },
     }),
-    { name: 'qiangu-lethal' },
+    { name: 'qiangu-lethal', storage: safeStorage },
   ),
 )
