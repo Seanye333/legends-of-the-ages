@@ -107,3 +107,32 @@
     animation: none;
   }
 }
+
+/* ---- 矮视口(手机横屏)----
+   实测 iPhone 13 横屏:可用高只有 342px(Safari 的工具条吃掉了 48px),
+   而一张牌高 91px、手牌容器 87px、牌的底边落在 347 —— 被 .screen 的
+   overflow: hidden 切掉一截,名字和血量正好在被切的那一段里。
+   手机横屏恰恰是这游戏的主要游玩姿势,所以这不是边角情况。
+
+   三件事一起做,缺一不可:
+   1) 牌本身缩到高度的 15%(而不是按 13vh 再吃 58px 的下限);
+   2) 扇形的下沉整个关掉 —— 那 4px/张的弧线在这个尺寸下只制造溢出,
+      而「牌是扇形排开的」在一排八张挤到 58px 宽时本来也读不出来;
+   3) 容器给足高度,并留出 6px 让旋转的角不被切。 */
+@media (max-height: 430px) {
+  .fan {
+    --card-w: clamp(44px, 15vh, 74px);
+    min-height: calc(var(--card-w) * 1.4 + 10px);
+    padding-bottom: 4px;
+    align-items: center;
+  }
+
+  .slot {
+    /* 只留旋转,不再下沉 */
+    transform: rotate(var(--rot));
+  }
+
+  .fan:has(> :nth-child(9)) .slot {
+    --card-w: clamp(40px, 13vh, 66px);
+  }
+}

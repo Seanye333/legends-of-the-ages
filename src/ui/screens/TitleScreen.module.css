@@ -973,3 +973,35 @@
     animation: none !important;
   }
 }
+
+/* ---- 窄屏:三个主按钮别折行 ----
+   实测 iPhone 竖屏(390px):「开始对战 / 新手教程 / 联机对战」三个四字按钮
+   各自折成两行 —— 它们是这一屏最重要的三个动作,长得像被挤坏了。
+   字距和横向内边距是折行的直接原因(0.34em 字距 + 44px 起的左右内边距),
+   窄屏收掉它们就够了,不用改结构。 */
+@media (max-width: 460px) {
+  .playRow {
+    gap: 8px;
+    width: 100%;
+    padding: 0 4px;
+  }
+
+  .playButton,
+  .remoteButton {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    letter-spacing: 0.1em;
+    text-indent: 0.1em;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .playButton {
+    font-size: clamp(15px, 4.4vw, 20px);
+  }
+
+  .remoteButton {
+    font-size: clamp(12px, 3.4vw, 15px);
+  }
+}

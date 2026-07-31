@@ -663,6 +663,9 @@
 .turnBanner {
   position: absolute;
   left: 50%;
+  /* 38% 是按桌面高度挑的位置。矮视口下它正好落在敌方战线上,
+     横幅和令牌的攻血角标叠在一起(层级没问题,z-index 26 高于战场,
+     是位置本身撞了)。矮屏的修正在下面的 max-height 媒体查询里。 */
   top: 38%;
   transform: translate(-50%, -50%);
   z-index: 26;
@@ -1757,5 +1760,21 @@
   .turnEbb,
   .weather {
     display: none !important;
+  }
+}
+
+
+/* ---- 矮视口:横幅挪进两排之间的空带 ----
+   实测手机横屏可用高只有 342px:两排战线被压到贴着,38% 正好落在
+   敌方那一排上。我方主帅面板与敌方战线之间有一条约 45px 的空带,
+   横幅收小之后正好坐进去,谁都不挡。 */
+@media (max-height: 430px) {
+  .turnBanner,
+  .bannerFoe {
+    top: 48%;
+    padding: 5px 20px;
+    font-size: 15px;
+    letter-spacing: 0.2em;
+    text-indent: 0.2em;
   }
 }
