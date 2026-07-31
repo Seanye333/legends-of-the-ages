@@ -126,18 +126,54 @@ function complexityOf(p: LethalPuzzle): number {
   return me.hand.length + me.board.length * 2 + foe.board.length * 2
 }
 
+// 「YYYY-MM-DD」→ 儒略日式的天数序号。
+// 不用 Date:这一层要对同一个字符串**永远**给同一个数,而 Date 会受时区影响。
+// 算法是标准的 days-from-civil(Howard Hinnant),3 月为年首以避开闰日特判。
+function dayNumber(dateStr: string): number {
+  const [ys, ms, ds] = dateStr.split('-')
+  const y0 = Number(ys)
+  const m = Number(ms)
+  const d = Number(ds)
+  if (!Number.isFinite(y0) || !Number.isFinite(m) || !Number.isFinite(d)) return 0
+  const y = y0 - (m <= 2 ? 1 : 0)
+  const era = Math.floor(y / 400)
+  const yoe = y - era * 400
+  const doy = Math.floor((153 * (m + (m > 2 ? -3 : 9)) + 2) / 5) + d - 1
+  const doe = yoe * 365 + Math.floor(yoe / 4) - Math.floor(yoe / 100) + doy
+  return era * 146097 + doe - 719468
+}
+
 export function dailyPuzzleSetFor(dateStr: string): LethalPuzzle[] {
   if (DAILY_POOL.length === 0) return []
   const n = Math.min(DAILY_SLOTS, DAILY_POOL.length)
-  const picked: number[] = []
-  // 线性探测取 n 个**互不相同**的下标:同一天出现两道一样的题会让
-  // 「三题」看起来像个 bug,而池子只有 24 道,撞车概率并不低。
-  for (let k = 0; picked.length < n; k++) {
-    const idx = hash32(`${dateStr}#${k}`) % DAILY_POOL.length
-    let probe = idx
-    while (picked.includes(probe)) probe = (probe + 1) % DAILY_POOL.length
-    picked.push(probe)
+
+  // 【为什么不是每天独立抽】
+  // 从前每天各自哈希取三道,只保证**同一天内**不重复 —— 跨天完全不管,
+  // 于是第二周就开始重复见过的题。而「连续 7 天解每日谜题」是唯一一条
+  // 连续性成就,重复题让它变成走过场。
+  //
+  // 改成按**周期轮转**:把整个池子按当前轮次做一次确定性洗牌,
+  // 一天取三道往后走,走完一轮才回头。60 道池 = 20 天不重复,
+  // 而且每一轮的顺序不同(种子里带轮次号),不会年复一年是同一张表。
+  // 一条**固定**的全局顺序,每天往后取 n 道、走到头绕回来。
+  //
+  // 试过「每轮重新洗牌」,退回来了:轮次边界上仍然会出现
+  // 「上一轮倒数第二天的题,下一轮第二天又来了」—— 隔 4 天重现,
+  // 体感上和不防重复没区别。固定顺序反而更好:重复间隔**恒为**
+  // 池子大小 ÷ 每天题数(现在 60÷3 = 20 天),没有边界特例。
+  // 顺序本身洗过一次(种子固定),所以不是按挖矿顺序排的。
+  const order = DAILY_POOL.map((_, i) => i)
+  let seed = hash32('qiangu-daily-order')
+  for (let i = order.length - 1; i > 0; i--) {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0
+    const j = seed % (i + 1)
+    ;[order[i], order[j]] = [order[j], order[i]]
   }
+
+  const day = dayNumber(dateStr)
+  const len = order.length
+  const start = (((day * n) % len) + len) % len
+  const picked = Array.from({ length: n }, (_, k) => order[(start + k) % len])
   return picked
     .map((i) => toLethalPuzzle(DAILY_POOL[i]))
     .sort((a, b) => complexityOf(a) - complexityOf(b))

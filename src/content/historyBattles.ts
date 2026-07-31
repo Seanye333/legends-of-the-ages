@@ -616,6 +616,50 @@ export const REVERSE_BATTLES: ReverseBattle[] = [
     },
     rewardMerit: 340,
   },
+  // ---- 第二批(2026-07)----
+  // 逆位的前置条件是「对面那个人得先在 BOSSES 里」(不然没有立绘也没有调过的数值)。
+  // 写下那句话时 BOSSES 只有 16 关,而它已经扩到 24 —— 下面四场是**扩章的直接红利**,
+  // 一行新数值都不用调:借的就是那一关已经调好的 Boss。
+  {
+    battleId: 'hb-baima',
+    bossId: 'boss-yuan-shao',
+    name: { zh: '白馬 · 逆位', en: 'Baima, Reversed' },
+    intro: {
+      zh: '这一次你是袁绍。颜良在阵前,而关羽正从万军之中直取过来 —— 这一回,别让他得手。',
+      en: 'This time you are Yuan Shao. Yan Liang holds the van, and Guan Yu is already riding through your ranks. Not this time.',
+    },
+    rewardMerit: 300,
+  },
+  {
+    battleId: 'hb-changban',
+    bossId: 'boss-cao-cao',
+    name: { zh: '長坂 · 逆位', en: 'Changban, Reversed' },
+    intro: {
+      zh: '这一次你是曹操。虎豹骑一日一夜三百里,当阳桥就在前头 —— 一个抱着孩子的人挡在那儿。',
+      en: 'This time you are Cao Cao. Your Tiger Cavalry has ridden three hundred li in a day and a night. One man stands on the bridge, holding a child.',
+    },
+    rewardMerit: 340,
+  },
+  {
+    battleId: 'hb-suiyang',
+    bossId: 'boss-an-lushan',
+    name: { zh: '睢陽 · 逆位', en: 'Suiyang, Reversed' },
+    intro: {
+      zh: '这一次你是叛军。睢阳孤城已经守了十个月,城里再没有一粒米 —— 而张巡还站在城头。',
+      en: 'This time you command the rebels. Suiyang has held ten months and has no grain left — and Zhang Xun is still on the wall.',
+    },
+    rewardMerit: 360,
+  },
+  {
+    battleId: 'hb-poyang',
+    bossId: 'boss-chen-youliang',
+    name: { zh: '鄱陽 · 逆位', en: 'Poyang, Reversed' },
+    intro: {
+      zh: '这一次你是陈友谅。六十万水师、楼船连江十余里 —— 而对面只有小舟与东风。',
+      en: 'This time you are Chen Youliang: six hundred thousand men and a wall of tower ships. Facing you: small boats, and the east wind.',
+    },
+    rewardMerit: 380,
+  },
 ]
 
 export const REVERSE_BY_BATTLE: Record<string, ReverseBattle> = Object.fromEntries(

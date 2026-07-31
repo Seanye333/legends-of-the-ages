@@ -142,4 +142,64 @@ export const BRAWLS: BrawlDef[] = [
       targetName: { zh: '糧車', en: 'Grain Cart' },
     },
   },
+  // ---- 第二批(2026-07)。13 条 = 13 周就完整循环,三个月后玩家开始看见重复。
+  // 这七条刻意去用**从没被乱斗碰过**的三个 RunModifiers 字段:
+  // startMorale / startSupply / vicePower —— 引擎早就支持,乱斗一条都没用过。
+  {
+    id: 'brawl-morale',
+    name: { zh: '士氣如虹', en: 'Morale Unbroken' },
+    text: { zh: '双方开局士气拉满 —— 一上来就是全军亢奋的状态。', en: 'Both sides start with full morale.' },
+    modifiers: { startMorale: 3 },
+  },
+  {
+    id: 'brawl-granary',
+    name: { zh: '倉廩實', en: 'Full Granaries' },
+    text: { zh: '双方开局屯粮八分满 —— 那些吃粮的牌这一局随便打。', en: 'Both sides start with ample supply.' },
+    modifiers: { startSupply: 8 },
+  },
+  {
+    id: 'brawl-vice',
+    name: { zh: '副將隨行', en: 'Second in Command' },
+    text: { zh: '双方各多一名副将(仁德)—— 两个主公技轮着用,但每回合仍只能用一个。', en: 'Both sides gain a vice-general power; still one hero power per turn.' },
+    modifiers: {
+      vicePower: {
+        id: 'hp-rende',
+        name: { zh: '仁德', en: 'Benevolence' },
+        text: { zh: '一名友方武將 +1/+2。', en: 'Give a friendly general +1/+2.' },
+        cost: 2,
+        script: {
+          ops: [{ op: 'buffStats', attack: 1, health: 2, target: 'chosenFriendlyGeneral' }],
+        },
+      },
+    },
+  },
+  {
+    id: 'brawl-lean',
+    name: { zh: '兵微將寡', en: 'Thin Ranks' },
+    text: { zh: '双方开局 40 血,但起手少一张、手牌贵 1 费 —— 打的是耐心。', en: 'Both start at 40 HP but with one fewer card and costlier hands — a war of patience.' },
+    modifiers: { bonusHandSize: -1, handCostDelta: 1 },
+    hpDelta: 10,
+  },
+  {
+    id: 'brawl-warband',
+    name: { zh: '部曲成群', en: 'Warband' },
+    text: { zh: '双方开局各带两个乡勇与一个丹阳兵,并有 3 点护甲。', en: 'Both start with two levies, a Danyang guard and 3 Armor.' },
+    modifiers: {
+      startTokens: ['token-xiangyong', 'token-xiangyong', 'token-danyang-bing'],
+      startArmor: 3,
+    },
+  },
+  {
+    id: 'brawl-longmarch',
+    name: { zh: '長途奔襲', en: 'The Long March' },
+    text: { zh: '换个赢法:撑过 16 回合即胜。双方屯粮拉满、主公技免费。', en: 'Different win condition: survive 16 turns. Full supply and free hero powers.' },
+    modifiers: { startSupply: 10, heroPowerCostDelta: -2 },
+    objective: { kind: 'survive', turns: 16 },
+  },
+  {
+    id: 'brawl-heirloom',
+    name: { zh: '傳世之兵', en: 'Arms of the Ancestors' },
+    text: { zh: '双方开局各带一个铁骑,起手多抽两张、手牌便宜 1 费 —— 名器该有人使。', en: 'Both start with a cavalry token, two extra cards and cheaper hands.' },
+    modifiers: { startTokens: ['token-tie-qi'], bonusHandSize: 2, handCostDelta: -1 },
+  },
 ]
