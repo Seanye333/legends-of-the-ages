@@ -9,6 +9,13 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <meta name="theme-color" content="#12100c" />
+    <!-- iOS 加到主屏之后要**全屏**跑,而且状态栏得是浅色字 ——
+         缺了这两条,从主屏图标点进来仍然带 Safari 的地址栏与工具条,
+         横屏牌桌本来就只有 342px 可用高,再被吃掉一截就更挤。 -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="千古名将" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <!-- 标题底图是首屏唯一的美术(87KB WebP),却要等 CSS 解析完才开始下载 ——
          preload 让它和 JS 并行走,慢网络上第一眼不再是纯色底。 -->
     <link rel="preload" as="image" type="image/webp" href="/art/title-hero.webp" />

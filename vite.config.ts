@@ -31,7 +31,7 @@ export default defineConfig({
           VitePWA({
             registerType: 'autoUpdate', // 新版本上线自动替换旧缓存
             injectRegister: 'auto', // 注册脚本由插件注入,不用改 main.tsx
-            includeAssets: ['favicon-32.png', 'favicon-192.png', 'apple-touch-icon.png'],
+            includeAssets: ['favicon-32.png', 'favicon-192.png', 'favicon-512.png', 'apple-touch-icon.png'],
             manifest: {
               name: '千古名将 Legends of the Ages',
               short_name: '千古名将',
@@ -41,11 +41,16 @@ export default defineConfig({
               background_color: '#12100c',
               display: 'standalone',
               orientation: 'any',
+              // 512 是 PWA 的硬要求(Chrome 安装横幅、Android 启动图标都读它),
+              // 此前 public/ 里最大只有 192 —— 装出来的图标是放大糊的。
               icons: [
                 { src: 'favicon-192.png', sizes: '192x192', type: 'image/png' },
+                { src: 'favicon-512.png', sizes: '512x512', type: 'image/png' },
                 { src: 'apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
-                { src: 'favicon-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+                { src: 'favicon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
               ],
+              categories: ['games', 'entertainment'],
+              id: '/',
             },
             workbox: {
               // 卡池 JSON 内嵌在主 bundle 里,远超 workbox 默认 2MB 上限

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useMatch } from '../../app/matchStore'
 import { getPlayerId, getPlayerName } from '../../app/leaderboard'
 import { loadSession } from '../../app/remoteMatch'
@@ -14,6 +14,7 @@ import type { LocalizedText } from '../../engine/types'
 import { usePickCompact, usePickText, useT } from '../i18n'
 import { playSfx } from '../sound'
 import { isProtocolOutdated, matchErrorText } from './errorText'
+import { useDialog } from '../useDialog'
 import styles from './RemoteMatchPanel.module.css'
 
 const SERVER_KEY = 'qiangu-server-addr'
@@ -117,12 +118,30 @@ export function RemoteMatchPanel({ deck, onStart, onClose }: RemoteMatchPanelPro
     onClose()
   }
 
+  // 弹层键盘契约(Esc / 焦点环 / 焦点还原)。Esc 走 onCancel 而不是 onClose ——
+  // 正在匹配时直接关掉会把自己留在队列里,得先 reset()。
+  //
+  // onCancel 是渲染期新建的闭包(要读 searching),每渲染一次就换引用,而它是
+  // useDialog 的 effect 依赖:这一层里有服务器地址输入框、还挂着联机状态订阅,
+  // 不稳住的话每敲一个字、每来一条状态推送都会重挂焦点环,焦点当场被拽出输入框。
+  const closeRef = useRef(onCancel)
+  closeRef.current = onCancel
+  const stableClose = useCallback(() => closeRef.current(), [])
+  const panelRef = useDialog(stableClose)
+
   const rating = myRating ?? DEFAULT_RATING
   const rank = rankOf(rating)
 
   return (
     <div className={styles.overlay} onClick={(e) => e.stopPropagation()}>
-      <div className={styles.panel}>
+      <div
+        ref={panelRef}
+        className={styles.panel}
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('联机对战', 'Online Match')}
+        tabIndex={-1}
+      >
         <h2 className={styles.title}>{t('联机对战', 'Online Match')}</h2>
         <p className={styles.deckLine}>
           {t(`出战卡组:${deck.name.zh}`, `Deck: ${deck.name.en}`)}

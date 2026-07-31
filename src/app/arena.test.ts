@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
   ARENA_ENTRY_MERIT,
@@ -25,6 +26,13 @@ function draftFullRun(): void {
 
 describe('arena run', () => {
   beforeEach(() => {
+    // **必须清 localStorage**。useArena 被 persist('qiangu-arena') 包着,
+    // abandon() 只重置内存那一份;persist 的 rehydrate 会把上一次留下的
+    // offer/heroId 灌回来,而 choose() 只校验 `offer.includes(cardId)` ——
+    // 于是「割据主公的牌池里出现王道卡」这种断言会随机红。
+    // 这条曾经在 CI 里飘过一次,单文件隔离跑却怎么都复现不出来。
+    // 另外 10 个测试文件早就清了,只有这里漏了。
+    localStorage.clear()
     useArena.getState().abandon()
     useCollection.setState({ merit: 0, packs: 0 })
   })

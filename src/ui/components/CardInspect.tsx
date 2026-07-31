@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
 import type { CardDef } from '../../engine/types'
 import { useSettings } from '../../app/settingsStore'
@@ -24,6 +24,7 @@ import {
   disenchantValue,
   useCollection,
 } from '../../app/collectionStore'
+import { useDialog } from '../useDialog'
 import styles from './CardInspect.module.css'
 
 interface CardInspectProps {
@@ -52,6 +53,19 @@ export function CardInspect({ def, onClose, forge = false }: CardInspectProps) {
   const dust = disenchantValue(def.id)
   const canCraft = forge && !def.token && have < limit && merit >= cost
   const canDust = forge && !def.token && have > 0
+
+  // 弹层键盘契约(Esc / 焦点环 / 焦点还原)。ref 挂在 .cardWrap 而不是 .card 上 ——
+  // .card 那个 ref 位子已经被视差倾斜的 tiltRef 占了,而 .cardWrap 正好整层包住卡面,
+  // 焦点环照样能扫到里面全部按钮(保存卡面 / 合成 / 分解)。
+  //
+  // onClose 由各屏以内联箭头传入(setInspect(null)),每次那一屏渲染都是新引用,
+  // 而它是 useDialog 的 effect 依赖:不稳住的话合成/分解一改功勋、上层跟着重渲染,
+  // 焦点环就整个重挂一遍。用 ref 存最新的一份,对外恒定同一个函数。
+  const closeRef = useRef(onClose)
+  closeRef.current = onClose
+  const stableClose = useCallback(() => closeRef.current(), [])
+  const panelRef = useDialog(stableClose)
+
   // 只有真正带立绘的签名卡才展示「保存卡面」(探测图片加载成功)
   const [hasArt, setHasArt] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -152,7 +166,14 @@ export function CardInspect({ def, onClose, forge = false }: CardInspectProps) {
 
   return (
     <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.cardWrap}>
+      <div
+        ref={panelRef}
+        className={styles.cardWrap}
+        role="dialog"
+        aria-modal="true"
+        aria-label={pick(def.name)}
+        tabIndex={-1}
+      >
       {/* 稀有度用**形状**区分,不只用颜色:史诗与传说加四角角饰。
           颜色是最弱的区分手段(对色觉障碍尤其如此),而这里本来就只靠边框颜色。 */}
       <div

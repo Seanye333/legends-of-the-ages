@@ -14,10 +14,14 @@
 	<string>$(PRODUCT_NAME)</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
+	<!-- 版本号(用户看得见)与构建号(必须每次上传都不同)是两个东西。
+	     此前两者都写 0.1.0 —— TestFlight 第二次上传就会被拒:
+	     「构建号 0.1.0 已存在」。CFBundleVersion 改成纯递增整数,
+	     每次提交前 +1(或由 CI 用提交数填)。 -->
 	<key>CFBundleShortVersionString</key>
 	<string>0.1.0</string>
 	<key>CFBundleVersion</key>
-	<string>0.1.0</string>
+	<string>1</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

@@ -48,8 +48,11 @@ test('collection screen filters and shows cards', async ({ page }) => {
   await page.getByText('關羽').first().click()
   await expect(page.getByText(/№\d+/)).toBeVisible()
   await expect(page.getByText('攻高者先手')).toBeVisible() // 单挑规则图例
+  // Esc 关掉详情。这一行从前是**不生效**的(卡牌详情没有键盘出口),
+  // 所以下面还得再点一次遮罩才关得掉 —— 而那正是 useDialog 补上的东西。
+  // 现在 Esc 真的能关,于是「再点遮罩」反而会因为遮罩已经没了而超时。
   await page.keyboard.press('Escape')
-  await page.locator('[class*="overlay"]').first().click({ position: { x: 10, y: 10 } })
+  await expect(page.getByText('攻高者先手')).toBeHidden()
   await page.getByRole('button', { name: '← 返回' }).click()
   await expect(page.getByRole('heading', { name: '千古名将' })).toBeVisible()
 })

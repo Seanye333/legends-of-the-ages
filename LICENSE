@@ -1,0 +1,32 @@
+千古名将 / Legends of the Ages
+版权所有 (c) 2026 Sean Ye. 保留所有权利。
+Copyright (c) 2026 Sean Ye. All rights reserved.
+
+本仓库为个人项目。源代码与游戏文案的著作权归作者所有,
+未经书面许可,不得复制、分发、修改或用于商业用途。
+
+历史人物、史实与其事迹属于公有领域;本作对它们的改写与演绎属于原创文案。
+
+第三方素材的授权状况另见 ASSET-PROVENANCE.md —— 其中**武将立绘与四屏底图
+的商用授权尚未确认**,不在本许可的授权范围内。
+
+依赖库各自遵循其原有许可(React、React DOM、Zustand 均为 MIT);
+随包的马善政毛笔楷书遵循 SIL Open Font License 1.1,
+许可证全文见 public/fonts/OFL-MaShanZheng.txt。
+
+---
+
+This repository is a personal project. The source code and game text are
+copyrighted by the author; copying, distribution, modification, or commercial
+use requires prior written permission.
+
+Historical figures and events are in the public domain; this work's retellings
+of them are original text.
+
+Third-party asset licensing is documented separately in ASSET-PROVENANCE.md.
+Note in particular that **commercial licensing for the character portraits and
+the four background images has not been established** and is not granted here.
+
+Bundled dependencies retain their own licenses (React, React DOM and Zustand are
+MIT). The bundled Ma Shan Zheng typeface is under the SIL Open Font License 1.1;
+its full text ships at public/fonts/OFL-MaShanZheng.txt.

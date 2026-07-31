@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   fetchLeaderboard,
   getPlayerName,
@@ -8,6 +8,7 @@ import {
 } from '../../app/leaderboard'
 import { useT } from '../i18n'
 import { playSfx } from '../sound'
+import { useDialog } from '../useDialog'
 import styles from './LeaderboardPanel.module.css'
 
 interface LeaderboardPanelProps {
@@ -19,6 +20,14 @@ export function LeaderboardPanel({ onClose }: LeaderboardPanelProps) {
   const t = useT()
   const [name, setName] = useState(getPlayerName())
   const [rows, setRows] = useState<LeaderboardRow[] | null | 'loading'>('loading')
+
+  // 弹层键盘契约(Esc / 焦点环 / 焦点还原)。这一层里有输入框,焦点乱跳的代价尤其大:
+  // onClose 是父级的内联箭头,每次父级渲染都换引用,而它是 useDialog 的 effect 依赖 ——
+  // 不稳住的话上层一重渲染,焦点就被从输入框拽走。用 ref 存最新的一份,对外恒定同一个函数。
+  const closeRef = useRef(onClose)
+  closeRef.current = onClose
+  const stableClose = useCallback(() => closeRef.current(), [])
+  const panelRef = useDialog(stableClose)
 
   useEffect(() => {
     let cancelled = false
@@ -32,7 +41,14 @@ export function LeaderboardPanel({ onClose }: LeaderboardPanelProps) {
 
   return (
     <div className={styles.overlay} onClick={(e) => e.stopPropagation()}>
-      <div className={styles.panel}>
+      <div
+        ref={panelRef}
+        className={styles.panel}
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('今日群雄榜', "Today's Ladder")}
+        tabIndex={-1}
+      >
         <h2 className={styles.title}>{t('今日群雄榜', "Today's Ladder")}</h2>
         <div className={styles.mine}>
           {t(`我的今日胜场:${todayWins()}`, `My wins today: ${todayWins()}`)}

@@ -1,5 +1,5 @@
-import { Fragment, useState } from 'react'
-import type { CSSProperties } from 'react'
+import { Fragment, useCallback, useState } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import {
   BOSSES,
   bossDeck,
@@ -27,11 +27,48 @@ import { CampaignMap } from '../components/CampaignMap'
 import { usePickCompact, usePickText, useT } from '../i18n'
 import { playSfx } from '../sound'
 import { haptic } from '../haptics'
+import { useDialog } from '../useDialog'
 import styles from './CampaignScreen.module.css'
 
 interface CampaignScreenProps {
   onBack: () => void
   onEnterMatch: () => void
+}
+
+// Boss 简报弹层单独成一个组件,而不是直接写在 CampaignScreen 的 JSX 里。
+//
+// 【为什么必须拆】useDialog 的 effect 在**调用它的组件挂载时**跑一次:写在 CampaignScreen
+// 里的话,那一刻是整屏挂载、简报还没开,ref 是空的 —— 焦点环一个元素也抓不到,
+// 而捕获阶段的 Esc 却已经全局生效了(没开简报时按 Esc 也会被吃掉)。
+// 拆成组件后它随 selected 挂载/卸载,hook 的生命周期正好等于弹层的生命周期。
+function BriefDialog({
+  label,
+  style,
+  onClose,
+  children,
+}: {
+  label: string
+  style: CSSProperties
+  onClose: () => void
+  children: ReactNode
+}) {
+  const panelRef = useDialog(onClose)
+  return (
+    <div className={styles.overlay} onClick={onClose}>
+      <div
+        ref={panelRef}
+        className={styles.brief}
+        role="dialog"
+        aria-modal="true"
+        aria-label={label}
+        tabIndex={-1}
+        style={style}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {children}
+      </div>
+    </div>
+  )
 }
 
 // 冒险模式「群雄逐鹿」。八场关底战按顺序解锁,首通发奖。
@@ -48,6 +85,9 @@ export function CampaignScreen({ onBack, onEnterMatch }: CampaignScreenProps) {
   const ascend = useCampaign((s) => s.ascend)
   const customDecks = useCollection((s) => s.customDecks)
   const [selected, setSelected] = useState<BossDef | null>(null)
+  // 稳定引用:它是 BriefDialog 里 useDialog 的 effect 依赖,
+  // 写成内联的 () => setSelected(null) 的话每渲染一次焦点环就重挂一遍。
+  const closeBrief = useCallback(() => setSelected(null), [])
   // 舆图视图。默认关 —— 竖列表在手机上仍是更好用的那个(也是 e2e 依赖的结构)
   const [mapView, setMapView] = useState(false)
   const [deckIndex, setDeckIndex] = useState(0)
@@ -251,97 +291,92 @@ export function CampaignScreen({ onBack, onEnterMatch }: CampaignScreenProps) {
       )}
 
       {selected && (
-        <div className={styles.overlay} onClick={() => setSelected(null)}>
-          <div
-            className={styles.brief}
-            role="dialog"
-            aria-modal="true"
-            aria-label={pick(selected.name)}
-            style={{ '--doctrine': DOCTRINE_COLORS[selected.doctrine] } as CSSProperties}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className={styles.briefPortrait}>
-              <Portrait
-                id={selected.heroId}
-                nameZh={selected.name.zh}
-                doctrine={selected.doctrine}
-                full
-              />
-            </div>
-            <h3 className={styles.briefName}>
-              {pick(selected.name)}
-              <span className={styles.briefTitle}>{pick(selected.title)}</span>
-            </h3>
-            <p className={styles.briefIntro}>{pick(selected.intro)}</p>
-            <div className={styles.briefStats}>
-              <span>
-                {t('血量', 'Health')} <b>{selected.hp}</b>
-              </span>
-              <span>
-                {t('主义', 'Doctrine')} <b>{pickCompact(DOCTRINE_NAME[selected.doctrine])}</b>
-              </span>
-            </div>
-            <div className={styles.briefPower}>
-              <span className={styles.briefPowerName}>{pickCompact(selected.power.name)}</span>
-              <span className={styles.briefPowerText}>{pick(selected.power.text)}</span>
-            </div>
-            <p className={styles.briefReward}>
-              {cleared.includes(selected.id) ? (
-                t('已通关 —— 重打不再发放战利', 'Cleared — no further spoils')
-              ) : (
-                <>
-                  {/* 纯 CSS 小卡包(画法照结算页的 packChip,本文件独立实现,不跨文件 composes):
-                      「首通有包」在开打之前就看得见,而不只是一行字。 */}
-                  <i className={styles.rewardPack} aria-hidden="true">
-                    包
-                  </i>
-                  {t(
-                    `首通战利:卡包 ×${selected.rewardPacks},功勋 +${selected.rewardMerit}`,
-                    `First clear: ${selected.rewardPacks} packs, +${selected.rewardMerit} merit`,
-                  )}
-                </>
-              )}
-            </p>
-            {/* 试炼:首通之后解锁的第二种打法 —— 同一个 Boss,换一个赢法 */}
-            {cleared.includes(selected.id) &&
-              (() => {
-                const trial = bossTrial(selected.id)
-                if (!trial) return null
-                const trialDone = trialsCleared.includes(selected.id)
-                return (
-                  <div className={styles.trialBox}>
-                    <span className={styles.trialName}>
-                      {t('試煉 · ', 'Trial · ')}
-                      {pick(trial.name)}
-                      {trialDone && <span className={styles.trialDone}>{t(' ✓', ' ✓')}</span>}
-                    </span>
-                    <span className={styles.trialText}>{pick(trial.text)}</span>
-                    <span className={styles.trialReward}>
-                      {trialDone
-                        ? t('已成 —— 重打不再发放战利', 'Complete — no further spoils')
-                        : t(`首成战利:功勋 +${trial.rewardMerit}`, `First clear: +${trial.rewardMerit} merit`)}
-                    </span>
-                  </div>
-                )
-              })()}
-            <div className={styles.briefActions}>
-              <button className={styles.primary} onClick={() => fight(selected)}>
-                {t('出战', 'Fight')}
-              </button>
-              {cleared.includes(selected.id) && bossTrial(selected.id) && (
-                <button
-                  className={styles.trialBtn}
-                  onClick={() => fight(selected, bossTrial(selected.id))}
-                >
-                  {t('挑战试炼', 'Take the Trial')}
-                </button>
-              )}
-              <button className={styles.plain} onClick={() => setSelected(null)}>
-                {t('再看看', 'Not yet')}
-              </button>
-            </div>
+        <BriefDialog
+          label={pick(selected.name)}
+          style={{ '--doctrine': DOCTRINE_COLORS[selected.doctrine] } as CSSProperties}
+          onClose={closeBrief}
+        >
+          <div className={styles.briefPortrait}>
+            <Portrait
+              id={selected.heroId}
+              nameZh={selected.name.zh}
+              doctrine={selected.doctrine}
+              full
+            />
           </div>
-        </div>
+          <h3 className={styles.briefName}>
+            {pick(selected.name)}
+            <span className={styles.briefTitle}>{pick(selected.title)}</span>
+          </h3>
+          <p className={styles.briefIntro}>{pick(selected.intro)}</p>
+          <div className={styles.briefStats}>
+            <span>
+              {t('血量', 'Health')} <b>{selected.hp}</b>
+            </span>
+            <span>
+              {t('主义', 'Doctrine')} <b>{pickCompact(DOCTRINE_NAME[selected.doctrine])}</b>
+            </span>
+          </div>
+          <div className={styles.briefPower}>
+            <span className={styles.briefPowerName}>{pickCompact(selected.power.name)}</span>
+            <span className={styles.briefPowerText}>{pick(selected.power.text)}</span>
+          </div>
+          <p className={styles.briefReward}>
+            {cleared.includes(selected.id) ? (
+              t('已通关 —— 重打不再发放战利', 'Cleared — no further spoils')
+            ) : (
+              <>
+                {/* 纯 CSS 小卡包(画法照结算页的 packChip,本文件独立实现,不跨文件 composes):
+                    「首通有包」在开打之前就看得见,而不只是一行字。 */}
+                <i className={styles.rewardPack} aria-hidden="true">
+                  包
+                </i>
+                {t(
+                  `首通战利:卡包 ×${selected.rewardPacks},功勋 +${selected.rewardMerit}`,
+                  `First clear: ${selected.rewardPacks} packs, +${selected.rewardMerit} merit`,
+                )}
+              </>
+            )}
+          </p>
+          {/* 试炼:首通之后解锁的第二种打法 —— 同一个 Boss,换一个赢法 */}
+          {cleared.includes(selected.id) &&
+            (() => {
+              const trial = bossTrial(selected.id)
+              if (!trial) return null
+              const trialDone = trialsCleared.includes(selected.id)
+              return (
+                <div className={styles.trialBox}>
+                  <span className={styles.trialName}>
+                    {t('試煉 · ', 'Trial · ')}
+                    {pick(trial.name)}
+                    {trialDone && <span className={styles.trialDone}>{t(' ✓', ' ✓')}</span>}
+                  </span>
+                  <span className={styles.trialText}>{pick(trial.text)}</span>
+                  <span className={styles.trialReward}>
+                    {trialDone
+                      ? t('已成 —— 重打不再发放战利', 'Complete — no further spoils')
+                      : t(`首成战利:功勋 +${trial.rewardMerit}`, `First clear: +${trial.rewardMerit} merit`)}
+                  </span>
+                </div>
+              )
+            })()}
+          <div className={styles.briefActions}>
+            <button className={styles.primary} onClick={() => fight(selected)}>
+              {t('出战', 'Fight')}
+            </button>
+            {cleared.includes(selected.id) && bossTrial(selected.id) && (
+              <button
+                className={styles.trialBtn}
+                onClick={() => fight(selected, bossTrial(selected.id))}
+              >
+                {t('挑战试炼', 'Take the Trial')}
+              </button>
+            )}
+            <button className={styles.plain} onClick={closeBrief}>
+              {t('再看看', 'Not yet')}
+            </button>
+          </div>
+        </BriefDialog>
       )}
     </div>
   )

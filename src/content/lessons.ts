@@ -99,6 +99,75 @@ export const LESSONS: Lesson[] = [
       ],
     },
   },
+  // ---- 第二批:第四/五卡包那几条轴 ----
+  // 上面三课恰好是第十九、二十包最新的三条,而伏兵、连击、过载、抉择、发现
+  // ——**六条更早、也更常见的机制**——一课都没有。讲堂有 32 条机制词条,
+  // 实练只覆盖 3 条,等于这个系统上线之后就没再铺过。
+  // 【为什么没有伏兵那一课】
+  // 试过,被 lethalContent.test 那道闸门挡回来了:「lesson-secret 无解」。
+  // 想想是对的 —— 伏兵在**对手回合**才触发,而实练借的是斩杀谜题的管线:
+  // 你一结束回合就判负,对手根本没有回合。也就是说这个框架天然教不了
+  // 任何「等对手动」的机制(伏兵、亡语的部分用法、回合结束触发)。
+  // 要教它们得另起一套「两回合谜题」,那是另一个工程。
+  {
+    id: 'lesson-combo',
+    mechanic: 'combo',
+    title: { zh: '實練 · 連擊', en: 'Drill · Combo' },
+    situation: {
+      zh: '一名铁骑已经能冲脸,但一名 4 血守卫挡在前面。田忌的战吼打 1 点 —— 除非这回合先打过别的牌。',
+      en: 'Your cavalry can swing, but a 4-HP guard blocks the way. Tian Ji\u2019s battlecry deals 1 — unless you played another card first this turn.',
+    },
+    hint: {
+      zh: '连击看的是**这回合此前打过牌没有**,不是打了什么牌。顺序反了就差 3 点,守卫拆不掉。',
+      en: 'Combo only asks whether you played anything earlier this turn — not what. Wrong order and you are 3 short of clearing the guard.',
+    },
+    difficulty: 2,
+    heroes: ['liu-bei', 'cao-cao'],
+    scenario: {
+      activePlayer: 0,
+      players: [
+        {
+          heroHp: 20,
+          mana: 8,
+          board: [{ defId: 'token-tie-qi' }, { defId: 'token-tie-qi' }],
+          hand: ['hist-tian-ji', 'token-tie-qi'],
+        },
+        // 守卫必须先拆掉才能打脸 —— 而拆它正好要靠连击那 4 点。
+        // 田忌的战吼只打**敌将**(chosenEnemyGeneral),打不到脸,
+        // 所以这一题的斩杀线是「先出牌 → 连击拆守卫 → 铁骑冲脸」。
+        { heroHp: 4, mana: 0, board: [{ defId: 'token-danyang-bing' }], hand: [] },
+      ],
+    },
+  },
+  {
+    id: 'lesson-overload',
+    mechanic: 'overload',
+    title: { zh: '實練 · 過載', en: 'Drill · Overload' },
+    situation: {
+      zh: '铁骑已在阵,一名守卫挡路,敌主帅 4 血。彭越能一发拆掉守卫 —— 代价是下回合少一格法力。',
+      en: 'Cavalry ready, a guard in the way, the enemy at 4 HP. Peng Yue clears the guard — at the cost of a crystal next turn.',
+    },
+    hint: {
+      zh: '过载扣的是**下回合**的法力。而这一题里没有下回合 —— 该付就付。',
+      en: 'Overload is a debt paid next turn. In this puzzle there is no next turn — so pay it.',
+    },
+    difficulty: 1,
+    heroes: ['liu-bei', 'cao-cao'],
+    scenario: {
+      activePlayer: 0,
+      players: [
+        {
+          heroHp: 20,
+          mana: 6,
+          board: [{ defId: 'token-tie-qi' }, { defId: 'token-tie-qi' }],
+          hand: ['hist-peng-yue'],
+        },
+        // 彭越的战吼同样只打敌将(chosenEnemyGeneral),打不到脸 ——
+        // 所以这一课的斩杀线是「付过载拆守卫 → 两队铁骑 4 点打脸」。
+        { heroHp: 4, mana: 0, board: [{ defId: 'token-danyang-bing' }], hand: [] },
+      ],
+    },
+  },
 ]
 
 export const LESSONS_BY_ID: Record<string, Lesson> = Object.fromEntries(

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { MouseEvent as ReactMouseEvent } from 'react'
 import type { CSSProperties } from 'react'
 import type {
   ChooseMode,
@@ -463,6 +464,35 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
     setSelection(null)
   }
 
+  // 令牌的点击/长按回调**必须身份稳定**,否则 GeneralToken 的 memo 永远命中不了:
+  // 内联箭头函数每次渲染都是新引用,浅比较必然失败 —— 那个 memo 就只是一次
+  // 白跑的比较。而 MatchScreen 有 14 个 useState,任何一次 setState
+  // (日志追加、toast、悬停)都会让满场十几个令牌连同 Portrait 的取图解析重跑一遍。
+  //
+  // 用 ref 存最新闭包 + 按 iid 造一次 handler:
+  // 身份只在**场上人员变动**时才变(那时本来就该重渲染),
+  // 而回调内部读的永远是最新的 onEntityClick(不会拿到陈旧的 selection)。
+  const entityClickRef = useRef(onEntityClick)
+  entityClickRef.current = onEntityClick
+  const boardIidKey = `${foe.board.map((c) => c.iid).join(',')}|${me.board.map((c) => c.iid).join(',')}`
+  const tokenHandlers = useMemo(() => {
+    const m = new Map<number, { onClick: (e: ReactMouseEvent) => void; onInspect: () => void }>()
+    for (const c of [...foe.board, ...me.board]) {
+      const iid = c.iid
+      const defId = c.defId
+      m.set(iid, {
+        onClick: (e: ReactMouseEvent) => {
+          e.stopPropagation()
+          entityClickRef.current({ kind: 'general', iid })
+        },
+        onInspect: () => setInspect(CARDS_BY_ID[defId] ?? null),
+      })
+    }
+    return m
+    // boardIidKey 就是「场上有谁」的指纹 —— 攻血变化不该重建这张表
+  }, [boardIidKey])
+
+
   // 主公技:无目标的直接发动;需要目标的进入选目标模式(与出牌同一套交互)
   const onUseHeroPower = (vice = false) => {
     const mine = powerCmds.filter((c) => (c.vice ?? false) === vice)
@@ -623,6 +653,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
               setSoundEnabled(!soundEnabled)
             }}
             title={t('音效开关', 'Sound on/off')}
+            aria-label={t('音效开关', 'Sound on/off')}
           >
             {soundEnabled ? t('音', 'SFX') : t('静', 'Mute')}
           </button>
@@ -634,6 +665,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
               setGraveOpen(true)
             }}
             title={t('查看双方墓地', 'View both graveyards')}
+            aria-label={t('查看双方墓地', 'View both graveyards')}
           >
             {t('墓地', 'Graves')}
           </button>
@@ -661,7 +693,12 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
           } as CSSProperties
         }
       >
-        <div className={styles.row} ref={foeRowRef}>
+        <div
+          className={styles.row}
+          ref={foeRowRef}
+          role="list"
+          aria-label={t('敌方战线', 'Enemy board')}
+        >
           {foe.board.map((c) => (
             <GeneralToken
               key={c.iid}
@@ -669,16 +706,18 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
               targetable={activeTargets.has(`gen-${c.iid}`)}
               floats={floatsFor(`gen-${c.iid}`)}
               fx={fxFor(`gen-${c.iid}`)}
-              onInspect={() => setInspect(CARDS_BY_ID[c.defId] ?? null)}
-              onClick={(e) => {
-                e.stopPropagation()
-                onEntityClick({ kind: 'general', iid: c.iid })
-              }}
+              onInspect={tokenHandlers.get(c.iid)?.onInspect}
+              onClick={tokenHandlers.get(c.iid)?.onClick}
             />
           ))}
         </div>
         <div className={styles.divider} />
-        <div className={styles.row} ref={myRowRef}>
+        <div
+          className={styles.row}
+          ref={myRowRef}
+          role="list"
+          aria-label={t('我方战线', 'Your board')}
+        >
           {me.board.map((c) => (
             <GeneralToken
               key={c.iid}
@@ -688,11 +727,8 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
               targetable={activeTargets.has(`gen-${c.iid}`)}
               floats={floatsFor(`gen-${c.iid}`)}
               fx={fxFor(`gen-${c.iid}`)}
-              onInspect={() => setInspect(CARDS_BY_ID[c.defId] ?? null)}
-              onClick={(e) => {
-                e.stopPropagation()
-                onEntityClick({ kind: 'general', iid: c.iid })
-              }}
+              onInspect={tokenHandlers.get(c.iid)?.onInspect}
+              onClick={tokenHandlers.get(c.iid)?.onClick}
             />
           ))}
         </div>

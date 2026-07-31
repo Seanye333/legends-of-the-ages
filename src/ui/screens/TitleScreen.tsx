@@ -733,7 +733,11 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
         <span className={styles.galleryHeadLine} />
       </div>
 
-      <div className={styles.gallery}>
+      <div
+        className={styles.gallery}
+        role="region"
+        aria-label={t('名将长廊', 'Gallery of legends')}
+      >
         {gallery.map((card) => (
           <MiniCard key={card.id} card={card} />
         ))}

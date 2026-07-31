@@ -512,7 +512,10 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       return
     }
 
-    // 演武场:自由练习,不记战绩/军令/成就/战报,只推状态
+    // 演武场:自由练习,不记战绩/军令/战报,只推状态。
+    // **唯一的例外是一条专属成就** —— 从前这里什么都不产生,
+    // 于是演武场成了全站唯一「点进去毫无痕迹」的入口。
+    // 只在终局那一刻 +1,不碰胜负统计(沙盘就该是沙盘)。
     if (get().practice) {
       const pr = match.sendCommand(cmd)
       if ('error' in pr) {
@@ -521,6 +524,9 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
       }
       const events = pr.updates.flatMap((u) => u.events)
       const last = pr.updates[pr.updates.length - 1]
+      if (events.some((e) => e.type === 'GameEnded')) {
+        useAchievements.getState().bump('practiceMatches')
+      }
       set({
         state: last.state,
         lastEvents: events,

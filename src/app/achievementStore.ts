@@ -50,6 +50,10 @@ export type StatKey =
   | 'puzzlesSolved' // 斩杀谜题:每有奖励的解开(手搓首解 / 每日首解)+1
   | 'bestPuzzleStreak' // 每日谜题历史最长连续天数(取最大)
   | 'towerBest' // 无尽爬塔历史最高层(取最大)
+  // 演武场试过多少局。演武场刻意**不记战绩/军令/成就**(它是沙盘,
+  // 计分会让人不敢乱试)—— 但「什么都不产生」也让它成了唯一一个
+  // 点进去毫无痕迹的入口。这一条是它唯一的产出,不碰胜负统计。
+  | 'practiceMatches'
   // ---- 这一轮新加的三个模式,此前一条成就都没有 ----
   | 'trialsCleared' // 关底试炼(换赢法的第二种打法)通过数
   | 'bossRushBest' // 群雄连斩最远打到第几关(取最大)
@@ -307,12 +311,22 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     [120, 350, 1200],
   ),
   ...tier(
+    'ach-practice',
+    'practiceMatches',
+    { zh: '演武', en: 'Sparring' },
+    (n) => ({ zh: `在演武场打过 ${n} 局`, en: `Spar ${n} matches in the Training Ground` }),
+    [5, 25],
+    [80, 260],
+  ),
+  ...tier(
     'ach-lesson',
     'lessonsDone',
     { zh: '實練', en: 'Drills' },
     (n) => ({ zh: `完成 ${n} 课讲堂实练`, en: `Finish ${n} codex drills` }),
-    [1, 3],
-    [60, 180],
+    // 顶格跟着 LESSONS.length 走 —— 之前写死 3,而当时恰好就是 3 课,
+    // 于是加课之后成就仍然在第 3 课就满了(和试炼/连斩那三条同一个病)
+    [1, 3, 5],
+    [60, 180, 320],
   ),
   ...tier(
     'ach-tower',

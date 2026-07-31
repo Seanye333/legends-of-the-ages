@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 import type { CardDef } from '../../engine/types'
 import { CARDS_BY_ID } from '../../content/cards'
 import { DOCTRINE_COLORS } from '../doctrineColors'
 import { usePickCompact, useT } from '../i18n'
 import { playSfx } from '../sound'
+import { useDialog } from '../useDialog'
 import styles from './GraveyardPanel.module.css'
 
 interface GraveyardPanelProps {
@@ -29,20 +30,15 @@ function groupCards(ids: string[]): { def: CardDef; n: number }[] {
 export function GraveyardPanel({ mine, theirs, onInspect, onClose }: GraveyardPanelProps) {
   const t = useT()
   const pickCompact = usePickCompact()
-  const panelRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation()
-        onClose()
-      }
-    }
-    // 捕获阶段:抢在对战画面的「Esc 取消选目标」之前
-    window.addEventListener('keydown', onKey, true)
-    panelRef.current?.focus()
-    return () => window.removeEventListener('keydown', onKey, true)
-  }, [onClose])
+  // 模态礼仪整套交给 useDialog(它同样在捕获阶段吃掉 Esc,
+  // 仍然抢在对战画面的「Esc 取消选目标」之前;另外补上了原来没有的焦点环与焦点还原)。
+  // onClose 由对战画面以内联箭头传入,每次它渲染都是新引用,而它是 useDialog 的 effect
+  // 依赖 —— 对战画面每帧都在动,不稳住焦点环等于每帧重挂。用 ref 存最新的一份。
+  const closeRef = useRef(onClose)
+  closeRef.current = onClose
+  const stableClose = useCallback(() => closeRef.current(), [])
+  const panelRef = useDialog(stableClose)
 
   const cols = useMemo(
     () => [

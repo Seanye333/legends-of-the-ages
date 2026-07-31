@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 import { useAchievements } from '../../app/achievementStore'
 import { useCollection } from '../../app/collectionStore'
 import { useExpedition } from '../../app/expeditionStore'
@@ -8,6 +8,7 @@ import { COLLECTIBLE_CARDS } from '../../content/cards'
 import { DOCTRINE_NAME } from '../doctrineColors'
 import type { Doctrine } from '../../engine/types'
 import { usePickText, useT } from '../i18n'
+import { useDialog } from '../useDialog'
 import styles from './StatsPanel.module.css'
 
 const POOL_TOTAL = COLLECTIBLE_CARDS.length
@@ -27,7 +28,14 @@ export function StatsPanel({ onClose }: StatsPanelProps) {
   const customDecks = useCollection((s) => s.customDecks)
   const deckRecords = useDeckStats((s) => s.records)
   const bestDepth = useExpedition((s) => s.bestDepth)
-  const panelRef = useRef<HTMLDivElement>(null)
+
+  // 模态礼仪整套交给 useDialog(原来只有 Esc + 打开聚焦,Tab 会一路走到被遮住的底层按钮上)。
+  // onClose 由父级以内联箭头传入,每次父级渲染都是新引用 —— 而它是 useDialog 的 effect
+  // 依赖,不稳住的话上层一重渲染焦点环就重挂一遍。用 ref 存最新的一份,对外恒定同一个函数。
+  const closeRef = useRef(onClose)
+  closeRef.current = onClose
+  const stableClose = useCallback(() => closeRef.current(), [])
+  const panelRef = useDialog(stableClose)
 
   // 每套卡组的战绩(按内容哈希去重),只列打过的,按场次排序取前几
   const deckRows = useMemo(() => {
@@ -45,15 +53,6 @@ export function StatsPanel({ onClose }: StatsPanelProps) {
     }
     return rows.sort((a, b) => b.wins + b.losses - (a.wins + a.losses)).slice(0, 6)
   }, [customDecks, deckRecords, pick])
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', onKey)
-    panelRef.current?.focus()
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
 
   const total = wins + losses
   const winRate = total > 0 ? Math.round((wins / total) * 100) : 0
@@ -74,6 +73,9 @@ export function StatsPanel({ onClose }: StatsPanelProps) {
       <div
         ref={panelRef}
         className={styles.panel}
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('战绩簿', 'Record')}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
       >

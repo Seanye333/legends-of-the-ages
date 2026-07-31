@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { questText, useQuests } from '../../app/questStore'
 import { useCollection } from '../../app/collectionStore'
 import { usePickText, useT } from '../i18n'
 import { playSfx } from '../sound'
+import { useDialog } from '../useDialog'
 import styles from './QuestPanel.module.css'
 
 interface QuestPanelProps {
@@ -17,6 +18,15 @@ export function QuestPanel({ onClose }: QuestPanelProps) {
   const grantPacks = useCollection((s) => s.grantPacks)
 
   useEffect(() => refreshIfNewDay(), [refreshIfNewDay])
+
+  // 弹层键盘契约(Esc / 焦点环 / 焦点还原)统一走 useDialog。
+  // onClose 由父级以内联箭头传入,每次父级渲染都是新引用 —— 而它是 useDialog 的
+  // effect 依赖:不稳住的话「领取」改了卡包数、上层跟着重渲染,焦点环就整个重挂一遍,
+  // 焦点被从当前按钮拽回第一个。用 ref 存最新的一份,对外始终是同一个函数。
+  const closeRef = useRef(onClose)
+  closeRef.current = onClose
+  const stableClose = useCallback(() => closeRef.current(), [])
+  const panelRef = useDialog(stableClose)
 
   // 领取的仪式挂在**行**上而不是按钮上 —— 领完按钮立刻换成「已领取」,
   // 挂按钮的话金环还没胀开元素就没了
@@ -33,7 +43,15 @@ export function QuestPanel({ onClose }: QuestPanelProps) {
 
   return (
     <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.panel} onClick={(e) => e.stopPropagation()}>
+      <div
+        ref={panelRef}
+        className={styles.panel}
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('每日军令', 'Daily Orders')}
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+      >
         <h2 className={styles.title}>{t('每日军令', 'Daily Orders')}</h2>
         <p className={styles.sub}>{t('每日零点更替,达标即领战功', 'Refreshes daily — claim your spoils')}</p>
 

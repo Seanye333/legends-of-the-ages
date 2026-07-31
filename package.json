@@ -26,6 +26,7 @@
     "perf-budget": "node --import tsx scripts/perf-budget.ts",
     "price-cards": "node --import tsx scripts/price-cards.ts",
     "lint-content": "node --import tsx scripts/lint-content.ts",
+    "seed-mechanics": "node --import tsx scripts/seed-mechanics.ts",
     "replay-diff": "node --import tsx scripts/replay-diff.ts",
     "check-offline": "node --import tsx scripts/check-offline.ts",
     "audit-en": "node --import tsx scripts/audit-en.ts",

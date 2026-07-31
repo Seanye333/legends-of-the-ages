@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+		隐私清单。App Store 从 2024 年起强制要求,此前这个文件根本不存在。
+
+		这份声明是**按代码实际行为**填的,不是照抄模板:
+		- 不做追踪:全库零第三方 SDK(运行时依赖只有 react/react-dom/zustand),
+		  index.html 无外部脚本,字体自托管。
+		- 不收集任何可关联到个人的数据。埋点(src/app/telemetry.ts)只写本机
+		  localStorage,顶部注释明写「不上报到任何服务器」。
+		- 排行榜与云存档走的是**玩家自填或默认的服务器地址**,上传的是
+		  玩家自己起的昵称与游戏进度,不含设备标识符以外的任何东西;
+		  playerId 是本机随机 UUID,不来自任何广告或设备 API。
+		- 不用需要授权的系统能力(capabilities 只有 core:default,
+		  Info.plist 里一条 NS*UsageDescription 都没有,因为确实用不到)。
+	-->
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<!--
+		必须声明用途的 API。这里只有 UserDefaults ——
+		WKWebView 的 localStorage 在底层落到 UserDefaults,
+		而全部游戏进度都存在那儿。CA92.1 = 仅用于本 App 自身,不外发。
+	-->
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import type { CSSProperties } from 'react'
+import { useCallback, useMemo, useState } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { CARDS_BY_ID, SIGNATURE_IDS } from '../../content/cards'
 import { LORE } from '../../content/generated/lore.gen'
 import { useCollection } from '../../app/collectionStore'
@@ -12,10 +12,47 @@ import { EraScroll } from '../components/EraScroll'
 import { ERA_OF, type Era } from '../../content/eras'
 import { RelationWeb } from '../components/RelationWeb'
 import { playSfx } from '../sound'
+import { useDialog } from '../useDialog'
 import styles from './LoreScreen.module.css'
 
 interface Props {
   onBack: () => void
+}
+
+// 详情弹层单独成一个组件,而不是直接写在 LoreScreen 的 JSX 里。
+//
+// 【为什么必须拆】useDialog 的 effect 在**调用它的组件挂载时**跑一次:写在 LoreScreen
+// 里的话,那一刻是整屏挂载、弹层还没开,ref 是空的 —— 焦点环一个元素也抓不到,
+// 而捕获阶段的 Esc 却已经全局生效了(列传屏没开弹层时按 Esc 也会被吃掉)。
+// 拆成组件后它随 selected 挂载/卸载,hook 的生命周期正好等于弹层的生命周期。
+function DetailDialog({
+  label,
+  style,
+  onClose,
+  children,
+}: {
+  label: string
+  style: CSSProperties
+  onClose: () => void
+  children: ReactNode
+}) {
+  const panelRef = useDialog(onClose)
+  return (
+    <div className={styles.overlay} onClick={onClose}>
+      <div
+        ref={panelRef}
+        className={styles.detail}
+        role="dialog"
+        aria-modal="true"
+        aria-label={label}
+        tabIndex={-1}
+        style={style}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {children}
+      </div>
+    </div>
+  )
 }
 
 // 名将列传:把「收藏」从仓库变成博物馆。
@@ -28,6 +65,9 @@ export function LoreScreen({ onBack }: Props) {
   const pickCompact = usePickCompact()
   const owned = useCollection((s) => s.owned)
   const [selected, setSelected] = useState<string | null>(null)
+  // 稳定引用:它是 DetailDialog 里 useDialog 的 effect 依赖,
+  // 写成内联的 () => setSelected(null) 的话每渲染一次焦点环就重挂一遍。
+  const closeDetail = useCallback(() => setSelected(null), [])
   const [dynFilter, setDynFilter] = useState<string>('all')
   // 三种读法:列传(按人)/ 關係圖譜(按关系)/ 時代長卷(按时间)。
   // 同一批内容,三个不同的问题 —— 一屏塞不下,但一个 tab 装得下。
@@ -237,44 +277,40 @@ export function LoreScreen({ onBack }: Props) {
       )}
 
       {sel && selLore && (
-        <div className={styles.overlay} onClick={() => setSelected(null)}>
-          <div
-            className={styles.detail}
-            role="dialog"
-            aria-modal="true"
-            style={{ '--doctrine': DOCTRINE_COLORS[sel.doctrine] } as CSSProperties}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className={styles.detailPortrait}>
-              <Portrait id={sel.id} nameZh={sel.name.zh} doctrine={sel.doctrine} full />
-            </div>
-            <h3 className={styles.detailName}>
-              {selOwned ? pick(sel.name) : t('尚未入列', 'Not yet in your ranks')}
-            </h3>
-            {selLore.era && selOwned && <div className={styles.detailEra}>{pick(selLore.era)}</div>}
-            {selOwned ? (
-              <>
-                <p className={styles.bio}>{pick(selLore.bio)}</p>
-                {selLore.quote && <p className={styles.quote}>「{pick(selLore.quote)}」</p>}
-                {selLore.line && <p className={styles.line}>{pick(selLore.line)}</p>}
-                {/* 这一位的关系网。通览那张表在「關係圖譜」页;这里回答的是
-                    另一个问题 —— **我点开的这个人跟谁有关系**。
-                    点节点直接跳过去,列传于是能一路顺着关系翻下去。 */}
-                <RelationWeb centerId={sel.id} onPick={(id) => setSelected(id)} />
-              </>
-            ) : (
-              <p className={styles.bio}>
-                {t(
-                  '此人尚未归你麾下。收入此将,方可阅其列传。',
-                  'This general has not yet joined you. Add them to your collection to read their chronicle.',
-                )}
-              </p>
-            )}
-            <button className={styles.closeBtn} onClick={() => setSelected(null)}>
-              {t('合卷', 'Close')}
-            </button>
+        <DetailDialog
+          label={selOwned ? pick(sel.name) : t('尚未入列', 'Not yet in your ranks')}
+          style={{ '--doctrine': DOCTRINE_COLORS[sel.doctrine] } as CSSProperties}
+          onClose={closeDetail}
+        >
+          <div className={styles.detailPortrait}>
+            <Portrait id={sel.id} nameZh={sel.name.zh} doctrine={sel.doctrine} full />
           </div>
-        </div>
+          <h3 className={styles.detailName}>
+            {selOwned ? pick(sel.name) : t('尚未入列', 'Not yet in your ranks')}
+          </h3>
+          {selLore.era && selOwned && <div className={styles.detailEra}>{pick(selLore.era)}</div>}
+          {selOwned ? (
+            <>
+              <p className={styles.bio}>{pick(selLore.bio)}</p>
+              {selLore.quote && <p className={styles.quote}>「{pick(selLore.quote)}」</p>}
+              {selLore.line && <p className={styles.line}>{pick(selLore.line)}</p>}
+              {/* 这一位的关系网。通览那张表在「關係圖譜」页;这里回答的是
+                  另一个问题 —— **我点开的这个人跟谁有关系**。
+                  点节点直接跳过去,列传于是能一路顺着关系翻下去。 */}
+              <RelationWeb centerId={sel.id} onPick={(id) => setSelected(id)} />
+            </>
+          ) : (
+            <p className={styles.bio}>
+              {t(
+                '此人尚未归你麾下。收入此将,方可阅其列传。',
+                'This general has not yet joined you. Add them to your collection to read their chronicle.',
+              )}
+            </p>
+          )}
+          <button className={styles.closeBtn} onClick={closeDetail}>
+            {t('合卷', 'Close')}
+          </button>
+        </DetailDialog>
       )}
     </div>
   )

@@ -41,6 +41,22 @@ jobs:
           npx playwright install --with-deps chromium
           npx playwright test
 
+      # 三条有明确 exit-code 语义的闸门,此前**只能手动跑** ——
+      # 也就是说它们和「没有闸门」没区别。build 已经在上面跑过了,直接接上。
+      - name: 首屏体积预算
+        run: npm run perf-budget
+
+      - name: 引擎确定性对拍(同一 seed 必须重演出同一局)
+        run: npm run replay-diff
+
+      - name: 离线自检(PWA 断网可玩)
+        run: npm run check-offline
+
+      # 生产依赖必须干净。dev 依赖不卡门:wrangler → miniflare → sharp 这条链
+      # 只影响本地 Worker 开发,不进浏览器产物,卡了它 CI 会因为上游发版随机红。
+      - name: 依赖审计(仅生产依赖)
+        run: npm audit --omit=dev --audit-level=high
+
       - name: 失败时保留 Playwright 报告
         if: failure()
         uses: actions/upload-artifact@v4

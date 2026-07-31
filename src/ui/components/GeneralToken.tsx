@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import type { CSSProperties, MouseEvent } from 'react'
 import type { CardInstance } from '../../engine/types'
 import { CARDS_BY_ID } from '../../content/cards'
@@ -23,7 +24,11 @@ interface GeneralTokenProps {
 }
 
 // 战场上的武将勋章令牌:鎏金外环 + 主义色内圈。
-export function GeneralToken({ inst, ready, selected, targetable, floats, fx, onClick, onInspect }: GeneralTokenProps) {
+// memo:牌桌上同时有十几个令牌,而 MatchScreen 有 14 个 useState ——
+// 任何一次 setState(悬停提示、日志追加、toast)都会让所有令牌重跑一遍
+// (含 Portrait 的取图分层解析)。props 里只有 floats/fx 是数组与对象,
+// 它们本来就按批次重建 —— 那正是**应该**重渲染的时刻。
+export const GeneralToken = memo(function GeneralToken({ inst, ready, selected, targetable, floats, fx, onClick, onInspect }: GeneralTokenProps) {
   const longPress = useLongPress(() => onInspect?.())
   const pickCompact = usePickCompact()
   const def = CARDS_BY_ID[inst.defId]
@@ -168,4 +173,4 @@ export function GeneralToken({ inst, ready, selected, targetable, floats, fx, on
       ))}
     </div>
   )
-}
+})

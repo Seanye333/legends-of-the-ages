@@ -107,6 +107,7 @@ describe('achievement stats', () => {
       'trialsCleared', // 关底试炼,由 campaignStore bump
       'bossRushBest', // 群雄连斩最远关,由 bossRushStore bump(MAX)
       'lessonsDone', // 讲堂实练,由 lethalStore bump
+      'practiceMatches', // 演武场终局,由 matchStore 的 practice 分支 bump
       // 六主义各一条,tally 只会产出当前主公那一个
       'won_hegemonic',
       'won_ritual',
