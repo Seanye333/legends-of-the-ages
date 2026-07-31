@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { AMBIGUOUS_NAMES, CARDS, CARDS_BY_ID, COLLECTIBLE_CARDS } from './cards'
+import {
+  AMBIGUOUS_NAMES,
+  CARDS,
+  CARDS_BY_ID,
+  COLLECTIBLE_CARDS,
+  KEYWORD_LABEL,
+} from './cards'
 import type { CardDef } from '../engine/types'
 import { PRECON_DECKS, validateDeck } from './decks'
 import { GENERATED_CARDS } from './generated/cards.gen'
@@ -251,18 +257,10 @@ describe('风味文本', () => {
 // 卫青、李靖这一批门面卡。修法是管线不给签名卡播种(见 import-content 的 handAuthored),
 // 这两条闸门负责让它不再复发。
 describe('卡面文本与机制一致', () => {
-  const KEYWORD_ZH: Record<string, string> = {
-    charge: '衝鋒',
-    rush: '突襲',
-    guard: '守護',
-    windfury: '連擊',
-    lifesteal: '吸血',
-    stealth: '潛行',
-    duel: '單挑',
-    poison: '劇毒',
-    divineShield: '鐵壁',
-    trample: '碾壓',
-  }
+  // 直接用生产表,不再抄一份 —— 抄本必然会和生产表漂移(见 cards.ts 的注释)
+  const KEYWORD_ZH: Record<string, string> = Object.fromEntries(
+    Object.entries(KEYWORD_LABEL).map(([k, v]) => [k, v.zh]),
+  )
 
   it('武将带的每个关键词都必须写在卡面上 —— 看不见的关键词等于骗玩家', () => {
     const bad = COLLECTIBLE_CARDS.filter((c) => c.type === 'general' && c.keywords.length > 0)

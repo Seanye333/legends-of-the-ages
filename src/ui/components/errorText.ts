@@ -24,7 +24,7 @@ const MATCH_ERRORS: Record<string, LocalizedText> = {
   'turn-timeout': { zh: '回合超时,已自动结束回合', en: 'Turn timed out — your turn was ended' },
   'opponent-forfeited': { zh: '对手掉线超时,判你获胜', en: 'Opponent disconnected — you win' },
   'connect-failed': { zh: '连不上服务器', en: 'Could not reach the server' },
-  'connection-lost': { zh: '连接已断开', en: 'Connection lost' },
+  'connection-lost': { zh: '连接已断开', en: 'Disconnected' },
   'rate-limited': { zh: '操作过于频繁', en: 'Too many actions' },
   'seat-taken': { zh: '座位已被占用', en: 'That seat is taken' },
   'profile-locked': { zh: '存档属于另一台设备', en: 'This save belongs to another device' },

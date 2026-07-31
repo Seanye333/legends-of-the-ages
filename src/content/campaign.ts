@@ -375,7 +375,7 @@ export const BOSSES: BossDef[] = [
     id: 'boss-han-xin',
     heroId: 'hist-han-xin',
     name: { zh: '韓信', en: 'Han Xin' },
-    title: { zh: '背水一戰', en: 'Battle with the River at His Back' },
+    title: { zh: '背水一戰', en: 'Backs to the River' },
     intro: {
       zh: '韓信將兵,多多益善。你清掉一波,他點出的下一波已在路上。',
       en: 'Han Xin commands troops: the more the merrier. Clear one wave and the next he has already counted out is on its way.',
@@ -398,7 +398,7 @@ export const BOSSES: BossDef[] = [
     id: 'boss-huo-qubing',
     heroId: 'hist-huo-qubing',
     name: { zh: '霍去病', en: 'Huo Qubing' },
-    title: { zh: '封狼居胥', en: 'The Altar at Wolf Mountain' },
+    title: { zh: '封狼居胥', en: 'The Altar at Langjuxu' },
     intro: {
       zh: '匈奴未滅,何以家為。長驅二千里,他的刀鋒永遠越過你的前排,直取要害。',
       en: 'Two thousand li in a single drive — his blade always sweeps past your front rank to the throat behind it.',
@@ -482,7 +482,7 @@ export const BOSSES: BossDef[] = [
     deckTier: 0.45,
     power: power(
       'bp-yuejiajun',
-      { zh: '岳家軍', en: 'The Yue Army' },
+      { zh: '岳家軍', en: 'The Yue Family Army' },
       { zh: '使一名友方武將+0/+3並獲得守護。', en: 'Give a friendly general +0/+3 and Guard.' },
       2,
       [
@@ -563,7 +563,7 @@ export const BOSSES: BossDef[] = [
     id: 'boss-an-lushan',
     heroId: 'hist-an-lushan',
     name: { zh: '安祿山', en: 'An Lushan' },
-    title: { zh: '漁陽鼙鼓', en: 'War Drums from Yuyang' },
+    title: { zh: '漁陽鼙鼓', en: 'Drums of Yuyang' },
     intro: {
       zh: '渔阳鼙鼓动地来,惊破霓裳羽衣曲。三镇节度使反了,而长安还在唱歌。',
       en: 'The drums of Yuyang shook the earth. Three commands rose in revolt while Chang’an was still singing.',
@@ -892,7 +892,7 @@ const escort = (name: LocalizedText, tokenId: string) =>
 export const TRIALS: Record<string, TrialDef> = {
   'boss-zhang-jiao': {
     id: 'trial-zhang-jiao',
-    name: { zh: '蒼天已死', en: 'The Blue Sky is Dead' },
+    name: { zh: '蒼天已死', en: 'The Blue Heaven Is Dead' },
     text: {
       zh: '守成:黄巾漫野,不必斩其渠帅 —— 撑过 12 回合,乱民自散。',
       en: 'Endure: you need not kill their prophet. Survive 12 turns and the mob disperses.',
@@ -1035,7 +1035,7 @@ export const TRIALS: Record<string, TrialDef> = {
     name: { zh: '拐子馬', en: 'The Linked Cavalry' },
     text: {
       zh: '斩将:重甲连环,专砍马足 —— 先把领头那个拿下来。',
-      en: 'Slay: armoured horse chained three abreast. Take down the one who leads them.',
+      en: 'Slay: armored horse chained three abreast. Take down the one who leads them.',
     },
     ...slay({ zh: '敵軍主將', en: 'Enemy Commander' }, 'token-di-zhu-jiang'),
     rewardMerit: 380,
@@ -1180,7 +1180,7 @@ export function legacyModifiers(cycle: number): RunModifiers | undefined {
 
 // 傳承轮次的名字。中文用「重」(第二重、第三重),英文用 New Game+ 那套约定。
 export function legacyName(cycle: number): LocalizedText {
-  if (cycle <= 0) return { zh: '初陣', en: 'First Run' }
+  if (cycle <= 0) return { zh: '初陣', en: 'First Battle' }
   const ZH = ['', '二', '三', '四', '五', '六', '七', '八', '九', '十']
   return {
     zh: `第${ZH[cycle] ?? cycle}重`,

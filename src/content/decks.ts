@@ -63,7 +63,7 @@ export const PRECON_DECKS: DeckList[] = [
   },
   {
     heroId: 'cao-cao',
-    name: { zh: '魏武揮鞭', en: 'The Tyrant’s Vanguard' },
+    name: { zh: '魏武揮鞭', en: 'The Tyrant’s Lash' },
     // 霸道:全场最高攻。守护清一色自家猛将(周亞夫/許褚/樊噲),
     // 霸道 6 费内没有点杀战吼,改用龐德「單挑」上场就换掉一个敌将。
     cardIds: [
@@ -88,7 +88,7 @@ export const PRECON_DECKS: DeckList[] = [
   },
   {
     heroId: 'sima-yi',
-    name: { zh: '鷹視狼顧', en: 'The Patient Schemer' },
+    name: { zh: '鷹視狼顧', en: 'Wolf’s Gaze' },
     // 名利:解场最多的一套(法正/周瑜点杀 + 火計/聲東擊西),司馬家高血站场磨死对手。
     cardIds: [
       ...copies(1, 'han-fu'), ...copies(2, 'eq-teng-jia', 'strat-shengdong-jixi'),

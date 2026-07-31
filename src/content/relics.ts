@@ -202,7 +202,7 @@ export const RELICS: RelicDef[] = [
     modifiers: {
       vicePower: {
         id: 'hp-vice-leigu',
-        name: { zh: '擂鼓', en: 'Roll of Drums' },
+        name: { zh: '擂鼓', en: 'War Drums' },
         text: { zh: '士氣 +1,對敵方主公造成 1 點傷害。', en: 'Gain 1 Morale and deal 1 damage to the enemy hero.' },
         cost: 2,
         script: {

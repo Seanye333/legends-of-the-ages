@@ -30,13 +30,13 @@ function describePosition(g: GeneratedPuzzle): LocalizedText {
   if (me.board.length === 0) {
     return {
       zh: `你场上空无一人,手里 ${me.hand.length} 张、${me.mana} 费 —— 全在这一手里。`,
-      en: `An empty board, ${me.hand.length} cards and ${me.mana} mana — it is all in your hand.`,
+      en: `An empty board, ${me.hand.length} ${me.hand.length === 1 ? 'card' : 'cards'} and ${me.mana} mana — it is all in your hand.`,
     }
   }
   if (me.hand.length >= 6) {
     return {
       zh: `手里 ${me.hand.length} 张牌只有 ${me.mana} 费,敌主帅剩 ${foeHp} —— 挑得出那几张吗?`,
-      en: `${me.hand.length} cards, ${me.mana} mana, ${foeHp} on the enemy hero — which ones?`,
+      en: `${me.hand.length} ${me.hand.length === 1 ? 'card' : 'cards'}, ${me.mana} mana, ${foeHp} on the enemy hero — which ones?`,
     }
   }
   return {
@@ -171,7 +171,7 @@ export function dailyPuzzleSetFor(dateStr: string): LethalPuzzle[] {
 
 // 三阵的名字。刻意不叫「简单/普通/困难」—— 见上面为什么。
 export const SLOT_NAME = [
-  { zh: '初陣', en: 'First Position' },
+  { zh: '初陣', en: 'First Battle' },
   { zh: '中陣', en: 'Second Position' },
   { zh: '決陣', en: 'Third Position' },
 ] as const

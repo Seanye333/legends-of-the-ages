@@ -17,7 +17,7 @@ function vanilla(id: string, over: Partial<CardDef> = {}): CardDef {
   return {
     id,
     collectorNo: 1,
-    name: { zh: '步卒', en: 'Foot Soldier' },
+    name: { zh: '步卒', en: 'Infantry' },
     type: 'general',
     doctrine: 'neutral',
     dynasty: 'qun',

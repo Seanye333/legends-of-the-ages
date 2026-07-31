@@ -82,7 +82,7 @@ export function modeCounts(): Record<string, number> {
 export const MODE_NAME: Record<ModeKey, LocalizedText> = {
   quick: { zh: '随便打', en: 'Quick Match' },
   online: { zh: '联机对战', en: 'Online' },
-  arena: { zh: '校场点将', en: 'Arena' },
+  arena: { zh: '校场点将', en: 'Arena Run' },
   campaign: { zh: '群雄逐鹿', en: 'Contenders' },
   'campaign-trial': { zh: '关底试炼', en: 'Boss Trials' },
   expedition: { zh: '远征', en: 'Expedition' },

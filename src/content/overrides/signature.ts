@@ -1051,7 +1051,7 @@ export const SIGNATURE_OVERRIDES: Record<string, Partial<CardDef>> = {
     attack: 4,
     health: 4,
     keywords: ['windfury'],
-    text: { zh: '連擊。十步殺一人,千里不留行。', en: 'Windfury. A kill every ten paces, no trace for a thousand li.' },
+    text: { zh: '風怒。十步殺一人,千里不留行。', en: 'Windfury. A kill every ten paces, no trace for a thousand li.' },
   },
   'hist-guiguzi': {
     doctrine: 'reclusion',
@@ -1385,7 +1385,7 @@ export const SIGNATURE_OVERRIDES: Record<string, Partial<CardDef>> = {
     attack: 3,
     health: 3,
     keywords: ['windfury'],
-    text: { zh: '連擊。一筆書連綿不絕,大令與右軍,並稱二王。', en: 'Windfury. One unbroken stroke across the page — father and son, the Two Wangs.' },
+    text: { zh: '風怒。一筆書連綿不絕,大令與右軍,並稱二王。', en: 'Windfury. One unbroken stroke across the page — father and son, the Two Wangs.' },
   },
   'hist-shan-jian': {
     doctrine: 'reclusion',
@@ -1449,7 +1449,7 @@ export const SIGNATURE_OVERRIDES: Record<string, Partial<CardDef>> = {
     attack: 2,
     health: 2,
     keywords: ['windfury'],
-    text: { zh: '連擊。醉後呼叫狂走,以髮濡墨——揮毫落紙如雲煙。', en: 'Windfury. Drunk, he ran shouting and dipped his hair for a brush; the ink came down like smoke.' },
+    text: { zh: '風怒。醉後呼叫狂走,以髮濡墨——揮毫落紙如雲煙。', en: 'Windfury. Drunk, he ran shouting and dipped his hair for a brush; the ink came down like smoke.' },
   },
   'hist-xuanzang': {
     doctrine: 'reclusion',
@@ -1688,7 +1688,7 @@ export const SIGNATURE_OVERRIDES: Record<string, Partial<CardDef>> = {
     cost: 3,
     attack: 3,
     health: 4,
-    text: { zh: '漆工出身,十年成一卷;仕女樓閣,設色如新。', en: 'A lacquerer’s apprentice who spent ten years on a single scroll — the colours still look wet.' },
+    text: { zh: '漆工出身,十年成一卷;仕女樓閣,設色如新。', en: 'A lacquerer’s apprentice who spent ten years on a single scroll — the colors still look wet.' },
   },
   'hist-zhu-zhishan': {
     doctrine: 'reclusion',
@@ -1870,6 +1870,6 @@ export const SIGNATURE_OVERRIDES: Record<string, Partial<CardDef>> = {
     attack: 5,
     health: 5,
     keywords: ['windfury'],
-    text: { zh: '連擊。單騎退雄兵,七進七出,追者莫敢近。', en: 'Windfury. Alone he turned back an army — seven times in, seven times out.' },
+    text: { zh: '風怒。單騎退雄兵,七進七出,追者莫敢近。', en: 'Windfury. Alone he turned back an army — seven times in, seven times out.' },
   },
 }

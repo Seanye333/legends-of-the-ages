@@ -31,7 +31,7 @@ const LIB: CardLibrary = {
   firebolt: {
     id: 'firebolt',
     collectorNo: 2,
-    name: { zh: '火計', en: 'Firebolt' },
+    name: { zh: '火計', en: 'Fire Attack' },
     type: 'stratagem',
     doctrine: 'neutral',
     dynasty: 'qun',

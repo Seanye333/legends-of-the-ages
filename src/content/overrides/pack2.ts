@@ -20,7 +20,7 @@ export const EQUIPMENT: CardDef[] = [
     attack: 3,
     health: 1,
     keywords: ['windfury'],
-    text: { zh: '友方武將+3/+1並獲得連擊。刀重八十二斤,冷豔鋸沉。', en: 'Give a friendly general +3/+1 and Windfury.' },
+    text: { zh: '友方武將+3/+1並獲得風怒。刀重八十二斤,冷豔鋸沉。', en: 'Give a friendly general +3/+1 and Windfury.' },
   },
   {
     id: 'eq-fangtian-ji',
@@ -168,7 +168,7 @@ export const EQUIPMENT: CardDef[] = [
     attack: 2,
     health: 0,
     keywords: ['windfury'],
-    text: { zh: '友方武將+2/+0並獲得連擊。百步穿楊,箭無虛發。', en: 'Give a friendly general +2/+0 and Windfury.' },
+    text: { zh: '友方武將+2/+0並獲得風怒。百步穿楊,箭無虛發。', en: 'Give a friendly general +2/+0 and Windfury.' },
   },
   {
     id: 'eq-zhanlu-jian',
@@ -198,7 +198,7 @@ export const EQUIPMENT: CardDef[] = [
     attack: 2,
     health: 2,
     keywords: ['windfury'],
-    text: { zh: '友方武將+2/+2並獲得連擊。雌雄雙劍,鑄以魂魄。', en: 'Give a friendly general +2/+2 and Windfury.' },
+    text: { zh: '友方武將+2/+2並獲得風怒。雌雄雙劍,鑄以魂魄。', en: 'Give a friendly general +2/+2 and Windfury.' },
   },
   {
     id: 'eq-mingguang-kai',

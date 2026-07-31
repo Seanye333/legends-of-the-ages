@@ -60,7 +60,7 @@ export const CODEX: CodexSection[] = [
       },
       {
         id: 'windfury',
-        term: { zh: '連擊 Windfury', en: 'Windfury' },
+        term: { zh: '風怒 Windfury', en: 'Windfury' },
         rule: { zh: '每回合可以攻击两次。', en: 'May attack twice each turn.' },
         note: {
           zh: '注意和「連擊(Combo)」不是一回事 —— 那个说的是同一回合打出的第二张牌。',
@@ -132,7 +132,7 @@ export const CODEX: CodexSection[] = [
         rule: { zh: '从手牌打出时触发一次。', en: 'Triggers once when played from hand.' },
         note: {
           zh: '只在从手牌打出时触发 —— 被召唤、被弹回后再上场都不算。',
-          en: 'Only from hand. Summoned copies and re-played bounced minions do not re-trigger.',
+          en: 'Only from hand. Summoned copies and re-played bounced generals do not re-trigger.',
         },
         example: (c) => c.battlecry !== undefined,
       },
@@ -416,7 +416,7 @@ export const CODEX: CodexSection[] = [
         rule: { zh: '从墓地随机召回死去的友方武将。', en: 'Return random friendly generals that have died to the field.' },
         note: {
           zh: '亡语流与人海流的顶点:死得越多,复生越赚。变形/弹回手牌不进墓地,所以复不出来。',
-          en: 'The payoff for deathrattle and swarm decks — the more that died, the more you get back. Transformed or bounced minions never enter the graveyard.',
+          en: 'The payoff for deathrattle and swarm decks — the more that died, the more you get back. Transformed or bounced generals never enter the graveyard.',
         },
         example: (c) => JSON.stringify(c).includes('resurrect'),
       },
@@ -493,7 +493,7 @@ export const CODEX: CodexSection[] = [
         rule: { zh: '牌库抽空后每次抽牌都会对自己造成伤害,而且逐次递增。', en: 'Once your deck is empty, each draw damages your own hero, increasing every time.' },
         note: {
           zh: '主帅面板上的 ▤ 是牌库余量,少于 5 会变色。长局的胜负经常是这个数字决定的,不是场面。',
-          en: 'The ▤ counter on the hero plate is your deck size; it changes colour below five. Long games are often decided by this number, not the board.',
+          en: 'The ▤ counter on the hero plate is your deck size; it changes color below five. Long games are often decided by this number, not the board.',
         },
       },
       {
@@ -513,7 +513,7 @@ export const CODEX: CodexSection[] = [
     entries: [
       {
         id: 'recruit',
-        term: { zh: '新兵', en: 'Recruit' },
+        term: { zh: '新兵', en: 'Novice' },
         rule: { zh: '经常失误,而且看不见多步斩杀 —— 你血量再低它也未必抓得住。', en: 'Blunders often and cannot see multi-step lethal — it may miss the kill even when you are low.' },
       },
       {
@@ -523,7 +523,7 @@ export const CODEX: CodexSection[] = [
       },
       {
         id: 'general',
-        term: { zh: '名将', en: 'General' },
+        term: { zh: '名将', en: 'Legend' },
         rule: { zh: '零失误、必算斩杀,而且会预判你下一回合能打它多少 —— 它不会在自己会被一波带走的场面上贪血。', en: 'No blunders, always finds lethal, and weighs what you can swing back next turn — it will not greedily take face damage when that lets you kill it.' },
       },
     ],

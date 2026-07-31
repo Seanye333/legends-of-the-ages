@@ -104,7 +104,7 @@ export const STRATAGEMS: CardDef[] = [
     cost: 2,
     keywords: [],
     spell: { ops: [{ op: 'grantKeyword', keyword: 'windfury', target: 'chosenAny' }] },
-    text: { zh: '使一名武將獲得連擊。七星壇上作法,東風夜起。', en: 'Give a general Windfury. The east wind rises at the Seven Star Altar.' },
+    text: { zh: '使一名武將獲得風怒。七星壇上作法,東風夜起。', en: 'Give a general Windfury. The east wind rises at the Seven Star Altar.' },
   },
   {
     id: 'strat-weiwei-jiuzhao',
@@ -142,7 +142,7 @@ export const STRATAGEMS: CardDef[] = [
   {
     id: 'strat-beishui-yizhan',
     collectorNo: 9010,
-    name: { zh: '背水一戰', en: 'Last Stand at the River' },
+    name: { zh: '背水一戰', en: 'Backs to the River' },
     type: 'stratagem',
     doctrine: 'hegemonic',
     dynasty: 'chu-han',

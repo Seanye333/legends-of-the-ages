@@ -28,6 +28,7 @@ import { PACK16_CARDS } from './overrides/pack16'
 import { PACK17_CARDS } from './overrides/pack17'
 import { BOND_OVERRIDES } from './overrides/bonds'
 import { RIVAL_OVERRIDES } from './overrides/rivals'
+import { TITLE_OVERRIDES } from './overrides/titles'
 import { deriveTroop } from './troops'
 import { PACK18_CARDS } from './overrides/pack18'
 import { PACK19_CARDS } from './overrides/pack19'
@@ -63,11 +64,14 @@ function reconcileExclusive(merged: CardDef, ov: Partial<CardDef>): CardDef {
 //
 // 所以在合并之后重新补一遍关键词前缀 —— 最终卡面带哪些关键词,文本开头就写哪些。
 // 幂等(已写过就不再写),顺序跟 Keyword 声明序,读起来稳定。
-const KEYWORD_LABEL: Record<string, { zh: string; en: string }> = {
+// 导出:content.test 此前**另抄了一份**同样的表。抄本在这次把「連擊」
+// 改名成「風怒」时没跟着改 —— 于是闸门报出三张卡「带 windfury 但文本里
+// 没有連擊」,而真相是抄本过期了。一张表只该有一个来源。
+export const KEYWORD_LABEL: Record<string, { zh: string; en: string }> = {
   charge: { zh: '衝鋒', en: 'Charge' },
   rush: { zh: '突襲', en: 'Rush' },
   guard: { zh: '守護', en: 'Guard' },
-  windfury: { zh: '連擊', en: 'Windfury' },
+  windfury: { zh: '風怒', en: 'Windfury' },
   duel: { zh: '單挑', en: 'Duel' },
   lifesteal: { zh: '吸血', en: 'Lifesteal' },
   poison: { zh: '劇毒', en: 'Poisonous' },
@@ -162,9 +166,11 @@ const MERGED_CARDS: CardDef[] = [
     const p13 = PACK13_OVERRIDES[card.id]
     const bd = BOND_OVERRIDES[card.id]
     const rv = RIVAL_OVERRIDES[card.id]
-    if (!fl && !sig && !sk && !p3 && !p4 && !p5 && !p6d && !p6c && !p6l && !p7 && !p8 && !p9 && !p10 && !p11 && !p13 && !p12 && !bd && !rv)
+    // 尊号层放在最后:它只改 name.en,不该被任何机制层盖回去
+    const ti = TITLE_OVERRIDES[card.id]
+    if (!fl && !sig && !sk && !p3 && !p4 && !p5 && !p6d && !p6c && !p6l && !p7 && !p8 && !p9 && !p10 && !p11 && !p13 && !p12 && !bd && !rv && !ti)
       return card
-    const ov = { ...fl, ...sig, ...sk, ...p3, ...p4, ...p5, ...p6d, ...p6c, ...p6l, ...p7, ...p8, ...p9, ...p10, ...p11, ...p12, ...p13, ...bd, ...rv }
+    const ov = { ...fl, ...sig, ...sk, ...p3, ...p4, ...p5, ...p6d, ...p6c, ...p6l, ...p7, ...p8, ...p9, ...p10, ...p11, ...p12, ...p13, ...bd, ...rv, ...ti }
     return reconcileExclusive({ ...card, ...ov }, ov)
   }),
   ...STRATAGEMS,

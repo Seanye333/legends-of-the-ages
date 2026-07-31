@@ -73,7 +73,7 @@ export const ERA_BLURB: Record<Era, LocalizedText> = {
   },
   'song-yuan': {
     zh: '一邊是城防重甲,一邊是騎射長驅。守與破在這裡打了四百年。',
-    en: 'Walls and heavy armour on one side, horse archers on the other. Four centuries of siege against speed.',
+    en: 'Walls and heavy armor on one side, horse archers on the other. Four centuries of siege against speed.',
   },
   'ming-qing': {
     zh: '火器、水師、邊軍。殺傷第一次不再取決於一個人有多強。',

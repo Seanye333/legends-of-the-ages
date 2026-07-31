@@ -87,7 +87,10 @@ export function ResultOverlay({
       ? ['勝', t('凯旋而归', 'Victory'), styles.win, styles.bgWin]
       : winner === 1
         ? ['敗', t('卷土重来', 'Defeat'), styles.lose, styles.bgLose]
-        : ['和', t('平分秋色', 'Draw'), styles.draw, styles.bgDraw]
+        : // 「Draw」在这个游戏里已经是「抽牌」—— 卡面、图鉴、乱斗规则里出现了
+          // 上百次。结算大字再用 Draw,英文玩家第一眼读到的是「抽牌」。
+          // Stalemate 既无歧义,也更贴「平分秋色」。
+          ['和', t('平分秋色', 'Stalemate'), styles.draw, styles.bgDraw]
 
   return (
     <div className={`${styles.overlay} ${bgCls}`}>

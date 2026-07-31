@@ -16,7 +16,7 @@ interface PracticeScreenProps {
 }
 
 const DIFFS: { key: Difficulty; zh: string; en: string }[] = [
-  { key: 'recruit', zh: '新兵', en: 'Recruit' },
+  { key: 'recruit', zh: '新兵', en: 'Novice' },
   { key: 'veteran', zh: '宿将', en: 'Veteran' },
   { key: 'general', zh: '名将', en: 'Legend' },
   { key: 'marshal', zh: '军神', en: 'Marshal' },

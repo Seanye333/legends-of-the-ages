@@ -182,7 +182,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
           <span>
             {t('背景音乐', 'Music')}
             <small className={styles.hint}>
-              {t('五声音阶实时合成,不循环固定旋律', 'Pentatonic, synthesised live — never loops')}
+              {t('五声音阶实时合成,不循环固定旋律', 'Pentatonic, synthesized live — never loops')}
             </small>
           </span>
           <input
@@ -251,7 +251,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
             那种色觉异常分不开的一对,而它们是对局里最要紧的两个状态。 */}
         <label className={styles.toggleRow}>
           <span>
-            {t('色觉辅助', 'Colour-blind aid')}
+            {t('色觉辅助', 'Color-blind aid')}
             <small className={styles.hint}>
               {t(
                 '给稀有度与场上状态补形状标记 —— 不再只靠红绿分辨',
@@ -444,7 +444,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
         <div className={styles.chipRow}>
           {(
             [
-              { k: 'recruit', zh: '新兵', en: 'Recruit', d: { zh: '常有失误,看不见多步斩杀', en: 'Blunders often; misses multi-step lethal' } },
+              { k: 'recruit', zh: '新兵', en: 'Novice', d: { zh: '常有失误,看不见多步斩杀', en: 'Blunders often; misses multi-step lethal' } },
               { k: 'veteran', zh: '宿将', en: 'Veteran', d: { zh: '偶尔失误', en: 'Occasional blunders' } },
               { k: 'general', zh: '名将', en: 'Legend', d: { zh: '零失误,必算斩杀', en: 'No blunders; always finds lethal' } },
               { k: 'marshal', zh: '军神', en: 'Marshal', d: { zh: '规划整个回合,看得见先亏后赚的组合', en: 'Plans the whole turn; sees setups that lose tempo to win value' } },
@@ -466,7 +466,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
         <p className={styles.hint}>
           {pick(
             [
-              { zh: '新兵', en: 'Recruit' },
+              { zh: '新兵', en: 'Novice' },
               { zh: '宿将', en: 'Veteran' },
               { zh: '名将', en: 'Legend' },
               { zh: '军神', en: 'Marshal' },
@@ -477,7 +477,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
           {pick(
             [
               { zh: '常有失误,且看不见多步斩杀线', en: 'Blunders often and cannot see multi-step lethal' },
-              { zh: '偶尔失误', en: 'Blunders occasionally' },
+              { zh: '偶尔失误', en: 'Occasional blunders' },
               { zh: '零失误,每回合先算一遍斩杀', en: 'No blunders; checks for lethal every turn' },
               { zh: '规划整个回合 —— 会为了后面赚回来而先走一步亏分的', en: 'Plans the entire turn, including moves that lose value now to gain more later' },
               { zh: '树搜索 —— 对军神实测 58.3%、对名将 72.2%', en: 'Tree search — measured 58.3% against Marshal and 72.2% against Legend' },

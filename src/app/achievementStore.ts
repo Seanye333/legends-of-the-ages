@@ -126,7 +126,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   ...tier(
     'ach-power',
     'heroPowersUsed',
-    { zh: '主公技', en: 'Sovereign' },
+    { zh: '主公技', en: 'Hero Power' },
     (n) => ({ zh: `发动主公技 ${n} 次`, en: `Use your Hero Power ${n} times` }),
     [50, 300],
     [60, 220],

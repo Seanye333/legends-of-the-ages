@@ -118,9 +118,13 @@ export interface RatingRow {
 
 export const DEFAULT_RATING = 1200
 
-// 段位:按天梯分数取中国古代军职,低段快速通过、高段稀有
+// 段位:按天梯分数取中国古代军职,低段快速通过、高段稀有。
+// 英文一律用汉学界的通行译法(de Crespigny 那一套),不要就地意译 ——
+// 而且要避开游戏里已被占用的词:大将军此前是 Grand Marshal,和敌手档位
+// 「军神 Marshal」撞车,玩家会以为是同一套梯度;兵卒此前是 Recruit,
+// 和「搜將 Recruit」这个印在卡面上的关键字撞车。
 const RANKS: Array<[number, { zh: string; en: string }]> = [
-  [1700, { zh: '大将军', en: 'Grand Marshal' }],
+  [1700, { zh: '大将军', en: 'General-in-Chief' }],
   [1600, { zh: '骠骑将军', en: 'General of Cavalry' }],
   [1500, { zh: '偏将军', en: 'Lieutenant General' }],
   [1400, { zh: '中郎将', en: 'Palace General' }],
@@ -133,7 +137,7 @@ export function rankOf(rating: number): { zh: string; en: string } {
   for (const [min, rank] of RANKS) {
     if (rating >= min) return rank
   }
-  return { zh: '兵卒', en: 'Recruit' }
+  return { zh: '兵卒', en: 'Footsoldier' }
 }
 
 // 联机服务器默认地址。

@@ -864,7 +864,7 @@ export const SIGNATURE_SKILLS: Record<string, Partial<CardDef>> = {
     battlecry: { ops: [{ op: 'discover', pool: 'myGeneral' }] },
     text: {
       zh: '戰吼:發現一名武將。漆工出身,十年成一卷;仕女樓閣,設色如新。',
-      en: 'Battlecry: Discover a general. A lacquerer’s apprentice who spent ten years on a single scroll — the colours still look wet.',
+      en: 'Battlecry: Discover a general. A lacquerer’s apprentice who spent ten years on a single scroll — the colors still look wet.',
     },
   },
 

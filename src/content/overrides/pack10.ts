@@ -10,7 +10,7 @@ export const PACK10_CARDS: CardDef[] = [
   {
     id: 'strat-sep-warcry',
     collectorNo: 9951,
-    name: { zh: '揭竿百萬', en: 'A Million Rise' },
+    name: { zh: '揭竿百萬', en: 'Rally the Millions' },
     type: 'stratagem',
     doctrine: 'separatist',
     dynasty: 'qun',

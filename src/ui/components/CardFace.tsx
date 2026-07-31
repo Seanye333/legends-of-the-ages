@@ -2,7 +2,7 @@ import type { CSSProperties, MouseEvent } from 'react'
 import type { CardInstance } from '../../engine/types'
 import { CARDS_BY_ID, needsDynastyTag } from '../../content/cards'
 import { useSettings } from '../../app/settingsStore'
-import { DOCTRINE_COLORS, DOCTRINE_GLYPH, dynastyName } from '../doctrineColors'
+import { CARD_TYPE_NAME, DOCTRINE_COLORS, DOCTRINE_GLYPH, dynastyName } from '../doctrineColors'
 import { Portrait } from './Portrait'
 import { useLongPress } from '../useLongPress'
 import styles from './CardFace.module.css'
@@ -141,7 +141,12 @@ export function CardFace({ inst, playable, selected, large, onClick, onInspect }
         </>
       ) : (
         <span className={styles.spellMark}>
-          {lang === 'en' ? (def.type === 'equipment' ? 'GEAR' : 'PLOT') : '锦囊'}
+          {/* 卡面的类型角标必须用**术语表里的那个词**,不能就地另造。
+              此前英文写死 PLOT / GEAR —— 这两个词全站再无第二处出现:
+              图鉴、筛选器、牌库构筑、成就文案一律叫 Stratagem / Equipment,
+              于是卡面上的词和玩家能搜到的词对不上。
+              中文一侧更直接是个 bug:装备牌也被标成「锦囊」。 */}
+          {lang === 'en' ? CARD_TYPE_NAME[def.type].en : CARD_TYPE_NAME[def.type].zh}
         </span>
       )}
     </div>

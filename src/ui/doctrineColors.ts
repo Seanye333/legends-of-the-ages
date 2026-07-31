@@ -45,7 +45,7 @@ export const KEYWORD_NAME: Record<Keyword, LocalizedText> = {
   charge: { zh: '冲锋', en: 'Charge' },
   rush: { zh: '突袭', en: 'Rush' },
   guard: { zh: '守护', en: 'Guard' },
-  windfury: { zh: '连击', en: 'Windfury' },
+  windfury: { zh: '风怒', en: 'Windfury' },
   duel: { zh: '单挑', en: 'Duel' },
   lifesteal: { zh: '吸血', en: 'Lifesteal' },
   poison: { zh: '剧毒', en: 'Poison' },

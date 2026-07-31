@@ -336,7 +336,7 @@ export const PACK21_CARDS: CardDef[] = [
     keywords: [],
     formation: {
       id: 'formation-crane',
-      name: { zh: '鶴翼陣', en: 'Crane Wing' },
+      name: { zh: '鶴翼陣', en: 'Crane Wing Formation' },
       shape: 'crane',
       attack: 0,
       health: 3,
@@ -362,7 +362,7 @@ export const PACK21_CARDS: CardDef[] = [
     keywords: [],
     formation: {
       id: 'formation-scale',
-      name: { zh: '魚鱗陣', en: 'Fish Scales' },
+      name: { zh: '魚鱗陣', en: 'Fish-Scale Formation' },
       shape: 'scale',
       attack: 1,
       health: 1,

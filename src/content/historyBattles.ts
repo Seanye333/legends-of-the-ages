@@ -80,7 +80,7 @@ export const HISTORY_BATTLES: HistoryBattle[] = [
     name: { zh: '笠澤之戰', en: 'The Battle of Lize' },
     era: { zh: '春秋 · 周元王元年', en: 'Spring & Autumn · 478 BC' },
     foeName: { zh: '勾踐', en: 'Goujian' },
-    foeTitle: { zh: '臥薪嘗膽', en: 'The Bitter Gall' },
+    foeTitle: { zh: '臥薪嘗膽', en: 'Sleeping on Brushwood' },
     intro: {
       zh: '会稽之耻,一尝二十年。今日笠泽夹水而阵,越甲三千 —— 该雪的,总要雪。',
       en: 'Twenty years he tasted gall for the shame of Kuaiji. Now the armies face off across the Lize — three thousand Yue blades, and a debt long overdue.',
@@ -188,7 +188,7 @@ export const HISTORY_BATTLES: HistoryBattle[] = [
     deckTier: 0.9,
     power: power(
       'hbp-jianbi',
-      { zh: '堅壁清野', en: 'Fortify and Wait' },
+      { zh: '堅壁清野', en: 'Fortify the Walls' },
       { zh: '使一名友方武將+0/+3並獲得守護。', en: 'Give a friendly general +0/+3 and Guard.' },
       [
         { op: 'buffStats', attack: 0, health: 3, target: 'chosenFriendlyGeneral' },
@@ -500,7 +500,7 @@ export const HISTORY_BATTLES: HistoryBattle[] = [
     name: { zh: '台州九捷', en: 'Nine Victories at Taizhou' },
     era: { zh: '明 · 嘉靖四十年', en: 'Ming · AD 1561' },
     foeName: { zh: '戚繼光', en: 'Qi Jiguang' },
-    foeTitle: { zh: '鴛鴦陣', en: 'The Mandarin Duck Formation' },
+    foeTitle: { zh: '鴛鴦陣', en: 'Mandarin Duck Formation' },
     intro: {
       zh: '倭寇纵横海上数十年,直到戚家军列出鸳鸯阵。长短相济,十二人如一人 —— 一月九战九捷。',
       en: 'The raiders ruled the coast for decades — until the Qi army formed the Mandarin Duck. Long and short arms as one body: nine battles, nine victories, in a single month.',

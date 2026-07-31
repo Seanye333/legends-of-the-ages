@@ -24,6 +24,7 @@ import { playSfx } from '../sound'
 import { EmptyState } from '../components/EmptyState'
 import { useClaimPulse } from '../useClaimPulse'
 import styles from './CollectionScreen.module.css'
+import { countOf } from '../plural'
 
 const DOCTRINE_TABS: { key: Doctrine | 'neutral' | 'all'; zh: string; en: string }[] = [
   { key: 'all', zh: '全部', en: 'All' },
@@ -62,7 +63,7 @@ const MECH_FILTERS: { key: MechKey; label: LocalizedText }[] = [
   { key: 'charge', label: { zh: '冲锋', en: 'Charge' } },
   { key: 'rush', label: { zh: '突袭', en: 'Rush' } },
   { key: 'guard', label: { zh: '守护', en: 'Guard' } },
-  { key: 'windfury', label: { zh: '连击(风怒)', en: 'Windfury' } },
+  { key: 'windfury', label: { zh: '风怒', en: 'Windfury' } },
   { key: 'duel', label: { zh: '单挑', en: 'Duel' } },
   { key: 'lifesteal', label: { zh: '吸血', en: 'Lifesteal' } },
   { key: 'poison', label: { zh: '剧毒', en: 'Poison' } },
@@ -491,7 +492,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
         </div>
         </details>
         <span className={styles.resultCount}>
-          {t(`${filtered.length} 张`, `${filtered.length} cards`)}
+          {t(`${filtered.length} 张`, countOf(filtered.length, 'card'))}
         </span>
       </div>
 

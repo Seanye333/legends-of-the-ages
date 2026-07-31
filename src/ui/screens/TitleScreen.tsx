@@ -59,6 +59,7 @@ import { useQuests } from '../../app/questStore'
 import { shouldOfferTutorial, tutorialMatchArgs } from '../tutorial'
 import { unlockHint, type UnlockProgress } from '../../content/unlocks'
 import styles from './TitleScreen.module.css'
+import { countOf } from '../plural'
 
 // 大厅里带解锁门槛的模式入口。没解锁时**照样渲染**,只是灰着并把条件写在按钮上 ——
 // 藏起来的话游戏看着空,而内容量恰恰是这游戏最大的卖点。见 content/unlocks.ts。
@@ -168,7 +169,7 @@ function buildMatchArgs(decks: DeckList[], myDeckIndex: number): StartMatchArgs 
 // 天機换的不是深度而是**预算怎么分配**:军神的最好优先排序会把
 // 「第一步最差、三步后最好」的线永久饿死,UCT 不会 —— 对军神实测 58.3%。
 const DIFFICULTIES: { key: Difficulty; name: LocalizedText }[] = [
-  { key: 'recruit', name: { zh: '新兵', en: 'Recruit' } },
+  { key: 'recruit', name: { zh: '新兵', en: 'Novice' } },
   { key: 'veteran', name: { zh: '宿将', en: 'Veteran' } },
   { key: 'general', name: { zh: '名将', en: 'Legend' } },
   { key: 'marshal', name: { zh: '军神', en: 'Marshal' } },
@@ -222,7 +223,7 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
     const r = useStreak.getState().checkIn()
     if (!r.isNew || r.merit <= 0) return
     setStreakToast(
-      t(`連日到營 ${r.streak} 天 —— 功勳 +${r.merit}`, `${r.streak} days running — +${r.merit} merit`),
+      t(`連日到營 ${r.streak} 天 —— 功勳 +${r.merit}`, `${countOf(r.streak, 'day')} running — +${r.merit} merit`),
     )
     const timer = window.setTimeout(() => setStreakToast(null), 4200)
     return () => window.clearTimeout(timer)

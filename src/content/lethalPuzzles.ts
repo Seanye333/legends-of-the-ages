@@ -228,7 +228,7 @@ export const LETHAL_PUZZLES: LethalPuzzle[] = [
   // ---------- 第二批:更多招式 ----------
   {
     id: 'lp-massrush',
-    title: { zh: '雷霆突進', en: 'Thunder Advance' },
+    title: { zh: '雷霆突進', en: 'Thunder Rush' },
     // 敌主帅血量跟着这三张卡的身材走(2+2+2)。它们是**生成卡**,
     // 重跑 import-content 调了播种就会变 —— 上面那条 lethalContent 闸门会当场抓到,
     // 改这里的 heroHp 对齐即可,别去改卡。
@@ -285,7 +285,7 @@ export const LETHAL_PUZZLES: LethalPuzzle[] = [
   },
   {
     id: 'lp-beishui',
-    title: { zh: '背水一戰', en: 'Back to the River' },
+    title: { zh: '背水一戰', en: 'Backs to the River' },
     situation: { zh: '高顺在场,一道锦囊能再添两分力 —— 敌主帅 8 血。', en: 'Gao Shun on board, one stratagem lends two more. Enemy at 8.' },
     hint: { zh: '给他加上那两点。', en: 'Grant him the two attack he needs.' },
     difficulty: 2,

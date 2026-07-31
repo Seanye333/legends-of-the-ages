@@ -44,7 +44,7 @@ export const PACK20_CARDS: CardDef[] = [
   {
     id: 'eq-heirloom-armor',
     collectorNo: 9932,
-    name: { zh: '世襲重鎧', en: 'Armour Passed Down' },
+    name: { zh: '世襲重鎧', en: 'Armor Passed Down' },
     type: 'equipment',
     doctrine: 'royal',
     dynasty: 'song',
