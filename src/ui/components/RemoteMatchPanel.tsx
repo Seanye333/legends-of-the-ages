@@ -44,9 +44,15 @@ export function RemoteMatchPanel({ deck, onStart, onClose }: RemoteMatchPanelPro
   const pick = usePickText()
   const pickCompact = usePickCompact()
   const { remoteStatus, error, roomCode, startRemoteMatch, resumeRemoteMatch, reset } = useMatch()
-  const [server, setServer] = useState(
-    () => localStorage.getItem(SERVER_KEY) ?? DEFAULT_SERVER,
-  )
+  // 读也要兜:隐私模式下 localStorage 的**存取都可能抛**,而这一句在渲染期 ——
+  // 抛出来整个联机面板白屏(会被 ErrorBoundary 接住,但玩家看到的是崩溃页)。
+  const [server, setServer] = useState(() => {
+    try {
+      return localStorage.getItem(SERVER_KEY) ?? DEFAULT_SERVER
+    } catch {
+      return DEFAULT_SERVER
+    }
+  })
   const [tab, setTab] = useState<Tab>('queue')
   const [joinCode, setJoinCode] = useState('')
   const [searching, setSearching] = useState(false)
@@ -96,7 +102,15 @@ export function RemoteMatchPanel({ deck, onStart, onClose }: RemoteMatchPanelPro
 
   const begin = (mode: 'queue' | 'create-room' | 'join-room' | 'watch-room') => {
     playSfx('buttonTap')
-    localStorage.setItem(SERVER_KEY, server.trim())
+    // 记住服务器地址是**锦上添花**,不该拦住开局。
+    // Safari 隐私模式下 setItem 直接抛 QuotaExceededError,而这一行在
+    // startRemoteMatch **之前** —— 于是整个联机入口在隐私模式里点了没反应。
+    // 全站另外 20 处 setItem 都包了 try,只有这一处漏了。
+    try {
+      localStorage.setItem(SERVER_KEY, server.trim())
+    } catch {
+      /* 隐私模式/配额满:地址这次记不住,但这一局照常打 */
+    }
     setSearching(true)
     startRemoteMatch({
       server: server.trim(),
