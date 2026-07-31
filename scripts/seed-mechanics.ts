@@ -21,6 +21,19 @@
 //   · **要付账**:关键词与效果一律从身材预算里扣点数(1 攻 = 1 点、1 血 = 0.8 点),
 //     不是白送 —— 否则等于给全池加强度,平衡直接崩。
 //   · **留白板**:约一成保持纯白板、另有一成只带关键词。简单牌是曲线的骨架,不是缺陷。
+
+// ⚠️ **改这个文件目前无法验证。**
+// 它的产物要靠 `npm run import-content` 落地,而那个脚本现在会毁掉已提交的
+// 卡池(少 185 张、白板率 8.9%→29.5%、立绘缩水)—— 详见 import-content.ts 头部。
+//
+// 下面两处改动(2026-07)因此是**已写好但未生效**的:
+//   1. 放宽 duel / windfury 的准入 —— 实测全池只有 14 / 9 张,而同为 2 点定价的
+//      剧毒有 39 张;差别不在定价,在 when 卡得极窄(單挑限三国、連擊限隋唐)。
+//   2. 新增「高费守护」候选 —— 六套预组各有 33-47% 的格子被同样七张牌占着,
+//      而那几张身材只在同费池第 31-51 百分位,共同点只有 guard:
+//      带守护的高费随从池太薄,六套只能抢同样这几张。
+// 等源头问题解决后重跑 import-content + 全部平衡闸门,这两条才会真的生效。
+
 import type { DynastyTag, Rarity } from '../src/engine/types'
 
 export interface Stats {
@@ -162,7 +175,7 @@ const t = (o: Seeded, zh: string, en: string) => {
 // 和效果一样改成加权池。此前是「命中即停」的有序阶梯,后面的关键词几乎发不出去
 // (剧毒/铁壁/碾压压根不在池子里)。
 
-type KwCtx = Pick<Ctx, 'id' | 's' | 'archetype' | 'rarity' | 'era' | 'dynasty'>
+type KwCtx = Pick<Ctx, 'id' | 's' | 'archetype' | 'rarity' | 'era' | 'dynasty' | 'cost'>
 
 interface KwCand {
   kw: string
@@ -173,8 +186,15 @@ interface KwCand {
 
 const KEYWORD_POOL: KwCand[] = [
   // —— 通用画像 ——
-  { kw: 'duel', weight: 5, when: (c) => RANK[c.rarity] >= 1 && c.s.war >= 90 && c.archetype === 'warrior', eras: ['three-kingdoms'] },
-  { kw: 'windfury', weight: 4, when: (c) => c.s.war >= 86 && c.s.intelligence < 66, eras: ['sui-tang'] },
+  // 【2026-07 放宽了 duel / windfury 的准入】
+  // 实测全池:連擊只有 9 张、單挑 14 张,而同为 2 点定价的剧毒有 39 张。
+  // 差别不在定价,在这两条的 when 卡得极窄 —— 單挑要「war≥90 且武将且稀有以上
+  // 且**仅三国**」,連擊要「war≥86 且 int<66 且**仅隋唐**」(隋唐全池才 342 张)。
+  // 而讲堂给它们各写了一条词条,玩家读得到规则却几乎抽不到卡。
+  // 放宽的方向是**开时代**而不是降门槛:单挑本来就该是三国之外也有的事
+  // (先秦的致师、秦汉的斗将),連擊给到高武的猛将而不限朝代。
+  { kw: 'duel', weight: 5, when: (c) => RANK[c.rarity] >= 1 && c.s.war >= 88 && c.archetype === 'warrior', eras: ['three-kingdoms', 'pre-qin', 'qin-han'] },
+  { kw: 'windfury', weight: 4, when: (c) => c.s.war >= 84 && c.s.intelligence < 70, eras: ['sui-tang', 'three-kingdoms', 'song-yuan'] },
   { kw: 'charge', weight: 5, when: (c) => c.s.war >= 86 && c.archetype === 'warrior', eras: ['qin-han', 'sui-tang', 'song-yuan'] },
   { kw: 'rush', weight: 6, when: (c) => c.s.war >= 70 && c.archetype === 'warrior' },
   { kw: 'guard', weight: 5, when: (c) => c.s.leadership >= 74, eras: ['song-yuan', 'ming-qing'] },
@@ -182,6 +202,12 @@ const KEYWORD_POOL: KwCand[] = [
   // 否则 1-3 费段整段没有关键词 —— 而那一段占全池四成。
   { kw: 'rush', weight: 2, when: (c) => c.s.war >= 60 },
   { kw: 'guard', weight: 2, when: (c) => c.s.leadership >= 62 },
+  // 【高费守护】六套预组各有 33-47% 的格子被同样七张牌占着,其中四张
+  // (藤甲/明光鎧/王平/程普那一类)六套全带满两份。而它们**并不超模** ——
+  // 身材落在同费池第 31-51 百分位。共同点只有一个:guard。
+  // 根因是**带守护的高费随从池太薄**(5 费以上同费池里只有 15-20% 带守护),
+  // 六套只能抢同样这几张。这一条专门补那一段。
+  { kw: 'guard', weight: 6, when: (c) => c.cost >= 5 && c.s.leadership >= 66 },
   { kw: 'stealth', weight: 4, when: (c) => c.s.intelligence >= 78 && c.s.politics < 72, eras: ['pre-qin'] },
   { kw: 'lifesteal', weight: 2, when: (c) => c.s.charisma >= 84 },
   // —— 新开的三个 ——
@@ -193,10 +219,10 @@ const KEYWORD_POOL: KwCand[] = [
   { kw: 'trample', weight: 4, when: (c) => c.s.war >= 82 && c.s.leadership >= 78, eras: ['qin-han', 'song-yuan'] },
 ]
 
-export function seedKeyword(id: string, s: Stats, archetype: string, rarity: Rarity, era: Era, dynasty: DynastyTag): string | null {
+export function seedKeyword(id: string, s: Stats, archetype: string, rarity: Rarity, era: Era, dynasty: DynastyTag, cost = 4): string | null {
   // 约 44% 的卡带关键词(此前约三分之一)
   if (hash01(id, 'kwgate') >= 0.44) return null
-  const ctx: KwCtx = { id, s, archetype: archetype as Ctx['archetype'], rarity, era, dynasty }
+  const ctx: KwCtx = { id, s, archetype: archetype as Ctx['archetype'], rarity, era, dynasty, cost }
   const live = KEYWORD_POOL.filter((k) => k.when(ctx))
   if (live.length === 0) return null
   const w = live.map((k) => k.weight * (k.eras?.includes(era) ? ERA_BOOST : 1))

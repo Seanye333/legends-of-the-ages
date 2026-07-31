@@ -1,6 +1,25 @@
 // 内容导入管线:从姊妹仓库 ThreeKingdomMastersIOS(素材源头,只读)
 // 读取全部武将 → 套公式生成全卡池 → 输出 cards.gen.ts + 复制签名卡立绘。
 // 运行:npm run import-content(幂等,输出入 git,构建不依赖姊妹仓库)
+
+// ⚠️ **这个脚本目前跑不得 —— 它会毁掉已提交的卡池。**
+//
+// 2026-07 实测(在当时的姊妹仓库状态下重跑一次):
+//   卡池   2392 → 2207 张(少 185)
+//   白板率 8.9% → 29.5%
+//   立绘   62.5MB → 34.0MB(被换成更小的一批,清单也跟着缩水)
+//   底图   把已经转成 WebP 的五张 JPG 又拷了回来
+//
+// 也就是说:**已提交的 generated/ 是用姊妹仓库的另一个状态生成的**,
+// 现在的姊妹仓库复现不出它。产物入库(而不是构建期生成)本来是对的决定,
+// 但它掩盖了这件事 —— CI 的 content job 只检查「没人手改过 generated/」,
+// 不会重跑这个脚本,所以这个漂移可以无限期地不被发现。
+//
+// 要再动卡池,得先解决源头:要么把姊妹仓库固定到当时那个 commit,
+// 要么承认现在的姊妹仓库就是新的真相、接受那 185 张卡与白板率的变化
+// 并重跑全部平衡闸门(sim-balance / sim-campaign / sim-hero-mirror / deck-stats)。
+// 在那之前,**改 seed-mechanics.ts 是没法验证的**(见那个文件里同样的警告)。
+
 import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import sharp from 'sharp'
 import { dirname, join } from 'node:path'
@@ -321,7 +340,7 @@ function generateCard(
   //    手写的就该完全手写,这是铁律 3 的直接推论。
   const handAuthored = PRECON_CARD_IDS.has(officer.id) || SIGNATURE_OVERRIDES[officer.id] !== undefined
   const era = ERA_OF[dynasty]
-  const kw = handAuthored ? null : seedKeyword(officer.id, s, archetype, rarity, era, dynasty)
+  const kw = handAuthored ? null : seedKeyword(officer.id, s, archetype, rarity, era, dynasty, cost)
   const empty: Seeded = { keywords: [], points: 0, textZh: [], textEn: [], shape: null }
   const seeded = handAuthored
     ? empty
