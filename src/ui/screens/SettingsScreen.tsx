@@ -589,9 +589,15 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
             // 从前只删三个,于是冒险/登楼/远征/竞技场/成就/纪录等 14 个 store
             // 原样留着,而按钮写的是「清空本地进度」。
             // 保留凭据是刻意的:清进度不该把云端那份变成孤儿。
+            // 隐私模式下连**枚举** localStorage 都可能抛 —— 而这一句在
+            // React 事件处理器里,抛出去错误边界看不见,表现是「点了确定没反应」。
             const keep = new Set(['qiangu-player-id', 'qiangu-profile-secret'])
-            for (const k of Object.keys(localStorage)) {
-              if (k.startsWith('qiangu-') && !keep.has(k)) localStorage.removeItem(k)
+            try {
+              for (const k of Object.keys(localStorage)) {
+                if (k.startsWith('qiangu-') && !keep.has(k)) localStorage.removeItem(k)
+              }
+            } catch {
+              /* 存储不可用 = 本来也没有存档要清 */
             }
             location.reload()
           }}

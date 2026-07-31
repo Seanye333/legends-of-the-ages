@@ -5,7 +5,7 @@ import { legalCommands } from './legal'
 import { rngInt } from './rng'
 import { replayMatch, type MatchRecord } from './replay'
 import type { CardDef, CardLibrary, GameConfig, GameState } from './types'
-import { BOARD_LIMIT, HAND_LIMIT, MANA_CAP, START_HP, TURN_LIMIT } from './types'
+import { BOARD_LIMIT, HAND_LIMIT, MANA_CAP, TURN_LIMIT } from './types'
 
 // 模糊测试:种子随机地在合法命令里乱走,任何违反不变量的路径都会暴露。
 // 契约:legalCommands 返回的命令 applyCommand 必须全部接受。
@@ -220,7 +220,10 @@ function assertInvariants(state: GameState): void {
   for (const p of state.players) {
     expect(p.hand.length).toBeLessThanOrEqual(HAND_LIMIT)
     expect(p.board.length).toBeLessThanOrEqual(BOARD_LIMIT)
-    expect(p.heroHp).toBeLessThanOrEqual(START_HP)
+    // 用 heroMaxHp 而不是常量 START_HP:引擎的治疗上限读的就是前者
+    // (resolve.ts 的 healHero)。写死 30 只是因为 fuzz 的 cfg 没传 heroHps
+    // 而碰巧成立 —— 一旦给高血主公开 fuzz,这条会变成假阳性。
+    expect(p.heroHp).toBeLessThanOrEqual(p.heroMaxHp)
     expect(p.mana.max).toBeLessThanOrEqual(MANA_CAP)
     expect(p.mana.current).toBeGreaterThanOrEqual(0)
     for (const c of p.board) {
