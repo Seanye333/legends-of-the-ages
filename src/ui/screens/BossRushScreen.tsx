@@ -80,7 +80,7 @@ export function BossRushScreen({ onBack, onEnterMatch }: Props) {
           `十六位群雄按序而来,中途不换卡组、不回满血 —— 每胜一场只回 ${BOSS_RUSH_HEAL} 点。倒下即从头再来。`,
           `Sixteen contenders in a row. No new deck, no full heal — only ${BOSS_RUSH_HEAL} HP between fights. Fall once and start over.`,
         )}
-        {cleared && t(' 你已经走通过一次。', ' You have walked it through once.')}
+        {cleared && t(' 你已经走通过一次。', ' You have cleared this gauntlet once.')}
       </p>
 
       <div className={styles.deckPicker}>

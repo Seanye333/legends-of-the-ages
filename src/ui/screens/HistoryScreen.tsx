@@ -23,6 +23,7 @@ import { haptic } from '../haptics'
 // 复用「群雄逐鹿」的版式:同为「选卡组 → 挑一关 → 出战」的单人关卡列表,
 // 沿用同一套样式,视觉与冒险模式保持一致,也省得再复刻一整份 CSS。
 import styles from './CampaignScreen.module.css'
+import { countOf } from '../plural'
 
 interface HistoryScreenProps {
   onBack: () => void
@@ -252,7 +253,7 @@ export function HistoryScreen({ onBack, onEnterMatch }: HistoryScreenProps) {
                 ? t('已通关 —— 重打不再发放战利', 'Cleared — no further spoils')
                 : t(
                     `首通战利:卡包 ×${selected.rewardPacks},功勋 +${selected.rewardMerit}`,
-                    `First clear: ${selected.rewardPacks} packs, +${selected.rewardMerit} merit`,
+                    `First clear: ${countOf(selected.rewardPacks, 'pack')}, +${selected.rewardMerit} merit`,
                   )}
             </p>
             {/* 逆位:正位通关后才解锁 —— 先把这一仗按史实打赢一次,再来问「反过来呢」 */}

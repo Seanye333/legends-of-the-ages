@@ -20,7 +20,7 @@ export function deckViolationText(v: DeckViolation): LocalizedText {
           }
         : {
             zh: `多了 ${v.size - DECK_SIZE} 张(需恰好 ${DECK_SIZE} 张)`,
-            en: `${v.size - DECK_SIZE} cards too many (exactly ${DECK_SIZE})`,
+            en: `${v.size - DECK_SIZE} ${v.size - DECK_SIZE === 1 ? 'card' : 'cards'} too many (exactly ${DECK_SIZE})`,
           }
     case 'unknown-card':
       return { zh: `卡牌不存在:${v.cardId}`, en: `Unknown card: ${v.cardId}` }

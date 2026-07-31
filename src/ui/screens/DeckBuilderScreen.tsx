@@ -459,7 +459,7 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
                   className={styles.deckRow}
                   style={{ '--doctrine': DOCTRINE_COLORS[def?.doctrine ?? 'neutral'] } as CSSProperties}
                   onClick={() => remove(id)}
-                  title={t('点击移除一张', 'Click to remove one')}
+                  title={t('点击移除一张', 'Tap to remove one')}
                 >
                   <span className={styles.rowPortrait}>
                     <Portrait id={id} nameZh={def?.name.zh ?? id} doctrine={def?.doctrine ?? 'neutral'} />
@@ -585,7 +585,7 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
               ))}
             </div>
           )}
-          {savedMsg && <div className={styles.savedOk}>{t('已保存!可在标题页选用', 'Saved!')}</div>}
+          {savedMsg && <div className={styles.savedOk}>{t('已保存!可在标题页选用', 'Saved — pick it from the title screen')}</div>}
           <div className={styles.actions}>
             <button className={`${styles.saveBtn} ${savePulse}`} disabled={total !== DECK_SIZE} onClick={onSave}>
               {t(`保存卡组(${total}/${DECK_SIZE})`, `Save (${total}/${DECK_SIZE})`)}

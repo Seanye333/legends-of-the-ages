@@ -6,6 +6,7 @@ import { playSfx } from '../sound'
 import { haptic } from '../haptics'
 import { useDialog } from '../useDialog'
 import styles from './AchievementPanel.module.css'
+import { countOf } from '../plural'
 
 interface AchievementPanelProps {
   onClose: () => void
@@ -47,7 +48,7 @@ export function AchievementPanel({ onClose }: AchievementPanelProps) {
     setToast(
       t(
         `功勋 +${def.merit}${def.packs ? ` · 卡包 ×${def.packs}` : ''}`,
-        `+${def.merit} merit${def.packs ? ` · ${def.packs} packs` : ''}`,
+        `+${def.merit} merit${def.packs ? ` · ${countOf(def.packs, 'pack')}` : ''}`,
       ),
     )
     window.setTimeout(() => setToast(null), 2200)

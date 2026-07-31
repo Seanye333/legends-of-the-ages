@@ -11,6 +11,7 @@ import type { FloatItem } from './floats'
 import type { TokenFx } from '../useEventAnimations'
 import { Portrait } from './Portrait'
 import styles from './HeroPlate.module.css'
+import { countOf } from '../plural'
 
 const MOTION_CLASS = { lunge: 'fx-lunge', shake: 'fx-shake', shakeHard: 'fx-shake-hard' } as const
 
@@ -172,7 +173,7 @@ export function HeroPlate({
           className={styles.deckInfo}
           title={t(
             `牌库剩余 ${ps.deck.length} 张${ps.fatigue > 0 ? `,疲劳 ${ps.fatigue}` : ''}`,
-            `${ps.deck.length} cards left in deck${ps.fatigue > 0 ? `, fatigue ${ps.fatigue}` : ''}`,
+            `${countOf(ps.deck.length, 'card')} left in deck${ps.fatigue > 0 ? `, fatigue ${ps.fatigue}` : ''}`,
           )}
         >
           {/* 牌库画成一叠牌背。

@@ -29,6 +29,7 @@ import { playSfx } from '../sound'
 import { haptic } from '../haptics'
 import { useDialog } from '../useDialog'
 import styles from './CampaignScreen.module.css'
+import { countOf } from '../plural'
 
 interface CampaignScreenProps {
   onBack: () => void
@@ -333,7 +334,7 @@ export function CampaignScreen({ onBack, onEnterMatch }: CampaignScreenProps) {
                 </i>
                 {t(
                   `首通战利:卡包 ×${selected.rewardPacks},功勋 +${selected.rewardMerit}`,
-                  `First clear: ${selected.rewardPacks} packs, +${selected.rewardMerit} merit`,
+                  `First clear: ${countOf(selected.rewardPacks, 'pack')}, +${selected.rewardMerit} merit`,
                 )}
               </>
             )}

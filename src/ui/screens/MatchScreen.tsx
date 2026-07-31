@@ -79,6 +79,7 @@ const ERA_TINT: Record<Era, string> = {
 }
 import { useSettings } from '../../app/settingsStore'
 import styles from './MatchScreen.module.css'
+import { countOf } from '../plural'
 
 // 视角座位:非热座恒为 0;热座时谁该动谁就在下面(调度阶段看谁还没调度完)。
 // 抽成纯函数是因为 useMemo 的依赖里也要用它,而那时组件内的 viewer 还没算出来。
@@ -891,7 +892,10 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
               {t(`請交予 ${viewer === 0 ? '先手' : '後手'}`, `Pass to player ${viewer + 1}`)}
             </div>
             <p className={styles.curtainText}>
-              {t('接手之后再点开 —— 帘后是对方的手牌。', 'Tap only after you have the device.')}
+              {t(
+                '接手之后再点开 —— 帘后是对方的手牌。',
+                'Your opponent’s hand is behind this curtain — tap only once the device is in your hands.',
+              )}
             </p>
             <button className={styles.curtainBtn} onClick={() => setCurtainFor(viewer)}>
               {t('我已接手', 'I have it')}
@@ -928,7 +932,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
           <span className={styles.fieldName}>{pickText(state.field.rule.name)}</span>
           {state.field.turnsLeft !== undefined && (
             <span className={styles.fieldTurns}>
-              {t(`剩 ${state.field.turnsLeft} 回合`, `${state.field.turnsLeft} turns left`)}
+              {t(`剩 ${state.field.turnsLeft} 回合`, `${countOf(state.field.turnsLeft, 'turn')} left`)}
             </span>
           )}
         </div>

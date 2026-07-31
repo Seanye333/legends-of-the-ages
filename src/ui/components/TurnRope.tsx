@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useT } from '../i18n'
 import { playSfx } from '../sound'
 import styles from './TurnRope.module.css'
+import { countOf } from '../plural'
 
 interface TurnRopeProps {
   // 服务器给的强制结束时刻(epoch ms)。本地对局没有,传 null 即整个组件不渲染。
@@ -51,8 +52,8 @@ export function TurnRope({ deadline, myTurn }: TurnRopeProps) {
       aria-live={urgent ? 'assertive' : 'polite'}
       aria-label={
         myTurn
-          ? t(`本回合剩余 ${seconds} 秒`, `${seconds} seconds left in your turn`)
-          : t(`对方回合剩余 ${seconds} 秒`, `${seconds} seconds left in opponent's turn`)
+          ? t(`本回合剩余 ${seconds} 秒`, `${countOf(seconds, 'second')} left in your turn`)
+          : t(`对方回合剩余 ${seconds} 秒`, `${countOf(seconds, 'second')} left in opponent’s turn`)
       }
     >
       <div className={styles.fuse} style={{ width: `${pct}%` }}>

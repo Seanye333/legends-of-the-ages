@@ -26,6 +26,7 @@ import { haptic } from '../haptics'
 import styles from './ArenaScreen.module.css'
 import { EmptyState } from '../components/EmptyState'
 import { useClaimPulse } from '../useClaimPulse'
+import { countOf } from '../plural'
 
 interface ArenaScreenProps {
   onBack: () => void
@@ -248,7 +249,7 @@ export function ArenaScreen({ onBack, onEnterMatch }: ArenaScreenProps) {
             <p className={styles.lead}>
               {t(
                 `已领取:卡包 ×${claimed.packs},功勋 +${claimed.merit}`,
-                `Claimed: ${claimed.packs} packs, +${claimed.merit} merit`,
+                `Claimed: ${countOf(claimed.packs, 'pack')}, +${claimed.merit} merit`,
               )}
             </p>
           ) : (
@@ -256,7 +257,7 @@ export function ArenaScreen({ onBack, onEnterMatch }: ArenaScreenProps) {
               <p className={styles.lead}>
                 {t(
                   `战利:卡包 ×${reward.packs},功勋 +${reward.merit}`,
-                  `Spoils: ${reward.packs} packs, +${reward.merit} merit`,
+                  `Spoils: ${countOf(reward.packs, 'pack')}, +${reward.merit} merit`,
                 )}
               </p>
               <button

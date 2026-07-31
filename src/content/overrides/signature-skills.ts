@@ -400,7 +400,7 @@ export const SIGNATURE_SKILLS: Record<string, Partial<CardDef>> = {
     health: 2,
     onSpellCast: { ops: [{ op: 'buffStats', attack: 1, health: 1, target: 'self' }] },
     text: {
-      zh: '連擊。每當你打出一張錦囊,此武將+1/+1。一筆書連綿不絕,大令與右軍,並稱二王。',
+      zh: '風怒。每當你打出一張錦囊,此武將+1/+1。一筆書連綿不絕,大令與右軍,並稱二王。',
       en: 'Windfury. Whenever you play a stratagem, this general gains +1/+1. One unbroken stroke across the page — father and son, the Two Wangs.',
     },
   },
@@ -484,7 +484,7 @@ export const SIGNATURE_SKILLS: Record<string, Partial<CardDef>> = {
     health: 4,
     onAttack: { ops: [{ op: 'buffStats', attack: 1, health: 0, target: 'self' }] },
     text: {
-      zh: '連擊。此武將攻擊後,獲得+1/+0。單騎退雄兵,七進七出,追者莫敢近。',
+      zh: '風怒。此武將攻擊後,獲得+1/+0。單騎退雄兵,七進七出,追者莫敢近。',
       en: 'Windfury. After this general attacks, it gains +1/+0. Alone he turned back an army — seven times in, seven times out.',
     },
   },
@@ -596,7 +596,7 @@ export const SIGNATURE_SKILLS: Record<string, Partial<CardDef>> = {
     health: 3,
     spellDamage: 1,
     text: {
-      zh: '連擊。法術傷害+1。十步殺一人,千里不留行。',
+      zh: '風怒。法術傷害+1。十步殺一人,千里不留行。',
       en: 'Windfury. Spell Damage +1. A kill every ten paces, no trace for a thousand li.',
     },
   },
