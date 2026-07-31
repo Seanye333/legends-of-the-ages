@@ -53,7 +53,7 @@
 .sideLabel {
   font-family: var(--font-display);
   font-size: 15px;
-  letter-spacing: 0.24em;
+  letter-spacing: calc(0.24em * var(--ls-wide));
   color: var(--parchment-dim);
 }
 
@@ -165,8 +165,8 @@
 .fightBtn {
   font-family: var(--font-display);
   font-size: clamp(16px, 3vw, 20px);
-  letter-spacing: 0.24em;
-  text-indent: 0.24em;
+  letter-spacing: calc(0.24em * var(--ls-wide));
+  text-indent: calc(0.24em * var(--ls-wide));
   padding: 12px 48px;
   border-radius: 8px;
   border: 1px solid #f0d090;

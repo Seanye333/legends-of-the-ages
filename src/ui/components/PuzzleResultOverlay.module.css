@@ -70,8 +70,8 @@
   font-family: var(--font-display);
   font-size: clamp(18px, 4vh, 30px);
   font-weight: 700;
-  letter-spacing: 0.6em;
-  text-indent: 0.6em;
+  letter-spacing: calc(0.6em * var(--ls-wide));
+  text-indent: calc(0.6em * var(--ls-wide));
   animation: wordIn 0.7s ease 0.15s backwards;
 }
 
@@ -106,8 +106,8 @@
 .sub {
   font-family: var(--font-display);
   font-size: clamp(15px, 3vh, 20px);
-  letter-spacing: 0.24em;
-  text-indent: 0.24em;
+  letter-spacing: calc(0.24em * var(--ls-wide));
+  text-indent: calc(0.24em * var(--ls-wide));
   color: var(--parchment-dim, #d8ccb0);
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
   animation: wordIn 0.7s ease 0.22s backwards;
@@ -118,7 +118,7 @@
   text-align: center;
   font-family: var(--font-display);
   font-size: clamp(14px, 3.6vw, 18px);
-  letter-spacing: 0.2em;
+  letter-spacing: calc(0.2em * var(--ls-wide));
   color: var(--gold-bright, #f0d79a);
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.9);
   animation: lootIn 0.6s 0.45s ease-out both;
@@ -179,8 +179,8 @@
   font-size: clamp(14px, 2.6vh, 18px);
   padding: clamp(9px, 1.7vh, 13px) clamp(24px, 4.5vw, 44px);
   border-radius: 6px;
-  letter-spacing: 0.22em;
-  text-indent: 0.22em;
+  letter-spacing: calc(0.22em * var(--ls-wide));
+  text-indent: calc(0.22em * var(--ls-wide));
   cursor: pointer;
   transition:
     transform 0.15s ease,

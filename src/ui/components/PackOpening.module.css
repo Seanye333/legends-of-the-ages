@@ -19,7 +19,7 @@
 .titleLine {
   font-family: var(--font-display);
   font-size: clamp(18px, 4.6vw, 24px);
-  letter-spacing: 0.3em;
+  letter-spacing: calc(0.3em * var(--ls-wide));
   color: var(--gold-bright);
 }
 
@@ -80,7 +80,7 @@
 .sealText {
   font-family: var(--font-display);
   font-size: 15px;
-  letter-spacing: 0.24em;
+  letter-spacing: calc(0.24em * var(--ls-wide));
   color: var(--parchment-dim);
 }
 

@@ -115,8 +115,8 @@
 .subtitle {
   margin: 0;
   font-size: clamp(11px, 2.8vw, 15px);
-  letter-spacing: 0.52em;
-  text-indent: 0.52em;
+  letter-spacing: calc(0.52em * var(--ls-wide));
+  text-indent: calc(0.52em * var(--ls-wide));
   text-transform: uppercase;
   color: #c8b070;
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
@@ -225,8 +225,8 @@
   font-family: var(--font-display);
   font-size: clamp(18px, 5vw, 24px);
   font-weight: 700;
-  letter-spacing: 0.34em;
-  text-indent: 0.34em;
+  letter-spacing: calc(0.34em * var(--ls-wide));
+  text-indent: calc(0.34em * var(--ls-wide));
   padding: clamp(12px, 2vh, 16px) clamp(44px, 12vw, 72px);
   border-radius: 6px;
   border: 1px solid #f0d090;
@@ -314,8 +314,8 @@
 .galleryHeadText {
   font-family: var(--font-display);
   font-size: clamp(14px, 3.6vw, 18px);
-  letter-spacing: 0.4em;
-  text-indent: 0.4em;
+  letter-spacing: calc(0.4em * var(--ls-wide));
+  text-indent: calc(0.4em * var(--ls-wide));
   color: #d8bc7c;
   text-shadow: 0 1px 5px rgba(0, 0, 0, 0.9);
   white-space: nowrap;
@@ -671,7 +671,7 @@
   font-family: var(--font-display);
   font-size: clamp(14px, 3.6vw, 17px);
   font-weight: 700;
-  letter-spacing: 0.2em;
+  letter-spacing: calc(0.2em * var(--ls-wide));
   padding: 0 clamp(16px, 4vw, 26px);
   border-radius: 6px;
   /* 从**蓝色**改成青玉。
@@ -843,7 +843,7 @@
   margin: 10px auto 0;
   font-family: var(--font-display);
   font-size: 11px;
-  letter-spacing: 0.26em;
+  letter-spacing: calc(0.26em * var(--ls-wide));
   color: var(--parchment-faint);
   white-space: nowrap;
 }

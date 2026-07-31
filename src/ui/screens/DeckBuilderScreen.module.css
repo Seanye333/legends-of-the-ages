@@ -35,7 +35,7 @@
   margin: 0;
   font-family: var(--font-display);
   font-size: clamp(18px, 4.6vw, 26px);
-  letter-spacing: 0.22em;
+  letter-spacing: calc(0.22em * var(--ls-wide));
   color: var(--gold-bright);
 }
 
@@ -84,7 +84,7 @@
 
 .heroDoctrine {
   font-size: 12px;
-  letter-spacing: 0.2em;
+  letter-spacing: calc(0.2em * var(--ls-wide));
   color: var(--doctrine);
 }
 
@@ -97,7 +97,7 @@
 
 .savedHead {
   font-family: var(--font-display);
-  letter-spacing: 0.24em;
+  letter-spacing: calc(0.24em * var(--ls-wide));
   color: var(--parchment-faint);
   font-size: 14px;
   margin-top: 10px;

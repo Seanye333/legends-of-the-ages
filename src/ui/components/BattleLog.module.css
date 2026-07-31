@@ -105,7 +105,7 @@
 .empty {
   font-family: var(--font-display);
   font-size: 12px;
-  letter-spacing: 0.2em;
+  letter-spacing: calc(0.2em * var(--ls-wide));
   color: #7a6a4a;
   text-align: center;
   padding: 10px 0;

@@ -30,6 +30,7 @@ function applySettings(s: {
   musicVolume: number
   colorBlind: boolean
   uiScale: number
+  language: string
 }): void {
   setMasterVolume(s.volume)
   setMusicVolume(s.musicVolume)
@@ -39,6 +40,17 @@ function applySettings(s: {
     typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
   document.documentElement.dataset.reducedMotion = String(s.reducedMotion || prefersLess)
   document.documentElement.dataset.colorblind = String(s.colorBlind)
+
+  // 【lang 必须跟着语言走】
+  // index.html 里写死 `<html lang="zh">`,切英文时从不更新。三个后果:
+  //   1. **读屏器用中文语音念英文**(VoiceOver/TalkBack 按 lang 选语音库)——
+  //      而这个项目是在意无障碍的(有 a11y.spec.ts)。
+  //   2. 断词规则按中文走:中文允许任意字符间断行,英文不允许,
+  //      长英文串在窄容器里的换行行为是错的。
+  //   3. 拼写检查、font-variant、翻译提示全部按中文处理。
+  // 它同时也是排版修复的**前置** —— 有了这一行,CSS 里的 `html[lang='en']`
+  // 才选得中(见 index.css 里那段字距覆盖)。
+  document.documentElement.lang = s.language === 'en' ? 'en' : 'zh-Hans'
 
   // 界面缩放走 **zoom**,不是根字号。
   //

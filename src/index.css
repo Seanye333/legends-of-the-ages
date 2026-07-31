@@ -55,8 +55,24 @@ body {
   --parchment-dim: #c9bfa8;
   --parchment-faint: #9a8a6a;
 
-  /* 显示字体:宋体书法感;正文保持 PingFang */
-  --font-display: 'Songti SC', 'STSong', 'Kaiti SC', 'Noto Serif SC', 'PingFang SC', serif;
+  /* 显示字体:宋体书法感;正文保持 PingFang。
+     拉丁字族必须排在中文字族**前面** —— 字体栈是逐字符回退的:
+     ASCII 在 Songti SC 里是有字形的(而且是一套很难看的等宽全角衬线),
+     所以中文字体一旦排在前面,英文永远轮不到后面的拉丁字体。
+     此前这一栈里一个拉丁字体都没有,Windows/Android 上 231 条引用它的规则
+     全部退到浏览器默认 serif —— 也就是 Times New Roman。 */
+  --font-display: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia,
+    'Songti SC', 'STSong', 'Kaiti SC', 'Noto Serif SC', 'PingFang SC', serif;
+
+  /* 【宽字距的语言旋钮】
+     全站 217 处 letter-spacing,其中 49 处 >= 0.2em —— 那是给汉字用的
+     「疏排」,汉字是方块字,拉开才有碑刻感。同样的值套到拉丁字母上是灾难:
+     .word 的 0.6em 会把每局结算的大字渲染成「V i c t o r y」,
+     副标题 0.52em、Mulligan 0.5em、回合横幅 0.3em 同理。
+     只缩放宽字距、不动 <0.2em 的那批 —— 后者(0.04~0.16em)本来就是
+     全大写标签的正常英文排版,砍掉反而更糟。
+     0.28 是把 0.6em 落到 0.17em、0.2em 落到 0.056em 的系数。 */
+  --ls-wide: 1;
 
   /* 毛笔字:只给仪式性的大字(勝敗和斬、牌匾、印章、空态字形)。
      此前全站的「书法感」全押在 Songti SC 上 —— Windows 三档字体全落空,
@@ -135,6 +151,24 @@ body::after {
   mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size: 240px 240px;
+}
+
+/* 英文下把疏排收窄(见 --ls-wide 注释)。挂在 html[lang] 上 ——
+   lang 由 main.tsx 的 applySettings 跟着语言设置同步,不是写死在 index.html 里的。 */
+html[lang='en'] {
+  --ls-wide: 0.28;
+}
+
+/* 英文正文同样要有拉丁字体打头:PingFang SC 的 ASCII 字形偏窄偏灰,
+   和 UI 里其余英文对不上字重。 */
+html[lang='en'] body {
+  font-family:
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    system-ui,
+    'PingFang SC',
+    sans-serif;
 }
 
 body {

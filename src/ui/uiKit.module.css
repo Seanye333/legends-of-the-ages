@@ -55,7 +55,7 @@
   font-family: var(--font-display);
   /* 字距随字号一起缩:固定 0.3em 在 430px 上就是那三成溢出的来源 */
   font-size: var(--fs-title);
-  letter-spacing: clamp(0.08em, 1.2vw, 0.3em);
+  letter-spacing: calc(clamp(0.08em, 1.2vw, 0.3em) * var(--ls-wide));
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

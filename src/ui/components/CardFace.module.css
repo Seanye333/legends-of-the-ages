@@ -310,8 +310,8 @@
   font-size: clamp(9px, 11cqw, 12px);
   font-weight: 700;
   color: #f0d8a0;
-  letter-spacing: 0.22em;
-  text-indent: 0.22em;
+  letter-spacing: calc(0.22em * var(--ls-wide));
+  text-indent: calc(0.22em * var(--ls-wide));
   padding: 1px 7px;
   background: linear-gradient(180deg, #7a2a1a, #4e1810);
   border: 1px solid rgba(224, 170, 100, 0.65);
@@ -480,4 +480,11 @@
       rgba(255, 246, 224, 0.022) 0 1px,
       rgba(0, 0, 0, 0) 1px 3px
     );
+}
+
+/* 类型角标的英文比中文长得多(Stratagem 9 个字母 vs 锦囊 2 个字)。
+   角标是绝对定位居中的,不收字号会从卡面两侧顶出去。 */
+html[lang='en'] .spellMark {
+  font-size: clamp(7px, 8cqw, 10px);
+  padding: 1px 5px;
 }

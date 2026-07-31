@@ -34,8 +34,8 @@
   margin: 0;
   font-family: var(--font-display);
   font-size: 20px;
-  letter-spacing: 0.28em;
-  text-indent: 0.28em;
+  letter-spacing: calc(0.28em * var(--ls-wide));
+  text-indent: calc(0.28em * var(--ls-wide));
   color: var(--gold-bright);
   text-align: center;
 }
