@@ -32,11 +32,20 @@ import type { PlanResult } from './planner'
 // 这里按**根节点见过的 min/max** 线性映射到 [0,1] —— 简单、无须先验、
 // 而且随着搜索进行会自动收紧。
 
+// 对抗复评时推演多少条候选线。取 6 是权衡:再多的话成本压过 MCTS 本身,
+// 而分数排在 6 名之外的线基本不会因为对手一手回应就翻上来。
+const REPLY_CANDIDATES = 6
+
 export interface MctsOpts {
   iterations?: number
   maxDepth?: number
   foresight?: boolean
   weights?: Partial<EvalWeights>
+  // 留牌的跨回合价值(见 greedy.ts 的 stopScore)。透传即可。
+  holdValue?: boolean
+  // 对抗复评:把分数最高的几条线各推演一次对手的回合再重排。
+  // 这是天機**唯一**结构上强过军神的地方 —— 详见下方实现处的长注释。
+  opponentReply?: boolean
   // 探索常数。UCT 的经典取值是 √2 ≈ 1.414,但那是给「胜率」这种 [0,1] 收益用的;
   // 这里的收益是归一化后的局面分,方差小得多,所以调低到 0.9 ——
   // 太高会把预算摊平在一堆同样平庸的线上。
@@ -92,7 +101,7 @@ export function planTurnMcts(
   const rand = lcg(state.rng ^ (player + 1) * 0x9e3779b1)
 
   // 与 planner 同一把尺:回合内任何一点的价值,就是「此刻收手」值多少。
-  const score = (s: GameState) => stopScore(s, player, lib, foresight, weights)
+  const score = (s: GameState) => stopScore(s, player, lib, foresight, weights, opts.holdValue === true)
 
   const root: Node = {
     state,
@@ -128,6 +137,8 @@ export function planTurnMcts(
   }
 
   let nodes = 0
+  // 对抗复评的候选池(仅 opponentReply 开启时收集)
+  const candidates: { line: Command[]; state: GameState; score: number }[] = []
 
   for (let iter = 0; iter < iterations; iter++) {
     // ---- 选择:沿 UCT 下行到一个还有未展开着法的节点 ----
@@ -191,6 +202,10 @@ export function planTurnMcts(
     let sim = node.state
     let simScore = node.stopScore
     let simLine = lineOf(node)
+    // 候选要记**路上最好的那个局面**,不是随机走到的终点 ——
+    // simLine/sim 每步都在往前推,而 simScore 记的是最高点,三者会对不上。
+    let bestSimState = sim
+    let bestSimLine = simLine
     for (let d = depth; d < maxDepth && sim.phase !== 'ended'; d++) {
       const cands = turnCommands(sim, player, lib)
       if (cands.length === 0) break
@@ -204,6 +219,8 @@ export function planTurnMcts(
       observe(s)
       if (s > simScore) {
         simScore = s
+        bestSimState = sim
+        bestSimLine = simLine
         if (s > bestScore) {
           bestScore = s
           bestLine = simLine
@@ -218,6 +235,70 @@ export function planTurnMcts(
       n.visits++
       n.total += reward
     }
+    // 记下候选线,供下面的对抗复评用(只留分数高的一批)
+    if (opts.opponentReply && bestSimLine.length > 0) {
+      candidates.push({ line: bestSimLine, state: bestSimState, score: simScore })
+    }
+  }
+
+  // ---- 对抗复评:让对手真的回一手 ----
+  //
+  // 【为什么天機此前不比军神强】
+  // MCTS 换的只是**预算怎么分配**,而它和 planner 看到的是同一份信息 ——
+  // 两者的 rollout 都只走到自己回合结束。没有对手模型时,再多预算也造不出
+  // 质的差别。实测(2026-07):天機对军神 53.5%,z≈0.84,落在噪声里,
+  // 而成本是军神的 2.7 倍。
+  //
+  // 【为什么放在根部而不是每次 rollout】
+  // 每次 rollout 都模拟对手一整个回合会让成本再涨一个量级,而这个 AI 是在
+  // 玩家等着的时候跑的。改成:MCTS 照常跑完,再把**分数最高的前 K 条线**
+  // 各自推演一次对手的回合,按「对手回完之后我还剩多少」重排。
+  // 于是天機拿到了军神结构上拿不到的那件事 —— 而代价是 K 次推演,不是 N 次。
+  //
+  // 【对手用什么策略】
+  // 一个便宜的贪心:每步取 stopScore 最优(从**对手视角**),最多 12 步。
+  // 不调 aiStep 是为了避免 mcts ↔ greedy 的循环 import;也不需要那么强 ——
+  // 这里要的是「对手不会放过明显的一击」,不是最优对手。
+  if (opts.opponentReply && candidates.length > 0) {
+    const foe: PlayerIdx = player === 0 ? 1 : 0
+    const top = candidates.sort((a, b) => b.score - a.score).slice(0, REPLY_CANDIDATES)
+    let bestAfter = -Infinity
+    let bestAfterLine: Command[] | null = null
+    for (const cand of top) {
+      // 先结束我方回合
+      const ended = applyCommand(cand.state, player, { type: 'EndTurn' }, lib)
+      if (!ended.ok) continue
+      let s2 = ended.state
+      // 对手打完他的回合
+      for (let step = 0; step < 12 && s2.phase !== 'ended' && s2.activePlayer === foe; step++) {
+        const cmds = legalCommands(s2, foe, lib).filter((c) => c.type !== 'Concede')
+        if (cmds.length === 0) break
+        let pick: Command | null = null
+        let pickScore = -Infinity
+        for (const c of cmds) {
+          const r = applyCommand(s2, foe, c, lib)
+          nodes++
+          if (!r.ok) continue
+          const v = stopScore(r.state, foe, lib, false, weights, false)
+          if (v > pickScore) {
+            pickScore = v
+            pick = c
+          }
+        }
+        if (!pick) break
+        const r = applyCommand(s2, foe, pick, lib)
+        if (!r.ok) break
+        s2 = r.state
+        if (pick.type === 'EndTurn') break
+      }
+      // 对手回完之后,从**我方视角**看还剩多少
+      const after = stopScore(s2, player, lib, foresight, weights, opts.holdValue === true)
+      if (after > bestAfter) {
+        bestAfter = after
+        bestAfterLine = cand.line
+      }
+    }
+    if (bestAfterLine) return { line: bestAfterLine, score: bestAfter, nodes }
   }
 
   return { line: bestLine, score: bestScore, nodes }

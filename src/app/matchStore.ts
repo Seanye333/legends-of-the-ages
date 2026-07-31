@@ -14,7 +14,7 @@ import { CARDS, CARDS_BY_ID } from '../content/cards'
 import { HEROES_BY_ID } from '../content/overrides/heroes'
 import { LocalMatch } from './transport'
 import { AI_LEVELS, AI_NORMAL, type EvalWeights } from '../ai/greedy'
-import { useSettings, type Difficulty } from './settingsStore'
+import { normalizeDifficulty, useSettings, type Difficulty } from './settingsStore'
 import { useCollection } from './collectionStore'
 import { useQuests } from './questStore'
 import { useArena } from './arenaStore'
@@ -366,7 +366,11 @@ export const useMatch = create<MatchStoreState>()((set, get) => ({
     // 教学局固定用最宽容的 AI,别让新手第一局就被打穿
     const tier = args.tutorial
       ? AI_LEVELS.recruit
-      : (AI_LEVELS[args.difficultyOverride ?? useSettings.getState().difficulty] ?? AI_NORMAL)
+      : // normalizeDifficulty:老存档里可能存着已下架的 'oracle' ——
+        // 折算成 marshal(实测没有显著差别,而且快 3 倍)
+        (AI_LEVELS[
+          normalizeDifficulty(args.difficultyOverride ?? useSettings.getState().difficulty)
+        ] ?? AI_NORMAL)
     // 性格只改权重,不改档位 —— 玩家选的难度必须还是那个难度
     const ai = args.aiWeights ? { ...tier, weights: args.aiWeights } : tier
     // 教学局不给主公技:第一局要先把「出牌—攻击—结束回合」讲明白,

@@ -6,7 +6,25 @@ import type { Language } from '../ui/i18n'
 // 四档:新兵 / 宿将 / 名将 / 军神。
 // 军神在名将之上多一层**整回合规划**(ai/planner.ts)——
 // 实测 120 局对打 71.7% 胜率,不是换皮。
+// 玩家可选的敌手档位。
+//
+// **'oracle'(天機)已下架,但类型里留着** —— 老存档里存的就是这个值,
+// 删掉类型会让那些存档在 TS 层面变成非法值。读取时统一折算成 'marshal'
+// (见下面的 normalizeDifficulty)。
+//
+// 下架理由:三次实测(各 144 局)天機对军神都是 52-53%,z<1,统计上
+// 分不出强弱,而它慢 3 倍。让玩家多等两倍时间去换一个测不出来的差别,
+// 是这个难度选择器在骗人。详细数据记在 ai/greedy.ts 的 AI_LEVELS.oracle 上。
 export type Difficulty = 'recruit' | 'veteran' | 'general' | 'marshal' | 'oracle'
+
+// 玩家真正能选的那几档(界面渲染用这个,不要用 Difficulty 全集)
+export const SELECTABLE_DIFFICULTIES = ['recruit', 'veteran', 'general', 'marshal'] as const
+
+// 老存档里的 'oracle' 折算成 'marshal':两者实测没有显著差别,
+// 而 marshal 快 3 倍 —— 对那些玩家是纯赚。
+export function normalizeDifficulty(d: Difficulty): Exclude<Difficulty, 'oracle'> {
+  return d === 'oracle' ? 'marshal' : d
+}
 
 interface SettingsState {
   language: Language

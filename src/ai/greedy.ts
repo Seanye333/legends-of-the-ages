@@ -41,8 +41,21 @@ export interface AiConfig {
   // planner 的最好优先排序会把「第一步最差、三步后最好」的线永久饿死;
   // UCT 让试得少的线始终有机会被再试一次。只给天機档开。
   mcts?: boolean
+  // 对抗复评(mcts.ts):把最好的几条线各推演一次对手的回合再重排。
+  // 这是天機**唯一**结构上强过军神的东西 —— 实测在它之前两档没有显著差别。
+  opponentReply?: boolean
   // 评分权重覆盖:同一套引擎、不同的性格(见 evaluate 的 weights 参数)。
   weights?: Partial<EvalWeights>
+  // 起手调度是否按**曲线**挑,而不是无脑留 ≤3 费。
+  // 从前五档共用同一个 mulliganKeep —— 天機的调度和新兵一字不差,
+  // 也就是说「调度」这件事在最高档上根本没有实现。
+  // 开关而不是直接改:mulliganKeep 是 AI_NORMAL 也走的路径(铁律 9)。
+  smartMulligan?: boolean
+  // 是否给「手里留着的牌」记跨回合价值。
+  // 实测:军神与天機**从不留牌**(0.0%,127/142 次结束回合里一次都没有
+  // 「还有打得出的牌但选择不打」)—— 因为 stopScore 只惩罚剩余法力,
+  // 而 EvalWeights 里没有任何跨回合的项。同样用开关隔开基准尺。
+  holdValue?: boolean
 }
 
 export const AI_NORMAL: AiConfig = { blunderChance: 0, lethalSearch: true }
@@ -59,9 +72,39 @@ export const AI_EASY: AiConfig = { blunderChance: 0.25, lethalSearch: false }
 export const AI_LEVELS = {
   recruit: { blunderChance: 0.35, lethalSearch: false },
   veteran: { blunderChance: 0.12, lethalSearch: false },
-  general: { blunderChance: 0, lethalSearch: true, foresight: true },
-  marshal: { blunderChance: 0, lethalSearch: true, foresight: true, planner: true },
-  oracle: { blunderChance: 0, lethalSearch: true, foresight: true, mcts: true },
+  // 名将起开「按曲线调度」:低两档保持无脑留低费(那正是新手会犯的错)。
+  general: { blunderChance: 0, lethalSearch: true, foresight: true, smartMulligan: true },
+  // 军神/天機再开「留牌有价值」—— 只有走 stopScore 的这两档吃得到它
+  // (贪心是一步一评,不经过 stopScore)。
+  marshal: {
+    blunderChance: 0,
+    lethalSearch: true,
+    foresight: true,
+    planner: true,
+    smartMulligan: true,
+    holdValue: true,
+  },
+  // 天機。**已从玩家可选难度里下架**(见 settingsStore 的 Difficulty),
+  // 但保留在这里 —— sim-ai-tiers 仍然要能测它,把它删掉等于把结论也删掉。
+  //
+  // 三次实测(2026-07,各 144 局,SE 4.2pp):
+  //   53.5%  修 AI 之前
+  //   53.5%  加了对抗复评但没接线(等于没跑)
+  //   52.1%  对抗复评真的生效之后,而且慢 15%
+  // 也就是说:补上「对手会怎么回应」这一层**没有让它变强**。
+  //
+  // 原因大概率不在 MCTS,在这个游戏本身:实测 44% 的多选决策点里
+  // 最优与次优的差距不到 1 点攻击力,真正有对错之分的只有 22% ——
+  // 决策深度不够,再深的搜索也搜不出东西来。
+  // opponentReply 因此默认关掉(留着代码与结论,免得下次再试一遍)。
+  oracle: {
+    blunderChance: 0,
+    lethalSearch: true,
+    foresight: true,
+    mcts: true,
+    smartMulligan: true,
+    holdValue: true,
+  },
 } as const satisfies Record<string, AiConfig>
 
 // ---------- 估值 ----------
@@ -264,30 +307,71 @@ export function stopScore(
   lib: CardLibrary,
   foresight = false,
   weights: Partial<EvalWeights> = {},
+  holdValue = false,
 ): number {
   const w = { ...DEFAULT_WEIGHTS, ...weights }
   const base = evaluate(state, player, lib, foresight, weights)
   // 那个 0.05 的常数项不是浮费,是**收手本身**的一点点代价:
   // 没有它,「结束回合」会和「打出一张零收益的牌」并列第一,取谁全看排序稳定性。
-  return base - (0.05 + state.players[player].mana.current * w.mana)
+  const waste = 0.05 + state.players[player].mana.current * w.mana
+
+  // 留牌的跨回合价值(高档专用,见 AiConfig.holdValue)。
+  //
+  // 【为什么需要】实测:军神与天機**从不留牌** —— 127/142 次结束回合里
+  // 一次都没有「手里还有打得出的牌但选择不打」。因为这个函数只惩罚剩余法力,
+  // 而 EvalWeights 里没有任何跨回合的项:憋一张解场等下回合是纯亏损。
+  //
+  // 【为什么只值这么一点】给留牌记分是有风险的 —— 记多了 AI 会变成
+  // 「攥着一手牌不出」,那比无脑出牌更糟。这里只给**打得出却没打**的那些牌
+  // 记 0.35/张(约等于三分之一点攻击力),而且封顶两张:
+  // 它要表达的是「留一张应急是合理的」,不是「囤牌是好的」。
+  if (!holdValue) return base - waste
+  const me = state.players[player]
+  let playable = 0
+  for (const c of me.hand) {
+    const cost = lib[c.defId]?.cost ?? 99
+    if (cost - c.costDelta <= me.mana.current) playable++
+  }
+  return base - waste + Math.min(2, playable) * 0.35
 }
 
 // ---------- 斩杀搜索 ----------
 
-// 本回合能打到对方脸上的总伤害。守护墙存在时直接判定打不穿(不做清墙推演,
-// 那属于贪心的领域;这里只负责补「场面已经能一波带走」这个洞)。
+// 本回合能打到对方脸上的总伤害。
+//
+// 【改过一次:守护墙不再直接判负】
+// 第一版遇到守护墙就 `return null` —— 也就是说斩杀搜索**结构上看不见
+// 「先清墙再斩杀」**,而那是这个游戏里最常见的一条斩杀线
+// (全池 261 张带守护,六套预组每套 12 张)。
+// 实测:名将档以上在对面有墙时会漏掉本可以赢的一回合。
+//
+// 现在的做法仍然很克制 —— 不做完整搜索,只算一笔账:
+//   拆掉所有墙需要多少攻击力(按墙的**总有效血量**算),
+//   剩下的攻击力够不够打脸。
+// 这会**低估**自己(拆墙的单位如果打死墙还活着,下一个墙由别人拆更省),
+// 也会**高估**(没考虑剧毒/铁壁这些让拆墙更便宜或更贵的因素)——
+// 但方向是对的,而且宁可低估:findLethal 后面还会逐步验证一遍,
+// 验不出真斩杀就退回贪心,不会打出一条错线。
 function faceDamageAvailable(state: GameState, player: PlayerIdx): number | null {
   const foe = state.players[player === 0 ? 1 : 0]
-  const hasGuard = foe.board.some(
+  const guards = foe.board.filter(
     (c) => c.keywords.includes('guard') && !c.keywords.includes('stealth'),
   )
-  if (hasGuard) return null
   let total = 0
   for (const unit of state.players[player].board) {
     if (!canAttackNow(unit)) continue
     // 突袭单位上场当回合打不到脸
     if (unit.exhausted && !unit.keywords.includes('charge')) continue
     total += unit.attack * (maxAttacksOf(unit) - unit.attacksUsed)
+  }
+  if (guards.length > 0) {
+    // 铁壁要多挨一下才碎 —— 这一下按「墙的攻击力」估价太麻烦,
+    // 按 1 点算(保守:低估自己的余力)
+    const wallHp = guards.reduce(
+      (n, g) => n + g.health + (g.keywords.includes('divineShield') ? 1 : 0),
+      0,
+    )
+    total -= wallHp
   }
   return total
 }
@@ -299,19 +383,23 @@ function findLethal(state: GameState, player: PlayerIdx, lib: CardLibrary): Comm
   if (available === null) return null
   if (available < foe.heroHp + foe.armor) return null
 
-  // 伤害够了,验证一遍并给出第一步(逐个把能打脸的单位派上去)
+  // 伤害够了,验证一遍并给出第一步。
+  // **先拆墙再打脸** —— 上面的估算已经把拆墙的代价扣掉了,这里要真的按那个顺序走,
+  // 否则第一步就会被引擎拒(有守护时打不到脸)。
   let sim = state
   let first: Command | null = null
-  for (let guard = 0; guard < 16; guard++) {
+  const foeSeat: PlayerIdx = player === 0 ? 1 : 0
+  for (let step = 0; step < 24; step++) {
+    const wall = sim.players[foeSeat].board.find(
+      (c) => c.keywords.includes('guard') && !c.keywords.includes('stealth'),
+    )
     const attacker = sim.players[player].board.find(
       (u) => canAttackNow(u) && !(u.exhausted && !u.keywords.includes('charge')) && u.attack > 0,
     )
     if (!attacker) break
-    const cmd: Command = {
-      type: 'Attack',
-      attackerIid: attacker.iid,
-      target: { kind: 'hero', player: player === 0 ? 1 : 0 },
-    }
+    const cmd: Command = wall
+      ? { type: 'Attack', attackerIid: attacker.iid, target: { kind: 'general', iid: wall.iid } }
+      : { type: 'Attack', attackerIid: attacker.iid, target: { kind: 'hero', player: foeSeat } }
     const r = applyCommand(sim, player, cmd, lib)
     if (!r.ok) break
     if (first === null) first = cmd
@@ -344,6 +432,38 @@ function mulliganKeep(state: GameState, player: PlayerIdx, lib: CardLibrary): nu
     .map((x) => x.c.iid)
 }
 
+// 按曲线调度(高档专用)。
+//
+// 上面那个「留 ≤3 费」的问题是它**不看已经留了几张同费的牌** ——
+// 一手四张 2 费会全留,于是第 4、5 回合无牌可打。
+// 这里改成给每个费位设配额:1-2 费各留 2 张、3 费留 2 张、4 费留 1 张,
+// 5 费以上一律换掉(留一张也打不出,前六回合根本到不了)。
+// 配额之外的同费牌换掉 —— 换回来的期望比手上第三张 2 费高。
+function mulliganKeepByCurve(
+  state: GameState,
+  player: PlayerIdx,
+  lib: CardLibrary,
+): number[] {
+  const hand = state.players[player].hand
+  const QUOTA: Record<number, number> = { 1: 2, 2: 2, 3: 2, 4: 1 }
+  const used: Record<number, number> = {}
+  const keep: number[] = []
+  // 先按费用升序 —— 同费位内优先留先抽到的那张(顺序确定,不引入随机)
+  const sorted = hand
+    .map((c) => ({ c, cost: lib[c.defId]?.cost ?? 99 }))
+    .sort((a, b) => a.cost - b.cost)
+  for (const { c, cost } of sorted) {
+    const quota = QUOTA[cost] ?? 0
+    if ((used[cost] ?? 0) < quota) {
+      used[cost] = (used[cost] ?? 0) + 1
+      keep.push(c.iid)
+    }
+  }
+  // 一张都没留住(全是 5 费以上)时退回旧规则,别把整手换光 ——
+  // 换回来的还是同一个牌库,空手比一张贵牌更糟。
+  return keep.length > 0 ? keep : mulliganKeep(state, player, lib)
+}
+
 // 选出当前一步。调用方负责 applyCommand 并循环调用直到 EndTurn/对局结束。
 export function aiStep(
   state: GameState,
@@ -355,7 +475,10 @@ export function aiStep(
   let rng = aiRng
 
   if (state.phase === 'mulligan') {
-    return { cmd: { type: 'Mulligan', keepIids: mulliganKeep(state, player, lib) }, rng }
+    const keep = config.smartMulligan
+      ? mulliganKeepByCurve(state, player, lib)
+      : mulliganKeep(state, player, lib)
+    return { cmd: { type: 'Mulligan', keepIids: keep }, rng }
   }
 
   // 发现挂起:evaluate 看不见手牌里具体是哪张牌(只数张数),所以不能靠通用打分选。
@@ -376,6 +499,8 @@ export function aiStep(
       cmd: mctsStep(state, player, lib, {
         foresight: config.foresight === true,
         weights: config.weights,
+        holdValue: config.holdValue === true,
+        opponentReply: config.opponentReply === true,
       }),
       rng,
     }
@@ -388,6 +513,7 @@ export function aiStep(
       cmd: plannedStep(state, player, lib, {
         foresight: config.foresight === true,
         weights: config.weights,
+        holdValue: config.holdValue === true,
       }),
       rng,
     }

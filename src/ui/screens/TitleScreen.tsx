@@ -162,6 +162,8 @@ function buildMatchArgs(decks: DeckList[], myDeckIndex: number): StartMatchArgs 
 }
 
 // 单机 AI 四档,称谓取自军中资历。
+// 天機(MCTS)已下架 —— 三次实测对军神都是 52-53%(z<1),而慢 3 倍。
+// 理由与数据见 settingsStore 的 Difficulty 与 ai/greedy.ts 的 AI_LEVELS.oracle。
 // 军神多一层整回合规划,能看见「先亏一步再赚回来」的组合 —— 对名将实测 71.7%。
 // 天機换的不是深度而是**预算怎么分配**:军神的最好优先排序会把
 // 「第一步最差、三步后最好」的线永久饿死,UCT 不会 —— 对军神实测 58.3%。
@@ -170,7 +172,6 @@ const DIFFICULTIES: { key: Difficulty; name: LocalizedText }[] = [
   { key: 'veteran', name: { zh: '宿将', en: 'Veteran' } },
   { key: 'general', name: { zh: '名将', en: 'Legend' } },
   { key: 'marshal', name: { zh: '军神', en: 'Marshal' } },
-  { key: 'oracle', name: { zh: '天機', en: 'Oracle' } },
 ]
 
 type NavTarget =

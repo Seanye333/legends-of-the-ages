@@ -35,7 +35,16 @@ export const EQUIPMENT: CardDef[] = [
     attack: 4,
     health: 2,
     keywords: ['charge'],
-    text: { zh: '友方武將+4/+2並獲得衝鋒。轅門一戟,遼東無雙。', en: 'Give a friendly general +4/+2 and Charge.' },
+    // 傳承:名器不该随持有者一起死。这三件(方天畫戟/霸王槍/青龍偃月刀)
+    // 是全池最有名也最贵的装备,而 price-cards 一直把它们报在**过弱**那一端
+    // (6 费只值 3 费)—— 因为它们除了数值什么都没有。
+    // 而 heirloom 机制早就实现好了(resolve.ts:628-645),此前只挂在两件
+    // 专为它做的道具上。名器带傳承既补了强度,也正好是它们该有的样子。
+    heirloom: true,
+    text: {
+      zh: '友方武將+4/+2並獲得衝鋒。傳承:持有者陣亡時,此戟改由另一名友軍繼承。轅門一戟,遼東無雙。',
+      en: 'Give a friendly general +4/+2 and Charge. Heirloom: when the bearer falls, another ally inherits it.',
+    },
   },
   {
     id: 'eq-zhangba-mao',
@@ -125,7 +134,11 @@ export const EQUIPMENT: CardDef[] = [
     attack: 5,
     health: 3,
     keywords: [],
-    text: { zh: '友方武將+5/+3。力拔山兮氣蓋世。', en: 'Give a friendly general +5/+3.' },
+    heirloom: true, // 见方天畫戟那段说明
+    text: {
+      zh: '友方武將+5/+3。傳承:持有者陣亡時,此槍改由另一名友軍繼承。力拔山兮氣蓋世。',
+      en: 'Give a friendly general +5/+3. Heirloom: when the bearer falls, another ally inherits it.',
+    },
   },
   {
     id: 'eq-longdan-qiang',

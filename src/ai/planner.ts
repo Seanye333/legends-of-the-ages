@@ -34,6 +34,8 @@ export interface PlanOpts {
   maxDepth?: number
   foresight?: boolean
   weights?: Partial<EvalWeights>
+  // 留牌的跨回合价值(见 greedy.ts 的 stopScore)。透传即可,这里不做判断。
+  holdValue?: boolean
 }
 
 // 预算比 solveLethal 小一个量级(那个是离线验证器,这个要在玩家等着的时候跑完)。
@@ -96,11 +98,12 @@ export function planTurn(
   const budget = opts.nodeBudget ?? DEFAULT_BUDGET
   const maxDepth = opts.maxDepth ?? DEFAULT_DEPTH
   const foresight = opts.foresight ?? true
+  const holdValue = opts.holdValue === true
   const weights = opts.weights
   const visited = new Set<string>()
   let nodes = 0
 
-  let bestScore = stopScore(state, player, lib, foresight, weights)
+  let bestScore = stopScore(state, player, lib, foresight, weights, holdValue)
   let bestLine: Command[] = []
   const line: Command[] = []
 
@@ -132,7 +135,7 @@ export function planTurn(
         }
         continue
       }
-      const s = stopScore(r.state, player, lib, foresight, weights)
+      const s = stopScore(r.state, player, lib, foresight, weights, holdValue)
       if (s > bestScore) {
         bestScore = s
         bestLine = [...line, cmd]
