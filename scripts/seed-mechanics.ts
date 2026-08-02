@@ -132,6 +132,8 @@ interface Ctx {
   // 事迹标签(见 DEED_WORDS)。下面有一整批**只由事迹开门**的候选 ——
   // 它们不看五维,因为那批人五维本来就低,看五维他们永远够不着任何候选。
   deeds: string[]
+  // 性格特质(见 TRAIT_WORDS)。第二条轴,加成比事迹低一档。
+  traits: string[]
 }
 
 interface Cand {
@@ -222,7 +224,7 @@ const KEYWORD_POOL: KwCand[] = [
   { kw: 'trample', weight: 4, when: (c) => c.s.war >= 82 && c.s.leadership >= 78, eras: ['qin-han', 'song-yuan'] },
 ]
 
-export function seedKeyword(id: string, s: Stats, archetype: string, rarity: Rarity, era: Era, dynasty: DynastyTag, cost = 4, deeds: string[] = []): string | null {
+export function seedKeyword(id: string, s: Stats, archetype: string, rarity: Rarity, era: Era, dynasty: DynastyTag, cost = 4, deeds: string[] = [], traits: string[] = []): string | null {
   // 约 44% 的卡带关键词(此前约三分之一)。
   //
   // 【这道闸门刻意**不因事迹放宽**】试过放宽到 0.62,冒险模式当场塌了:
@@ -236,9 +238,9 @@ export function seedKeyword(id: string, s: Stats, archetype: string, rarity: Rar
   const ctx: KwCtx = { id, s, archetype: archetype as Ctx['archetype'], rarity, era, dynasty, cost }
   const live = KEYWORD_POOL.filter((k) => k.when(ctx))
   if (live.length === 0) return null
-  const want = deedWants(deeds)
+  const want = deedWants(deeds, traits)
   const w = live.map(
-    (k) => k.weight * (k.eras?.includes(era) ? ERA_BOOST : 1) * (want.kw.has(k.kw) ? DEED_BOOST : 1),
+    (k) => k.weight * (k.eras?.includes(era) ? ERA_BOOST : 1) * (want.kw.get(k.kw) ?? 1),
   )
   const total = w.reduce((a, b) => a + b, 0)
   let r = hash01(id, 'kwpick') * total
@@ -268,6 +270,99 @@ export function seedKeyword(id: string, s: Stats, archetype: string, rarity: Rar
 // 抬多少是个平衡问题 —— DEED_BOOST 取 6,实测足够把命中率从「随缘」拉到「大概率」,
 // 又不至于让同标签的人塌成一张牌。
 export const DEED_BOOST = 6
+
+// 词 → 性格特质。和事迹标签是**两条正交的轴**:
+// 事迹说「他做过什么」(射、守城、降敌),性格说「他是个什么人」(嗜酒、多疑、刚愎)。
+// 两条乘起来才拉得开 —— 同样是「守城」,谨慎的人和刚愎的人不该长成一张牌。
+//
+// 源头的 HISTORICAL_TRAITS 只覆盖 401 名(17.8%),而生平原文里到处是这些词。
+// trait id 取自姊妹仓库的 TRAIT_DEFS(译名一起生成,见 import-content)。
+const TRAIT_WORDS: [RegExp, string][] = [
+  [/嗜酒|醉|好酒|酗/, 'drunkard'],
+  [/多疑|猜忌|忌之/, 'suspicious'],
+  [/仁|寬厚|愛民|恤/, 'benevolent'],
+  [/剛愎|固執|不聽|自用/, 'stubborn'],
+  [/懼|怯|遁走|棄軍/, 'cowardly'],
+  [/野心|圖之|篡|自立/, 'ambitious'],
+  [/忠|守節|不降|死節/, 'loyal'],
+  [/貪|賄|受金/, 'greedy'],
+  [/輕敵|躁|恃勇|輕進/, 'reckless'],
+  [/謹慎|持重|不輕/, 'cautious'],
+  [/傲|矜|自負/, 'arrogant'],
+  [/詐|譎|反間|離間/, 'cunning'],
+  [/怒|暴怒|鞭撻/, 'wrathful'],
+  [/義|俠|重然諾/, 'chivalrous'],
+  [/驍勇|萬人敵|勇冠|力戰/, 'martial-valor'],
+  [/沉毅|鎮定|不動|從容/, 'composed'],
+  [/寡言|木訥|訥/, 'taciturn'],
+  [/宗室|封王|封侯|公子|太子/, 'noble'],
+  [/病|疾卒|疾篤/, 'sickly'],
+  [/年八十|壽|高齡|年九十/, 'long-lived'],
+  [/殘|暴虐|坑殺|屠/, 'cruel'],
+  [/儉|樸素|不治產/, 'frugal'],
+  [/廉|不受/, 'incorruptible'],
+  [/孝/, 'filial'],
+  [/善射|百步穿楊|射藝/, 'sharpshooter'],
+  [/矛|槍/, 'spear-master'],
+  [/騎射|善騎|輕騎/, 'cavalryman'],
+  [/水軍|舟師|樓船/, 'navy-master'],
+  [/攻城|器械|礮/, 'siege-expert'],
+  [/鎮守|守城|拒守/, 'fortress-keeper'],
+  [/宿將|老將|歷仕/, 'veteran'],
+  [/伏兵|設伏|夜襲/, 'ambush-master'],
+  [/弩/, 'crossbow-adept'],
+  [/先登|先鋒|陷陣/, 'vanguard'],
+  [/單挑|鬥將|挑戰/, 'duelist'],
+  [/火攻|縱火|焚其/, 'fire-tactician'],
+  [/博覽|經學|通經|好學/, 'classics-scholar'],
+  [/文章|詩|賦|善書/, 'poetic-genius'],
+  [/醫|方術|針/, 'physician'],
+  [/多謀|奇計|善謀/, 'strategist'],
+  [/辯|說之|遊說/, 'persuasive'],
+  [/直言|抗表|犯顏|切諫/, 'honest-to-fault'],
+  [/隱居|不仕|辭疾/, 'ascetic'],
+  [/美姿|姿容|貌美|美/, 'beautiful'],
+  [/身長|長八尺|長九尺/, 'tall'],
+  [/力能|扛鼎|絕人/, 'mighty-strength'],
+]
+
+// 性格 → 它想要的关键词/形状。比事迹那张表克制得多 ——
+// 性格调的是**气质**,不该抢走事迹对机制的决定权,所以只点少数几个。
+const TRAIT_AFFINITY: Record<string, { kw?: string[]; shapes?: string[] }> = {
+  drunkard: { shapes: ['overload-raid', 'deed-wine', 'bc-self-temp'] },
+  cautious: { kw: ['guard'], shapes: ['lo-palisade', 'od-brace', 'bc-armor'] },
+  reckless: { kw: ['charge'], shapes: ['bc-face', 'lo-overrun'] },
+  cruel: { kw: ['poison'], shapes: ['bc-behead', 'dr-strike'] },
+  loyal: { shapes: ['dr-legacy', 'dr-avenge', 'bc-grant-guard'] },
+  cunning: { kw: ['stealth'], shapes: ['lo-ruse', 'bc-steal', 'combo-ambush'] },
+  benevolent: { kw: ['lifesteal'], shapes: ['bc-heal-general', 'sot-heal', 'od-rally'] },
+  arrogant: { kw: ['duel'], shapes: ['bc-behead', 'oa-momentum'] },
+  'martial-valor': { kw: ['trample', 'charge'], shapes: ['bc-warcry-big', 'enrage'] },
+  'sharpshooter': { kw: ['rush'], shapes: ['lo-arrow', 'bc-snipe'] },
+  'fortress-keeper': { kw: ['guard'], shapes: ['bc-wall', 'lo-palisade'] },
+  'ambush-master': { kw: ['stealth'], shapes: ['lo-veil', 'combo-ambush'] },
+  'navy-master': { shapes: ['bc-freeze', 'bc-freeze-all'] },
+  'siege-expert': { kw: ['siege'], shapes: ['bc-scorch', 'bc-volley'] },
+  vanguard: { kw: ['charge', 'rush'], shapes: ['oa-press'] },
+  duelist: { kw: ['duel'], shapes: ['bc-behead'] },
+  'fire-tactician': { shapes: ['bc-scorch', 'dr-blast'] },
+  'classics-scholar': { shapes: ['bc-draw', 'lo-scribe', 'os-scholar'] },
+  strategist: { shapes: ['bc-discover-strat', 'spell-damage', 'deed-scheme'] },
+  physician: { shapes: ['lo-mend', 'bc-heal-hero', 'deed-heal'] },
+  'mighty-strength': { kw: ['trample'], shapes: ['bc-warcry-big', 'lo-overrun'] },
+  sickly: { shapes: ['dr-draw', 'deed-mote-doomed'] },
+  noble: { shapes: ['aura-both', 'aura-hp', 'bc-kin'] },
+}
+
+// 从生平原文抽性格。同 deedsOf:纯函数,产物逐字节可复现。
+export function traitsOf(bioZh: string | undefined): string[] {
+  if (!bioZh) return []
+  const out: string[] = []
+  for (const [re, tag] of TRAIT_WORDS) if (re.test(bioZh)) out.push(tag)
+  // 一个人身上挂七八条性格等于没有性格 —— 只留前四条(表的顺序就是优先级:
+  // 越靠前的越是「一句话能概括这个人」的那种特质)
+  return out.slice(0, 4)
+}
 
 // 词 → 标签。词都取自生平原文里真实出现的说法(繁体,源头就是繁体)。
 // 刻意用**具体的事**而不是抽象品格:「射」「焚」「渡江」是能落到机制上的,
@@ -328,18 +423,34 @@ export function deedsOf(bioZh: string | undefined): string[] {
   return out
 }
 
-// 这批标签想要的关键词/形状集合
-function deedWants(deeds: string[]): { kw: Set<string>; shapes: Set<string> } {
-  const kw = new Set<string>()
-  const shapes = new Set<string>()
+// 这批标签(事迹 + 性格)想要的关键词/形状集合。
+// 两条轴共用一个出口,但**权重不同**:事迹是他做过的事,性格是他的气质 ——
+// 前者更该决定机制,所以性格只给一半的加成(见下面的 boostOf)。
+function deedWants(deeds: string[], traits: string[] = []): {
+  kw: Map<string, number>
+  shapes: Map<string, number>
+} {
+  const kw = new Map<string, number>()
+  const shapes = new Map<string, number>()
+  const add = (m: Map<string, number>, k: string, mult: number) =>
+    m.set(k, Math.max(m.get(k) ?? 1, mult))
   for (const d of deeds) {
     const a = DEED_AFFINITY[d]
     if (!a) continue
-    for (const k of a.kw ?? []) kw.add(k)
-    for (const sp of a.shapes ?? []) shapes.add(sp)
+    for (const k of a.kw ?? []) add(kw, k, DEED_BOOST)
+    for (const sp of a.shapes ?? []) add(shapes, sp, DEED_BOOST)
+  }
+  for (const tr of traits) {
+    const a = TRAIT_AFFINITY[tr]
+    if (!a) continue
+    for (const k of a.kw ?? []) add(kw, k, TRAIT_BOOST)
+    for (const sp of a.shapes ?? []) add(shapes, sp, TRAIT_BOOST)
   }
   return { kw, shapes }
 }
+
+// 性格的加成比事迹低一档:事迹是「他做过这件事」,性格是「他是这种人」。
+export const TRAIT_BOOST = 3
 
 // ---------- 效果候选池 ----------
 //
@@ -464,6 +575,112 @@ const POOL: Cand[] = [
       o.endOfTurn = { ops: [{ op: 'damage', amount: 2, target: 'weakestEnemyGeneral' }] }
       o.points += 2.2
       t(o, '我方回合結束時:對現存生命最低的敵將造成 2 點傷害。', 'At the end of your turn: deal 2 damage to the enemy general with the lowest health.')
+    },
+  },
+  // ══════ 无名微效果(0.3 点,**不扣身材**)══════
+  //
+  // 【它补的是哪一批人】
+  // 全池最大的同质组是「1 費 1/2」共 25 张,他们的共同点不是弱,是**史书没写**:
+  // 生平只有一句「蜀漢將。隨諸葛亮北伐」——既抽不出事迹也抽不出性格,
+  // 于是上面那两批候选一个都够不着,一路掉回白板,长成同一张牌。
+  //
+  // 【为什么定价 0.3】
+  // payFor 的扣款门槛是 0.4:低于它一分身材都不扣。这不是钻空子,是刻意的 ——
+  // **冒险模式那次塌陷的根因是身材缩水,不是效果变多**(平均身材 7.53→7.29,
+  // 而关底 Boss 的牌由贪心 AI 驾驶,对它身材远重于效果)。
+  // 定在 0.3 就能在**身材一分不动**的前提下让这批人各有各的小动作。
+  //
+  // 【效果要小到什么程度】
+  // 小到「有它没它都不影响这张牌该不该进卡组」。它们要回答的不是强度,
+  // 是「这张牌和旁边那张不是同一张」。
+  // 分流靠 when 的画像条件(兵种/朝代/五维)——同为无名之辈,
+  // 江东的和西凉的、文的和武的,拿到的那一件小事也不一样。
+  {
+    key: 'anon-levy',
+    weight: 0.8,
+    points: 0.3,
+    when: (c) => c.cost <= 4 && c.s.leadership >= c.s.war,
+    emit: (o) => {
+      o.battlecry = { ops: [{ op: 'gainArmor', amount: 1 }] }
+      o.points += 0.3
+      t(o, '戰吼:你的主公獲得 1 點護甲。', 'Battlecry: Your hero gains 1 Armor.')
+    },
+  },
+  {
+    key: 'anon-scout',
+    weight: 0.8,
+    points: 0.3,
+    when: (c) => c.cost <= 4 && c.s.intelligence >= 55,
+    emit: (o) => {
+      o.battlecry = { ops: [{ op: 'gainSupply', amount: 1 }] }
+      o.points += 0.3
+      t(o, '戰吼:屯糧 +1。', 'Battlecry: Gain 1 Supply.')
+    },
+  },
+  {
+    key: 'anon-vanguard',
+    weight: 0.8,
+    points: 0.3,
+    when: (c) => c.cost <= 4 && c.s.war > c.s.leadership,
+    emit: (o) => {
+      o.battlecry = { ops: [{ op: 'gainMorale', amount: 1 }] }
+      o.points += 0.3
+      t(o, '戰吼:我方士氣 +1。', 'Battlecry: Gain 1 Morale.')
+    },
+  },
+  {
+    key: 'anon-mourn',
+    weight: 0.8,
+    points: 0.3,
+    when: (c) => c.cost <= 4 && c.s.charisma >= 55,
+    emit: (o) => {
+      o.deathrattle = { ops: [{ op: 'gainMorale', amount: 1 }] }
+      o.points += 0.3
+      t(o, '亡語:我方士氣 +1。', 'Deathrattle: Gain 1 Morale.')
+    },
+  },
+  {
+    key: 'anon-forage',
+    weight: 0.7,
+    points: 0.3,
+    when: (c) => c.cost <= 4 && c.s.politics >= 55,
+    emit: (o) => {
+      o.endOfTurn = { ops: [{ op: 'gainSupply', amount: 1 }] }
+      o.points += 0.3
+      t(o, '我方回合結束時:屯糧 +1。', 'At the end of your turn: gain 1 Supply.')
+    },
+  },
+  {
+    key: 'anon-picket',
+    weight: 0.7,
+    points: 0.3,
+    when: (c) => c.cost <= 4 && c.s.leadership >= 55,
+    emit: (o) => {
+      o.deathrattle = { ops: [{ op: 'gainArmor', amount: 2 }] }
+      o.points += 0.3
+      t(o, '亡語:你的主公獲得 2 點護甲。', 'Deathrattle: Your hero gains 2 Armor.')
+    },
+  },
+  {
+    key: 'anon-runner',
+    weight: 0.7,
+    points: 0.3,
+    when: (c) => c.cost <= 3 && c.s.war >= 45,
+    emit: (o) => {
+      o.onAttack = { ops: [{ op: 'gainMorale', amount: 1 }] }
+      o.points += 0.3
+      t(o, '攻擊後:我方士氣 +1。', 'After attacking: gain 1 Morale.')
+    },
+  },
+  {
+    key: 'anon-clerk',
+    weight: 0.7,
+    points: 0.3,
+    when: (c) => c.cost <= 4 && c.archetype === 'strategist',
+    emit: (o) => {
+      o.startOfTurn = { ops: [{ op: 'gainSupply', amount: 1 }] }
+      o.points += 0.3
+      t(o, '我方回合開始時:屯糧 +1。', 'At the start of your turn: gain 1 Supply.')
     },
   },
   // ══════ 事迹微效果(0.5 点)══════
@@ -1864,6 +2081,7 @@ export function seedMechanics(
   cost: number,
   budget: number,
   deeds: string[] = [],
+  traits: string[] = [],
 ): Seeded {
   const out: Seeded = { keywords: [], points: 0, textZh: [], textEn: [], shape: null }
   if (hasKeyword) {
@@ -1885,12 +2103,20 @@ export function seedMechanics(
     mag: hash01(id, 'mag'),
     kw: hasKeyword,
     deeds,
+    traits,
   }
 
   // 已经带了关键词的卡再给效果容易变成「什么都会」,命中率打八折。
   // 传奇不打折 —— 传奇本来就该是「什么都会」的那种牌。
-  // 同上:事迹**不放宽**这道闸门(见 seedKeyword 里那段实测)
-  const gate = EFFECT_GATE[rarity] * (hasKeyword && rarity !== 'legendary' ? 0.9 : 1)
+  // 同上:事迹**不放宽**这道闸门(见 seedKeyword 里那段实测)。
+  //
+  // 唯一的例外是**既无事迹也无性格的那批**(史书只留下一句「蜀漢將。隨諸葛亮北伐」)。
+  // 他们够不着任何一条看画像的候选,只能拿 0.3 点的无名微效果 ——
+  // 而 0.3 低于 payFor 的扣款门槛,**身材一分不动**。
+  // 于是这道放行在构成上是中性的(冒险模式塌陷的根因是身材缩水,不是效果变多),
+  // 换来的是全池最大的同质组从 39 张散开。
+  const anonymous = deeds.length === 0 && traits.length === 0
+  const gate = anonymous ? 1 : EFFECT_GATE[rarity] * (hasKeyword && rarity !== 'legendary' ? 0.9 : 1)
   if (hash01(id, 'effgate') >= gate) return out
 
   // 预算里已经被关键词吃掉的部分要扣掉,免得「关键词 + 大效果」把身材削穿
@@ -1906,12 +2132,12 @@ export function seedMechanics(
 
   // 事迹标签点名的效果形状,权重抬 DEED_BOOST 倍 —— 这一行就是
   // 「加权随机」变成「有出处的确定性」的地方。
-  const want = deedWants(deeds)
+  const want = deedWants(deeds, traits)
   const w = live.map(
     (cd) =>
       (cd.weight ?? 1) *
       (cd.eras?.includes(era) ? ERA_BOOST : 1) *
-      (want.shapes.has(cd.key) ? DEED_BOOST : 1),
+      (want.shapes.get(cd.key) ?? 1),
   )
   const total = w.reduce((a, b) => a + b, 0)
   let r = hash01(id, 'effpick') * total

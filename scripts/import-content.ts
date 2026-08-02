@@ -51,6 +51,7 @@ import {
   hash01,
   deedsOf,
   seedKeyword,
+  traitsOf,
   seedMechanics,
   type Seeded,
   type Stats,
@@ -374,13 +375,18 @@ function generateCard(
   // 它会去抬对应机制的权重(见 seed-mechanics 的 DEED_AFFINITY)——
   // 播种因此从「加权随机」变成「有出处的确定性」。
   const deeds = deedsOf(BIOGRAPHIES[officer.id]?.zh)
+  // 性格特质:源头的 HISTORICAL_TRAITS 只覆盖 17.8%,其余从生平原文抽。
+  // 两条轴正交 —— 事迹说他做过什么,性格说他是什么人。
+  const traits = HISTORICAL_TRAITS[officer.id]?.length
+    ? HISTORICAL_TRAITS[officer.id].slice(0, 4)
+    : traitsOf(BIOGRAPHIES[officer.id]?.zh)
   const kw = handAuthored
     ? null
-    : seedKeyword(officer.id, s, archetype, rarity, era, dynasty, cost, deeds)
+    : seedKeyword(officer.id, s, archetype, rarity, era, dynasty, cost, deeds, traits)
   const empty: Seeded = { keywords: [], points: 0, textZh: [], textEn: [], shape: null }
   const seeded = handAuthored
     ? empty
-    : seedMechanics(officer.id, s, archetype, rarity, kw, era, dynasty, cost, budget, deeds)
+    : seedMechanics(officer.id, s, archetype, rarity, kw, era, dynasty, cost, budget, deeds, traits)
   // 签名卡不播种,但**覆盖里声明的关键词照样要付账** —— 否则它白拿一个关键词还留着满额身材。
   // (233 张里有 16 张没在覆盖里钉死攻血,吃的是这里算出来的身材;
   //  廖化就是其中之一,不收这笔钱它会从 3/3 变成 4/3,凭空强一档。)
@@ -633,9 +639,13 @@ for (const o of unique) {
     entry.life = life
     tally.life++
   }
-  const traits = HISTORICAL_TRAITS[id]
-  if (traits?.length) {
-    entry.traits = traits.slice()
+  // 性格特质:源头有就用源头的,没有就从生平原文抽(和播种用的是同一份,
+  // 否则卡面上写着「嗜酒」而机制里按别的算,那就成了两套事实)
+  const traits = HISTORICAL_TRAITS[id]?.length
+    ? HISTORICAL_TRAITS[id].slice(0, 4)
+    : traitsOf(BIOGRAPHIES[id]?.zh)
+  if (traits.length) {
+    entry.traits = traits
     tally.traits++
   }
   if (o.stats) {

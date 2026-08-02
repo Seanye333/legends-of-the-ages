@@ -132,7 +132,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'fame',
     hp: 30,
-    deckTier: 0.75,
+    deckTier: 0.0,
     power: power(
       'bp-taiping',
       { zh: '太平要術', en: 'Way of Great Peace' },
@@ -176,7 +176,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'hegemonic',
     hp: 36,
-    deckTier: 0.45,
+    deckTier: 0.0,
     power: power(
       'bp-wushuang',
       { zh: '無雙', en: 'Peerless Might' },
@@ -201,7 +201,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'royal',
     hp: 38,
-    deckTier: 0.3,
+    deckTier: 0.45,
     // 这一关的调校记录(结论已并入 bossDeck 的注释,这里只留因果):
     // 原技能是「抽一张牌 + 2 点护甲」,实测玩家胜率 75%,比第 1 关还好打。
     // 换成「召唤 1 个 1/1 + 2 护甲」后仍是 77% —— 说明瓶颈不在技能。
@@ -254,7 +254,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'separatist',
     hp: 42,
-    deckTier: 0.6,
+    deckTier: 0.0,
     power: power(
       'bp-huogong',
       { zh: '火攻', en: 'Fire Attack' },
@@ -276,7 +276,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'ritual',
     hp: 45,
-    deckTier: 0.15,
+    deckTier: 0.0,
     power: power(
       'bp-bagua',
       { zh: '八陣圖', en: 'Stone Sentinel Maze' },
@@ -301,7 +301,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'hegemonic',
     hp: 52,
-    deckTier: 0.9,
+    deckTier: 0.45,
     power: power(
       'bp-weiwu',
       { zh: '魏武揮鞭', en: 'The Tyrant’s Lash' },
@@ -334,7 +334,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'hegemonic',
     hp: 52, // 与曹操持平(单调不破);白起要当开章软目标,血量这条弱旋钮也一并往下压
-    deckTier: 0.6,
+    deckTier: 0.9,
     // 长平的「歼灭」本想给 3 点,但白起 = 霸道深池 + 每回合稳定点杀,实测哪怕最软卡组
     // 玩家胜率也压不过 33%,当不成开章的软目标;降到 2 点(与董卓同机制)+ 最软档 ≈ 40%。
     power: power(
@@ -359,7 +359,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'hegemonic',
     hp: 56,
-    deckTier: 0.6,
+    deckTier: 0.0,
     power: power(
       'bp-pofu',
       { zh: '破釜沉舟', en: 'Burn the Boats' },
@@ -382,7 +382,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'hegemonic',
     hp: 58,
-    deckTier: 0.9,
+    deckTier: 0.45,
     power: power(
       'bp-duoduo',
       { zh: '多多益善', en: 'The More the Merrier' },
@@ -405,7 +405,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'hegemonic',
     hp: 60,
-    deckTier: 0.9,
+    deckTier: 0.45,
     power: power(
       'bp-fenglang',
       { zh: '長驅直入', en: 'Deep Strike' },
@@ -456,7 +456,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'royal',
     hp: 64,
-    deckTier: 0.6,
+    deckTier: 0.45,
     power: power(
       'bp-huangpao',
       { zh: '黃袍加身', en: 'The Yellow Robe' },
@@ -479,7 +479,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'royal',
     hp: 66,
-    deckTier: 0.3,
+    deckTier: 0.45,
     power: power(
       'bp-yuejiajun',
       { zh: '岳家軍', en: 'The Yue Family Army' },
@@ -570,7 +570,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'separatist',
     hp: 48,
-    deckTier: 0.3,
+    deckTier: 0.6,
     power: power(
       'bp-yuyang',
       { zh: '漁陽鼙鼓', en: 'Drums of Yuyang' },
@@ -593,7 +593,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'hegemonic',
     hp: 50,
-    deckTier: 0.9,
+    deckTier: 0.45,
     power: power(
       'bp-kunlun',
       { zh: '昆侖夜襲', en: 'Night Attack at Kunlun' },
@@ -645,7 +645,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'royal',
     hp: 54,
-    deckTier: 0.6,
+    deckTier: 0.45,
     power: power(
       'bp-danxin',
       { zh: '丹心照汗青', en: 'A Red Heart in the Histories' },
@@ -697,7 +697,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'ritual',
     hp: 58,
-    deckTier: 0.15,
+    deckTier: 0.0,
     power: power(
       'bp-shouji',
       { zh: '九門禦敵', en: 'Nine Gates Held' },
@@ -730,7 +730,7 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'royal',
     hp: 62,
-    deckTier: 0.6,
+    deckTier: 0.45,
     power: power(
       'bp-kaitai',
       { zh: '開臺', en: 'Across the Strait' },

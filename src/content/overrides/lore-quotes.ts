@@ -19,6 +19,8 @@
 export interface LoreOverride {
   quote?: { zh: string; en: string }
   line?: { zh: string; en: string }
+  // 绝命诗。标准与名言相同 —— 必须是真的传世之作,不是我们替他写的。
+  poem?: { zh: string; en: string }
 }
 
 export const LORE_OVERRIDES: Record<string, LoreOverride> = {
@@ -254,5 +256,257 @@ export const LORE_OVERRIDES: Record<string, LoreOverride> = {
   },
   'gen-chang-she-qi': {
     line: { zh: '擊首則尾至,擊尾則首至。', en: 'Strike the head and the tail comes; strike the tail and the head comes.' },
+  },
+  // ═══════════ 史诗档(254 名里补 34 条)═══════════
+  // 标准与上面完全一致:有确切出处才写。史诗档缺 224 条,这里只补我能指着
+  // 史料说出处的三分之一强 —— 剩下的留给下一轮,不是留给想象力。
+  'zhang-jiao': {
+    // 《后汉书·皇甫嵩传》—— 太平道起事口号
+    quote: {
+      zh: '蒼天已死,黃天當立;歲在甲子,天下大吉。',
+      en: 'The Blue Heaven is dead; the Yellow Heaven shall rise. The year is jiazi — all under Heaven, be glad.',
+    },
+    line: { zh: '符水一碗,信者活。', en: 'A bowl of charmed water. The faithful live.' },
+  },
+  'yang-hu': {
+    // 《晋书·羊祜传》—— 登岘山叹语
+    quote: { zh: '天下不如意,恒十居七八。', en: 'Of all things under Heaven, seven or eight in ten go against our wishes.' },
+    line: { zh: '對岸是陸抗,我不夜襲。', en: 'Lu Kang is on the far bank. I do not raid by night.' },
+  },
+  'lu-kang': {
+    // 《晋书·陆抗传》—— 答部下问何以厚待对岸的羊祜
+    quote: {
+      zh: '彼專為德,我專為暴,是不戰而自服也。',
+      en: 'If he deals only in virtue and I only in violence, we are beaten without a battle.',
+    },
+    line: { zh: '西陵在,吳在。', en: 'While Xiling stands, Wu stands.' },
+  },
+  'hist-shen-baoxu': {
+    // 《左传·定公四年》—— 哭秦庭七日
+    quote: { zh: '吳為封豕長蛇,以薦食上國。', en: 'Wu is a great boar, a long serpent, devouring the states of the north.' },
+    line: { zh: '哭七日,不食,秦師出。', en: 'Seven days weeping, no food — and the armies of Qin marched.' },
+  },
+  'hist-jian-shu': {
+    // 《左传·僖公三十二年》—— 谏秦穆公袭郑
+    quote: { zh: '勞師以襲遠,非所聞也。', en: 'To wear out an army in a raid upon the far country — I have never heard of such a thing.' },
+    line: { zh: '哭師於東門之外。', en: 'I wept for the army outside the eastern gate.' },
+  },
+  'hist-xian-zhen': {
+    // 《左传·僖公三十三年》—— 免冑入狄师而死
+    quote: { zh: '匹夫逞志於君而無討,敢不自討乎?', en: 'A common man vented his rage upon his lord and went unpunished. Dare I not punish myself?' },
+    line: { zh: '免冑入狄師。', en: 'Helmet off — into the Di ranks.' },
+  },
+  'hist-ji-zha': {
+    // 《史记·吴太伯世家》—— 挂剑于徐君墓树
+    quote: { zh: '始吾心已許之,豈以死倍吾心哉!', en: 'My heart had already promised it. Shall his death make me betray my own heart?' },
+    line: { zh: '劍掛於墓,諾未曾負。', en: 'The sword hangs at the tomb. The promise was never broken.' },
+  },
+  'hist-ximen-bao': {
+    // 《史记·滑稽列传》—— 治邺,投巫于河
+    quote: {
+      zh: '即河伯不娶婦,煩大巫嫗為入報河伯。',
+      en: 'If the River Earl takes no bride, then trouble the head shamaness to go down and tell him so.',
+    },
+    line: { zh: '渠成,鄴無水患。', en: 'The channels are cut. Ye fears the river no longer.' },
+  },
+  'hist-tian-dan': {
+    // 《史记·田单列传》—— 火牛阵前托神
+    quote: { zh: '神來下教我。', en: 'A spirit has come down to instruct me.' },
+    line: { zh: '千牛束炬,夜出即墨。', en: 'A thousand oxen, torches bound — out of Jimo by night.' },
+  },
+  'hist-mozi': {
+    // 《墨子·兼爱中》—— 墨家学说的核心主张
+    quote: { zh: '兼相愛,交相利。', en: 'Love all alike; profit one another.' },
+    line: { zh: '守城之器,吾有九備。', en: 'Nine engines of defence — I have them all.' },
+  },
+  'hist-xunzi': {
+    // 《荀子·劝学》—— 青出于蓝的出处
+    quote: { zh: '青,取之於藍,而青於藍。', en: 'Blue is drawn from the indigo plant, yet is bluer than the plant.' },
+    line: { zh: '人之性惡,其善者偽也。', en: 'Human nature is bad; its goodness is made.' },
+  },
+  'hist-meng-tian': {
+    // 《史记·蒙恬列传》—— 赐死前语
+    quote: { zh: '臣何罪於天,無過而死乎?', en: 'What crime have I against Heaven, that I die without fault?' },
+    line: { zh: '北築長城,萬餘里。', en: 'A wall in the north — ten thousand li and more.' },
+  },
+  'hist-xiao-he': {
+    // 《史记·淮阴侯列传》—— 月下追韩信后荐于刘邦
+    quote: { zh: '諸將易得耳,至如信者,國士無雙。', en: 'Generals are easy to come by. But a man like Xin — there is no second in the realm.' },
+    line: { zh: '關中的糧,一粒不少。', en: 'The grain of Guanzhong — not one grain short.' },
+  },
+  'hist-li-guang': {
+    // 《史记·李将军列传》—— 迷道失期,不愿受审
+    quote: { zh: '廣結髮與匈奴大小七十餘戰,終不能復對刀筆之吏。', en: 'Seventy fights and more against the Xiongnu since I bound my hair — and now I will not face the clerks again.' },
+    line: { zh: '射石沒鏃,那是暮色看錯了。', en: 'The arrow sank into stone — the dusk had deceived me.' },
+  },
+  'hist-zhou-yafu': {
+    // 《史记·绛侯周勃世家》—— 细柳营
+    quote: { zh: '軍中聞將軍令,不聞天子之詔。', en: 'In camp, men heed the general’s order — not the Son of Heaven’s edict.' },
+    line: { zh: '天子至,亦按轡徐行。', en: 'Even the emperor rode in at a walk.' },
+  },
+  'hist-zhao-chongguo': {
+    // 《汉书·赵充国传》—— 请自往金城视形势
+    quote: { zh: '百聞不如一見,兵難隃度。', en: 'A hundred reports are worth less than one look. War cannot be judged from afar.' },
+    line: { zh: '屯田湟中,不戰而羌自敝。', en: 'Farm the Huang valley — the Qiang will wear themselves out.' },
+  },
+  'hist-ma-yuan': {
+    // 《后汉书·马援传》—— 马革裹尸
+    quote: {
+      zh: '男兒要當死於邊野,以馬革裹屍還葬耳。',
+      en: 'A man should die on the frontier, and come home wrapped in a horse’s hide.',
+    },
+    line: { zh: '聚米為山谷,指畫形勢。', en: 'Rice heaped into hills and valleys — here is the ground.' },
+  },
+  'hist-su-wu': {
+    // 《汉书·苏武传》—— 持节牧羊十九年
+    quote: { zh: '屈節辱命,雖生何面目以歸漢!', en: 'To bend my office and shame my charge — though I lived, with what face would I return to Han?' },
+    line: { zh: '節旄盡落,節猶在手。', en: 'The yak-tails are all fallen. The staff is still in my hand.' },
+  },
+  'hist-shi-le': {
+    // 《晋书·石勒载记》—— 自评与古人高下
+    quote: {
+      zh: '朕若逢高皇,當北面而事之;若遇光武,當並驅中原,未知鹿死誰手。',
+      en: 'Had I met the Founder of Han, I would have served him. Had I met Guangwu, we would have raced across the plain — and who can say whose hand the deer would fall to.',
+    },
+    line: { zh: '奴隸出身,又如何?', en: 'Born a slave. What of it?' },
+  },
+  'hist-tao-kan': {
+    // 《晋书·陶侃传》—— 惜分阴
+    quote: {
+      zh: '大禹聖人,乃惜寸陰;至於眾人,當惜分陰。',
+      en: 'Yu the Great, a sage, grudged the inch of shadow. Ordinary men should grudge the fraction of it.',
+    },
+    line: { zh: '運甓于齋外,朝夕不輟。', en: 'Bricks moved out at dawn and back at dusk — every day.' },
+  },
+  'hist-wang-dao': {
+    // 《世说新语·言语》—— 新亭对泣
+    quote: {
+      zh: '當共戮力王室,克復神州,何至作楚囚相對!',
+      en: 'Let us pool our strength for the royal house and win back the sacred land — why sit facing one another like captives of Chu?',
+    },
+    line: { zh: '王與馬,共天下。', en: 'The Wang and the Sima share the realm.' },
+  },
+  'hist-tan-daoji': {
+    // 《宋书·檀道济传》—— 被诛前投帻于地
+    quote: { zh: '乃壞汝萬里長城!', en: 'So you tear down your own Great Wall!' },
+    line: { zh: '唱籌量沙,以少為多。', en: 'Count the sand aloud as grain — let little seem much.' },
+  },
+  'hist-li-ji': {
+    // 《资治通鉴·唐纪》—— 高宗问废王立武
+    quote: { zh: '此陛下家事,何必更問外人!', en: 'This is Your Majesty’s household matter. Why ask outsiders?' },
+    line: { zh: '三朝老臣,不多言。', en: 'A minister of three reigns says little.' },
+  },
+  'hist-xuanzang': {
+    // 《大唐大慈恩寺三藏法师传》所载西行誓语,传世久远
+    quote: {
+      zh: '寧向西天一步死,不向東土一步生。',
+      en: 'Rather die one step toward the West than live one step back toward the East.',
+    },
+    line: { zh: '經在,人可以不在。', en: 'Let the sutras survive. I need not.' },
+  },
+  'hist-yan-zhenqing': {
+    // 《旧唐书·颜真卿传》—— 使李希烈军中,不屈
+    quote: {
+      zh: '吾年八十,官太師,守吾兄之節,死而後已。',
+      en: 'I am eighty, a Grand Preceptor. I keep my brother’s faith, and only death will end it.',
+    },
+    line: { zh: '筆正,則心正。', en: 'When the brush is upright, so is the heart.' },
+  },
+  'hist-li-guangbi': {
+    // 《新唐书·李光弼传》
+    quote: { zh: '戰,危事也;我為國大臣,不可死賊手。', en: 'War is a perilous business. I am a minister of the state — I will not die by a rebel’s hand.' },
+    line: { zh: '太原孤城,守得住。', en: 'Taiyuan stands alone. Taiyuan will hold.' },
+  },
+  'hist-wang-yanzhang': {
+    // 《新五代史·王彦章传》—— 他常挂在嘴边的俗谚
+    quote: { zh: '豹死留皮,人死留名。', en: 'A leopard dies and leaves its hide; a man dies and leaves his name.' },
+    line: { zh: '鐵槍在手,不降。', en: 'The iron spear is in my hand. I do not surrender.' },
+  },
+  'hist-li-keyong': {
+    // 《新五代史·伶官传序》—— 三矢遗命
+    quote: { zh: '此三矢,爾其無忘乃父之志。', en: 'These three arrows — do not forget your father’s purpose.' },
+    line: { zh: '獨眼看天下,看得清。', en: 'One eye upon the realm — and it sees clearly.' },
+  },
+  'hist-yang-ye': {
+    // 《宋史·杨业传》—— 陈家谷兵败被俘,绝食三日而死
+    quote: {
+      zh: '上遇我厚,期討賊捍邊以報,而反為奸臣所迫,何面目求活耶!',
+      en: 'His Majesty used me well; I meant to repay him by holding the border. Driven to this by treacherous men — with what face should I beg to live?',
+    },
+    line: { zh: '無敵,是他們叫的。', en: '“Invincible” — that was their word, not mine.' },
+  },
+  'hist-zong-ze': {
+    // 《宋史·宗泽传》—— 临终连呼三声,无一语及家事
+    quote: { zh: '過河!過河!過河!', en: 'Cross the river! Cross the river! Cross the river!' },
+    line: { zh: '二十四道奏疏,一道也沒回。', en: 'Twenty-four memorials. Not one answered.' },
+  },
+  'hist-han-shizhong': {
+    // 《宋史·岳飞传》—— 诘问秦桧
+    quote: { zh: '「莫須有」三字,何以服天下!', en: '“Perhaps there was” — with three such words, how will you satisfy the realm?' },
+    line: { zh: '黃天蕩,困兀朮四十八日。', en: 'Huangtiandang — I held Wuzhu forty-eight days.' },
+  },
+  'hist-bao-zheng': {
+    // 《宋史·包拯传》—— 家训刻于堂壁
+    quote: {
+      zh: '後世子孫仕宦,有犯贓濫者,不得放歸本家。',
+      en: 'If any descendant of mine takes office and is corrupt, he shall not be received back into this house.',
+    },
+    line: { zh: '開封府,無不平之事。', en: 'In the Kaifeng court, no wrong goes unrighted.' },
+  },
+  'hist-yelu-chucai': {
+    // 《元史·耶律楚材传》
+    quote: {
+      zh: '興一利不若除一害,生一事不若省一事。',
+      en: 'Better to remove one harm than to raise one benefit; better to spare one undertaking than to begin one.',
+    },
+    line: { zh: '中原之民,可以賦,不可以屠。', en: 'The people of the plain can be taxed. They cannot be slaughtered.' },
+  },
+  'hist-yuan-chonghuan': {
+    // 临刑绝命诗,《明季北略》等载
+    quote: { zh: '死後不愁無勇將,忠魂依舊守遼東。', en: 'After my death there will be no want of brave generals — my loyal ghost will still guard Liaodong.' },
+    poem: {
+      zh: '一生事業總成空,半世功名在夢中。死後不愁無勇將,忠魂依舊守遼東。',
+      en: 'A lifetime’s work comes to nothing; half a life of honour was a dream. After my death there will be no want of brave men — my loyal ghost still guards Liaodong.',
+    },
+    line: { zh: '寧遠不失,一步不退。', en: 'Ningyuan does not fall. Not one step back.' },
+  },
+  'hist-shi-kefa': {
+    // 《明史·史可法传》—— 守扬州
+    quote: { zh: '城存與存,城亡與亡。', en: 'If the city stands, I stand. If the city falls, I fall.' },
+    line: { zh: '揚州十日,我在第一日。', en: 'Ten days of Yangzhou — I was there on the first.' },
+  },
+  'hist-fang-xiaoru': {
+    // 《明史·方孝孺传》—— 拒草即位诏
+    quote: { zh: '便十族奈我何!', en: 'Ten degrees of kin, then — what is that to me?' },
+    line: { zh: '筆可奪,詔不可草。', en: 'Take the brush. The edict will not be written.' },
+  },
+  'hist-zeng-guofan': {
+    // 曾国藩治军口诀,见其家书与幕僚记述
+    quote: { zh: '結硬寨,打呆仗。', en: 'Build a hard camp. Fight a dull fight.' },
+    line: { zh: '屢敗屢戰。', en: 'Defeated again and again — and fighting again and again.' },
+  },
+  'hist-li-hongzhang': {
+    // 《筹议海防折》(同治十三年)
+    quote: { zh: '此三千餘年一大變局也。', en: 'This is the great turning of three thousand years.' },
+    line: { zh: '我不過是個裱糊匠。', en: 'I am nothing but a paperer of walls.' },
+  },
+  'hist-deng-shichang': {
+    // 黄海海战,致远舰沉前语,《清史稿》及时人记述
+    quote: { zh: '吾輩從軍衛國,早置生死於度外。', en: 'We took up arms to guard the country. Life and death were set aside long ago.' },
+    line: { zh: '撞沉吉野!', en: 'Ram the Yoshino!' },
+  },
+  'hist-qiu-jin': {
+    // 就义前绝笔七字,《秋瑾集》及时人记载
+    quote: { zh: '秋風秋雨愁煞人。', en: 'Autumn wind, autumn rain — they grieve one to death.' },
+    poem: { zh: '秋風秋雨愁煞人。', en: 'Autumn wind, autumn rain — they grieve one to death.' },
+    line: { zh: '身不得,男兒列;心卻比,男兒烈。', en: 'My body may not stand in the ranks of men — my heart burns fiercer than theirs.' },
+  },
+  'hist-gu-yanwu': {
+    // 《日知录·正始》—— 后世「天下兴亡,匹夫有责」即概括此语
+    quote: {
+      zh: '保天下者,匹夫之賤,與有責焉耳矣。',
+      en: 'As for preserving all under Heaven — even the humblest commoner bears a share of that duty.',
+    },
+    line: { zh: '行萬里路,讀萬卷書。', en: 'Ten thousand li walked; ten thousand volumes read.' },
   },
 }
