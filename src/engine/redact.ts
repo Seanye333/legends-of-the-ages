@@ -35,9 +35,29 @@ export interface RedactedState {
   winner?: GameState['winner']
   // 名局目标是公开信息(双方都看得见「守 N 回合」),原样透传,无泄漏。
   objective?: GameState['objective']
+  // 战场环境同样是公开信息 —— 双方都站在同一片战场上。
+  // 它此前**根本没进裁剪层**:联机局里赤壁的火烧在服务端,客户端一无所知,
+  // 于是本地那一帧既不显示环境、也算不对身材(环境走的是光环附魔路径)。
+  field?: GameState['field']
   self: RedactedSelf
   opponent: RedactedOpponent
   pendingChoice?: RedactedPendingChoice
+}
+
+// 裁剪 PlayerState 时**双方都要带上**的公开字段。
+//
+// 这里单独抽出来是有原因的:redactState 是手写字段清单(不能 spread —— 那样
+// 会把 deck/hand 一起漏出去),而手写清单的失败模式是**静默丢字段**:
+// 第二十一卡包上线后,联机局里士气永远是 0、粮道永远是 0、副将技按钮直接不存在,
+// 单机全对、联机全无,而且不报任何错。redactCoverage.test.ts 现在盯着这件事。
+function publicFields(p: PlayerState) {
+  return {
+    heroPowerTier: p.heroPowerTier,
+    vicePower: p.vicePower,
+    morale: p.morale,
+    supply: p.supply,
+    chain: p.chain,
+  }
 }
 
 function redactPending(
@@ -64,8 +84,10 @@ export function redactState(state: GameState, viewer: PlayerIdx): RedactedState 
     phase: state.phase,
     winner: state.winner,
     objective: state.objective,
+    field: state.field,
     pendingChoice: redactPending(state.pendingChoice, viewer),
     self: {
+      ...publicFields(me),
       heroId: me.heroId,
       heroHp: me.heroHp,
       heroMaxHp: me.heroMaxHp,
@@ -86,6 +108,7 @@ export function redactState(state: GameState, viewer: PlayerIdx): RedactedState 
       deckCount: me.deck.length,
     },
     opponent: {
+      ...publicFields(opp),
       heroId: opp.heroId,
       heroHp: opp.heroHp,
       heroMaxHp: opp.heroMaxHp,

@@ -136,6 +136,13 @@ export function inflateRedacted(rs: RedactedState, mySeat: PlayerIdx): GameState
     overloadNext: rs.self.overloadNext ?? 0,
     overloadLocked: rs.self.overloadLocked ?? 0,
     cardsPlayedThisTurn: rs.self.cardsPlayedThisTurn ?? 0,
+    // 第二十一卡包的四个字段 + 主公技阶数。`?? 0` 的兜底同伏兵那条注释:
+    // 旧服务端不发它们,少一层兜底 UI 就会把 undefined 渲染成「—」。
+    heroPowerTier: rs.self.heroPowerTier ?? 0,
+    vicePower: rs.self.vicePower,
+    morale: rs.self.morale ?? 0,
+    supply: rs.self.supply ?? 0,
+    chain: rs.self.chain ?? 0,
   }
   const opponent: PlayerState = {
     heroId: rs.opponent.heroId,
@@ -161,6 +168,11 @@ export function inflateRedacted(rs: RedactedState, mySeat: PlayerIdx): GameState
     overloadNext: rs.opponent.overloadNext ?? 0,
     overloadLocked: rs.opponent.overloadLocked ?? 0,
     cardsPlayedThisTurn: rs.opponent.cardsPlayedThisTurn ?? 0,
+    heroPowerTier: rs.opponent.heroPowerTier ?? 0,
+    vicePower: rs.opponent.vicePower,
+    morale: rs.opponent.morale ?? 0,
+    supply: rs.opponent.supply ?? 0,
+    chain: rs.opponent.chain ?? 0,
   }
   // 待决选择:座位翻回本地帧。对手在发现时 options 是空的,
   // 补 count 个空串占位(和对手手牌用 dummy 实例、伏兵用空 defId 是同一套路)——
@@ -185,6 +197,8 @@ export function inflateRedacted(rs: RedactedState, mySeat: PlayerIdx): GameState
     players: [self, opponent],
     nextIid: 0,
     pendingChoice,
+    // 战场环境是双方共有的一片,不随座位翻转
+    field: rs.field,
   }
 }
 
