@@ -18,6 +18,13 @@ export default defineConfig({
         // 生成卡池(2261 张,体量最大)再单独一块 —— 应用代码改动不再让整包失效。
         manualChunks(id) {
           if (id.includes('node_modules')) return 'vendor'
+          // 列传单独一块。**必须在 content 之前判**:
+          // 生成目录下有两个大文件 —— cards.gen(卡池,首屏必需)与 lore.gen
+          // (2,211 条传记/台词,144KB,只有列传页与卡牌详情要)。
+          // 归成同一个 chunk 的话,`loreLazy.ts` 那层动态 import 会解析到
+          // **同一个文件**,懒加载被打包规则原地抵消 —— 代码写着懒加载、
+          // 产物里首屏照样下载,而且没有任何地方会报错。
+          if (id.includes('/content/generated/lore.gen')) return 'lore'
           if (id.includes('/content/generated/')) return 'content'
         },
       },
