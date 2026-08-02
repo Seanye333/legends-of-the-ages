@@ -31,8 +31,16 @@ import {
 import { DYNASTY_DEFS } from '../../ThreeKingdomMastersIOS/src/game/data/dynasties'
 import { CARD_INDEX } from '../../ThreeKingdomMastersIOS/src/game/data/cardIndex'
 import { deriveDoctrine } from '../../ThreeKingdomMastersIOS/src/game/data/officerAttributes'
-import { getBiography } from '../../ThreeKingdomMastersIOS/src/game/data/biographies'
+// BIOGRAPHIES 直接用而不是 getBiography:后者查不到时会**按五维编一段**,
+// 那种程序生成的「他统率很高,善于治军」正是我们要摆脱的东西 ——
+// 列传要么是真的,要么就空着(空着至少诚实,而且能被盘点脚本数出来)。
+import { BIOGRAPHIES } from '../../ThreeKingdomMastersIOS/src/game/data/biographies'
 import { OFFICER_DUEL_LINES } from '../../ThreeKingdomMastersIOS/src/game/data/officerLines'
+import { DEATH_POEMS } from '../../ThreeKingdomMastersIOS/src/game/data/deathPoems'
+import { HISTORICAL_LIFESPANS } from '../../ThreeKingdomMastersIOS/src/game/data/historicalLifespans'
+import { HISTORICAL_TRAITS } from '../../ThreeKingdomMastersIOS/src/game/data/historicalAttributes'
+import { TRAIT_DEFS } from '../../ThreeKingdomMastersIOS/src/game/data/personality'
+import { CITY_NAMES_BY_ID } from '../../ThreeKingdomMastersIOS/src/game/data/cities'
 import type { CardDef, DynastyTag, Rarity } from '../src/engine/types'
 import { SIGNATURE_OVERRIDES } from '../src/content/overrides/signature'
 import { PRECON_DECKS } from '../src/content/decks'
@@ -518,50 +526,142 @@ console.log(`signature ids: ${signatureIds.length}`)
 
 // ---------- 列传/台词(签名集专属,图鉴长按详情用) ----------
 
+// 【为什么这一段从「只发签名卡」改成「全员」】
+// 此前这个循环是 `for (const id of signatureIds)` —— 2,258 名武将里只有 233 名
+// 有档案,其余 2,025 名在图鉴里就是一张脸加一句程序生成的卡面文案。
+// 而姊妹仓库里躺着 833 条**注明取自三国志/演义**的生平、345 条生卒、
+// 442 份性格特质、1,747 个籍贯、1,139 个表字 —— 一条都没导过。
+//
+// 分两类导,标准不同:
+//   · **故事**(生平/名言/绝命诗/台词)—— 只导源头真有的,查不到就空着。
+//     绝不用 getBiography 的程序兜底(那会按五维编一段「他统率很高,善于治军」,
+//     正是我们要摆脱的东西)。空着至少诚实,而且能被盘点脚本数出来。
+//   · **身份**(字/籍贯/生卒/五维/性格)—— 有多少导多少,这些是事实不是叙述。
 interface CardLore {
-  bio: { zh: string; en: string }
+  bio?: { zh: string; en: string }
   era?: { zh: string; en: string }
   quote?: { zh: string; en: string }
   line?: { zh: string; en: string } // 单挑台词(有配音文案的名将)
+  // ---- 2026-08 扩:武将档案 ----
+  courtesy?: { zh: string; en: string } // 表字
+  home?: { zh: string; en: string } // 籍贯
+  life?: { zh: string; en: string } // 生卒年
+  poem?: { zh: string; en: string } // 绝命诗
+  taunt?: { zh: string; en: string } // 挑衅
+  traits?: string[] // 性格特质 id(译名表在内容层)
+  stats?: { ld: number; war: number; int: number; pol: number; cha: number } // 五维
 }
 
 const officerById = new Map(unique.map((o) => [o.id, o]))
 const lore: Record<string, CardLore> = {}
-let handWrittenBios = 0
-for (const id of signatureIds) {
-  const o = officerById.get(id)
-  if (!o) continue
-  const bio = getBiography(id, o.name.en, o.name.zh, o.stats)
-  const lines = OFFICER_DUEL_LINES[id]
-  const entry: CardLore = { bio: { zh: bio.zh, en: bio.en } }
-  if (bio.era) entry.era = bio.era
-  if (bio.quote) {
-    entry.quote = bio.quote
-    handWrittenBios++
-  }
-  if (lines?.ult?.[0]) entry.line = lines.ult[0]
-  else if (lines?.taunt?.[0]) entry.line = lines.taunt[0]
-  lore[id] = entry
+const tally = { bio: 0, quote: 0, poem: 0, line: 0, courtesy: 0, home: 0, life: 0, traits: 0, stats: 0 }
+// 生卒年:源头的 HISTORICAL_LIFESPANS 只覆盖歷代名將;三国那批用名册上的
+// birthYear/deathYear 现拼(两者格式不同,所以不能混成一个来源)
+const lifeOf = (id: string, o: (typeof unique)[number]): { zh: string; en: string } | undefined => {
+  const hist = HISTORICAL_LIFESPANS[id]
+  if (hist) return hist
+  const b = (o as { birthYear?: number }).birthYear
+  const d = (o as { deathYear?: number }).deathYear
+  if (!d) return undefined
+  return { zh: `${b ?? '?'}–${d}`, en: `${b ?? '?'}–${d}` }
 }
+for (const o of unique) {
+  const id = o.id
+  const entry: CardLore = {}
+  const bio = BIOGRAPHIES[id]
+  if (bio) {
+    entry.bio = { zh: bio.zh, en: bio.en }
+    tally.bio++
+    if (bio.era) entry.era = bio.era
+    if (bio.quote) {
+      entry.quote = bio.quote
+      tally.quote++
+    }
+  }
+  const lines = OFFICER_DUEL_LINES[id]
+  if (lines?.ult?.[0]) {
+    entry.line = lines.ult[0]
+    tally.line++
+  }
+  if (lines?.taunt?.[0]) entry.taunt = lines.taunt[0]
+  const poem = DEATH_POEMS[id]
+  if (poem) {
+    entry.poem = poem
+    tally.poem++
+  }
+  const cn = (o as { courtesyName?: { zh: string; en: string } }).courtesyName
+  if (cn?.zh) {
+    entry.courtesy = cn
+    tally.courtesy++
+  }
+  const city = (o as { hometownCityId?: string }).hometownCityId
+  const cityName = city ? CITY_NAMES_BY_ID[city] : undefined
+  if (cityName) {
+    entry.home = cityName
+    tally.home++
+  }
+  const life = lifeOf(id, o)
+  if (life) {
+    entry.life = life
+    tally.life++
+  }
+  const traits = HISTORICAL_TRAITS[id]
+  if (traits?.length) {
+    entry.traits = traits.slice()
+    tally.traits++
+  }
+  if (o.stats) {
+    entry.stats = {
+      ld: o.stats.leadership,
+      war: o.stats.war,
+      int: o.stats.intelligence,
+      pol: o.stats.politics,
+      cha: o.stats.charisma,
+    }
+    tally.stats++
+  }
+  // 一条信息都没有的不写进去(省体积,也让盘点脚本的数字诚实)
+  if (Object.keys(entry).length > 0) lore[id] = entry
+}
+const handWrittenBios = tally.quote
 writeFileSync(
   join(OUT_GEN, 'lore.gen.ts'),
   [
     '// GENERATED by scripts/import-content.ts — DO NOT EDIT.',
     '// 签名卡列传/称号/名言/单挑台词(源:姊妹仓库 biographies.ts / officerLines.ts)',
     'export interface CardLore {',
-    '  bio: { zh: string; en: string }',
+    '  bio?: { zh: string; en: string }',
     '  era?: { zh: string; en: string }',
     '  quote?: { zh: string; en: string }',
     '  line?: { zh: string; en: string }',
+    '  courtesy?: { zh: string; en: string }',
+    '  home?: { zh: string; en: string }',
+    '  life?: { zh: string; en: string }',
+    '  poem?: { zh: string; en: string }',
+    '  taunt?: { zh: string; en: string }',
+    '  traits?: string[]',
+    '  stats?: { ld: number; war: number; int: number; pol: number; cha: number }',
     '}',
     '',
     `const rawJson = ${JSON.stringify(JSON.stringify(lore))}`,
     '',
     'export const LORE = JSON.parse(rawJson) as Record<string, CardLore>',
     '',
+    '// 性格特质译名 —— 和 traits 一起生成,免得两处漂移',
+    `export const TRAIT_NAMES: Record<string, { zh: string; en: string }> = ${JSON.stringify(
+      Object.fromEntries(TRAIT_DEFS.map((t) => [t.id, { zh: t.name.zh, en: t.name.en }])),
+      null,
+      2,
+    )}`,
+    '',
   ].join('\n'),
 )
-console.log(`lore.gen.ts: ${Object.keys(lore).length} entries (${handWrittenBios} with hand-written quotes)`)
+console.log(
+  `lore.gen.ts: ${Object.keys(lore).length} 条档案 —— ` +
+    `生平 ${tally.bio} · 名言 ${tally.quote} · 绝命诗 ${tally.poem} · 台词 ${tally.line} · ` +
+    `表字 ${tally.courtesy} · 籍贯 ${tally.home} · 生卒 ${tally.life} · 性格 ${tally.traits} · 五维 ${tally.stats}`,
+)
+void handWrittenBios
 
 mkdirSync(OUT_PORTRAITS, { recursive: true })
 let totalBytes = 0

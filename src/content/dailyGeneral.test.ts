@@ -27,6 +27,6 @@ describe('每日一将', () => {
     const g = dailyGeneralFor('2026-07-26')
     expect(g).not.toBeNull()
     expect(g!.card.name.zh).toBeTruthy()
-    expect(g!.lore.bio.zh).toBeTruthy()
+    expect(g!.lore.bio?.zh).toBeTruthy()
   })
 })

@@ -90,6 +90,9 @@ export function makeQuestion(seed: number): QuizQuestion | null {
 
   if (kind === 'whoIsIt') {
     // 题干:传记片段(去掉人名本身,免得白送)
+    // 生平现在是可选的(源头查不到就空着,不用程序编)——
+    // 没有生平就出不了「这是谁」这种题,直接换一道
+    if (!lore.bio?.zh) return null
     const zh = lore.bio.zh.replace(new RegExp(card.name.zh, 'g'), '□□')
     const en = (lore.bio.en ?? '').replace(new RegExp(card.name.en ?? '', 'g'), '—')
     const wrong = pickDistinct(QUIZ_POOL, 3, [subjectId], rand)

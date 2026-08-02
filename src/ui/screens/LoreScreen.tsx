@@ -291,7 +291,7 @@ export function LoreScreen({ onBack }: Props) {
           {selLore.era && selOwned && <div className={styles.detailEra}>{pick(selLore.era)}</div>}
           {selOwned ? (
             <>
-              <p className={styles.bio}>{pick(selLore.bio)}</p>
+              {selLore.bio && <p className={styles.bio}>{pick(selLore.bio)}</p>}
               {selLore.quote && <p className={styles.quote}>「{pick(selLore.quote)}」</p>}
               {selLore.line && <p className={styles.line}>{pick(selLore.line)}</p>}
               {/* 这一位的关系网。通览那张表在「關係圖譜」页;这里回答的是

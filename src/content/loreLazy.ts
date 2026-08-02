@@ -15,6 +15,7 @@ import type { CardLore } from './generated/lore.gen'
 // 首次加载后模块级缓存住,`loreNow()` 立刻返回。第二次打开任何一张卡的详情
 // 就不再有那一帧的空档了 —— 只有全程第一次会看到列传区域晚一帧出现。
 let cache: Record<string, CardLore> | null = null
+let traitCache: Record<string, { zh: string; en: string }> = {}
 let inflight: Promise<Record<string, CardLore>> | null = null
 
 export function loadLore(): Promise<Record<string, CardLore>> {
@@ -22,10 +23,18 @@ export function loadLore(): Promise<Record<string, CardLore>> {
   if (!inflight) {
     inflight = import('./generated/lore.gen').then((m) => {
       cache = m.LORE
+      // 性格特质的译名和列传住在同一个 chunk —— **必须一起从这里取**,
+      // 静态 import 会把 1.2MB 的列传拖回调用方的 chunk 里(懒加载白做)。
+      traitCache = m.TRAIT_NAMES
       return cache
     })
   }
   return inflight
+}
+
+// 性格特质译名。没加载完之前是空表,调用点回落到原始 id(不会渲染成 undefined)。
+export function traitNamesNow(): Record<string, { zh: string; en: string }> {
+  return traitCache
 }
 
 // 已经加载过就同步给,没加载过给空表 —— 调用点按「暂时没有列传」渲染即可。

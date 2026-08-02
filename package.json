@@ -30,7 +30,8 @@
     "replay-diff": "node --import tsx scripts/replay-diff.ts",
     "check-offline": "node --import tsx scripts/check-offline.ts",
     "audit-en": "node --import tsx scripts/audit-en.ts",
-    "audit-zh": "node --import tsx scripts/audit-zh.ts"
+    "audit-zh": "node --import tsx scripts/audit-zh.ts",
+    "audit-generals": "node --import tsx scripts/audit-generals.ts"
   },
   "dependencies": {
     "react": "^19.0.0",

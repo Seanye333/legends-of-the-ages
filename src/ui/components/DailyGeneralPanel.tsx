@@ -65,7 +65,7 @@ export function DailyGeneralPanel({ onClose }: Props) {
           {pickCompact(DOCTRINE_NAME[card.doctrine])} · {card.attack}/{card.health} ·{' '}
           {t(`${card.cost} 费`, `${card.cost} cost`)}
         </div>
-        <p className={styles.bio}>{pick(lore.bio)}</p>
+        {lore.bio && <p className={styles.bio}>{pick(lore.bio)}</p>}
         {lore.quote && <p className={styles.quote}>「{pick(lore.quote)}」</p>}
         {/* 今日战事:每日一将推的是**一个人**,而这个游戏真正独有的素材是**关系** ——
             31 条羁绊与 29 对宿敌背后各有一段真事,而它们只在对局里偶然撞见。 */}

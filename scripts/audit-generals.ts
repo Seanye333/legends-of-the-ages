@@ -1,0 +1,57 @@
+// 武将档案覆盖率盘点 —— 「把武将做细致」这条主线的进度表。
+// 运行:npm run audit-generals
+//
+// 【为什么要有它】
+// 2,258 名武将,靠印象根本说不清「还差多少」。而这条主线的每一步
+// (导入源头 → 按事迹播种 → 手写补缺)都需要先知道**先做谁性价比最高**。
+// 所以先有尺子,再动手 —— 凭印象写大表必漏,这个项目上交过学费。
+import { COLLECTIBLE_CARDS } from '../src/content/cards'
+import { LORE } from '../src/content/generated/lore.gen'
+import type { CardDef } from '../src/engine/types'
+
+const G = COLLECTIBLE_CARDS.filter((c) => c.type === 'general')
+const pct = (n: number, of = G.length) => `${((100 * n) / of).toFixed(1)}%`
+
+const FIELDS: [string, (c: CardDef) => boolean][] = [
+  ['生平 bio', (c) => Boolean(LORE[c.id]?.bio?.zh)],
+  ['表字', (c) => Boolean(LORE[c.id]?.courtesy?.zh)],
+  ['籍贯', (c) => Boolean(LORE[c.id]?.home?.zh)],
+  ['生卒年', (c) => Boolean(LORE[c.id]?.life?.zh)],
+  ['五维', (c) => Boolean(LORE[c.id]?.stats)],
+  ['性格特质', (c) => Boolean(LORE[c.id]?.traits?.length)],
+  ['尊号', (c) => Boolean(LORE[c.id]?.era?.zh)],
+  ['名言', (c) => Boolean(LORE[c.id]?.quote?.zh)],
+  ['绝命诗', (c) => Boolean(LORE[c.id]?.poem?.zh)],
+  ['出战台词', (c) => Boolean(LORE[c.id]?.line?.zh)],
+]
+
+console.log(`武将 ${G.length} 名\n【档案覆盖率】`)
+for (const [label, has] of FIELDS) {
+  const n = G.filter(has).length
+  const bar = '█'.repeat(Math.round((20 * n) / G.length)).padEnd(20, '·')
+  console.log(`  ${label.padEnd(10)} ${bar} ${String(n).padStart(5)}  ${pct(n).padStart(6)}`)
+}
+
+// 按稀有度分层 —— 手写补缺永远从传奇往下做
+console.log('\n【按稀有度:还缺生平的】')
+for (const r of ['legendary', 'epic', 'rare', 'common'] as const) {
+  const tier = G.filter((c) => c.rarity === r)
+  const miss = tier.filter((c) => !LORE[c.id]?.bio?.zh)
+  console.log(`  ${r.padEnd(10)} ${String(miss.length).padStart(4)} / ${String(tier.length).padStart(4)} 缺  (${pct(miss.length, tier.length)})`)
+  if (miss.length > 0 && miss.length <= 12) {
+    console.log(`     ${miss.map((c) => c.name.zh).join('、')}`)
+  }
+}
+
+// 机制重复度 —— 第二条主线的尺子
+const fp = (c: CardDef) =>
+  JSON.stringify([c.cost, c.attack, c.health, [...c.keywords].sort(), c.battlecry?.ops, c.deathrattle?.ops, c.aura, c.troop])
+const groups = new Map<string, CardDef[]>()
+for (const c of G) groups.set(fp(c), [...(groups.get(fp(c)) ?? []), c])
+const sorted = [...groups.values()].sort((a, b) => b.length - a.length)
+const twinned = sorted.filter((g) => g.length > 1).reduce((n, g) => n + g.length, 0)
+console.log('\n【机制重复度】')
+console.log(`  不同的费/攻/血组合   ${new Set(G.map((c) => `${c.cost}/${c.attack}/${c.health}`)).size} 种`)
+console.log(`  不同的机制指纹       ${groups.size} 种`)
+console.log(`  有双胞胎的武将       ${twinned} 名  ${pct(twinned)}   ← 这条要降下来`)
+console.log(`  最大同质组           ${sorted[0].length} 张(${sorted[0][0].cost}费 ${sorted[0][0].attack}/${sorted[0][0].health})`)

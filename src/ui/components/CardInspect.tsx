@@ -12,7 +12,7 @@ import {
   dynastyName,
 } from '../doctrineColors'
 import { exportCardImage, probeCardArt } from '../cardExport'
-import { loadLore, loreNow } from '../../content/loreLazy'
+import { loadLore, loreNow, traitNamesNow } from '../../content/loreLazy'
 import { bondsOf, bondRoster, cardName, rivalsOf, rivalLore } from '../../content/relations'
 import { TROOP_NAME } from '../../content/troops'
 import { Portrait } from './Portrait'
@@ -36,6 +36,11 @@ interface CardInspectProps {
 
 // 卡牌详情:长按/点选打开 —— 全身立绘 + 数值 + 效果文本 + 关键词图例
 // (+ 图鉴入口下的分解/合成)。
+// 有没有值得单独摆一行的「事实」。全空时整块不渲染 —— 少数武将确实什么都查不到。
+function hasDossier(l: { courtesy?: unknown; home?: unknown; life?: unknown; traits?: string[] }): boolean {
+  return Boolean(l.courtesy || l.home || l.life || l.traits?.length)
+}
+
 export function CardInspect({ def, onClose, forge = false }: CardInspectProps) {
   const pick = usePickText()
   const pickCompact = usePickCompact()
@@ -83,6 +88,8 @@ export function CardInspect({ def, onClose, forge = false }: CardInspectProps) {
   // 列传是 144KB 的独立 chunk,进详情页才拉(见 content/loreLazy.ts)。
   // 加载完再 setState 一次触发重渲染;已缓存时 loreNow() 首帧就是满的,不闪。
   const [LORE, setLore] = useState(loreNow)
+  // 特质译名与列传同一个 chunk,所以跟着 LORE 一起重渲染即可
+  const TRAIT_NAMES = traitNamesNow()
   useEffect(() => {
     let live = true
     loadLore().then((l) => {
@@ -280,15 +287,68 @@ export function CardInspect({ def, onClose, forge = false }: CardInspectProps) {
               ))}
             </div>
           )}
+          {/* 武将档案:字 / 籍贯 / 生卒 / 性格 / 五维。
+              这些全是**事实**而不是叙述,来自姊妹仓库的名册与史料表 ——
+              此前一项都没显示,于是 2,258 名武将在图鉴里只有一张脸和一句
+              程序生成的卡面文案。先摆事实,再讲故事(下面那块)。 */}
+          {LORE[def.id] && hasDossier(LORE[def.id]) && (
+            <div className={styles.dossier}>
+              {LORE[def.id].courtesy && (
+                <span className={styles.dossierItem}>
+                  {t('字', 'Courtesy')} {pickCompact(LORE[def.id].courtesy!)}
+                </span>
+              )}
+              {LORE[def.id].home && (
+                <span className={styles.dossierItem}>
+                  {t('籍', 'From')} {pickCompact(LORE[def.id].home!)}
+                </span>
+              )}
+              {LORE[def.id].life && (
+                <span className={styles.dossierItem}>{pickCompact(LORE[def.id].life!)}</span>
+              )}
+              {(LORE[def.id].traits ?? []).slice(0, 4).map((tr) => (
+                <span key={tr} className={styles.dossierTrait}>
+                  {TRAIT_NAMES[tr] ? pickCompact(TRAIT_NAMES[tr]) : tr}
+                </span>
+              ))}
+            </div>
+          )}
+          {LORE[def.id]?.stats && (
+            <div className={styles.stats5}>
+              {(
+                [
+                  ['統', 'LD', LORE[def.id].stats!.ld],
+                  ['武', 'WAR', LORE[def.id].stats!.war],
+                  ['智', 'INT', LORE[def.id].stats!.int],
+                  ['政', 'POL', LORE[def.id].stats!.pol],
+                  ['魅', 'CHA', LORE[def.id].stats!.cha],
+                ] as const
+              ).map(([zh, en, v]) => (
+                <span key={en} className={styles.stat5} title={`${zh} ${v}`}>
+                  <span className={styles.stat5Label}>{t(zh, en)}</span>
+                  {/* 条形比数字好读:一眼看出这个人是猛将还是文官 */}
+                  <span className={styles.stat5Bar}>
+                    <i style={{ width: `${v}%` }} />
+                  </span>
+                  <span className={styles.stat5Num}>{v}</span>
+                </span>
+              ))}
+            </div>
+          )}
           {LORE[def.id] && (
             <div className={styles.lore}>
               {LORE[def.id].quote && (
                 <blockquote className={styles.loreQuote}>「{pick(LORE[def.id].quote!)}」</blockquote>
               )}
-              <p className={styles.loreBio}>{pick(LORE[def.id].bio)}</p>
+              {LORE[def.id].bio && <p className={styles.loreBio}>{pick(LORE[def.id].bio!)}</p>}
               {LORE[def.id].line && (
                 <p className={styles.loreLine}>
                   {t('单挑', 'Duel')} · {pick(LORE[def.id].line!)}
+                </p>
+              )}
+              {LORE[def.id].poem && (
+                <p className={styles.lorePoem}>
+                  {t('絕命', 'Last words')} · {pick(LORE[def.id].poem!)}
                 </p>
               )}
             </div>
