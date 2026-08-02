@@ -4,6 +4,7 @@ import { DOCTRINE_NAME } from '../content/names'
 import { matchErrorText, isProtocolOutdated } from './components/errorText'
 import { deckViolationText } from '../content/deckErrorText'
 import { CARDS } from '../content/cards'
+import { CODEX } from './codex'
 import type { Keyword } from '../engine/types'
 
 // 这些查表结构一旦漏了一项,表现是**界面上出现 undefined**,而不是报错。
@@ -12,6 +13,16 @@ import type { Keyword } from '../engine/types'
 
 describe('关键词表', () => {
   const keywords = [...new Set(CARDS.flatMap((c) => c.keywords))] as Keyword[]
+
+  // 兵法讲堂是玩家唯一能**主动查**规则的地方(卡面上的徽章只说名字)。
+  // 漏一条的表现是:牌上写着「繳械」,玩家想不起来是什么,翻遍讲堂查不到。
+  // 军神档就这么漏过 —— 设置里选得到、讲堂里没有。
+  it('卡池里用到的每个关键词在兵法讲堂里都查得到', () => {
+    const documented = new Set(CODEX.flatMap((s) => s.entries.map((e) => e.id)))
+    for (const kw of keywords) {
+      expect(documented.has(kw), `讲堂里没有【${kw}】的词条`).toBe(true)
+    }
+  })
 
   it('卡池里实际用到的每个关键词都有徽章/译名/规则说明', () => {
     for (const kw of keywords) {

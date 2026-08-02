@@ -120,6 +120,26 @@ export const CODEX: CodexSection[] = [
         },
         example: kw('trample'),
       },
+      {
+        id: 'disarm',
+        term: { zh: '繳械 Disarm', en: 'Disarm' },
+        rule: { zh: '不能发起攻击。身材、光环、亡语一概不变。', en: 'Cannot attack. Stats, auras and deathrattles are unchanged.' },
+        note: {
+          zh: '和冻结的区别是**它不会自己解开** —— 冻结在持有者回合结束时化掉,缴械要么被沉默清掉、要么一直在。所以它解的不是「这一回合」,是那名武将的余生。',
+          en: 'Unlike Freeze it never wears off — a frozen general thaws at end of turn, a disarmed one stays disarmed until silenced. It answers a general for the rest of the game, not for a turn.',
+        },
+        example: kw('disarm'),
+      },
+      {
+        id: 'siege',
+        term: { zh: '攻城 Siege', en: 'Siege' },
+        rule: { zh: '攻击**主公**时额外造成 2 点伤害;攻击武将时不加。', en: 'Deals 2 extra damage when attacking a hero — not when attacking generals.' },
+        note: {
+          zh: '它是一条纯粹的推脸词条:换血时一点用都没有。所以带攻城的单位通常身材偏硬 —— 对手不去解它,它每回合就多啃 2 点。',
+          en: 'A pure face-damage keyword: worth nothing in trades. Siege bodies are usually tough, so ignoring one costs two extra damage every turn.',
+        },
+        example: kw('siege'),
+      },
     ],
   },
   {
@@ -457,6 +477,75 @@ export const CODEX: CodexSection[] = [
           en: 'Silence never kills on its own — health is clamped to at least 1.',
         },
       },
+      // ---- 第二十二卡包 ----
+      {
+        id: 'quest',
+        term: { zh: '軍令狀 Quest', en: 'Quest' },
+        rule: { zh: '打出后进军令区,达成目标才结算奖励。同时只能领一道。', en: 'Goes to your quest slot when played and pays out only when its goal is met. One at a time.' },
+        note: {
+          zh: '三种计数都是**你主动做的事**(打出锦囊 / 从手牌打出武将 / 斩杀敌将),不是场面上碰巧发生的事:召唤出来的衍生物不算点将,斩掉衍生物也不算斩将。领军令的那一张自己不算「用计」。',
+          en: 'All three counters track what you choose to do — play stratagems, play generals from hand, kill enemy generals. Summoned tokens never count on either side, and the quest card itself is not a stratagem played.',
+        },
+        example: (c) => c.quest !== undefined,
+      },
+      {
+        id: 'delay',
+        term: { zh: '伏筆 Fuse', en: 'Fuse' },
+        rule: { zh: '埋下一段效果,数个**我方回合**之后才结算。', en: 'Sets an effect that resolves after a number of your own turns.' },
+        note: {
+          zh: '计的是你自己的回合,不是双方的回合 —— 「2 回合后」意味着要熬过对手的两次进攻。伏笔对双方公开:主帅面板上的 ⧗ 就是它,对手能看见还剩几回合。',
+          en: 'It counts your turns, not both players’ — “in 2 turns” means surviving two enemy turns. Fuses are public: the ⧗ pip on the hero plate shows the countdown to both sides.',
+        },
+        example: (c) =>
+          [c.spell, c.battlecry, c.deathrattle].some((s) => s?.ops.some((o) => o.op === 'delay')),
+      },
+      {
+        id: 'durability',
+        term: { zh: '耐久 Durability', en: 'Durability' },
+        rule: { zh: '带耐久的装备每逢持有者**发起攻击**扣 1,归零即损毁,加成一并收回。', en: 'Equipment with Durability loses one whenever its bearer attacks; at zero it breaks and its bonus is returned.' },
+        note: {
+          zh: '扣的是「发起攻击」而不是「造成伤害」—— 被反击、被伏兵化解、打空气都照扣。老卡池的装备没有耐久,永久有效。',
+          en: 'It ticks on the swing, not on the damage: a blocked or countered attack still spends a point. Older equipment has no Durability and lasts forever.',
+        },
+        example: (c) => c.durability !== undefined,
+      },
+      {
+        id: 'dispel',
+        term: { zh: '驅散 Dispel', en: 'Dispel' },
+        rule: { zh: '移除目标身上的全部附魔(增益与装备),但不封亡语、不清卡面词条。', en: 'Strips every enchantment and equipment from a general, leaving its deathrattle and printed keywords intact.' },
+        note: {
+          zh: '和沉默的分工:沉默是「把这张牌废掉」,驱散是「把加在它身上的东西拿走」。要解一把青龙偃月刀,驱散是精确的那一刀。驱散同样不杀人(血量截到至少 1)。',
+          en: 'Silence removes what the card is; Dispel removes what was added to it. To answer a big weapon, Dispel is the precise tool. Like Silence, it never kills — health clamps to at least 1.',
+        },
+      },
+      {
+        id: 'borrow',
+        term: { zh: '借將 Borrow', en: 'Borrow' },
+        rule: { zh: '夺取一名敌将,他当回合可以立刻行动,你的回合结束时归还。', en: 'Take an enemy general; it can act immediately and returns at the end of your turn.' },
+        note: {
+          zh: '和策反的区别就在这一条:策反拿的是长期资产(所以当回合眩晕),借将拿的是**这一次冲锋**。归还时若原主场面已满,那名武将会被放逐 —— 借来的兵还不回去就散了。',
+          en: 'Seize takes a lasting asset (and is exhausted on arrival); Borrow takes one attack. If the owner’s board is full when it returns, the general is banished instead.',
+        },
+      },
+      {
+        id: 'mill',
+        term: { zh: '斷糧道 Mill', en: 'Mill' },
+        rule: { zh: '把对方牌库顶的若干张直接送进墓地。', en: 'Sends cards from the top of a deck straight to the graveyard.' },
+        note: {
+          zh: '它不直接造成伤害,拨快的是疲劳那条计时器 —— 牌库空了以后每次抽牌都会自伤且逐次递增。另一条路子是让对手抽不到他要的那张关键牌。',
+          en: 'It deals no damage; it winds the fatigue clock forward — once a deck is empty, every draw hurts more than the last. The other use is denying a specific answer.',
+        },
+      },
+      {
+        id: 'handGrowth',
+        term: { zh: '手中成長 Growth in Hand', en: 'Growth in Hand' },
+        rule: { zh: '每逢我方回合结束,这张牌**在手牌里**变大。', en: 'The card grows while it sits in your hand, at the end of each of your turns.' },
+        note: {
+          zh: '它把「现在打出去还是再等一回合」变成一个真问题 —— 而这是全卡池唯一一类会因为「你没打它」而变强的牌。增益走的是附魔层,所以打出去之后仍然带着。',
+          en: 'It turns “play it now or wait” into a real decision — the only cards in the pool that reward not playing them. The growth is an enchantment, so it carries onto the board.',
+        },
+        example: (c) => c.handGrowth !== undefined,
+      },
       {
         id: 'freeze',
         term: { zh: '凍結 Freeze', en: 'Freeze' },
@@ -525,6 +614,17 @@ export const CODEX: CodexSection[] = [
         id: 'general',
         term: { zh: '名将', en: 'Legend' },
         rule: { zh: '零失误、必算斩杀,而且会预判你下一回合能打它多少 —— 它不会在自己会被一波带走的场面上贪血。', en: 'No blunders, always finds lethal, and weighs what you can swing back next turn — it will not greedily take face damage when that lets you kill it.' },
+      },
+      // 军神此前**在设置里选得到、在讲堂里查不到** —— 四个档位讲了三个,
+      // 而它恰好是唯一一个行为方式不同(而非只是更少失误)的档。
+      {
+        id: 'marshal',
+        term: { zh: '军神', en: 'Marshal' },
+        rule: { zh: '规划整个回合再落子,而不是一步一步挑当下最优的那一手。', en: 'Plans the whole turn before moving, instead of picking the best single move each time.' },
+        note: {
+          zh: '差别在于它看得见**先亏后赚**的组合:先用一张牌把你的守护弄走、再让大哥冲脸,这种两步棋名将档是看不见的(第一步单看是亏的)。实测对名将约七成胜率。',
+          en: 'The difference is setups that lose value on the first move and win on the second — clearing a Guard so the big body can go face. Legend never sees those, because step one looks bad on its own. Measured around 70% against Legend.',
+        },
       },
     ],
   },
