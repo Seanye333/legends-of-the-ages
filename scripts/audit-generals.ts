@@ -6,7 +6,13 @@
 // (导入源头 → 按事迹播种 → 手写补缺)都需要先知道**先做谁性价比最高**。
 // 所以先有尺子,再动手 —— 凭印象写大表必漏,这个项目上交过学费。
 import { COLLECTIBLE_CARDS } from '../src/content/cards'
-import { LORE } from '../src/content/generated/lore.gen'
+import { LORE as GEN_LORE } from '../src/content/generated/lore.gen'
+import { LORE_OVERRIDES } from '../src/content/overrides/lore-quotes'
+
+// 生成层 ⊕ 手写补遗 —— 和游戏里(loreLazy)看到的是同一份,
+// 否则这把尺子量的不是玩家看到的东西。
+const LORE: Record<string, (typeof GEN_LORE)[string]> = { ...GEN_LORE }
+for (const [id, ov] of Object.entries(LORE_OVERRIDES)) LORE[id] = { ...LORE[id], ...ov }
 import type { CardDef } from '../src/engine/types'
 
 const G = COLLECTIBLE_CARDS.filter((c) => c.type === 'general')

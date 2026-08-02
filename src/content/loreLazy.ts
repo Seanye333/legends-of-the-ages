@@ -1,4 +1,5 @@
 import type { CardLore, RelEdge } from './generated/lore.gen'
+import { LORE_OVERRIDES } from './overrides/lore-quotes'
 
 // 列传按需加载。
 //
@@ -25,7 +26,15 @@ export function loadLore(): Promise<Record<string, CardLore>> {
   if (cache) return Promise.resolve(cache)
   if (!inflight) {
     inflight = import('./generated/lore.gen').then((m) => {
-      cache = m.LORE
+      // 手写补遗盖在生成层之上:名言与出战台词是**一条条核过出处**写的,
+      // 而生成层那两项覆盖率只有 5% / 6.5%。合并放在这里而不是生成脚本里 ——
+      // 生成物是「源头有什么」,手写是「我们补了什么」,两者混在一个文件里
+      // 下次重跑 import-content 就会把手写的冲掉。
+      const merged: Record<string, CardLore> = { ...m.LORE }
+      for (const [id, ov] of Object.entries(LORE_OVERRIDES)) {
+        merged[id] = { ...merged[id], ...ov }
+      }
+      cache = merged
       // 性格特质的译名和列传住在同一个 chunk —— **必须一起从这里取**,
       // 静态 import 会把 1.2MB 的列传拖回调用方的 chunk 里(懒加载白做)。
       traitCache = m.TRAIT_NAMES
