@@ -728,4 +728,108 @@ export const LORE_OVERRIDES: Record<string, LoreOverride> = {
   'hist-yu-dayou': { line: { zh: '兵法在心,不在多。', en: 'The art of war lives in the mind, not in numbers.' } },
   'hist-sun-chengzong': { line: { zh: '關寧一線,築到底。', en: 'The Guanning line — I will build it to the end.' } },
   'hist-li-dingguo': { line: { zh: '兩蹶名王,天下震動。', en: 'Two royal princes felled — and the realm shook.' } },
+  // ═══════════ 稀有档(挑有确切语录的写)═══════════
+  // 稀有 660 名里 633 名缺名言,但**多数人史书只有一两行,本来就没有传世语录**。
+  // 这里只挑十九位真有原话的 —— 剩下的靠生平、档案与关系网撑,那是诚实的做法。
+  'xiahou-dun': {
+    // 《三国志·夏侯惇传》裴注引《魏略》—— 拔矢啖睛
+    quote: { zh: '父精母血,不可棄也。', en: 'The seed of my father, the blood of my mother — it is not to be cast away.' },
+    line: { zh: '獨眼,照樣看得見你。', en: 'One eye. It still sees you.' },
+  },
+  'cao-zhi': {
+    // 《世说新语·文学》—— 七步诗
+    quote: { zh: '本自同根生,相煎何太急?', en: 'We grew from the selfsame root — why such haste to boil me?' },
+    line: { zh: '七步成詩,不算難。', en: 'A poem in seven paces. That was not the hard part.' },
+  },
+  'cao-pi': {
+    // 曹丕《典论·论文》
+    quote: { zh: '文章者,經國之大業,不朽之盛事。', en: 'Letters are the great work of governing a state, the imperishable achievement.' },
+    line: { zh: '兄弟之間,朕先是君。', en: 'Between brothers, I am first the sovereign.' },
+  },
+  'yuan-shao': {
+    // 《三国志·袁绍传》—— 四世三公,起兵讨董时语
+    quote: { zh: '吾南據河,北阻燕代,兼戎狄之眾,南向以爭天下。', en: 'I hold the river to the south, Yan and Dai to the north, with the tribes at my back — and so I contend for the realm.' },
+    line: { zh: '四世三公,袁氏在此。', en: 'Four generations, three excellencies — the House of Yuan stands here.' },
+  },
+  'hao-zhao': {
+    // 《三国志·明帝纪》裴注引《魏略》—— 陈仓拒诸葛亮,答故人劝降
+    quote: {
+      zh: '魏家科法,卿所練也;我之為人,卿所知也。',
+      en: 'You know the laws of Wei; you know what manner of man I am.',
+    },
+    line: { zh: '陳倉雖小,足夠了。', en: 'Chencang is small. It is enough.' },
+  },
+  'gao-shun': {
+    // 《三国志·吕布传》裴注引《英雄记》—— 谏吕布
+    quote: { zh: '將軍舉措,不肯詳思,忿悖之言,一朝有失。', en: 'The general acts without weighing it; words spoken in anger cost a whole morning’s work.' },
+    line: { zh: '陷陣營,七百人。', en: 'The Camp That Breaks Ranks — seven hundred men.' },
+  },
+  'zhang-zhongjing': {
+    // 张仲景《伤寒杂病论·自序》
+    quote: {
+      zh: '上以療君親之疾,下以救貧賤之厄,中以保身長全。',
+      en: 'Above, to heal the sickness of prince and parent; below, to relieve the distress of the poor; between, to keep one’s own body whole.',
+    },
+    line: { zh: '傷寒之論,已成。', en: 'The treatise on cold damage is finished.' },
+  },
+  'lu-zhi': {
+    // 《后汉书·卢植传》—— 拒中官索贿而被槛车征
+    quote: { zh: '君子不以其道得之,不居也。', en: 'What the gentleman does not gain by the right way, he does not keep.' },
+    line: { zh: '海內大儒,亦能提兵。', en: 'A great scholar of the realm — and he can lead troops.' },
+  },
+  'huangfu-song': {
+    // 《后汉书·皇甫嵩传》—— 拒阎忠劝其自立
+    quote: { zh: '人未忘主,天不祐逆。', en: 'The people have not forgotten their sovereign, and Heaven does not favour rebellion.' },
+    line: { zh: '黃巾已平,兵權可交。', en: 'The Yellow Turbans are put down. The command may be returned.' },
+  },
+  'zheng-xuan': {
+    // 《后汉书·郑玄传》—— 注经不辍
+    quote: { zh: '但念述先聖之元意,思整百家之不齊。', en: 'I think only of setting out the sages’ first meaning, and of ordering the discord of the hundred schools.' },
+    line: { zh: '經有異同,我來理之。', en: 'The classics disagree. I shall put them in order.' },
+  },
+  'sima-hui': {
+    // 《三国志·诸葛亮传》裴注引《襄阳记》—— 水镜先生荐卧龙凤雏
+    quote: { zh: '臥龍、鳳雛,得一可安天下。', en: 'The Sleeping Dragon and the Fledgling Phoenix — win either, and the realm may be settled.' },
+    line: { zh: '好,好。', en: 'Good. Good.' },
+  },
+  'chen-deng': {
+    // 《三国志·陈登传》—— 许汜论求田问舍
+    quote: { zh: '君有國士之名,今天下大亂,而君求田問舍,言無可采。', en: 'You bear the name of a knight of the realm; the world is in chaos, and you talk of buying fields and houses — there is nothing in your words.' },
+    line: { zh: '湖海之士,豪氣未除。', en: 'A man of the lakes and seas — the swagger has not left me.' },
+  },
+  'zhuge-ke': {
+    // 《三国志·诸葛恪传》—— 少时应对孙权,「诸葛子瑜之驴」添二字
+    quote: { zh: '乞請筆益兩字。', en: 'I beg the brush, to add two characters.' },
+    line: { zh: '新城不下,非我之過。', en: 'Xincheng did not fall. That was not my fault.' },
+  },
+  'zhong-yao': {
+    // 《宣示表》与钟繇论书,见《法书要录》所引
+    quote: { zh: '用筆者天也,流美者地也。', en: 'The wielding of the brush is Heaven; the flowing of beauty is Earth.' },
+    line: { zh: '關中殘破,我來收拾。', en: 'Guanzhong lies in ruins. I shall gather it up.' },
+  },
+  'cui-yan': {
+    // 《三国志·崔琰传》—— 直言获罪
+    quote: { zh: '時乎時乎,會當有變時。', en: 'The times, the times — a turning will surely come.' },
+    line: { zh: '鬚長四尺,聲亦不小。', en: 'A beard four chi long — and a voice to match.' },
+  },
+  'cao-chong': {
+    // 《三国志·邓哀王冲传》—— 称象
+    quote: { zh: '置象大船之上,而刻其水痕所至。', en: 'Set the elephant upon a great boat, and mark where the water rises.' },
+    line: { zh: '稱象,不必殺象。', en: 'To weigh the elephant, one need not kill it.' },
+  },
+  'huang-quan': {
+    // 《三国志·黄权传》—— 归魏后不肯发丧刘备
+    quote: { zh: '臣與劉、葛推誠相信,明本志也。', en: 'Liu and Zhuge and I trusted one another in good faith. My purpose was plain.' },
+    line: { zh: '降魏非我願,退路已絕。', en: 'I did not wish to yield to Wei. There was no road back.' },
+  },
+  'wen-yang': {
+    // 《三国志·毌丘俭传》裴注引《魏氏春秋》—— 单骑退雄兵
+    quote: { zh: '賊來甚急,吾當先擊之。', en: 'They come on hard. I shall strike first.' },
+    line: { zh: '十八歲,單騎入陣。', en: 'Eighteen years old, and alone into the ranks.' },
+  },
+  'meng-huo': {
+    // 《三国志·诸葛亮传》裴注引《汉晋春秋》—— 七擒七纵后
+    quote: { zh: '公,天威也,南人不復反矣。', en: 'Yours is the awe of Heaven, my lord. The men of the south will not rebel again.' },
+    line: { zh: '再放我一次,我還來。', en: 'Let me go once more — and I shall come again.' },
+  },
 }

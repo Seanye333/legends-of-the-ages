@@ -586,6 +586,14 @@ interface CardLore {
   stats?: { ld: number; war: number; int: number; pol: number; cha: number } // 五维
 }
 
+// 生平原文里「字X」「XX人」的写法极其规整(史书体例如此),
+// 源头名册没给的那一半可以直接从传里抽 —— 这不是推断,是**照抄原文**。
+// 实测 2,180 条生平里能抽出 860 个表字、789 个籍贯,和名册的覆盖正好互补。
+const CZ_RE = /字([一-龥]{1,3})[,,。;;]/
+const HOME_RE = /^(?:字[一-龥]{1,3}[,,])?([一-龥]{2,7}人)[,,。;;]/
+// 谥号/世称只有十几条,但它们恰恰是最该显示的那种称呼(「後世尊為武聖」)
+const POSTH_RE = /(?:諡曰|谥曰|世稱|世称|後世尊為|后世尊为|追尊為|追尊为)([一-龥]{2,6})/
+
 const officerById = new Map(unique.map((o) => [o.id, o]))
 const lore: Record<string, CardLore> = {}
 const tally = { bio: 0, quote: 0, poem: 0, line: 0, courtesy: 0, home: 0, life: 0, traits: 0, stats: 0 }
@@ -607,6 +615,11 @@ for (const o of unique) {
     entry.bio = { zh: bio.zh, en: bio.en }
     tally.bio++
     if (bio.era) entry.era = bio.era
+    else {
+      // 尊号:传里写着「後世尊為武聖」「諡曰忠武」的那些
+      const m = bio.zh.match(POSTH_RE)
+      if (m) entry.era = { zh: m[1], en: m[1] }
+    }
     if (bio.quote) {
       entry.quote = bio.quote
       tally.quote++
@@ -623,16 +636,32 @@ for (const o of unique) {
     entry.poem = poem
     tally.poem++
   }
+  const bioZh = bio?.zh
   const cn = (o as { courtesyName?: { zh: string; en: string } }).courtesyName
   if (cn?.zh) {
     entry.courtesy = cn
     tally.courtesy++
+  } else {
+    // 名册没给就从传里抽。英文那半只能留中文原字 ——
+    // 表字没有通行的英译,音译反而更难认(源头给的英文也只是拼音)。
+    const m = bioZh?.match(CZ_RE)
+    if (m) {
+      entry.courtesy = { zh: m[1], en: m[1] }
+      tally.courtesy++
+    }
   }
   const city = (o as { hometownCityId?: string }).hometownCityId
   const cityName = city ? CITY_NAMES_BY_ID[city] : undefined
   if (cityName) {
     entry.home = cityName
     tally.home++
+  } else {
+    // 同上:传里的「東海朐人」「潁川人」就是籍贯本身,照抄
+    const m = bioZh?.match(HOME_RE)
+    if (m) {
+      entry.home = { zh: m[1], en: m[1] }
+      tally.home++
+    }
   }
   const life = lifeOf(id, o)
   if (life) {

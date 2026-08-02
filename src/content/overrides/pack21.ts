@@ -173,7 +173,11 @@ export const PACK21_CARDS: CardDef[] = [
 
   // ---------------------------------------------------------------- 糧道
   {
-    id: 'strat-tun-tian',
+    // id 原本是 'strat-tun-tian',**和第三卡包的「屯田積穀」撞了**。
+    // 撞 id 的后果不是报错,是**两张卡在池子里都在、但 CARDS_BY_ID 只认后写的那张**:
+    // 竞技场按数组发牌(发出的可能是割据的屯田積穀),引擎按 id 结算(拿到的是王道的屯田),
+    // 于是「发给割据主公一张王道牌」这种越界会偶发出现 —— arena.test 就是这么闪红的。
+    id: 'strat-tun-tian-shu',
     collectorNo: 10006,
     name: { zh: '屯田', en: 'Garrison Fields' },
     type: 'stratagem',

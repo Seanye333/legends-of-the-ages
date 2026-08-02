@@ -149,6 +149,20 @@ describe('重名卡', () => {
   })
 })
 
+describe('卡牌 id 唯一', () => {
+  // 撞 id 不会报错,表现是**两张卡在池子里都在,但 CARDS_BY_ID 只认后写的那张**:
+  // 按数组发牌的地方(竞技场、开包)发出的是 A,按 id 结算的地方(引擎、卡组)
+  // 拿到的是 B。实际发生过:第二十一卡包的「屯田」撞了第三卡包的「屯田積穀」,
+  // 于是竞技场偶发把王道的牌发给割据主公,arena.test 三次里红一次 ——
+  // **而闪红的闸门等于没有闸门**,查了半天才查到根因在这里。
+  it('全池没有重复 id', () => {
+    const seen = new Map<string, number>()
+    for (const c of CARDS) seen.set(c.id, (seen.get(c.id) ?? 0) + 1)
+    const dups = [...seen].filter(([, n]) => n > 1).map(([id]) => id)
+    expect(dups, `重复 id:${dups.join(', ')}`).toEqual([])
+  })
+})
+
 describe('collectorNo 稳定性', () => {
   // 卡组码把每张卡编成它的 collectorNo(见 deckCode.ts —— 编 id 的话码长
   // 会到七八百字符,没法手工传递)。这意味着 **collectorNo 一旦漂移,
