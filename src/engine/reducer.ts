@@ -34,6 +34,7 @@ import {
   other,
   processDeaths,
   requiresChosenTarget,
+  returnBorrowed,
   runScript,
   skyOf,
 } from './resolve'
@@ -502,6 +503,9 @@ function endTurn(
     })
   }
   expireTemporaryEnchants(state, lib, events)
+  // 借将归还。放在临时增益到期**之后**:借来的那位身上若还挂着「本回合 +2/+0」,
+  // 该在他还站在我这边的时候消退,而不是带着我的增益回娘家。
+  returnBorrowed(state, lib, events)
   // 粮道:每逢自己的回合结束囤一格。放在回合**末**而不是回合初,
   // 是为了让「这回合我打不打得起那张军需卡」在回合开始时就已经定死 ——
   // 回合初再加一格,玩家得先心算一次才知道自己有多少粮。

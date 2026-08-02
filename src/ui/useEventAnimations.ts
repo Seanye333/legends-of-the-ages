@@ -529,6 +529,13 @@ function buildTimeline(
         break
       }
 
+      case 'CardShuffledIn': {
+        const e = loose()
+        e.events.push(ev)
+        addSfxOnce(e, 'draw')
+        break
+      }
+
       case 'MoraleChanged':
       case 'SupplyChanged': {
         // 飘字层自己会过滤噪音(粮道每回合 +1 不飘)

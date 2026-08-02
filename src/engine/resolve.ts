@@ -761,6 +761,25 @@ function conditionMet(
   if (cond.ifSupply && (state.players[player].supply ?? 0) < cond.ifSupply.atLeast) return false
   if (cond.ifSky && skyOf(state.turn) !== cond.ifSky) return false
   if (cond.ifChain && (state.players[player].chain ?? 0) < cond.ifChain.atLeast) return false
+  // ---- 第二十二卡包 ----
+  if (cond.ifTroopCount) {
+    const { troop, atLeast } = cond.ifTroopCount
+    const count = state.players[player].board.filter((c) => lib[c.defId]?.troop === troop).length
+    if (count < atLeast) return false
+  }
+  if (cond.ifField) {
+    if (!state.field) return false
+    if (cond.ifField.id && state.field.rule.id !== cond.ifField.id) return false
+  }
+  if (cond.ifTurnAtLeast !== undefined && state.turn < cond.ifTurnAtLeast) return false
+  if (cond.ifGraveyardCount) {
+    // 只数武将 —— 与 friendlyGraveyard 计数一致,否则「死了多少人」会把锦囊也算进去
+    const n = state.players[player].graveyard.filter((id) => lib[id]?.type === 'general').length
+    if (n < cond.ifGraveyardCount.atLeast) return false
+  }
+  if (cond.ifEnemyHeroHpBelow !== undefined) {
+    if (state.players[other(player)].heroHp >= cond.ifEnemyHeroHpBelow) return false
+  }
   return true
 }
 
@@ -787,7 +806,33 @@ function countFor(
       return board.filter((c) => lib[c.defId]?.troop === per.troop).length
     case 'friendlyGraveyard':
       return state.players[player].graveyard.filter((id) => lib[id]?.type === 'general').length
+    case 'enemyGenerals':
+      return state.players[other(player)].board.length
+    case 'handCount':
+      return state.players[player].hand.length
   }
+}
+
+// 「最」类目标的挑选。**并列时取 iid 最小**(入场最早的那个)——
+// 引擎纯度要求同一状态永远给同一答案,`sort` 的稳定性靠不住,所以这里手写归约。
+function pickExtreme(
+  board: CardInstance[],
+  metric: (c: CardInstance) => number,
+  mode: 'min' | 'max',
+): CardInstance | undefined {
+  let best: CardInstance | undefined
+  for (const c of board) {
+    if (!best) {
+      best = c
+      continue
+    }
+    const d = metric(c) - metric(best)
+    if (mode === 'min' ? d < 0 : d > 0) best = c
+    // 并列不换人:board 顺序里靠前的 iid 更小 —— 但 seize 会把单位挪到队尾,
+    // 所以不能靠下标,得真的比 iid
+    else if (d === 0 && c.iid < best.iid) best = c
+  }
+  return best
 }
 
 // 在场友方单位提供的法术伤害加成
@@ -876,6 +921,33 @@ function resolveRefs(
       return [{ kind: 'hero', player: enemy }]
     case 'friendlyHero':
       return [{ kind: 'hero', player }]
+    // ---- 第二十二卡包:「最」类 ----
+    // 不消耗 rng —— 这是和 random 系最大的差别:它是**确定**的,
+    // 所以 AI 能推、玩家能算、回放天然一致。
+    case 'weakestEnemyGeneral': {
+      const pick = pickExtreme(state.players[enemy].board.filter(selectableByEnemy), (c) => c.health, 'min')
+      return pick ? [{ kind: 'general', iid: pick.iid }] : []
+    }
+    case 'strongestEnemyGeneral': {
+      const pick = pickExtreme(state.players[enemy].board.filter(selectableByEnemy), (c) => c.attack, 'max')
+      return pick ? [{ kind: 'general', iid: pick.iid }] : []
+    }
+    case 'weakestFriendlyGeneral': {
+      const pick = pickExtreme(state.players[player].board, (c) => c.health, 'min')
+      return pick ? [{ kind: 'general', iid: pick.iid }] : []
+    }
+    case 'strongestFriendlyGeneral': {
+      const pick = pickExtreme(state.players[player].board, (c) => c.attack, 'max')
+      return pick ? [{ kind: 'general', iid: pick.iid }] : []
+    }
+    case 'adjacentFriendly': {
+      const board = state.players[player].board
+      const si = board.findIndex((c) => c.iid === sourceIid)
+      if (si < 0) return []
+      return [board[si - 1], board[si + 1]]
+        .filter((c): c is CardInstance => c !== undefined)
+        .map((c) => ({ kind: 'general', iid: c.iid }))
+    }
     default:
       return []
   }
@@ -1403,6 +1475,88 @@ export function runScript(
         changeSupply(state, player, op.amount, events)
         break
       }
+      // ---- 第二十二卡包 ----
+      case 'mill': {
+        // 断粮道:从牌库**顶**削 N 张进墓地。顶 = 数组末尾(drawCards 用的是 pop)。
+        // 削到空库不补疲劳伤害 —— 疲劳只由「抽」触发,磨牌拨快的是那条计时器,
+        // 不是自己直接造成伤害;两者叠在一起会让磨牌流的定价彻底失控。
+        // 复用 CardDiscarded:被削掉的牌面是公开的(磨牌看得见磨到了什么,这是这条轴的乐趣)。
+        const who = op.side === 'friendly' ? player : other(player)
+        const target = state.players[who]
+        for (let i = 0; i < op.count; i++) {
+          const card = target.deck.pop()
+          if (!card) break
+          target.graveyard.push(card.defId)
+          events.push({ type: 'CardDiscarded', player: who, iid: card.iid, defId: card.defId })
+        }
+        break
+      }
+      case 'shuffleIntoDeck': {
+        const def = lib[op.defId]
+        if (!def) break
+        const who = op.side === 'enemy' ? other(player) : player
+        const target = state.players[who]
+        for (let i = 0; i < op.count; i++) {
+          const inst = makeBoardInstance(state, op.defId, lib)
+          // 随机位置插入(length+1 个空档,包含牌顶与牌底)—— 洗进去就该在任何地方
+          const roll = rngInt(state.rng, target.deck.length + 1)
+          state.rng = roll.next
+          target.deck.splice(roll.value, 0, inst)
+        }
+        if (op.count > 0) {
+          events.push({ type: 'CardShuffledIn', player: who, defId: op.defId, count: op.count })
+        }
+        break
+      }
+      case 'dispel': {
+        for (const ref of refs(op.target)) {
+          if (ref.kind !== 'general') continue
+          const loc = findGeneral(state, ref.iid)
+          if (!loc) continue
+          // 光环附魔不摘(auraFrom 那批由 refreshAuras 全权管理,摘了下一帧就回来,
+          // 白白发一串莫名其妙的「增益消退」)。clampAlive:驱散不杀人。
+          removeEnchants(
+            loc.inst,
+            lib,
+            (e) => e.auraFrom === undefined,
+            events,
+            loc.player,
+            true,
+          )
+        }
+        break
+      }
+      case 'borrow': {
+        // 借将:同 seize 的搬运,外加记下原主。满场则整条效果到此为止(与 seize 一致)。
+        // 已经是借来的不再转借(borrowedFrom 只有一格,链式借用会丢掉最初的主人)。
+        for (const ref of refs(op.target)) {
+          if (ref.kind !== 'general') continue
+          const loc = findGeneral(state, ref.iid)
+          if (!loc || loc.player === player) continue
+          if (loc.inst.borrowedFrom !== undefined) continue
+          const mine = state.players[player]
+          if (mine.board.length >= BOARD_LIMIT) break
+          const from = state.players[loc.player]
+          const idx = from.board.findIndex((u) => u.iid === ref.iid)
+          if (idx < 0) continue
+          const [inst] = from.board.splice(idx, 1)
+          inst.borrowedFrom = loc.player
+          // 借来的当回合能动 —— 这是它和 seize 最大的区别:seize 拿的是长期资产
+          // (所以要眩晕一回合),借将拿的就是**这一回合的这一次冲锋**,眩晕等于什么都没借到。
+          inst.exhausted = false
+          inst.attacksUsed = 0
+          mine.board.push(inst)
+          events.push({
+            type: 'GeneralSeized',
+            player,
+            iid: inst.iid,
+            defId: inst.defId,
+            from: loc.player,
+            position: mine.board.length - 1,
+          })
+        }
+        break
+      }
       default: {
         const exhaustive: never = op
         void exhaustive
@@ -1415,9 +1569,54 @@ export function runScript(
 
 // ---------- 实例工厂 ----------
 
+// 借将归还:回合结束时,把所有「现在的所属方 ≠ 原属方」的单位送回去。
+//
+// 扫**两侧**而不是只扫借用方:借来的人可能又被对手策反回去了(那时 borrowedFrom
+// 恰好等于当前所属方,直接把标记清掉即可),扫单侧会留下一个永远归还不掉的幽灵标记。
+// 原主满场则**放逐**(不入墓、不触发亡语)—— 借来的兵还不回去就散了。
+// 定成阵亡的话,「借一个再让他还不回去」会变成一张稳定的硬解,那不是这条轴该有的强度。
+export function returnBorrowed(
+  state: GameState,
+  lib: CardLibrary,
+  events: GameEvent[],
+): void {
+  for (const side of [0, 1] as const) {
+    const board = state.players[side].board
+    for (let i = board.length - 1; i >= 0; i--) {
+      const inst = board[i]
+      const owner = inst.borrowedFrom
+      if (owner === undefined) continue
+      if (owner === side) {
+        inst.borrowedFrom = undefined
+        continue
+      }
+      board.splice(i, 1)
+      inst.borrowedFrom = undefined
+      const home = state.players[owner]
+      if (home.board.length >= BOARD_LIMIT) {
+        events.push({ type: 'GeneralBanished', player: side, iid: inst.iid, defId: inst.defId })
+        continue
+      }
+      inst.exhausted = true
+      inst.attacksUsed = 0
+      home.board.push(inst)
+      events.push({
+        type: 'GeneralSeized',
+        player: owner,
+        iid: inst.iid,
+        defId: inst.defId,
+        from: side,
+        position: home.board.length - 1,
+      })
+    }
+  }
+  refreshAuras(state, lib)
+}
+
 export function resetInstance(inst: CardInstance, lib: CardLibrary): void {
   inst.enchants = []
   inst.damage = 0
+  inst.borrowedFrom = undefined
   inst.silenced = false
   inst.frozen = false
   inst.shieldUsed = false

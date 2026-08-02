@@ -327,6 +327,10 @@ function line(ev: GameEvent, ctx: EventTextCtx, l: Lang): string {
       return zh
         ? `${n(ev.iid)}被变为${dn(ev.defId)}`
         : `${n(ev.iid)} was transformed into ${dn(ev.defId)}`
+    case 'CardShuffledIn':
+      return zh
+        ? `${ev.count} 张${dn(ev.defId)}被洗入${poss(ev.player)}牌库`
+        : `${ev.count}× ${dn(ev.defId)} shuffled into ${poss(ev.player).toLowerCase()} deck`
     case 'GameEnded':
       if (ev.winner === 'draw') return zh ? '对局结束:平局' : 'Battle over — a draw'
       return zh

@@ -122,6 +122,16 @@ export function extractFloats(events: GameEvent[], batch: number, lang: Language
       case 'CardGenerated':
         push(`hero-${ev.player}`, pickCompact({ zh: '生成', en: 'CREATED' }, lang), 'buff')
         break
+      // 洗入牌库挂在**主帅**上:牌库没有 DOM 锚点,而这件事影响的是整个牌库。
+      // 塞给对手的废牌用 damage 色,给自己的用 buff 色 —— 同一个事件两种含义,
+      // 颜色是唯一能当场说清「这是好事还是坏事」的通道。
+      case 'CardShuffledIn':
+        push(
+          `hero-${ev.player}`,
+          pickCompact({ zh: `洗入 ${ev.count}`, en: `SHUFFLED ${ev.count}` }, lang),
+          ev.player === 0 ? 'buff' : 'damage',
+        )
+        break
       case 'ManaGained':
         push(
           `hero-${ev.player}`,

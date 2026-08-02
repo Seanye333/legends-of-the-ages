@@ -116,6 +116,8 @@ const SAMPLES: GameEvent[] = [
   { type: 'ChainAdvanced', player: 0, chain: 2 },
   { type: 'ChainTriggered', player: 0, defId: 'strat-huo-ji' },
   { type: 'SkyChanged', sky: 'night', turn: 7 },
+  // ---- 第二十二卡包 ----
+  { type: 'CardShuffledIn', player: 1, defId: 'guan-yu', count: 2 },
   { type: 'GameEnded', winner: 0 },
 ]
 
@@ -260,6 +262,7 @@ describe('架构铁律 7 的另一半:该看得见的事件要真的看得见', 
     { type: 'CardGenerated', player: 0, iid: 10, defId: 'guan-yu' },
     { type: 'MoraleChanged', player: 0, morale: 2, delta: 1 },
     { type: 'ChainTriggered', player: 0, defId: 'strat-huo-ji' },
+    { type: 'CardShuffledIn', player: 1, defId: 'guan-yu', count: 2 },
   ]
 
   it('每条都会产出飘字', () => {
@@ -286,6 +289,7 @@ describe('架构铁律 7 的另一半:该看得见的事件要真的看得见', 
       'MoraleChanged',
       'SupplyChanged',
       'ChainTriggered',
+      'CardShuffledIn',
       'GeneralSummoned',
       'TurnEnded',
     ]

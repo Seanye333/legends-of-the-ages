@@ -200,6 +200,35 @@ const LIB: CardLibrary = Object.fromEntries(
     def('f-recruit', {
       cost: 4, battlecry: { ops: [{ op: 'recruit', count: 2 }] },
     }),
+    // ---- 第二十二卡包 ----
+    // 这五张分别踩的坑:磨牌把库磨空(疲劳边界)、洗入牌库让库变长(牌库不变式)、
+    // 驱散撤增益(clampAlive)、借将让单位**跨座位**移动(死亡结算与光环重算最容易漏的一处)、
+    // 「最」类目标在空场/全潜行时要落空而不是崩。
+    def('f-mill', {
+      cost: 2, type: 'stratagem', attack: undefined, health: undefined,
+      spell: { ops: [{ op: 'mill', count: 3 }] },
+    }),
+    def('f-shuffle', {
+      cost: 2, type: 'stratagem', attack: undefined, health: undefined,
+      spell: { ops: [{ op: 'shuffleIntoDeck', defId: 'f-van1', count: 2, side: 'enemy' }] },
+    }),
+    def('f-dispel', {
+      cost: 1, type: 'stratagem', attack: undefined, health: undefined,
+      spell: { ops: [{ op: 'dispel', target: 'chosenEnemyGeneral' }] },
+    }),
+    def('f-borrow', {
+      cost: 3, type: 'stratagem', attack: undefined, health: undefined,
+      spell: { ops: [{ op: 'borrow', target: 'chosenEnemyGeneral' }] },
+    }),
+    def('f-snipe', {
+      cost: 2, type: 'stratagem', attack: undefined, health: undefined,
+      spell: {
+        ops: [
+          { op: 'damage', amount: 2, target: 'strongestEnemyGeneral' },
+          { op: 'heal', amount: 2, target: 'weakestFriendlyGeneral' },
+        ],
+      },
+    }),
   ].map((d) => [d.id, d]),
 )
 

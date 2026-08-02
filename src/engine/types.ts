@@ -80,6 +80,21 @@ export type EffectTarget =
   | 'allGenerals'
   | 'chosenFriendly' // 指定友方角色(含主公)
   | 'chosenFriendlyGeneral' // 指定友方武将
+  // ---- 第二十二卡包:「最」类目标 ----
+  //
+  // 在此之前,不指定目标的效果只有 random 与 all 两档 —— 于是
+  // 「射杀敌军最强者」「先救伤得最重的」这类**古代战场最基本的取舍**
+  // 一条都写不出来,只能退化成随机,而随机恰恰把这类卡的全部意图抹掉了。
+  //
+  // 并列时取 iid 最小者(入场最早的那个)—— 必须确定,否则回放与服务端权威对局会分叉。
+  // 敌方那两个照样过潜行过滤(和 randomEnemyGeneral 一致)。
+  | 'weakestEnemyGeneral' // 敌方**现血**最低
+  | 'strongestEnemyGeneral' // 敌方**攻击**最高
+  | 'weakestFriendlyGeneral'
+  | 'strongestFriendlyGeneral'
+  // 来源左右紧邻的两名友军(与 AuraDef.scope:'adjacent' 同一套相邻语义,
+  // 区别是那个是持续光环、这个是一次性效果)。来源不在场则为空。
+  | 'adjacentFriendly'
 
 export interface EffectCondition {
   ifDynastyCount?: { dynasty: DynastyTag; atLeast: number }
@@ -95,9 +110,21 @@ export interface EffectCondition {
   ifSupply?: { atLeast: number } // 我方屯粮不低于 N
   ifSky?: Sky // 当前天时是某一时段(见 skyOf)
   ifChain?: { atLeast: number } // 本回合已结算的锦囊数(见 PlayerState.chain)
+  // ---- 第二十二卡包:把已有状态接进条件层 ----
+  //
+  // 士气 / 粮道 / 计谋链上个卡包就进了 PlayerState,天时更是零状态,
+  // 但**没有一条卡能「检查」兵种、环境、墓地或回合数** —— 状态存在却读不到,
+  // 是卡池里最便宜的一个口子:这一段全是纯读,零事件、零迁移。
+  ifTroopCount?: { troop: TroopType; atLeast: number } // 我方某兵种达 N 人(骑兵队/水军)
+  ifField?: { id?: string } // 有战场环境(给 id 则必须是那一片)
+  ifTurnAtLeast?: number // 第 N 回合起(后期牌:「拖到这时候才有用」)
+  ifGraveyardCount?: { atLeast: number } // 我方墓地里的**武将**数(尸山血海 payoff)
+  ifEnemyHeroHpBelow?: number // 敌方主公血量低于此值 —— 处决线,AI 也读得懂
 }
 
-// 计数来源:buffPer 按它数出一个倍数。全部只数**我方场面**(payoff 是自己铺出来的)。
+// 计数来源:buffPer 按它数出一个倍数。
+// 原则上只数**我方场面**(payoff 是自己铺出来的);第二十二卡包开了两个例外,
+// 见下面 enemyGenerals / handCount 的说明 —— 它们数的是「局势」而不是「战果」。
 export type CountSource =
   | { kind: 'friendlyDynasty' } // 与来源卡同势力的友方武将(不含自己更直观 → 见 resolve 注释)
   | { kind: 'friendlyKeyword'; keyword: Keyword } // 带某关键词的友方武将
@@ -106,6 +133,13 @@ export type CountSource =
   // 我方墓地里的**武将**数(锦囊装备不算)。亡语/复生流缺的就是这个计数 ——
   // 此前只有「复生一个」这种一次性效果,没法表达「死得越多越强」。
   | { kind: 'friendlyGraveyard' }
+  // ---- 第二十二卡包 ----
+  // 敌方武将数:「敌众我寡」那一路 —— 对面铺得越满,这一刀越狠。
+  // 它和 friendlyGenerals 的区别不只是换个符号:go-wide 的对手无法靠**不铺场**来躲,
+  // 而 friendlyGenerals 系的卡是自己铺出来的,先手劣势方永远吃不到。
+  | { kind: 'enemyGenerals' }
+  // 我方手牌数:囤牌流的 payoff(与 ifHandCount 成对)。
+  | { kind: 'handCount' }
 
 export type EffectOp =
   | { op: 'damage'; amount: number; target: EffectTarget }
@@ -171,6 +205,23 @@ export type EffectOp =
   | { op: 'gainMorale'; amount: number; side?: 'friendly' | 'enemy' }
   // 屯粮:我方粮道 +N(上限 SUPPLY_CAP)。
   | { op: 'gainSupply'; amount: number }
+  // ---- 第二十二卡包:牌库、驱散、借将 ----
+  // 断粮道(磨牌):把某一方牌库**顶上**的 N 张直接送进墓地。
+  // 全游戏第一条能碰「牌库」的效果 —— 此前牌库只能被抽(draw)、被搜(tutor/recruit),
+  // 从来不能被**削**。它开的是一条真正的另类赢法:不打脸,打他的补给。
+  // 疲劳伤害本来就在(drawCards),磨牌只是把那条计时器拨快。
+  | { op: 'mill'; count: number; side?: 'friendly' | 'enemy' }
+  // 洗入牌库:生成 N 张 defId 洗进某一方的牌库(随机位置)。
+  // 与 addToHand 的差别是**延迟**:塞给对手的废牌不占他的手牌,占的是他之后的每一次抽牌。
+  | { op: 'shuffleIntoDeck'; defId: string; count: number; side?: 'friendly' | 'enemy' }
+  // 驱散:只摘掉目标身上的**附魔**(增益、装备、临时关键词),不封亡语、不清卡面关键词。
+  // 沉默此前是全有全无的一刀 —— 想解掉对面那把青龙偃月刀,只能连带把整张卡废掉。
+  // 驱散不杀人:撤销后血量归零则夹回 1(沿用沉默那套 clampAlive)。
+  | { op: 'dispel'; target: EffectTarget }
+  // 借将:把敌将夺到我方,**本回合结束归还**(见 CardInstance.borrowedFrom)。
+  // seize 是永久的,于是「临阵借一手」这类效果只能定成永久夺取的降配版;
+  // 借将是它真正的形状 —— 这一回合他为你冲阵,回合一结束他就回去了。
+  | { op: 'borrow'; target: EffectTarget }
 
 export interface EffectScript {
   ops: EffectOp[]
@@ -352,6 +403,11 @@ export interface CardInstance {
   // 实例级费用修正(负=更便宜)。有效费用 = max(0, 卡面费 + costDelta)。
   // 只对手牌有意义;进场/入墓后不再读它。见 effectiveCost()。
   costDelta: number
+  // ---- 第二十二卡包:借将 ----
+  // 原属座位。**只有被 borrow 借来的单位才有它**,借用方回合结束时按它归还
+  // (见 reducer.returnBorrowed)。可选字段 → 老存档/老战报没有它就是「没人是借来的」,
+  // 迁移零风险(铁律 6)。
+  borrowedFrom?: PlayerIdx
 }
 
 export interface PlayerState {
@@ -658,6 +714,10 @@ export type GameEvent =
       position: number
     }
   | { type: 'GeneralTransformed'; player: PlayerIdx; iid: number; intoIid: number; defId: string }
+  // ---- 第二十二卡包 ----
+  // 洗入牌库。牌库内容本来就是暗的,但**塞了什么进去**必须是公开的 ——
+  // 否则对手抽到一张自己牌组里没有的废牌时,完全不知道发生过什么。
+  | { type: 'CardShuffledIn'; player: PlayerIdx; defId: string; count: number }
   | { type: 'GameEnded'; winner: Winner }
 
 // ---------- 对局配置与 API 结果 ----------
