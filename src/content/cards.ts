@@ -34,6 +34,7 @@ import { PACK18_CARDS } from './overrides/pack18'
 import { PACK19_CARDS } from './overrides/pack19'
 import { PACK20_CARDS } from './overrides/pack20'
 import { PACK21_CARDS } from './overrides/pack21'
+import { PACK22_CARDS } from './overrides/pack22'
 import { CAMPAIGN_TOKENS } from './overrides/campaign-tokens'
 import { HISTORY_TOKENS } from './history-tokens'
 
@@ -78,6 +79,8 @@ export const KEYWORD_LABEL: Record<string, { zh: string; en: string }> = {
   divineShield: { zh: '鐵壁', en: 'Divine Shield' },
   stealth: { zh: '潛行', en: 'Stealth' },
   trample: { zh: '碾壓', en: 'Trample' },
+  disarm: { zh: '繳械', en: 'Disarm' },
+  siege: { zh: '攻城', en: 'Siege' },
 }
 
 function withKeywordText(card: CardDef): CardDef {
@@ -198,6 +201,7 @@ const MERGED_CARDS: CardDef[] = [
   ...PACK19_CARDS,
   ...PACK20_CARDS,
   ...PACK21_CARDS,
+  ...PACK22_CARDS,
   ...CAMPAIGN_TOKENS,
   ...HISTORY_TOKENS,
 ].map(withKeywordText)

@@ -42,13 +42,22 @@ function allScripts(c: CardDef): EffectScript[] {
     c.onSpellCast,
     c.combo,
     c.secret?.script,
+    // 军令状的奖励也是一段脚本 —— 漏掉它,「奖励里 summon 了一张不存在的卡」
+    // 这种错就永远扫不出来(而它的表现是达成军令后什么都没发生)
+    c.quest?.reward,
     ...(c.choose?.modes.map((m) => m.script) ?? []),
   ]
   return out.filter((x): x is EffectScript => x !== undefined)
 }
 
+// 伏笔(delay)把一整段脚本包在 op 里,所以 ops 是**树**而不是列表。
+// 不展开的话,埋在伏笔里的引用错误一条都查不出来。
+function flattenOps(ops: EffectOp[]): EffectOp[] {
+  return ops.flatMap((op) => (op.op === 'delay' ? [op, ...flattenOps(op.script.ops)] : [op]))
+}
+
 function allOps(c: CardDef): EffectOp[] {
-  return allScripts(c).flatMap((s) => s.ops)
+  return flattenOps(allScripts(c).flatMap((s) => s.ops))
 }
 
 // ---- error:引用了不存在的卡 ----
