@@ -1,4 +1,4 @@
-import type { CardDef, CardLibrary, LocalizedText } from '../engine/types'
+import type { CardDef, CardLibrary, Keyword, LocalizedText } from '../engine/types'
 import { GENERATED_CARDS } from './generated/cards.gen'
 import { SIGNATURE_OVERRIDES } from './overrides/signature'
 import { SIGNATURE_SKILLS } from './overrides/signature-skills'
@@ -68,7 +68,9 @@ function reconcileExclusive(merged: CardDef, ov: Partial<CardDef>): CardDef {
 // 导出:content.test 此前**另抄了一份**同样的表。抄本在这次把「連擊」
 // 改名成「風怒」时没跟着改 —— 于是闸门报出三张卡「带 windfury 但文本里
 // 没有連擊」,而真相是抄本过期了。一张表只该有一个来源。
-export const KEYWORD_LABEL: Record<string, { zh: string; en: string }> = {
+// 类型是 `Record<Keyword,…>` 而不是 `Record<string,…>`:后者漏一个**不报错**,
+// 只是那个词条从此在卡面上消失(缴械/攻城差点就这么漏掉)。让 tsc 管住它。
+export const KEYWORD_LABEL: Record<Keyword, { zh: string; en: string }> = {
   charge: { zh: '衝鋒', en: 'Charge' },
   rush: { zh: '突襲', en: 'Rush' },
   guard: { zh: '守護', en: 'Guard' },

@@ -15,6 +15,7 @@
 //   info  —— 值得知道(某个机制全池只有一张卡在用)。
 import { CARDS, CARDS_BY_ID, COLLECTIBLE_CARDS } from '../src/content/cards'
 import type { CardDef, EffectOp, EffectScript } from '../src/engine/types'
+import { requiresChosenTarget } from '../src/engine/resolve'
 
 const STRICT = process.argv.includes('--strict')
 
@@ -109,6 +110,23 @@ for (const c of CARDS) {
     if (i >= 0 && i !== s.ops.length - 1) {
       add('error', 'discover-not-last', `发现之后还有 ${s.ops.length - 1 - i} 个 op,永远不会执行`, c.id)
     }
+  }
+}
+
+// ---- error:军令状的奖励不能要目标 ----
+// 军令达成的那一刻玩家正在做别的事(打牌、交换),没法再弹一次目标选择,
+// 于是 runScript 会走 degradeChosen 把它**退化成随机** —— 卡面写着「消灭一个敌将」,
+// 实际打的是随机一个。这是典型的静默失效:不报错、不崩溃,只是和卡面说的不一样。
+for (const c of CARDS) {
+  if (!c.quest) continue
+  if (c.type !== 'stratagem') {
+    add('error', 'type-shape', '军令状只能是锦囊(reducer 只在锦囊分支收军令)', c.id)
+  }
+  if (requiresChosenTarget(c.quest.reward)) {
+    add('error', 'quest-reward-target', '军令奖励要玩家指定目标 —— 达成时无法交互,会静默退化成随机', c.id)
+  }
+  if (c.quest.goal.count <= 0) {
+    add('error', 'quest-goal', `军令目标数是 ${c.quest.goal.count},打出即达成`, c.id)
   }
 }
 

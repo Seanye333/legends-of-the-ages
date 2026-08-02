@@ -25,6 +25,15 @@ function sideReconstructable(p: PlayerState, lib: CardLibrary): boolean {
     return false
   }
   if (p.hand.some((c) => c.costDelta !== 0)) return false
+  // ---- 第二十二卡包 ----
+  // PuzzleSide 存不下军令进度、伏笔倒计时、以及「这个单位是借来的」。
+  // 挖出来会**静默丢掉**它们:一条还剩 1 回合的伏笔没了、一道 3/4 的军令没了、
+  // 借来的敌将变成永久归我 —— 后者更糟,那是一个**现实中不可能出现的局面**。
+  // 题目本身仍然自洽(挖矿会重建后再解一遍),但它讲的已经不是那一局的故事了。
+  // 所以整帧拒收,和伏兵、光环、被减费的手牌一个待遇。
+  if ((p.quests?.length ?? 0) > 0) return false
+  if ((p.delayed?.length ?? 0) > 0) return false
+  if (p.board.some((u) => u.borrowedFrom !== undefined)) return false
   return true
 }
 
