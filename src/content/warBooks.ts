@@ -28,6 +28,21 @@ export interface WarBook {
 }
 
 export const WAR_BOOKS: WarBook[] = [
+  // 登楼没有平衡闸门,所以新维度先在这里发一轮 —— 粮道与士气此前一本兵书都没用过,
+  // 而它们恰恰是「一趟爬塔的性格」最好的两个旋钮:一本让你打得起军需,
+  // 一本让你从落后位开局(哀兵那条线在远征宝物里也有,两处的取舍是一致的)。
+  {
+    id: 'wb-liangdao',
+    name: { zh: '糧道篇', en: 'On Supply Lines' },
+    text: { zh: '每層開局屯糧 +4。', en: 'Start each floor with 4 more Supply.' },
+    modifiers: { startSupply: 4 },
+  },
+  {
+    id: 'wb-shiqi',
+    name: { zh: '勵士篇', en: 'On Rousing the Ranks' },
+    text: { zh: '每層開局士氣 +2 —— 全場 +1 攻擊,直到士氣收斂回來。', en: 'Start each floor at +2 Morale: your generals get +1 attack until it drifts back.' },
+    modifiers: { startMorale: 2 },
+  },
   {
     id: 'wb-sunzi',
     name: { zh: '孫子兵法', en: 'The Art of War' },
@@ -123,6 +138,11 @@ export function combineBooks(ids: string[]): { bonusHp: number; modifiers: RunMo
     if (m.startTokens) {
       modifiers.startTokens = [...(modifiers.startTokens ?? []), ...m.startTokens]
     }
+    // 同 relics 的累加器:这是一份**手写字段清单**,RunModifiers 加了字段
+    // 而这里没补,那本兵书就会安静地什么都不做。
+    if (m.startMorale) modifiers.startMorale = (modifiers.startMorale ?? 0) + m.startMorale
+    if (m.startSupply) modifiers.startSupply = (modifiers.startSupply ?? 0) + m.startSupply
+    if (m.startQuest) modifiers.startQuest = m.startQuest
   }
   return { bonusHp, modifiers }
 }

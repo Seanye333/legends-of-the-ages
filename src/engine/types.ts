@@ -828,6 +828,10 @@ export interface RunModifiers {
   startMorale?: number // 开局士气
   startSupply?: number // 开局屯粮
   vicePower?: HeroPowerDef // 副将:多一个可选的主公技(仍然每回合只能用一个)
+  // 开局自带一道军令状(见 QuestDef)。**只发在 PvE 侧** —— 远征宝物 / 兵书 / 乱斗,
+  // 那几个模式没有平衡闸门。给玩家侧加常驻强度的东西进天梯要单独调一轮,
+  // 这条经验在主公技升阶上交过学费。
+  startQuest?: QuestDef
 }
 
 // ---------- 斩杀谜题:指定残局 ----------

@@ -14,6 +14,50 @@ export interface RelicDef {
 }
 
 export const RELICS: RelicDef[] = [
+  // ---- 第二十二/二十三卡包的新轴接进远征 ----
+  // 这三件走的是新维度而不是新数值:军令给一个「这一趟怎么打」的目标,
+  // 粮道让那些军需卡真的打得出来。**只发在远征**(见文件头与主公技升阶那条经验)。
+  {
+    id: 'relic-hufu',
+    name: { zh: '虎符', en: 'The Tiger Tally' },
+    text: {
+      zh: '開局領受軍令【虎符調兵】:本局打出 4 名武將 → 我方全場 +2/+2 並從牌庫召喚 2 名。',
+      en: 'Start with the quest [Tiger Tally]: play 4 generals → give your board +2/+2 and summon 2 from your deck.',
+    },
+    rarity: 'epic',
+    modifiers: {
+      startQuest: {
+        id: 'relic-quest-hufu',
+        name: { zh: '虎符調兵', en: 'Tiger Tally' },
+        goal: { kind: 'summonGenerals', count: 4 },
+        reward: {
+          ops: [
+            { op: 'buffStats', attack: 2, health: 2, target: 'allFriendlyGenerals' },
+            { op: 'recruit', count: 2 },
+          ],
+        },
+      },
+    },
+  },
+  {
+    id: 'relic-liangdao',
+    name: { zh: '糧道暢通', en: 'The Road Is Open' },
+    text: { zh: '每局開局屯糧 6 —— 軍需牌一上來就打得出。', en: 'Start each battle with 6 Supply.' },
+    rarity: 'rare',
+    modifiers: { startSupply: 6 },
+  },
+  {
+    id: 'relic-aibing',
+    name: { zh: '哀兵必勝', en: 'The Grieving Army' },
+    text: {
+      zh: '每局開局士氣 -3(全場 -1 攻),但主公最大生命 +20。',
+      en: 'Start each battle at -3 Morale (your generals get -1 attack), but your hero has +20 maximum health.',
+    },
+    rarity: 'legendary',
+    bonusHp: 20,
+    modifiers: { startMorale: -3 },
+  },
+
   // ---- 血线 ----
   {
     id: 'relic-jinpai',
@@ -241,6 +285,13 @@ export function combineRelics(relicIds: string[]): {
     // 副将只留**最后拿到的那一个**:两件副将宝物同时在身上时,
     // 引擎只认 RunModifiers 上的一个字段 —— 与其悄悄丢一个,不如把规则写明白。
     if (m.vicePower) mod.vicePower = m.vicePower
+    // 这个累加器是**手写字段清单**:RunModifiers 加了字段而这里没补,
+    // 那件宝物就会安安静静地什么都不做(不报错、不崩溃)。
+    // 士气/粮道此前就一直漏在外面 —— 只是碰巧没有宝物用它们。
+    if (m.startMorale) mod.startMorale = (mod.startMorale ?? 0) + m.startMorale
+    if (m.startSupply) mod.startSupply = (mod.startSupply ?? 0) + m.startSupply
+    // 军令同副将:只留最后拿到的那一道(一局只能领一道,QUEST_LIMIT=1)
+    if (m.startQuest) mod.startQuest = m.startQuest
   }
   if (tokens.length > 0) mod.startTokens = tokens
   return { bonusHp, modifiers: mod }

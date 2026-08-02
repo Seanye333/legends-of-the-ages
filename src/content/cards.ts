@@ -35,6 +35,7 @@ import { PACK19_CARDS } from './overrides/pack19'
 import { PACK20_CARDS } from './overrides/pack20'
 import { PACK21_CARDS } from './overrides/pack21'
 import { PACK22_CARDS } from './overrides/pack22'
+import { PACK23_CARDS } from './overrides/pack23'
 import { CAMPAIGN_TOKENS } from './overrides/campaign-tokens'
 import { HISTORY_TOKENS } from './history-tokens'
 
@@ -204,6 +205,7 @@ const MERGED_CARDS: CardDef[] = [
   ...PACK20_CARDS,
   ...PACK21_CARDS,
   ...PACK22_CARDS,
+  ...PACK23_CARDS,
   ...CAMPAIGN_TOKENS,
   ...HISTORY_TOKENS,
 ].map(withKeywordText)

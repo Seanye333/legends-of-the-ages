@@ -118,6 +118,19 @@ export function createGame(cfg: GameConfig, lib: CardLibrary): GameState {
       morale: mod?.startMorale ?? 0,
       supply: mod?.startSupply ?? 0,
       chain: 0,
+      // 开局军令:整份复制进状态(引擎不查内容表),progress 从 0 起。
+      // 不给就是 undefined —— 和别的可选字段一样,老存档零影响。
+      quests: mod?.startQuest
+        ? [
+            {
+              defId: mod.startQuest.id,
+              name: mod.startQuest.name,
+              goal: mod.startQuest.goal,
+              progress: 0,
+              reward: mod.startQuest.reward,
+            },
+          ]
+        : undefined,
     }
   }) as [PlayerState, PlayerState]
 

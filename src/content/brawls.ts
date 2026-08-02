@@ -196,6 +196,50 @@ export const BRAWLS: BrawlDef[] = [
     modifiers: { startSupply: 10, heroPowerCostDelta: -2 },
     objective: { kind: 'survive', turns: 16 },
   },
+  // ---- 第三批(2026-08):用第二十二/二十三卡包的新轴 ----
+  // 乱斗是**双方同吃**,所以天然公平;而新轴在这里第一次以「规则」而不是
+  // 「某张卡的效果」的形式出现 —— 同一条机制换个位置就是另一种玩法。
+  {
+    id: 'brawl-junling',
+    name: { zh: '軍令如山', en: 'The Order Stands' },
+    text: {
+      zh: '双方开局各领一道军令:斩杀 3 名敌将 → 全场 +3/+3 并抽 2 张。谁先攒满谁翻盘。',
+      en: 'Both sides start with a quest: kill 3 enemy generals → +3/+3 to your board and draw 2. First to finish swings the game.',
+    },
+    modifiers: {
+      startQuest: {
+        id: 'brawl-quest-junling',
+        name: { zh: '軍令如山', en: 'The Order Stands' },
+        goal: { kind: 'killGenerals', count: 3 },
+        reward: {
+          ops: [
+            { op: 'buffStats', attack: 3, health: 3, target: 'allFriendlyGenerals' },
+            { op: 'draw', count: 2 },
+          ],
+        },
+      },
+    },
+  },
+  {
+    id: 'brawl-jueliang',
+    name: { zh: '斷糧之戰', en: 'War of Attrition' },
+    text: {
+      zh: '换个赢法:双方牌库都很浅 —— 撑过 10 回合即胜,但疲劳来得比谁都快。',
+      en: 'A different win: survive 10 turns — but both decks run dry fast and fatigue bites early.',
+    },
+    modifiers: { bonusHandSize: 3, startArmor: 6 },
+    objective: { kind: 'survive', turns: 10 },
+  },
+  {
+    id: 'brawl-aibing',
+    name: { zh: '哀兵之陣', en: 'The Grieving Line' },
+    text: {
+      zh: '双方开局士气 -3(全场 -1 攻)、屯粮拉满、主公 45 血 —— 一场谁都砍不动谁的长局。',
+      en: 'Both sides start at -3 Morale (generals at -1 attack) with full supply and 45 HP — a long grind where nobody hits hard.',
+    },
+    modifiers: { startMorale: -3, startSupply: 10 },
+    hpDelta: 15,
+  },
   {
     id: 'brawl-heirloom',
     name: { zh: '傳世之兵', en: 'Arms of the Ancestors' },
