@@ -50,6 +50,16 @@ export type Keyword =
   | 'stealth' // 潜行:不能被敌方选为目标,自身攻击后解除
   // ---- 第十二卡包「碾压」 ----
   | 'trample' // 碾压:攻击武将时,溢出的伤害穿透到敌方主公
+  // ---- 第二十二卡包 ----
+  // 缴械:不能攻击(身材、光环、亡语一概不受影响)。
+  // 此前唯一的硬控是冻结,而冻结是**一次性**的(回合末自动解),
+  // 于是「废掉那个大哥,但留着他占位」这类控场手段一条都写不出来。
+  // 它几乎只由 grantKeyword 授予 —— 卡面自带缴械的武将等于一张纯白板墙。
+  | 'disarm'
+  // 攻城:攻击**主公**时额外造成 SIEGE_BONUS 点伤害。
+  // 器械兵种此前只是个标签,没有任何专属身份 —— 攻城车打人和打城墙一样疼,
+  // 这在一部讲古代战争的游戏里说不过去。
+  | 'siege'
 export type Archetype = 'warrior' | 'strategist'
 
 // 兵种 —— 势力/主义回答「他是谁那边的」,兵种回答「他在战场上干什么」。
@@ -222,10 +232,60 @@ export type EffectOp =
   // seize 是永久的,于是「临阵借一手」这类效果只能定成永久夺取的降配版;
   // 借将是它真正的形状 —— 这一回合他为你冲阵,回合一结束他就回去了。
   | { op: 'borrow'; target: EffectTarget }
+  // 伏笔:埋下一段脚本,**turns 个我方回合之后**才结算(见 PlayerState.delayed)。
+  //
+  // 引擎此前没有任何「计时器」概念:伏兵是被动等对手踩,回合结束/开始触发器
+  // 每回合都跑 —— 唯独「三日之后东风起」这类**约期**表达不出来,
+  // 而那正是中式谋略里最常见的一种形状(七星坛借东风、火烧连营前的那几天)。
+  //
+  // 双方都看得见(包括是哪张牌):约期本来就是明着摆的,藏起来只会让对手
+  // 在毫无预兆的情况下被一段三回合前的脚本打死,那不是悬念,那是噪音。
+  | { op: 'delay'; turns: number; script: EffectScript }
 
 export interface EffectScript {
   ops: EffectOp[]
   condition?: EffectCondition
+}
+
+// ---------- 第二十二卡包:军令状 ----------
+//
+// 「本局之内打出 N 张锦囊 → 得到 X」。全游戏第一次把**这一局的目标**写在牌上。
+//
+// 三种计数刻意都选了「玩家主动做的事」,而不是「场面上发生的事」:
+// 伤害总量、抽牌数这类会被随机与对手行为推着走,军令状要的是一条你能自己走完的路。
+// 目标数与奖励整份嵌在 PlayerState 里(不查表)—— 理由同主公技与战场环境:
+// 引擎必须状态自足,存 id 去内容层查会让服务端权威对局与老战报依赖内容版本。
+export type QuestGoalKind =
+  | 'playStratagems' // 打出锦囊(不含伏兵与军令状自己)
+  | 'summonGenerals' // 从手牌打出武将(召唤出来的衍生物不算 —— 否则一张召唤牌就刷满了)
+  | 'killGenerals' // 斩杀敌将(放逐不算:那不是斩)
+
+export interface QuestGoal {
+  kind: QuestGoalKind
+  count: number
+}
+
+export interface QuestDef {
+  id: string
+  name: LocalizedText
+  goal: QuestGoal
+  reward: EffectScript
+}
+
+// 领受中的军令状。整份自带 goal/reward(见上),progress 是已完成的次数。
+export interface QuestState {
+  defId: string
+  name: LocalizedText
+  goal: QuestGoal
+  progress: number
+  reward: EffectScript
+}
+
+// 伏笔:埋在时间线上的一段脚本。turnsLeft 每逢**自己的回合开始**减一,归零即结算。
+export interface DelayedScript {
+  turnsLeft: number
+  script: EffectScript
+  sourceDefId: string
 }
 
 // ---------- 第五卡包:抉择 / 发现 ----------
@@ -337,6 +397,17 @@ export interface CardDef {
   supplyCost?: number
   // 阵形:此牌在场时,若己方战线满足 shape,按定义发增益(见 FormationDef)。
   formation?: FormationDef
+  // ---- 第二十二卡包 ----
+  // 耐久(仅装备):持有者每发起一次攻击 -1,归零时装备损毁(那条附魔被摘掉)。
+  // 装备此前是一条**永久**附魔 —— 一把刀挂上去就再也不会钝,于是「武器」这条轴
+  // 只能靠数值小来平衡,写不出「一把神兵,但只砍得动三次」。
+  durability?: number
+  // 手牌中成长:每逢我方回合结束,此牌**在手牌里**获得 +X/+Y。
+  // 附魔层此前只作用于场上实例,手牌是死的 —— 于是「留在手里会长大」的牌一张都没有,
+  // 而那是「现在打出去还是再等一回合」这种决策最干净的一种来源。
+  handGrowth?: { attack: number; health: number }
+  // 军令状(仅锦囊):打出后进军令区,达成目标才结算 reward(见 QuestDef)。
+  quest?: QuestDef
 }
 
 // 主公技:每回合一次的主动技能,六主义各一。
@@ -379,6 +450,12 @@ export interface Enchant {
   // 只有装备会带它,而装备本来就是一条附魔,所以这是**零新概念**的实现:
   // 死亡处理里把附魔搬个家,不需要「装备槽」这种新状态。
   heirloom?: string
+  // ---- 第二十二卡包:耐久 ----
+  // equip:这条附魔来自哪件装备(战报要说清「哪把刀断了」)。
+  // uses:还能砍几次。**只有带 durability 的装备才有它** —— 没有就是永久,
+  // 老卡池的每一件装备都一个字不用改。傳承时随附魔一起搬走(刀是同一把刀)。
+  equip?: string
+  uses?: number
 }
 
 // attack / health / maxHealth / keywords 是**派生字段**:
@@ -455,6 +532,12 @@ export interface PlayerState {
   // 计谋链:本回合已结算的锦囊数。**回合开始清零** ——
   // 「连环」讲的是一口气使出来的一串,跨回合攒够四张不叫连环计,叫存牌。
   chain?: number
+  // ---- 第二十二卡包 ----
+  // 领受中的军令状(上限 QUEST_LIMIT)。对双方公开 —— 对手看得见你在攒什么,
+  // 才有「抢在他攒满之前打完」这个决策;藏起来就只是一记闷棍。
+  quests?: QuestState[]
+  // 已埋下的伏笔。同样对双方公开(见 EffectOp.delay 的说明)。
+  delayed?: DelayedScript[]
 }
 
 export type GamePhase = 'mulligan' | 'main' | 'ended'
@@ -630,6 +713,8 @@ export type GameEvent =
         | 'onSpellCast'
         | 'heroPower'
         | 'combo'
+        | 'delayed' // 伏笔到期
+        | 'quest' // 军令状达成
     }
   | { type: 'GeneralDamaged'; player: PlayerIdx; iid: number; amount: number; healthAfter: number }
   | { type: 'GeneralHealed'; player: PlayerIdx; iid: number; amount: number; healthAfter: number }
@@ -718,6 +803,16 @@ export type GameEvent =
   // 洗入牌库。牌库内容本来就是暗的,但**塞了什么进去**必须是公开的 ——
   // 否则对手抽到一张自己牌组里没有的废牌时,完全不知道发生过什么。
   | { type: 'CardShuffledIn'; player: PlayerIdx; defId: string; count: number }
+  // 装备损毁:耐久耗尽,那条附魔被摘掉
+  | { type: 'EquipmentBroken'; player: PlayerIdx; iid: number; defId: string }
+  // 手牌中成长(iid 指向**手牌里**那张,不是场上的)
+  | { type: 'HandCardGrew'; player: PlayerIdx; iid: number; defId: string; attack: number; health: number }
+  // 军令状:领受 / 进度 / 达成
+  | { type: 'QuestTaken'; player: PlayerIdx; defId: string; goal: number }
+  | { type: 'QuestProgressed'; player: PlayerIdx; defId: string; progress: number; goal: number }
+  | { type: 'QuestCompleted'; player: PlayerIdx; defId: string }
+  // 伏笔埋下(到期结算走 EffectTriggered kind:'delayed')
+  | { type: 'DelaySet'; player: PlayerIdx; defId: string; turns: number }
   | { type: 'GameEnded'; winner: Winner }
 
 // ---------- 对局配置与 API 结果 ----------
@@ -831,3 +926,10 @@ export const MORALE_CAP = 3 // 士气绝对值上限
 export const MORALE_THRESHOLD = 2 // |士气| 达到它才产生场面效果(±1 攻)
 export const SUPPLY_CAP = 10 // 粮道上限
 export const CHAIN_TRIGGER = 3 // 本回合第 CHAIN_TRIGGER+1 张锦囊结算两次
+// ---- 第二十二卡包 ----
+// 军令状同时只能领一道。多道并行会变成「开局甩三张,后面躺着等」——
+// 军令状要的是**这一局你打算怎么打**这一个决定,不是一张待办清单。
+export const QUEST_LIMIT = 1
+// 攻城:攻击主公时的额外伤害。写成常量是因为它会被定价脚本读到 ——
+// 散在卡面上的话,以后想调这条轴就得挨张改。
+export const SIEGE_BONUS = 2

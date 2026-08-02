@@ -536,6 +536,27 @@ function buildTimeline(
         break
       }
 
+      // 装备损毁 / 手牌成长 / 军令 / 伏笔:都只是一记飘字 + 一声响,
+      // 不占用时间轴的独立一拍(它们总是伴随别的动作发生)。
+      case 'EquipmentBroken':
+      case 'HandCardGrew':
+      case 'QuestTaken':
+      case 'QuestProgressed':
+      case 'DelaySet': {
+        loose().events.push(ev)
+        break
+      }
+
+      case 'QuestCompleted': {
+        // 军令达成是这一局的转折点:亮出那张牌,和伏兵翻开同一条路 ——
+        // 玩家需要看见**是哪一道军令**在此刻兑现,飘字给不了这个信息。
+        push(600, { cast: { defId: ev.defId, fromEnemy: ev.player === 1 }, sfx: ['bond'] })
+        cur = null
+        castPending = 'cast'
+        loose().events.push(ev)
+        break
+      }
+
       case 'MoraleChanged':
       case 'SupplyChanged': {
         // 飘字层自己会过滤噪音(粮道每回合 +1 不飘)

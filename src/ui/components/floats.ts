@@ -125,6 +125,27 @@ export function extractFloats(events: GameEvent[], batch: number, lang: Language
       // 洗入牌库挂在**主帅**上:牌库没有 DOM 锚点,而这件事影响的是整个牌库。
       // 塞给对手的废牌用 damage 色,给自己的用 buff 色 —— 同一个事件两种含义,
       // 颜色是唯一能当场说清「这是好事还是坏事」的通道。
+      // ---- 第二十二卡包 ----
+      // 装备损毁挂在持有者身上(他还在场,有 DOM 锚点);军令/伏笔挂主帅。
+      case 'EquipmentBroken':
+        push(`gen-${ev.iid}`, pickCompact({ zh: '兵器断', en: 'BROKE' }, lang), 'damage')
+        break
+      case 'HandCardGrew':
+        push(`hero-${ev.player}`, `+${ev.attack}/+${ev.health}`, 'buff')
+        break
+      case 'QuestTaken':
+        push(`hero-${ev.player}`, pickCompact({ zh: '军令', en: 'QUEST' }, lang), 'buff')
+        break
+      case 'QuestCompleted':
+        push(`hero-${ev.player}`, pickCompact({ zh: '军令达成', en: 'QUEST!' }, lang), 'buff')
+        break
+      case 'DelaySet':
+        push(
+          `hero-${ev.player}`,
+          pickCompact({ zh: `伏笔 ${ev.turns}`, en: `FUSE ${ev.turns}` }, lang),
+          'buff',
+        )
+        break
       case 'CardShuffledIn':
         push(
           `hero-${ev.player}`,

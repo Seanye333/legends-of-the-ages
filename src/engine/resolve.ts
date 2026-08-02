@@ -10,6 +10,7 @@ import type {
   CostFilter,
   CountSource,
   CardLibrary,
+  DelayedScript,
   DiscoverPool,
   Doctrine,
   EffectScript,
@@ -19,6 +20,8 @@ import type {
   GameState,
   Keyword,
   PlayerIdx,
+  QuestGoalKind,
+  QuestState,
   Sky,
   TargetRef,
 } from './types'
@@ -666,6 +669,14 @@ export function processDeaths(state: GameState, events: GameEvent[], lib: CardLi
           kind: 'deathrattle',
         })
       }
+    }
+    // 军令状「斩将」计数:每有一个单位倒下,**对面**记一笔。
+    // 放在亡语之后 —— 奖励也是脚本,让它在这一波死亡完全结算完之后再跑,
+    // 否则奖励召出来的单位会被同一轮的光环重算当成「刚才就在场」。
+    // 衍生物不算:一张召唤牌能刷出一堆送死的兵,那样军令状就成了自动完成的。
+    for (const d of dead) {
+      if (lib[d.inst.defId]?.token) continue
+      noteQuest(state, other(d.player), 'killGenerals', events, lib)
     }
   }
 }
@@ -1526,6 +1537,15 @@ export function runScript(
         }
         break
       }
+      case 'delay': {
+        // 埋伏笔。turns 记的是「还要经过几个**我方**回合」,
+        // 所以 turns:1 = 下个回合开始时结算(而不是本回合末)。
+        const p = state.players[player]
+        p.delayed = p.delayed ?? []
+        p.delayed.push({ turnsLeft: Math.max(1, op.turns), script: op.script, sourceDefId })
+        events.push({ type: 'DelaySet', player, defId: sourceDefId, turns: Math.max(1, op.turns) })
+        break
+      }
       case 'borrow': {
         // 借将:同 seize 的搬运,外加记下原主。满场则整条效果到此为止(与 seize 一致)。
         // 已经是借来的不再转借(borrowedFrom 只有一格,链式借用会丢掉最初的主人)。
@@ -1568,6 +1588,149 @@ export function runScript(
 }
 
 // ---------- 实例工厂 ----------
+
+// ---------- 第二十二卡包:军令状 / 伏笔 / 耐久 ----------
+
+// 军令状记账。**唯一入口** —— 三种计数各自的触发点(打出锦囊、打出武将、斩将)
+// 都只调它,达成即当场结算奖励并把这道军令从领受区摘掉。
+//
+// 奖励脚本走 degradeChosen:达成的那一刻玩家正在做别的事(打牌、交换),
+// 没法再弹一次目标选择,所以要目标的奖励会退化成随机 —— 内容层因此
+// 只该给军令状写不需要点目标的奖励(和亡语同一条约束)。
+export function noteQuest(
+  state: GameState,
+  player: PlayerIdx,
+  kind: QuestGoalKind,
+  events: GameEvent[],
+  lib: CardLibrary,
+): void {
+  const p = state.players[player]
+  if (!p.quests || p.quests.length === 0) return
+  // 先扫一遍要结算的,再逐个跑 —— 奖励脚本可能反过来改动 quests(理论上),
+  // 边遍历边改数组是这一类 bug 的经典来源
+  const done: QuestState[] = []
+  for (const q of p.quests) {
+    if (q.goal.kind !== kind) continue
+    q.progress += 1
+    if (q.progress >= q.goal.count) done.push(q)
+    else {
+      events.push({
+        type: 'QuestProgressed',
+        player,
+        defId: q.defId,
+        progress: q.progress,
+        goal: q.goal.count,
+      })
+    }
+  }
+  if (done.length === 0) return
+  p.quests = p.quests.filter((q) => !done.includes(q))
+  for (const q of done) {
+    events.push({ type: 'QuestCompleted', player, defId: q.defId })
+    events.push({
+      type: 'EffectTriggered',
+      player,
+      sourceDefId: q.defId,
+      kind: 'quest',
+    })
+    runScript(state, events, lib, q.reward, {
+      player,
+      sourceDefId: q.defId,
+      degradeChosen: true,
+      kind: 'quest',
+    })
+  }
+}
+
+// 伏笔到期:每逢自己的回合开始扣一格,归零的当场结算。
+// 在**抽牌之前**跑(见 reducer.beginTurn 的调用点)——「东风起」应该先改变战场,
+// 再轮到你摸这一张牌,顺序反了玩家会觉得这一回合的开局是乱的。
+export function tickDelayed(
+  state: GameState,
+  player: PlayerIdx,
+  events: GameEvent[],
+  lib: CardLibrary,
+): void {
+  const p = state.players[player]
+  if (!p.delayed || p.delayed.length === 0) return
+  const due: DelayedScript[] = []
+  for (const d of p.delayed) {
+    d.turnsLeft -= 1
+    if (d.turnsLeft <= 0) due.push(d)
+  }
+  if (due.length === 0) return
+  p.delayed = p.delayed.filter((d) => !due.includes(d))
+  for (const d of due) {
+    events.push({
+      type: 'EffectTriggered',
+      player,
+      sourceDefId: d.sourceDefId,
+      kind: 'delayed',
+    })
+    runScript(state, events, lib, d.script, {
+      player,
+      sourceDefId: d.sourceDefId,
+      degradeChosen: true,
+      kind: 'delayed',
+    })
+    processDeaths(state, events, lib)
+  }
+}
+
+// 装备耐久:持有者每发起一次攻击,身上带 uses 的附魔各扣一格,归零即损毁。
+//
+// 扣的是**发起攻击**而不是「造成伤害」:被反击、被伏兵化解、打空气都照扣 ——
+// 刀砍出去了就是砍出去了。这样玩家数得清还剩几次,不需要去理解伤害结算的分支。
+export function wearEquipment(
+  state: GameState,
+  attackerIid: number,
+  lib: CardLibrary,
+  events: GameEvent[],
+): void {
+  const loc = findGeneral(state, attackerIid)
+  if (!loc) return
+  const inst = loc.inst
+  if (!inst.enchants.some((e) => e.uses !== undefined)) return
+  const broken: string[] = []
+  for (const e of inst.enchants) {
+    if (e.uses === undefined) continue
+    e.uses -= 1
+    if (e.uses <= 0) broken.push(e.equip ?? '')
+  }
+  if (broken.length === 0) return
+  // 摘掉耗尽的那几条。clampAlive:一把 +0/+3 的盾牌碎掉不该顺手把人也带走 ——
+  // 那会让「给他装备」变成一个有隐藏代价的动作,没人能算得清。
+  removeEnchants(inst, lib, (e) => e.uses !== undefined && e.uses <= 0, events, loc.player, true)
+  for (const defId of broken) {
+    events.push({ type: 'EquipmentBroken', player: loc.player, iid: inst.iid, defId })
+  }
+}
+
+// 手牌中成长:回合结束时,手牌里带 handGrowth 的牌各长一格。
+// 走附魔层(而不是直接改数值)—— 于是它打出去之后仍然带着这些增益,
+// 而沉默/回手那套既有的撤销路径照样管得住它。
+export function growHandCards(
+  state: GameState,
+  player: PlayerIdx,
+  lib: CardLibrary,
+  events: GameEvent[],
+): void {
+  for (const inst of state.players[player].hand) {
+    const g = lib[inst.defId]?.handGrowth
+    if (!g) continue
+    // events 传 null:GeneralBuffed 的飘字锚在场上单位的 DOM 上,手牌没有那个锚点。
+    // 手牌成长有自己的事件(HandCardGrew),挂在主帅上。
+    addEnchant(inst, lib, { attack: g.attack, health: g.health }, null, player)
+    events.push({
+      type: 'HandCardGrew',
+      player,
+      iid: inst.iid,
+      defId: inst.defId,
+      attack: g.attack,
+      health: g.health,
+    })
+  }
+}
 
 // 借将归还:回合结束时,把所有「现在的所属方 ≠ 原属方」的单位送回去。
 //

@@ -1,4 +1,5 @@
 import type { CardDef, CardType, Keyword, LocalizedText, Rarity, Sky } from '../engine/types'
+import { SIEGE_BONUS } from '../engine/types'
 
 // 六主义 + 中立的主题色。标题画面与对战画面共用。
 export const DOCTRINE_COLORS: Record<CardDef['doctrine'], string> = {
@@ -39,6 +40,8 @@ export const KEYWORD_BADGE: Record<Keyword, LocalizedText> = {
   divineShield: { zh: '壁', en: 'S' },
   stealth: { zh: '潜', en: 'H' },
   trample: { zh: '碾', en: 'T' },
+  disarm: { zh: '缴', en: 'X' },
+  siege: { zh: '攻', en: 'A' },
 }
 
 export const KEYWORD_NAME: Record<Keyword, LocalizedText> = {
@@ -52,6 +55,8 @@ export const KEYWORD_NAME: Record<Keyword, LocalizedText> = {
   divineShield: { zh: '铁壁', en: 'Divine Shield' },
   stealth: { zh: '潜行', en: 'Stealth' },
   trample: { zh: '碾压', en: 'Trample' },
+  disarm: { zh: '缴械', en: 'Disarm' },
+  siege: { zh: '攻城', en: 'Siege' },
 }
 
 // 关键词规则图例(卡牌详情页)
@@ -86,6 +91,14 @@ export const KEYWORD_RULE: Record<Keyword, LocalizedText> = {
   trample: {
     zh: '攻击武将时,超过其当前生命的伤害穿透到敌方主公;被铁壁挡下则无穿透',
     en: 'When attacking a general, damage beyond its current health carries through to the enemy hero. A Divine Shield that absorbs the hit stops it.',
+  },
+  disarm: {
+    zh: '不能发起攻击;身材、光环、亡语一概不受影响,被沉默会一并解除',
+    en: 'Cannot attack. Stats, auras and deathrattles are untouched; silencing removes it.',
+  },
+  siege: {
+    zh: `攻击主公时额外造成 ${SIEGE_BONUS} 点伤害(攻击武将时不加)`,
+    en: `Deals ${SIEGE_BONUS} extra damage when attacking a hero (not when attacking generals)`,
   },
 }
 

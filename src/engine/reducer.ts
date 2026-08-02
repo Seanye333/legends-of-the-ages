@@ -13,6 +13,7 @@ import {
   CHAIN_TRIGGER,
   HAND_LIMIT,
   MANA_CAP,
+  QUEST_LIMIT,
   SECRET_LIMIT,
   TURN_LIMIT,
 } from './types'
@@ -30,13 +31,16 @@ import {
   expireTemporaryEnchants,
   findGeneral,
   fireOnSpellCast,
+  growHandCards,
   makeBoardInstance,
+  noteQuest,
   other,
   processDeaths,
   requiresChosenTarget,
   returnBorrowed,
   runScript,
   skyOf,
+  tickDelayed,
 } from './resolve'
 import { hasKeyword, performAttack, performDuel } from './combat'
 import { fireEnemySecret, hasSecretNamed } from './secrets'
@@ -267,13 +271,20 @@ function playCard(
     if (hasSecretNamed(state, player, def.id)) return 'secret-duplicate'
   }
 
+  // ---- 军令状:同时只能领一道(见 QUEST_LIMIT 的说明)----
+  if (def.type === 'stratagem' && def.quest) {
+    if ((p.quests?.length ?? 0) >= QUEST_LIMIT) return 'quest-slot-taken'
+  }
+
   // ---- 打出前校验目标(校验失败不产生任何变化) ----
   // 优先级:抉择模式 > 连击 > 基础脚本
   const script =
     def.type === 'general'
       ? (chosenMode ?? (comboActive ? def.combo : def.battlecry))
       : def.type === 'stratagem'
-        ? (def.secret ? undefined : (chosenMode ?? (comboActive ? def.combo : def.spell)))
+        ? def.secret || def.quest
+          ? undefined
+          : (chosenMode ?? (comboActive ? def.combo : def.spell))
         : undefined
   const needsChosen = requiresChosenTarget(script)
   const pool = needsChosen ? chosenTargetPool(state, player, script) : []
@@ -304,7 +315,8 @@ function playCard(
     if (!target || target.kind !== 'general') return 'target-required'
     if (findGeneral(state, target.iid)?.player !== player) return 'invalid-target'
   } else {
-    if (!def.spell && !def.secret && !def.combo && !def.choose) return 'stratagem-without-spell'
+    if (!def.spell && !def.secret && !def.combo && !def.choose && !def.quest)
+      return 'stratagem-without-spell'
     if (needsChosen) {
       if (pool.length === 0) return 'no-legal-target'
       if (!target) return 'target-required'
@@ -374,6 +386,8 @@ function playCard(
     // 伏兵在战吼与单挑**之后**触发:入场的战吼是「打出的一部分」,
     // 先让它跑完再让对手的埋伏说话,顺序上更接近玩家的心理模型。
     fireEnemySecret(state, events, lib, player, 'enemySummon', inst.iid)
+    // 军令状「点将」计数:数的是**从手牌打出**的武将,召唤出来的衍生物不算
+    noteQuest(state, player, 'summonGenerals', events, lib)
   } else if (def.type === 'equipment') {
     // 装备:作为一条附魔挂上(因此可被沉默清除),随后入墓
     const loc = target?.kind === 'general' ? findGeneral(state, target.iid) : undefined
@@ -388,6 +402,10 @@ function playCard(
           keywords: def.keywords.length > 0 ? def.keywords.slice() : undefined,
           // 傳承装备:持有者阵亡时这条附魔会改挂给另一名友军(见 processDeaths)
           heirloom: def.heirloom ? def.id : undefined,
+          // 耐久:只有带 durability 的装备才记 uses,没有就是永久 ——
+          // 老卡池那 21 件一个字都不用改(见 CardDef.durability)
+          equip: def.id,
+          uses: def.durability,
         },
         events,
         loc.player,
@@ -398,6 +416,19 @@ function playCard(
     // 伏兵不结算、不入墓 —— 它现在住在伏兵区,翻开时才入墓
     p.secrets.push({ iid: inst.iid, defId: inst.defId })
     events.push({ type: 'SecretPlayed', player, iid: inst.iid, defId: inst.defId })
+  } else if (def.quest) {
+    // 军令状同样不当场结算:它住进军令区,达成目标时才发奖(见 resolve.noteQuest)。
+    // **不计入计谋链、也不触发 onSpellCast** —— 领一道军令不是「使了一条计」。
+    p.quests = p.quests ?? []
+    p.quests.push({
+      defId: def.id,
+      name: def.quest.name,
+      goal: def.quest.goal,
+      progress: 0,
+      reward: def.quest.reward,
+    })
+    events.push({ type: 'QuestTaken', player, defId: def.id, goal: def.quest.goal.count })
+    p.graveyard.push(inst.defId)
   } else {
     events.push({
       type: 'EffectTriggered',
@@ -436,6 +467,8 @@ function playCard(
     // 若这张锦囊触发了发现(pendingChoice 挂起),就先不触发 —— 这次施法还没走完,
     // 别在挂起态里再叠一层触发;等它罕见,牺牲这点边角换实现简单。
     if (!state.pendingChoice) fireOnSpellCast(state, events, lib, player)
+    // 军令状「用计」计数。连环计结算两次也只记一笔 —— 数的是打出的**张数**
+    noteQuest(state, player, 'playStratagems', events, lib)
     // 锦囊伏兵在**结算之后**触发:对手先看到锦囊的效果,再被反制
     fireEnemySecret(state, events, lib, player, 'enemyStratagem')
   }
@@ -502,6 +535,9 @@ function endTurn(
       kind: 'endOfTurn',
     })
   }
+  // 手牌中成长:放在临时增益到期**之前**,两件事互不相干(一个作用于场上、
+  // 一个作用于手牌),但顺序固定下来回放才稳。
+  growHandCards(state, player, lib, events)
   expireTemporaryEnchants(state, lib, events)
   // 借将归还。放在临时增益到期**之后**:借来的那位身上若还挂着「本回合 +2/+0」,
   // 该在他还站在我这边的时候消退,而不是带着我的增益回娘家。
@@ -613,6 +649,8 @@ function beginTurn(state: GameState, events: GameEvent[], lib: CardLibrary): voi
       kind: 'startOfTurn',
     })
   }
+  // 伏笔到期。在抽牌**之前** —— 「东风起」该先改变战场,再轮到你摸这一张牌。
+  tickDelayed(state, active, events, lib)
   drawCards(state, active, 1, events)
   processDeaths(state, events, lib)
   checkGameEnd(state, events)

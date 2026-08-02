@@ -143,6 +143,8 @@ export function inflateRedacted(rs: RedactedState, mySeat: PlayerIdx): GameState
     morale: rs.self.morale ?? 0,
     supply: rs.self.supply ?? 0,
     chain: rs.self.chain ?? 0,
+    quests: rs.self.quests,
+    delayed: rs.self.delayed,
   }
   const opponent: PlayerState = {
     heroId: rs.opponent.heroId,
@@ -173,6 +175,8 @@ export function inflateRedacted(rs: RedactedState, mySeat: PlayerIdx): GameState
     morale: rs.opponent.morale ?? 0,
     supply: rs.opponent.supply ?? 0,
     chain: rs.opponent.chain ?? 0,
+    quests: rs.opponent.quests,
+    delayed: rs.opponent.delayed,
   }
   // 待决选择:座位翻回本地帧。对手在发现时 options 是空的,
   // 补 count 个空串占位(和对手手牌用 dummy 实例、伏兵用空 defId 是同一套路)——

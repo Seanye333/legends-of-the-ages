@@ -7,6 +7,7 @@ import type {
   PlayerIdx,
   TargetRef,
 } from './types'
+import { SIEGE_BONUS } from './types'
 import { fireEnemySecret } from './secrets'
 import {
   breakStealth,
@@ -17,6 +18,7 @@ import {
   other,
   processDeaths,
   runScript,
+  wearEquipment,
   type GeneralLoc,
 } from './resolve'
 
@@ -85,6 +87,8 @@ export function maxAttacksOf(inst: CardInstance): number {
 // 本回合还能不能发起攻击(不考虑目标)
 export function canAttackNow(inst: CardInstance): boolean {
   if (inst.frozen) return false
+  // 缴械:身材、光环、亡语一概照旧,只是这把刀举不起来了
+  if (hasKeyword(inst, 'disarm')) return false
   if (inst.attack <= 0) return false
   if (inst.attacksUsed >= maxAttacksOf(inst)) return false
   // 上场当回合(exhausted):冲锋可攻任意,突袭仅武将,否则不能动
@@ -95,7 +99,7 @@ export function canAttackNow(inst: CardInstance): boolean {
 // 伏兵触发后的攻击者复检。**不看 attacksUsed** —— 这次攻击的次数在触发前就扣了,
 // 用 canAttackNow 会把每一次「触发了伏兵的攻击」都判成无效。
 function canAttackNow2(inst: CardInstance): boolean {
-  return !inst.frozen && inst.attack > 0
+  return !inst.frozen && !hasKeyword(inst, 'disarm') && inst.attack > 0
 }
 
 // 攻击者的合法目标(守护强制、突袭限制、潜行不可选)
@@ -162,16 +166,20 @@ export function performAttack(
   const attackerNow = loc.inst
 
   if (target.kind === 'hero') {
+    // 攻城:只在打**主公**时加伤(打武将不加 —— 攻城车是用来砸城墙的)。
+    // 吸血按实际打出的伤害回血,所以加成算进去。
+    const siege = hasKeyword(attackerNow, 'siege') ? SIEGE_BONUS : 0
+    const dealt = attackerNow.attack + siege
     events.push({
       type: 'AttackResolved',
       attacker: player,
       attackerIid,
       target,
-      damageToTarget: attackerNow.attack,
+      damageToTarget: dealt,
       damageToAttacker: 0,
     })
-    damageHero(state, target.player, attackerNow.attack, events)
-    if (hasKeyword(attackerNow, 'lifesteal')) healHero(state, player, attackerNow.attack, events)
+    damageHero(state, target.player, dealt, events)
+    if (hasKeyword(attackerNow, 'lifesteal')) healHero(state, player, dealt, events)
   } else {
     const defLoc = findGeneral(state, target.iid)
     if (!defLoc) return 'target-not-found'
@@ -199,6 +207,10 @@ export function performAttack(
     }
   }
   processDeaths(state, events, lib)
+  // 耐久:放在死亡结算**之后**、攻击后触发**之前**。
+  // 之后 —— 攻击者可能在互击里就死了,死人身上的刀不用再算磨损;
+  // 之前 —— 「攻击后」的脚本可能再给他装一把新刀,那把不该被这一次攻击扣掉。
+  wearEquipment(state, attackerIid, lib, events)
   fireOnAttack(state, events, lib, attackerIid)
   return null
 }

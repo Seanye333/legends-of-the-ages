@@ -57,6 +57,10 @@ function publicFields(p: PlayerState) {
     morale: p.morale,
     supply: p.supply,
     chain: p.chain,
+    // 军令状与伏笔都是**公开**的(见 PlayerState 上的说明):
+    // 对手看得见你在攒什么,才有「抢在他攒满之前打完」这个决策。
+    quests: p.quests,
+    delayed: p.delayed,
   }
 }
 

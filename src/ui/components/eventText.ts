@@ -51,6 +51,8 @@ const KIND_NAME = {
   onSpellCast: { zh: '施法', en: 'On Spellcast' },
   heroPower: { zh: '主公技', en: 'Hero Power' },
   combo: { zh: '连击', en: 'Combo' },
+  delayed: { zh: '伏笔', en: 'Delayed' },
+  quest: { zh: '军令', en: 'Quest' },
 } as const
 
 // 每种 GameEvent 一条战报,中英各出一份(英文用战报口吻的一般过去时)。
@@ -327,6 +329,26 @@ function line(ev: GameEvent, ctx: EventTextCtx, l: Lang): string {
       return zh
         ? `${n(ev.iid)}被变为${dn(ev.defId)}`
         : `${n(ev.iid)} was transformed into ${dn(ev.defId)}`
+    case 'EquipmentBroken':
+      return zh ? `${dn(ev.defId)}损毁` : `${dn(ev.defId)} broke`
+    case 'HandCardGrew':
+      return zh
+        ? `手中的${dn(ev.defId)}长成 +${ev.attack}/+${ev.health}`
+        : `${dn(ev.defId)} grew +${ev.attack}/+${ev.health} in hand`
+    case 'QuestTaken':
+      return zh
+        ? `${side(ev.player)}领受军令${dn(ev.defId)}(0/${ev.goal})`
+        : `${side(ev.player)} took the quest ${dn(ev.defId)} (0/${ev.goal})`
+    case 'QuestProgressed':
+      return zh
+        ? `军令进度 ${ev.progress}/${ev.goal}`
+        : `Quest progress ${ev.progress}/${ev.goal}`
+    case 'QuestCompleted':
+      return zh ? `军令达成:${dn(ev.defId)}!` : `Quest complete — ${dn(ev.defId)}!`
+    case 'DelaySet':
+      return zh
+        ? `${dn(ev.defId)}埋下伏笔,${ev.turns} 回合后应验`
+        : `${dn(ev.defId)} set a fuse — ${ev.turns} turn${ev.turns === 1 ? '' : 's'} to go`
     case 'CardShuffledIn':
       return zh
         ? `${ev.count} 张${dn(ev.defId)}被洗入${poss(ev.player)}牌库`

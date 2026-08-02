@@ -518,3 +518,312 @@ describe('借将(borrow)', () => {
     expect(again.ok).toBe(false)
   })
 })
+
+// ---------------------------------------------------------------- 伏笔
+
+describe('伏笔(delay)', () => {
+  const lib = libWith([
+    base({
+      id: 'y-fuse',
+      type: 'stratagem',
+      cost: 0,
+      attack: undefined,
+      health: undefined,
+      spell: {
+        ops: [
+          {
+            op: 'delay',
+            turns: 2,
+            // 用护甲而不是打脸:残局的牌库是空的,每个回合双方都在吃疲劳伤害,
+            // 拿主公血量当断言会被疲劳污染
+            script: { ops: [{ op: 'gainArmor', amount: 8 }] },
+          },
+        ],
+      },
+    }),
+  ])
+
+  it('埋下时不结算,过 N 个我方回合才应验', () => {
+    // 双方各留几张牌库:否则每个回合都在吃疲劳伤害,而疲劳会啃掉护甲
+    const deck = ['y-fuse', 'y-fuse', 'y-fuse', 'y-fuse']
+    const s = game(lib, { hand: ['y-fuse'], deck }, { deck })
+    let st = play(s, lib).state
+    expect(st.players[0].armor).toBe(0)
+    expect(st.players[0].delayed).toHaveLength(1)
+
+    // 我方结束 → 对方回合(不该扣格)→ 对方结束 → 我方第 1 个回合(扣到 1)
+    const step = () => {
+      const r = applyCommand(st, st.activePlayer, { type: 'EndTurn' }, lib)
+      expect(r.ok).toBe(true)
+      if (!r.ok) throw new Error(r.error)
+      st = r.state
+    }
+    step()
+    expect(st.players[0].delayed?.[0].turnsLeft).toBe(2)
+    step()
+    expect(st.players[0].delayed?.[0].turnsLeft).toBe(1)
+    expect(st.players[0].armor).toBe(0)
+    step()
+    step()
+    expect(st.players[0].delayed).toHaveLength(0)
+    expect(st.players[0].armor).toBe(8)
+  })
+})
+
+// ---------------------------------------------------------------- 军令状
+
+describe('军令状(quest)', () => {
+  const quest = (over: Partial<CardDef>, goal: { kind: 'playStratagems' | 'summonGenerals' | 'killGenerals'; count: number }) =>
+    base({
+      type: 'stratagem',
+      cost: 1,
+      attack: undefined,
+      health: undefined,
+      quest: {
+        id: 'q',
+        name: { zh: '军令', en: 'Quest' },
+        goal,
+        reward: { ops: [{ op: 'damage', amount: 10, target: 'enemyHero' }] },
+      },
+      ...over,
+    })
+
+  const lib = libWith([
+    base({ id: 'q-any', attack: 1, health: 1 }),
+    base({ id: 'q-token', attack: 1, health: 1, token: true }),
+    base({
+      id: 'q-shot',
+      type: 'stratagem',
+      cost: 0,
+      attack: undefined,
+      health: undefined,
+      spell: { ops: [{ op: 'damage', amount: 1, target: 'weakestEnemyGeneral' }] },
+    }),
+    quest({ id: 'q-cast' }, { kind: 'playStratagems', count: 2 }),
+    quest({ id: 'q-muster' }, { kind: 'summonGenerals', count: 2 }),
+    quest({ id: 'q-slay' }, { kind: 'killGenerals', count: 2 }),
+  ])
+
+  it('打出后进军令区、不当场结算,达成时才发奖', () => {
+    const s = game(lib, { hand: ['q-cast', 'q-shot', 'q-shot'], board: [] }, { board: [{ defId: 'q-any' }, { defId: 'q-any' }] })
+    let st = play(s, lib).state
+    expect(st.players[1].heroHp).toBe(30)
+    expect(st.players[0].quests).toHaveLength(1)
+    // 领军令那一张本身不算「用计」
+    expect(st.players[0].quests?.[0].progress).toBe(0)
+
+    st = play(st, lib).state
+    expect(st.players[0].quests?.[0].progress).toBe(1)
+    expect(st.players[1].heroHp).toBe(30)
+
+    st = play(st, lib).state
+    expect(st.players[0].quests).toHaveLength(0)
+    expect(st.players[1].heroHp).toBe(20)
+  })
+
+  it('同时只能领一道', () => {
+    const s = game(lib, { hand: ['q-cast', 'q-muster'] })
+    const st = play(s, lib).state
+    const r = applyCommand(st, 0, { type: 'PlayCard', iid: st.players[0].hand[0].iid }, lib)
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.error).toBe('quest-slot-taken')
+  })
+
+  it('点将数的是从手牌打出的武将,召唤出来的不算', () => {
+    const summoner = base({
+      id: 'q-caller',
+      cost: 2,
+      battlecry: { ops: [{ op: 'summon', defId: 'q-token', count: 2 }] },
+    })
+    const lib2 = libWith([...Object.values(lib).filter((c) => c.id.startsWith('q-')), summoner])
+    const s = game(lib2, { hand: ['q-muster', 'q-caller'] })
+    let st = play(s, lib2).state
+    st = play(st, lib2).state
+    // 打出了 1 个武将 + 召唤了 2 个衍生物 → 只记 1
+    expect(st.players[0].quests?.[0].progress).toBe(1)
+    expect(st.players[1].heroHp).toBe(30)
+  })
+
+  it('斩将数的是敌方阵亡,衍生物不算', () => {
+    const s = game(
+      lib,
+      { hand: ['q-slay'], board: [{ defId: 'q-any' }, { defId: 'q-any' }] },
+      { board: [{ defId: 'q-token' }, { defId: 'q-any' }] },
+    )
+    let st = play(s, lib).state
+    const kill = (attackerIdx: number, targetIdx: number) => {
+      const r = applyCommand(st, 0, {
+        type: 'Attack',
+        attackerIid: st.players[0].board[attackerIdx].iid,
+        target: { kind: 'general', iid: st.players[1].board[targetIdx].iid },
+      }, lib)
+      expect(r.ok, r.ok ? '' : r.error).toBe(true)
+      if (!r.ok) throw new Error(r.error)
+      st = r.state
+    }
+    kill(0, 0) // 斩掉衍生物 —— 不记
+    expect(st.players[0].quests?.[0].progress).toBe(0)
+    kill(0, 0) // 斩掉真武将 —— 记 1
+    expect(st.players[0].quests?.[0].progress).toBe(1)
+  })
+})
+
+// ---------------------------------------------------------------- 耐久 / 手牌成长 / 新关键词
+
+describe('装备耐久', () => {
+  const lib = libWith([
+    base({ id: 'e-wielder', attack: 1, health: 9 }),
+    base({ id: 'e-dummy', attack: 0, health: 9 }),
+    base({
+      id: 'e-blade',
+      type: 'equipment',
+      cost: 1,
+      attack: 3,
+      health: 0,
+      durability: 2,
+    }),
+  ])
+
+  it('每次发起攻击扣一格,归零即损毁并收回加成', () => {
+    const s = game(
+      lib,
+      { hand: ['e-blade'], board: [{ defId: 'e-wielder' }] },
+      { board: [{ defId: 'e-dummy' }] },
+    )
+    const meIid = s.players[0].board[0].iid
+    let st = applyCommand(s, 0, {
+      type: 'PlayCard',
+      iid: s.players[0].hand[0].iid,
+      target: { kind: 'general', iid: meIid },
+    }, lib).state as GameState
+    expect(st.players[0].board[0].attack).toBe(4)
+
+    const swing = () => {
+      const r = applyCommand(st, 0, {
+        type: 'Attack',
+        attackerIid: meIid,
+        target: { kind: 'general', iid: st.players[1].board[0].iid },
+      }, lib)
+      expect(r.ok, r.ok ? '' : r.error).toBe(true)
+      if (!r.ok) throw new Error(r.error)
+      st = r.state
+      return r.events
+    }
+    swing()
+    expect(st.players[0].board[0].attack).toBe(4)
+    // 第二刀之后耐久耗尽
+    st.players[0].board[0].attacksUsed = 0
+    const events = swing()
+    expect(st.players[0].board[0].attack).toBe(1)
+    expect(events.some((e) => e.type === 'EquipmentBroken' && e.defId === 'e-blade')).toBe(true)
+  })
+
+  it('不带 durability 的装备永不损毁(老卡池一个字不用改)', () => {
+    const lib2 = libWith([
+      ...Object.values(lib).filter((c) => c.id.startsWith('e-')),
+      base({ id: 'e-eternal', type: 'equipment', cost: 1, attack: 2, health: 0 }),
+    ])
+    const s = game(
+      lib2,
+      { hand: ['e-eternal'], board: [{ defId: 'e-wielder' }] },
+      { board: [{ defId: 'e-dummy' }] },
+    )
+    const meIid = s.players[0].board[0].iid
+    let st = applyCommand(s, 0, {
+      type: 'PlayCard',
+      iid: s.players[0].hand[0].iid,
+      target: { kind: 'general', iid: meIid },
+    }, lib2).state as GameState
+    for (let i = 0; i < 3; i++) {
+      st.players[0].board[0].attacksUsed = 0
+      const r = applyCommand(st, 0, {
+        type: 'Attack',
+        attackerIid: meIid,
+        target: { kind: 'general', iid: st.players[1].board[0].iid },
+      }, lib2)
+      if (!r.ok) throw new Error(r.error)
+      st = r.state
+    }
+    expect(st.players[0].board[0].attack).toBe(3)
+  })
+})
+
+describe('手牌中成长', () => {
+  const lib = libWith([base({ id: 'g-cub', attack: 1, health: 1, handGrowth: { attack: 1, health: 1 } })])
+
+  it('每逢我方回合结束长一格,打出去之后增益还在', () => {
+    const s = game(lib, { hand: ['g-cub'] })
+    const end = applyCommand(s, 0, { type: 'EndTurn' }, lib)
+    expect(end.ok).toBe(true)
+    if (!end.ok) return
+    const st = end.state
+    expect(st.players[0].hand[0].attack).toBe(2)
+    expect(end.events.some((e) => e.type === 'HandCardGrew')).toBe(true)
+    // 对手的回合结束不给我方手牌长
+    const end2 = applyCommand(st, 1, { type: 'EndTurn' }, lib)
+    if (!end2.ok) return
+    expect(end2.state.players[0].hand[0].attack).toBe(2)
+  })
+})
+
+describe('缴械 / 攻城', () => {
+  it('缴械:不能攻击,但身材与光环照旧', () => {
+    const lib = libWith([
+      base({ id: 's-a', attack: 5, health: 5 }),
+      base({
+        id: 's-net',
+        type: 'stratagem',
+        cost: 0,
+        attack: undefined,
+        health: undefined,
+        spell: { ops: [{ op: 'grantKeyword', keyword: 'disarm', target: 'chosenEnemyGeneral' }] },
+      }),
+    ])
+    const s = game(lib, { hand: ['s-net'] }, { board: [{ defId: 's-a' }] })
+    const iid = s.players[1].board[0].iid
+    const r = applyCommand(s, 0, {
+      type: 'PlayCard',
+      iid: s.players[0].hand[0].iid,
+      target: { kind: 'general', iid },
+    }, lib)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    const st = r.state
+    expect(st.players[1].board[0].attack).toBe(5) // 身材没动
+    st.players[1].board[0].exhausted = false
+    const atk = applyCommand(st, 1, {
+      type: 'Attack',
+      attackerIid: iid,
+      target: { kind: 'hero', player: 0 },
+    }, lib)
+    expect(atk.ok).toBe(false)
+  })
+
+  it('攻城:只在打主公时加伤', () => {
+    const lib = libWith([
+      base({ id: 'sg-ram', attack: 3, health: 5, keywords: ['siege'] }),
+      base({ id: 'sg-wall', attack: 0, health: 9 }),
+    ])
+    const s = game(lib, { board: [{ defId: 'sg-ram' }] }, { board: [{ defId: 'sg-wall' }] })
+    s.players[0].board[0].exhausted = false
+    const hit = applyCommand(s, 0, {
+      type: 'Attack',
+      attackerIid: s.players[0].board[0].iid,
+      target: { kind: 'general', iid: s.players[1].board[0].iid },
+    }, lib)
+    expect(hit.ok).toBe(true)
+    if (!hit.ok) return
+    expect(hit.state.players[1].board[0].damage).toBe(3) // 打武将不加
+
+    const s2 = game(lib, { board: [{ defId: 'sg-ram' }] })
+    s2.players[0].board[0].exhausted = false
+    const face = applyCommand(s2, 0, {
+      type: 'Attack',
+      attackerIid: s2.players[0].board[0].iid,
+      target: { kind: 'hero', player: 1 },
+    }, lib)
+    expect(face.ok).toBe(true)
+    if (!face.ok) return
+    expect(face.state.players[1].heroHp).toBe(30 - 3 - 2)
+  })
+})

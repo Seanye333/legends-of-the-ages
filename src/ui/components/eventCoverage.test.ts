@@ -118,6 +118,12 @@ const SAMPLES: GameEvent[] = [
   { type: 'SkyChanged', sky: 'night', turn: 7 },
   // ---- 第二十二卡包 ----
   { type: 'CardShuffledIn', player: 1, defId: 'guan-yu', count: 2 },
+  { type: 'EquipmentBroken', player: 0, iid: 2, defId: 'eq-teng-jia' },
+  { type: 'HandCardGrew', player: 0, iid: 9, defId: 'guan-yu', attack: 1, health: 1 },
+  { type: 'QuestTaken', player: 0, defId: 'quest-test', goal: 3 },
+  { type: 'QuestProgressed', player: 0, defId: 'quest-test', progress: 1, goal: 3 },
+  { type: 'QuestCompleted', player: 0, defId: 'quest-test' },
+  { type: 'DelaySet', player: 0, defId: 'strat-huo-ji', turns: 2 },
   { type: 'GameEnded', winner: 0 },
 ]
 
@@ -155,6 +161,8 @@ describe('架构铁律 7:每个 GameEvent 都要能在 UI 里落地', () => {
       'onAttack',
       'onSpellCast',
       'heroPower',
+      'delayed',
+      'quest',
     ] as const
     for (const kind of kinds) {
       const line = formatEvent(
@@ -263,6 +271,10 @@ describe('架构铁律 7 的另一半:该看得见的事件要真的看得见', 
     { type: 'MoraleChanged', player: 0, morale: 2, delta: 1 },
     { type: 'ChainTriggered', player: 0, defId: 'strat-huo-ji' },
     { type: 'CardShuffledIn', player: 1, defId: 'guan-yu', count: 2 },
+    { type: 'EquipmentBroken', player: 0, iid: 2, defId: 'eq-teng-jia' },
+    { type: 'QuestTaken', player: 0, defId: 'quest-test', goal: 3 },
+    { type: 'QuestCompleted', player: 0, defId: 'quest-test' },
+    { type: 'DelaySet', player: 0, defId: 'strat-huo-ji', turns: 2 },
   ]
 
   it('每条都会产出飘字', () => {
@@ -290,6 +302,10 @@ describe('架构铁律 7 的另一半:该看得见的事件要真的看得见', 
       'SupplyChanged',
       'ChainTriggered',
       'CardShuffledIn',
+      'EquipmentBroken',
+      'QuestTaken',
+      'QuestCompleted',
+      'DelaySet',
       'GeneralSummoned',
       'TurnEnded',
     ]
