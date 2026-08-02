@@ -95,6 +95,9 @@ export const LESSONS: Lesson[] = [
           board: [{ defId: 'wang-xiu' }, { defId: 'sun-qian' }, { defId: 'yuan-shang' }],
           hand: ['strat-troop-volley'],
         },
+        // 这三名弓弩的攻击共 6 点,所以对面 6 血。
+        // 教具卡的身材在 overrides/pack19.ts 的 LESSON_STAT_PINS 里**钉死** ——
+        // 它们是生成卡,一次播种改动就会把身材换掉,这一课当场无解(闸门抓到过)。
         { heroHp: 6, mana: 0, board: [{ defId: 'token-danyang-bing' }], hand: [] },
       ],
     },

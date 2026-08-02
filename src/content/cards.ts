@@ -31,7 +31,7 @@ import { RIVAL_OVERRIDES } from './overrides/rivals'
 import { TITLE_OVERRIDES } from './overrides/titles'
 import { deriveTroop } from './troops'
 import { PACK18_CARDS } from './overrides/pack18'
-import { PACK19_CARDS } from './overrides/pack19'
+import { PACK19_CARDS, PACK19_TROOP_PINS, LESSON_STAT_PINS } from './overrides/pack19'
 import { PACK20_CARDS } from './overrides/pack20'
 import { PACK21_CARDS } from './overrides/pack21'
 import { PACK22_CARDS } from './overrides/pack22'
@@ -226,10 +226,18 @@ function withFieldText(card: CardDef): CardDef {
 
 // 兵种在**最后**派生:它读的是最终卡面(关键词与效果都合并完了)。
 // 放在前面的话,pack 覆盖给的冲锋/守护就还没进来,推出来的兵种和卡面对不上。
-export const CARDS: CardDef[] = MERGED_CARDS.map((c) => {
+export const CARDS: CardDef[] = MERGED_CARDS.map((raw) => {
+  // 讲堂教具的身材钉死(见 LESSON_STAT_PINS)。**放在最前面** ——
+  // 兵种是从攻血推导的,钉身材必须发生在推导之前,否则钉了也白钉。
+  const pin = LESSON_STAT_PINS[raw.id]
+  // `choose: undefined` 在覆盖表里是**有意义的**:抉择与战吼互斥,
+  // 播种给的抉择必须被显式清掉,浅合并的 spread 做不到这件事。
+  const c = pin ? ({ ...raw, ...pin } as CardDef) : raw
+  if (pin && pin.choose === undefined) delete (c as { choose?: unknown }).choose
   const withText = withFieldText(withBondRivalText(c, NAME_BY_ID))
   // 内容层写死的兵种优先(衍生物按名字定,比按数值猜准)
-  const troop = withText.troop ?? deriveTroop(withText)
+  // 钉死的兵种优先于推导(见 PACK19_TROOP_PINS 的说明)
+  const troop = withText.troop ?? PACK19_TROOP_PINS[withText.id] ?? deriveTroop(withText)
   return troop ? { ...withText, troop } : withText
 })
 

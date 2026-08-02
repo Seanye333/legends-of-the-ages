@@ -49,6 +49,7 @@ import {
   ERA_OF,
   KEYWORD_POINTS,
   hash01,
+  deedsOf,
   seedKeyword,
   seedMechanics,
   type Seeded,
@@ -300,10 +301,31 @@ function generateCard(
   const budget = statBudget(cost)
   // 攻血配比 0.3~0.7:谋士偏血(靠效果吃饭,身板要活得下来),猛将偏攻。
   // 用连续比例而不是分档,免得同费卡的身材只有两三种。
+  // 攻血配比。此前只看 武力−统率,于是低费段几乎只有两种劈法
+  //(1 费预算 3 点 → 只能 1/2 或 2/1),28 名一费谋士长成同一张牌。
+  //
+  // 现在把**五维都拉进来**:文治(政+魅)高的人往血偏(他们靠活着做事),
+  // 智力高的往血偏一点点(谋士不该站在前面挨刀)。总预算一个字不动 ——
+  // 这条改动不碰任何平衡闸门,只是把同一份预算劈得更像那个人。
+  const civil = (s.politics + s.charisma) / 2
+  // **+0.056 是重新居中,不是调强度。**
+  //
+  // 新加的两项(武 vs 文治、智力)在全池上的均值不为零 —— 历史人物的政治与
+  // 魅力普遍高于武力,智力均值也高于 60,于是整条公式系统性地往血偏:
+  // 实测平均攻击 3.69 → 3.45(−6.5%),血 3.83 → 4.03。
+  // 而**攻击才是贪心 AI 结束比赛的东西**,关底 Boss 的牌又是从全池切的 ——
+  // 郑成功的玩家胜率因此从 18% 飙到 60%,tune-campaign 每一档都调不回来。
+  //
+  // 加回这 0.033 让**均值回到原位、分散度保留**:同一份预算劈得更像那个人
+  // (麋竺政 85 该比劉禪政 45 厚),但全池的攻血总账一分不差。
   const aggression = clamp2(
-    0.3,
-    0.7,
-    0.5 + (s.war - s.leadership) / 200 + (archetype === 'warrior' ? 0.06 : -0.06),
+    0.28,
+    0.72,
+    0.556 +
+      (s.war - s.leadership) / 200 +
+      (s.war - civil) / 320 -
+      (s.intelligence - 60) / 700 +
+      (archetype === 'warrior' ? 0.06 : -0.06),
   )
   const baseAttack = legacy
     ? legacyAttack
@@ -348,11 +370,17 @@ function generateCard(
   //    手写的就该完全手写,这是铁律 3 的直接推论。
   const handAuthored = PRECON_CARD_IDS.has(officer.id) || SIGNATURE_OVERRIDES[officer.id] !== undefined
   const era = ERA_OF[dynasty]
-  const kw = handAuthored ? null : seedKeyword(officer.id, s, archetype, rarity, era, dynasty, cost)
+  // 事迹标签:从**真实生平原文**抽出来的、这个人身上确实发生过的事。
+  // 它会去抬对应机制的权重(见 seed-mechanics 的 DEED_AFFINITY)——
+  // 播种因此从「加权随机」变成「有出处的确定性」。
+  const deeds = deedsOf(BIOGRAPHIES[officer.id]?.zh)
+  const kw = handAuthored
+    ? null
+    : seedKeyword(officer.id, s, archetype, rarity, era, dynasty, cost, deeds)
   const empty: Seeded = { keywords: [], points: 0, textZh: [], textEn: [], shape: null }
   const seeded = handAuthored
     ? empty
-    : seedMechanics(officer.id, s, archetype, rarity, kw, era, dynasty, cost, budget)
+    : seedMechanics(officer.id, s, archetype, rarity, kw, era, dynasty, cost, budget, deeds)
   // 签名卡不播种,但**覆盖里声明的关键词照样要付账** —— 否则它白拿一个关键词还留着满额身材。
   // (233 张里有 16 张没在覆盖里钉死攻血,吃的是这里算出来的身材;
   //  廖化就是其中之一,不收这笔钱它会从 3/3 变成 4/3,凭空强一档。)

@@ -129,6 +129,9 @@ interface Ctx {
   budget: number
   mag: number
   kw: string | null
+  // 事迹标签(见 DEED_WORDS)。下面有一整批**只由事迹开门**的候选 ——
+  // 它们不看五维,因为那批人五维本来就低,看五维他们永远够不着任何候选。
+  deeds: string[]
 }
 
 interface Cand {
@@ -219,13 +222,24 @@ const KEYWORD_POOL: KwCand[] = [
   { kw: 'trample', weight: 4, when: (c) => c.s.war >= 82 && c.s.leadership >= 78, eras: ['qin-han', 'song-yuan'] },
 ]
 
-export function seedKeyword(id: string, s: Stats, archetype: string, rarity: Rarity, era: Era, dynasty: DynastyTag, cost = 4): string | null {
-  // 约 44% 的卡带关键词(此前约三分之一)
+export function seedKeyword(id: string, s: Stats, archetype: string, rarity: Rarity, era: Era, dynasty: DynastyTag, cost = 4, deeds: string[] = []): string | null {
+  // 约 44% 的卡带关键词(此前约三分之一)。
+  //
+  // 【这道闸门刻意**不因事迹放宽**】试过放宽到 0.62,冒险模式当场塌了:
+  // 带关键词/效果的卡多了 5 个百分点,平均身材从 7.53 掉到 7.29,
+  // 而**关底 Boss 的牌是从全池切的、由贪心 AI 驾驶** —— 对它来说身材远重于效果
+  // (实测:「6/6 白板」换成「4/6 守护+光环」,预组总胜率反而从 38% 掉到 36%)。
+  // 于是郑成功从 18% 变成 67%,连 tune-campaign 都调不回来(每档都 80%+)。
+  //
+  // 结论:事迹只改**选哪一个**,不改**有多少个**。构成不变,难度曲线才不动。
   if (hash01(id, 'kwgate') >= 0.44) return null
   const ctx: KwCtx = { id, s, archetype: archetype as Ctx['archetype'], rarity, era, dynasty, cost }
   const live = KEYWORD_POOL.filter((k) => k.when(ctx))
   if (live.length === 0) return null
-  const w = live.map((k) => k.weight * (k.eras?.includes(era) ? ERA_BOOST : 1))
+  const want = deedWants(deeds)
+  const w = live.map(
+    (k) => k.weight * (k.eras?.includes(era) ? ERA_BOOST : 1) * (want.kw.has(k.kw) ? DEED_BOOST : 1),
+  )
   const total = w.reduce((a, b) => a + b, 0)
   let r = hash01(id, 'kwpick') * total
   for (let i = 0; i < live.length; i++) {
@@ -235,12 +249,521 @@ export function seedKeyword(id: string, s: Stats, archetype: string, rarity: Rar
   return live[live.length - 1].kw
 }
 
+// ---------- 事迹标签(第一次让播种「有出处」) ----------
+//
+// 【为什么要有它】
+// 播种此前完全由五维 + 哈希决定:同一个费用档、同一类属性画像 → 同一套效果。
+// 实测 2,258 名武将里 55.6% 有「机制双胞胎」(除名字与立绘外完全一样),
+// 最大的一组 28 张全是 1 费 1/2 白板谋士 —— 麋竺、劉禪、華歆在牌桌上是同一张牌。
+// 而这三个人的生平天差地别:一个散尽家财、一个乐不思蜀、一个割席分坐。
+//
+// 【做法】
+// 从**真实生平原文**里认词,认到的词是这个人身上真的发生过的事;
+// 事迹标签再去抬对应机制的权重。于是播种从「加权随机」变成
+// **「有出处的确定性」** —— 同样是 1 费谋士,散财的和降敌的不再是同一张牌。
+//
+// 【为什么是抬权重而不是直接指定】
+// 直接指定会让一个标签下的几百人**又变成同一张牌**(把重复从属性搬到标签上)。
+// 抬权重保留了哈希的分散性:同为「守城」的人仍会拿到不同的守御类效果。
+// 抬多少是个平衡问题 —— DEED_BOOST 取 6,实测足够把命中率从「随缘」拉到「大概率」,
+// 又不至于让同标签的人塌成一张牌。
+export const DEED_BOOST = 6
+
+// 词 → 标签。词都取自生平原文里真实出现的说法(繁体,源头就是繁体)。
+// 刻意用**具体的事**而不是抽象品格:「射」「焚」「渡江」是能落到机制上的,
+// 「忠勇」「賢明」落不到 —— 后者是评价,不是事迹。
+const DEED_WORDS: [RegExp, string][] = [
+  [/射|箭|弓|百步穿楊/, 'archery'],
+  [/水戰|舟|船|渡江|水軍|樓船/, 'navy'],
+  [/守|鎮|固守|拒|城不下|堅壁/, 'defend'],
+  [/騎|馬|突騎|輕騎|奔襲/, 'cavalry'],
+  [/火|焚|燒/, 'fire'],
+  [/毒|鴆/, 'poison'],
+  [/降|叛|歸|反|倒戈/, 'defect'],
+  [/家財|散財|巨富|資之|賑/, 'wealth'],
+  [/醫|療|救|活人/, 'heal'],
+  [/計|謀|策|智|離間|反間/, 'scheme'],
+  [/諫|直言|抗表|犯顏/, 'remonstrate'],
+  [/酒|醉/, 'wine'],
+  [/斬|首級|殺之|梟/, 'slay'],
+  [/萬人敵|勇冠|力能|扛鼎|虎/, 'might'],
+  [/書|經|學|文章|著/, 'letters'],
+  [/使|說|辯|遊說/, 'envoy'],
+  [/屯田|糧|倉|轉運/, 'supply'],
+  [/早卒|病卒|遇害|死於|自殺|伏誅/, 'doomed'],
+  [/托孤|輔政|顧命/, 'regent'],
+  [/隱|不仕|辭/, 'recluse'],
+]
+
+// 标签 → 它想要的关键词与效果形状。一个标签可以点名多个,权重一起抬。
+const DEED_AFFINITY: Record<string, { kw?: string[]; shapes?: string[] }> = {
+  archery: { kw: ['rush'], shapes: ['lo-arrow', 'bc-snipe', 'bc-volley', 'bc-strike'] },
+  navy: { shapes: ['bc-freeze', 'bc-freeze-all', 'lo-skirmish', 'bc-return'] },
+  defend: { kw: ['guard'], shapes: ['lo-palisade', 'bc-wall', 'bc-armor', 'bc-grant-guard', 'od-brace'] },
+  cavalry: { kw: ['charge', 'rush'], shapes: ['bc-face', 'oa-press', 'bc-grant-charge'] },
+  fire: { shapes: ['bc-scorch', 'bc-volley', 'dr-blast', 'lo-arrow'] },
+  poison: { kw: ['poison'], shapes: ['bc-snipe'] },
+  defect: { shapes: ['bc-seize', 'bc-steal', 'bc-silence', 'bc-return'] },
+  wealth: { shapes: ['bc-discard', 'bc-draw2', 'bc-warcry', 'lo-hearten', 'bc-heal-general'] },
+  heal: { kw: ['lifesteal'], shapes: ['bc-heal-general', 'bc-heal-hero', 'sot-heal', 'lo-mend', 'od-rally'] },
+  scheme: { shapes: ['bc-discover-strat', 'bc-tutor-strat', 'os-scholar', 'spell-damage', 'combo-ambush'] },
+  remonstrate: { shapes: ['bc-silence', 'lo-ruse', 'choose-scholar'] },
+  wine: { shapes: ['overload-raid', 'bc-self-temp', 'lo-overrun'] },
+  slay: { kw: ['duel', 'trample'], shapes: ['bc-behead', 'bc-strike', 'oa-momentum'] },
+  might: { kw: ['trample', 'charge'], shapes: ['bc-warcry-big', 'enrage', 'lo-overrun', 'bc-self-temp'] },
+  letters: { shapes: ['bc-draw', 'bc-draw2', 'lo-scribe', 'os-scholar', 'spell-damage'] },
+  envoy: { shapes: ['bc-steal', 'bc-discover-general', 'bc-tutor-general', 'lo-requisition'] },
+  supply: { shapes: ['lo-levy', 'bc-recruit', 'lo-requisition', 'eot-armor', 'bc-summon-pair'] },
+  doomed: { shapes: ['dr-strike', 'dr-summon', 'dr-draw', 'dr-legacy', 'dr-avenge', 'dr-armor'] },
+  regent: { kw: ['guard'], shapes: ['aura-both', 'aura-hp', 'lo-hearten', 'bc-kin'] },
+  recluse: { kw: ['stealth'], shapes: ['lo-veil', 'bc-discover-costly', 'choose-scholar'] },
+}
+
+// 从生平原文抽标签。**纯函数**(同一段文字永远给同一批标签),
+// 所以产物依旧逐字节可复现 —— 这是生成层的铁律。
+export function deedsOf(bioZh: string | undefined): string[] {
+  if (!bioZh) return []
+  const out: string[] = []
+  for (const [re, tag] of DEED_WORDS) if (re.test(bioZh)) out.push(tag)
+  return out
+}
+
+// 这批标签想要的关键词/形状集合
+function deedWants(deeds: string[]): { kw: Set<string>; shapes: Set<string> } {
+  const kw = new Set<string>()
+  const shapes = new Set<string>()
+  for (const d of deeds) {
+    const a = DEED_AFFINITY[d]
+    if (!a) continue
+    for (const k of a.kw ?? []) kw.add(k)
+    for (const sp of a.shapes ?? []) shapes.add(sp)
+  }
+  return { kw, shapes }
+}
+
 // ---------- 效果候选池 ----------
 //
 // 权重是相对的,不是概率。同一张卡通常有 10-25 个候选命中条件,
 // 权重决定它们之间的份额。定价(points)必须诚实 —— 它会从身材里扣。
 
 const POOL: Cand[] = [
+  // ══════ 事迹中效果(1.8–2.6 点,3-6 费段)══════
+  //
+  // 低费段的重复是**定价的必然**(1 费只有 3 点身材预算,买不起第二样东西),
+  // 但 3-4 费段有 7-9 点预算却同样重复(实测 60.3% 有双胞胎)—— 那是候选不够,
+  // 不是钱不够。这一批把事迹铺到中费段:同样是「守城」的四费将,
+  // 有的筑墙、有的死守、有的以命换城。
+  {
+    key: 'deed-mid-defend',
+    weight: 1.3,
+    points: 2.2,
+    when: (c) => c.deeds.includes('defend') && c.cost >= 3 && c.cost <= 7,
+    emit: (o) => {
+      o.battlecry = { ops: [{ op: 'grantKeyword', keyword: 'guard', target: 'allFriendlyOthers' }] }
+      o.points += 2.2
+      t(o, '戰吼:其餘友方武將獲得【守護】。', 'Battlecry: Your other generals gain [Guard].')
+    },
+  },
+  {
+    key: 'deed-mid-slay',
+    weight: 1.3,
+    points: 2.4,
+    when: (c) => c.deeds.includes('slay') && c.cost >= 3 && c.cost <= 7,
+    emit: (o) => {
+      o.battlecry = { ops: [{ op: 'damage', amount: 4, target: 'strongestEnemyGeneral' }] }
+      o.points += 2.4
+      t(o, '戰吼:對敵方攻擊最高的武將造成 4 點傷害。', 'Battlecry: Deal 4 damage to the enemy general with the highest attack.')
+    },
+  },
+  {
+    key: 'deed-mid-fire',
+    weight: 1.3,
+    points: 2.5,
+    when: (c) => c.deeds.includes('fire') && c.cost >= 3 && c.cost <= 7,
+    emit: (o) => {
+      o.battlecry = {
+        ops: [{ op: 'delay', turns: 1, script: { ops: [{ op: 'aoeDamage', amount: 3 }] } }],
+      }
+      o.points += 2.5
+      t(o, '戰吼:伏筆 —— 1 個我方回合後,對敵方全場造成 3 點傷害。', 'Battlecry: Fuse — in 1 of your turns, deal 3 damage to all enemy generals.')
+    },
+  },
+  {
+    key: 'deed-mid-navy',
+    weight: 1.3,
+    points: 2.2,
+    when: (c) => c.deeds.includes('navy') && c.cost >= 3 && c.cost <= 7,
+    emit: (o) => {
+      o.battlecry = { ops: [{ op: 'freeze', target: 'allEnemyGenerals' }] }
+      o.points += 2.2
+      t(o, '戰吼:凍結敵方全場。', 'Battlecry: Freeze all enemy generals.')
+    },
+  },
+  {
+    key: 'deed-mid-regent',
+    weight: 1.2,
+    points: 2.3,
+    when: (c) => c.deeds.includes('regent') && c.cost >= 3 && c.cost <= 7,
+    emit: (o) => {
+      o.aura = { scope: 'friendlyOthers', attack: 1, health: 1 }
+      o.points += 2.3
+      t(o, '光環:其餘友方武將 +1/+1。', 'Aura: Your other generals have +1/+1.')
+    },
+  },
+  {
+    key: 'deed-mid-scheme',
+    weight: 1.2,
+    points: 2.0,
+    when: (c) => c.deeds.includes('scheme') && c.cost >= 3 && c.cost <= 7,
+    emit: (o) => {
+      o.battlecry = { ops: [{ op: 'stealCard', count: 1 }, { op: 'draw', count: 1 }] }
+      o.points += 2.0
+      t(o, '戰吼:從對手手牌取 1 張,再抽 1 張牌。', "Battlecry: Take a card from your opponent's hand, then draw a card.")
+    },
+  },
+  {
+    key: 'deed-mid-doomed',
+    weight: 1.2,
+    points: 1.9,
+    when: (c) => c.deeds.includes('doomed') && c.cost >= 3 && c.cost <= 7,
+    emit: (o, c) => {
+      o.deathrattle = { ops: [{ op: 'summon', defId: 'token-xiangyong', count: 2 }] }
+      o.points += 1.9
+      void c
+      t(o, '亡語:召喚兩個 1/1 鄉勇。', 'Deathrattle: Summon two 1/1 Village Levies.')
+    },
+  },
+  {
+    key: 'deed-mid-supply',
+    weight: 1.2,
+    points: 2.1,
+    when: (c) => c.deeds.includes('supply') && c.cost >= 3 && c.cost <= 7,
+    emit: (o) => {
+      o.endOfTurn = { ops: [{ op: 'gainSupply', amount: 1 }, { op: 'gainArmor', amount: 1 }] }
+      o.points += 2.1
+      t(o, '我方回合結束時:屯糧 +1,主公獲得 1 點護甲。', 'At the end of your turn: gain 1 Supply and 1 Armor.')
+    },
+  },
+  {
+    key: 'deed-mid-might',
+    weight: 1.3,
+    points: 2.3,
+    when: (c) => c.deeds.includes('might') && c.cost >= 3 && c.cost <= 7,
+    emit: (o) => {
+      o.onAttack = { ops: [{ op: 'buffStats', attack: 1, health: 1, target: 'self' }] }
+      o.points += 2.3
+      t(o, '攻擊後:此牌 +1/+1。', 'After attacking: this gains +1/+1.')
+    },
+  },
+  {
+    key: 'deed-mid-archery',
+    weight: 1.3,
+    points: 2.2,
+    when: (c) => c.deeds.includes('archery') && c.cost >= 3 && c.cost <= 7,
+    emit: (o) => {
+      o.endOfTurn = { ops: [{ op: 'damage', amount: 2, target: 'weakestEnemyGeneral' }] }
+      o.points += 2.2
+      t(o, '我方回合結束時:對現存生命最低的敵將造成 2 點傷害。', 'At the end of your turn: deal 2 damage to the enemy general with the lowest health.')
+    },
+  },
+  // ══════ 事迹微效果(0.5 点)══════
+  //
+  // 【为什么需要一档比「便宜」还便宜的】
+  // 1 费卡的身材预算只有 3 点,而 1/1 已经吃掉 2 点 —— 再买一个关键词
+  // (突襲 1 点)就一点不剩。于是**全池最大的同质组是「1 費 1/1 突襲」共 30 张**:
+  // 不是播种器偷懒,是定价上他们真的买不起第二样东西。
+  //
+  // 这一档定价 0.5,专门塞进那道缝里:带了关键词的低费卡仍然掏得起一件小事。
+  // 效果都刻意做得**小而具体** —— 它们要回答的不是「这张卡强不强」,
+  // 而是「这个人是谁」:献马的、水军的、被诱斩的,各有各的一句话。
+  {
+    key: 'deed-mote-navy',
+    weight: 1.4,
+    points: 0.5,
+    when: (c) => c.deeds.includes('navy') && c.cost <= 4,
+    emit: (o) => {
+      o.battlecry = { ops: [{ op: 'freeze', target: 'randomEnemyGeneral' }] }
+      o.points += 0.5
+      t(o, '戰吼:凍結一名隨機敵將。', 'Battlecry: Freeze a random enemy general.')
+    },
+  },
+  {
+    key: 'deed-mote-defend',
+    weight: 1.4,
+    points: 0.5,
+    when: (c) => c.deeds.includes('defend') && c.cost <= 4,
+    emit: (o) => {
+      o.battlecry = { ops: [{ op: 'gainArmor', amount: 2 }] }
+      o.points += 0.5
+      t(o, '戰吼:你的主公獲得 2 點護甲。', 'Battlecry: Your hero gains 2 Armor.')
+    },
+  },
+  {
+    key: 'deed-mote-slay',
+    weight: 1.4,
+    points: 0.5,
+    when: (c) => c.deeds.includes('slay') && c.cost <= 4,
+    emit: (o) => {
+      o.battlecry = { ops: [{ op: 'damage', amount: 1, target: 'weakestEnemyGeneral' }] }
+      o.points += 0.5
+      t(o, '戰吼:對現存生命最低的敵將造成 1 點傷害。', 'Battlecry: Deal 1 damage to the enemy general with the lowest health.')
+    },
+  },
+  {
+    key: 'deed-mote-cavalry',
+    weight: 1.3,
+    points: 0.5,
+    when: (c) => c.deeds.includes('cavalry') && c.cost <= 4,
+    emit: (o) => {
+      o.battlecry = { ops: [{ op: 'buffStats', attack: 1, health: 0, target: 'adjacentFriendly' }] }
+      o.points += 0.5
+      t(o, '戰吼:左右相鄰的友軍各 +1 攻擊。', 'Battlecry: Adjacent friendly generals gain +1 Attack.')
+    },
+  },
+  {
+    key: 'deed-mote-doomed',
+    weight: 1.4,
+    points: 0.5,
+    when: (c) => c.deeds.includes('doomed') && c.cost <= 4,
+    emit: (o) => {
+      o.deathrattle = { ops: [{ op: 'gainMorale', amount: 1 }] }
+      o.points += 0.5
+      t(o, '亡語:我方士氣 +1。', 'Deathrattle: Gain 1 Morale.')
+    },
+  },
+  {
+    key: 'deed-mote-defect',
+    weight: 1.3,
+    points: 0.5,
+    when: (c) => c.deeds.includes('defect') && c.cost <= 4,
+    emit: (o) => {
+      o.battlecry = { ops: [{ op: 'mill', count: 1 }] }
+      o.points += 0.5
+      t(o, '戰吼:敵方牌庫頂 1 張入墓。', "Battlecry: Mill the top card of the enemy's deck.")
+    },
+  },
+  {
+    key: 'deed-mote-scheme',
+    weight: 1.3,
+    points: 0.5,
+    when: (c) => c.deeds.includes('scheme') && c.cost <= 4,
+    emit: (o) => {
+      o.battlecry = { ops: [{ op: 'gainSupply', amount: 1 }, { op: 'draw', count: 0 }] }
+      o.points += 0.5
+      t(o, '戰吼:屯糧 +1。', 'Battlecry: Gain 1 Supply.')
+    },
+  },
+  {
+    key: 'deed-mote-letters',
+    weight: 1.2,
+    points: 0.5,
+    when: (c) => c.deeds.includes('letters') && c.cost <= 4,
+    emit: (o, c) => {
+      o.aura = { scope: 'adjacent', attack: 0, health: 1 }
+      o.points += 0.5
+      void c
+      t(o, '光環:左右相鄰的友軍 +0/+1。', 'Aura: Adjacent friendly generals have +0/+1.')
+    },
+  },
+  {
+    key: 'deed-mote-heal',
+    weight: 1.2,
+    points: 0.5,
+    when: (c) => c.deeds.includes('heal') && c.cost <= 4,
+    emit: (o) => {
+      o.battlecry = { ops: [{ op: 'heal', amount: 2, target: 'weakestFriendlyGeneral' }] }
+      o.points += 0.5
+      t(o, '戰吼:為現存生命最低的友方武將恢復 2 點。', 'Battlecry: Restore 2 Health to your lowest-health general.')
+    },
+  },
+  {
+    key: 'deed-mote-might',
+    weight: 1.2,
+    points: 0.5,
+    when: (c) => c.deeds.includes('might') && c.cost <= 4,
+    emit: (o) => {
+      o.enrage = 1
+      o.points += 0.5
+      t(o, '激怒:受傷時 +1 攻擊。', 'Enrage: +1 Attack while damaged.')
+    },
+  },
+  {
+    key: 'deed-mote-envoy',
+    weight: 1.2,
+    points: 0.5,
+    when: (c) => c.deeds.includes('envoy') && c.cost <= 4,
+    emit: (o) => {
+      o.battlecry = { ops: [{ op: 'draw', count: 1 }, { op: 'discardRandom', count: 1 }] }
+      o.points += 0.5
+      t(o, '戰吼:抽 1 張牌,對手隨機棄 1 張。', 'Battlecry: Draw a card; your opponent discards one at random.')
+    },
+  },
+  {
+    key: 'deed-mote-wealth',
+    weight: 1.2,
+    points: 0.5,
+    when: (c) => c.deeds.includes('wealth') && c.cost <= 4,
+    emit: (o) => {
+      o.battlecry = { ops: [{ op: 'buffStats', attack: 0, health: 2, target: 'randomFriendlyGeneral' }] }
+      o.points += 0.5
+      t(o, '戰吼:使一名友方武將 +0/+2。', 'Battlecry: Give a friendly general +0/+2.')
+    },
+  },
+  // ══════ 事迹候选(只由生平开门,不看五维)══════
+  //
+  // 【为什么必须有这一层】
+  // 全池最重复的那批卡是**低费文官**:麋竺 武25/統30、劉禪 武25/統30、
+  // 華歆 武30/統50 —— 他们够不着关键词池的任何一条兜底(要 war≥60 或 ld≥62),
+  // 也够不着效果池里那些看属性的门槛,于是一路掉回白板,长成同一张牌。
+  //
+  // 而他们的生平天差地别。这一批候选把门开在**事迹**上而不是数值上:
+  // 散尽家财的、乐不思蜀的、割席分坐的,从此在牌桌上不是同一张牌。
+  // 定价一律 ≤1.5 点,1 费的身材预算(3 点)掏得起。
+  //
+  // 顺序放在最前面只是可读性 —— 命中靠权重,和位置无关。
+  {
+    key: 'deed-wealth',
+    weight: 1.2,
+    points: 1.2,
+    when: (c) => c.deeds.includes('wealth') && c.cost <= 5,
+    emit: (o) => {
+      // 散尽家财:把手里的东西给出去,换别人变强
+      o.battlecry = {
+        ops: [
+          { op: 'discardRandom', count: 0 },
+          { op: 'buffStats', attack: 1, health: 1, target: 'randomFriendlyGeneral' },
+        ],
+      }
+      o.points += 1.2
+      t(o, '戰吼:使一名友方武將 +1/+1。', 'Battlecry: Give a friendly general +1/+1.')
+    },
+  },
+  {
+    key: 'deed-regent',
+    weight: 1.2,
+    points: 1.4,
+    when: (c) => c.deeds.includes('regent') && c.cost <= 6,
+    emit: (o) => {
+      // 辅政/托孤:主公在,他就在做事
+      o.battlecry = { ops: [{ op: 'heal', amount: 3, target: 'friendlyHero' }, { op: 'draw', count: 1 }] }
+      o.points += 1.4
+      t(o, '戰吼:你的主公恢復 3 點生命,抽 1 張牌。', 'Battlecry: Restore 3 Health to your hero and draw a card.')
+    },
+  },
+  {
+    key: 'deed-doomed',
+    weight: 1.3,
+    points: 1.1,
+    when: (c) => c.deeds.includes('doomed') && c.cost <= 5,
+    emit: (o) => {
+      // 死于非命的人,死后还有一句话
+      o.deathrattle = { ops: [{ op: 'draw', count: 1 }] }
+      o.points += 1.1
+      t(o, '亡語:抽 1 張牌。', 'Deathrattle: Draw a card.')
+    },
+  },
+  {
+    key: 'deed-remonstrate',
+    weight: 1.1,
+    points: 1.4,
+    when: (c) => c.deeds.includes('remonstrate') && c.cost <= 6,
+    emit: (o) => {
+      // 直言犯颜:把话说到对面脸上,削掉他一层增益
+      o.battlecry = { ops: [{ op: 'dispel', target: 'strongestEnemyGeneral' }] }
+      o.points += 1.4
+      t(o, '戰吼:驅散敵方攻擊最高的武將身上的附魔。', "Battlecry: Dispel the enemy general with the highest attack.")
+    },
+  },
+  {
+    key: 'deed-envoy',
+    weight: 1.1,
+    points: 1.5,
+    when: (c) => c.deeds.includes('envoy') && c.cost <= 6,
+    emit: (o) => {
+      o.battlecry = { ops: [{ op: 'stealCard', count: 1 }] }
+      o.points += 1.5
+      t(o, '戰吼:從對手手牌隨機取 1 張。', "Battlecry: Take a random card from your opponent's hand.")
+    },
+  },
+  {
+    key: 'deed-letters',
+    weight: 1.0,
+    points: 1.2,
+    when: (c) => c.deeds.includes('letters') && c.cost <= 5,
+    emit: (o) => {
+      o.battlecry = { ops: [{ op: 'tutor', kind: 'stratagem', count: 1 }] }
+      o.points += 1.2
+      t(o, '戰吼:從牌庫中檢索 1 張錦囊。', 'Battlecry: Draw a stratagem from your deck.')
+    },
+  },
+  {
+    key: 'deed-heal',
+    weight: 1.1,
+    points: 1.1,
+    when: (c) => c.deeds.includes('heal') && c.cost <= 5,
+    emit: (o) => {
+      o.battlecry = { ops: [{ op: 'heal', amount: 3, target: 'weakestFriendlyGeneral' }] }
+      o.points += 1.1
+      t(o, '戰吼:為現存生命最低的友方武將恢復 3 點。', 'Battlecry: Restore 3 Health to your lowest-health general.')
+    },
+  },
+  {
+    key: 'deed-supply',
+    weight: 1.0,
+    points: 1.0,
+    when: (c) => c.deeds.includes('supply') && c.cost <= 6,
+    emit: (o) => {
+      o.battlecry = { ops: [{ op: 'gainSupply', amount: 2 }] }
+      o.points += 1.0
+      t(o, '戰吼:屯糧 +2。', 'Battlecry: Gain 2 Supply.')
+    },
+  },
+  {
+    key: 'deed-defect',
+    weight: 1.0,
+    points: 1.5,
+    when: (c) => c.deeds.includes('defect') && c.cost <= 6,
+    emit: (o) => {
+      o.battlecry = { ops: [{ op: 'mill', count: 2 }] }
+      o.points += 1.5
+      t(o, '戰吼:敵方牌庫頂 2 張入墓。', "Battlecry: Mill the top 2 cards of the enemy's deck.")
+    },
+  },
+  {
+    key: 'deed-wine',
+    weight: 0.9,
+    points: 1.0,
+    when: (c) => c.deeds.includes('wine') && c.cost <= 6,
+    emit: (o) => {
+      // 醉后逞强:这一回合猛,下回合还债
+      o.battlecry = { ops: [{ op: 'buffStats', attack: 2, health: 0, target: 'self', duration: 'endOfTurn' }] }
+      o.overload = 1
+      o.points += 1.0
+      t(o, '戰吼:本回合此牌 +2 攻擊。過載 1。', 'Battlecry: This gains +2 Attack this turn. Overload 1.')
+    },
+  },
+  {
+    key: 'deed-recluse',
+    weight: 1.0,
+    points: 1.2,
+    when: (c) => c.deeds.includes('recluse') && c.cost <= 6,
+    emit: (o) => {
+      o.battlecry = { ops: [{ op: 'discover', pool: 'myGeneral', count: 3 }] }
+      o.points += 1.2
+      t(o, '戰吼:發現一名武將。', 'Battlecry: Discover a general.')
+    },
+  },
+  {
+    key: 'deed-scheme',
+    weight: 1.0,
+    points: 1.3,
+    when: (c) => c.deeds.includes('scheme') && c.cost <= 5,
+    emit: (o) => {
+      o.battlecry = { ops: [{ op: 'delay', turns: 1, script: { ops: [{ op: 'damage', amount: 3, target: 'strongestEnemyGeneral' }] } }] }
+      o.points += 1.3
+      t(o, '戰吼:伏筆 —— 1 個我方回合後,對敵方攻擊最高的武將造成 3 點傷害。', 'Battlecry: Fuse — in 1 of your turns, deal 3 damage to the enemy general with the highest attack.')
+    },
+  },
   // ══════ 低门槛小效果 ══════
   //
   // 低费卡之所以低费,是因为 might 低 —— 也就是五维普遍在 70 以下,
@@ -1340,6 +1863,7 @@ export function seedMechanics(
   dynasty: DynastyTag,
   cost: number,
   budget: number,
+  deeds: string[] = [],
 ): Seeded {
   const out: Seeded = { keywords: [], points: 0, textZh: [], textEn: [], shape: null }
   if (hasKeyword) {
@@ -1360,10 +1884,12 @@ export function seedMechanics(
     budget,
     mag: hash01(id, 'mag'),
     kw: hasKeyword,
+    deeds,
   }
 
   // 已经带了关键词的卡再给效果容易变成「什么都会」,命中率打八折。
   // 传奇不打折 —— 传奇本来就该是「什么都会」的那种牌。
+  // 同上:事迹**不放宽**这道闸门(见 seedKeyword 里那段实测)
   const gate = EFFECT_GATE[rarity] * (hasKeyword && rarity !== 'legendary' ? 0.9 : 1)
   if (hash01(id, 'effgate') >= gate) return out
 
@@ -1378,7 +1904,15 @@ export function seedMechanics(
   )
   if (live.length === 0) return out
 
-  const w = live.map((cd) => (cd.weight ?? 1) * (cd.eras?.includes(era) ? ERA_BOOST : 1))
+  // 事迹标签点名的效果形状,权重抬 DEED_BOOST 倍 —— 这一行就是
+  // 「加权随机」变成「有出处的确定性」的地方。
+  const want = deedWants(deeds)
+  const w = live.map(
+    (cd) =>
+      (cd.weight ?? 1) *
+      (cd.eras?.includes(era) ? ERA_BOOST : 1) *
+      (want.shapes.has(cd.key) ? DEED_BOOST : 1),
+  )
   const total = w.reduce((a, b) => a + b, 0)
   let r = hash01(id, 'effpick') * total
   let chosen = live[live.length - 1]

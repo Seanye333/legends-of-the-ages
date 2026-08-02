@@ -289,3 +289,63 @@ export const PACK19_CARDS: CardDef[] = [
     },
   },
 ]
+
+// ---------- 讲堂实练用到的兵种,钉死 ----------
+//
+// 兵种默认是从攻血与朝代**推导**出来的(content/troops.ts deriveTroop)——
+// 这在全池是对的(2,258 名武将不可能一个个手标),但**讲堂实练那一课除外**:
+// 那一课教的就是「数清楚你有几个弓弩」,而它用的三张卡一旦身材变了,
+// 推导结果就从 archer 变成 advisor,整课当场无解。
+//
+// 实际发生过:一次播种改动(按事迹给低费卡加微效果)动了这三张的攻血,
+// lethalContent.test.ts 立刻红 —— 「lesson-troop 无解」。
+// 这就是那道闸门存在的理由,也是这张表存在的理由:
+// **课程依赖的事实必须显式写下来,不能靠推导碰巧成立。**
+export const PACK19_TROOP_PINS: Record<string, 'archer'> = {
+  'wang-xiu': 'archer',
+  'sun-qian': 'archer',
+  'yuan-shang': 'archer',
+}
+
+// ---------- 教具卡:讲堂实练与手搓谜题用到的生成卡,身材钉死 ----------
+//
+// 同一件事的第二半。实练的每一课都是**算得清的残局**:三个弓弩总攻击 6 点、
+// 对面 6 血,所以「先算清楚你有几个弓弩」这句提示才成立。
+// 而这些卡是生成卡 —— 一次播种改动就把 2/1 变成 1/2,那一课当场无解。
+//
+// 钉的只有攻血,机制照旧跟着播种走(课程不依赖它们的效果,只依赖身材)。
+// 覆盖层里手写的值优先级高于生成层,所以这张表就是最终身材。
+export const LESSON_STAT_PINS: Record<string, Partial<CardDef>> = {
+  // 弓弩三张:课程要它们是弓兵、且总攻击 6 点(对面正好 6 血)
+  'wang-xiu': { attack: 2, health: 1 },
+  'sun-qian': { attack: 2, health: 1 },
+  'yuan-shang': { attack: 2, health: 2 },
+  // 连击课与过载课的教具:课程依赖的**是这两个机制本身**,不只是身材。
+  // 重新播种把彭越从「过载」换成了「抉择」,过载那一课当场无解 ——
+  // 所以这两张整份钉死,连文案一起(卡面必须和课程说的一致)。
+  'hist-tian-ji': {
+    attack: 4,
+    health: 4,
+    // 关键词也要钉:播种后来给彭越发过碾压,而钉死的文案里没写它,
+    // 「带了关键词却没写在卡面上」那道闸门立刻会红(它是对的 —— 看不见的关键词是骗人)
+    keywords: [],
+    battlecry: { ops: [{ op: 'damage', amount: 1, target: 'chosenEnemyGeneral' }] },
+    combo: { ops: [{ op: 'damage', amount: 4, target: 'chosenEnemyGeneral' }] },
+    choose: undefined,
+    text: { zh: '戰吼:造成 1 點傷害。連擊:改為造成 4 點。', en: 'Battlecry: Deal 1 damage. Combo: Deal 4 instead.' },
+  },
+  // 手搓谜题「唯才補刀」要的是「场面差 1 点、正好靠主公技补上」——
+  // 这两张一变身材(乐进 5/4→6/3、廖化 3/3→4/2),总攻击从 8 变 10,
+  // 谜题当场退化成平凡打脸(闸门抓到了:「有解且非平凡」)。
+  'le-jin': { attack: 5, health: 4 },
+  'liao-hua': { attack: 3, health: 3 },
+  'hist-peng-yue': {
+    attack: 5,
+    health: 5,
+    keywords: [],
+    battlecry: { ops: [{ op: 'damage', amount: 4, target: 'chosenEnemyGeneral' }] },
+    overload: 1,
+    choose: undefined,
+    text: { zh: '戰吼:造成 4 點傷害。過載:(1)', en: 'Battlecry: Deal 4 damage. Overload: (1)' },
+  },
+}
