@@ -16,7 +16,7 @@ import { cardName, formatEvent, heroName } from '../components/eventText'
 import { useEventAnimations } from '../useEventAnimations'
 import { playSfx } from '../sound'
 import type { CardDef } from '../../engine/types'
-import { scanReplayAsync, type MissedLethal } from '../../app/coach'
+import { scanReplayAsync, scanBadTrades, type BadTrade, type MissedLethal } from '../../app/coach'
 import { describeSolution } from '../puzzleSolution'
 import { EmptyState } from '../components/EmptyState'
 import styles from './ReplayScreen.module.css'
@@ -117,6 +117,7 @@ function ReplayPlayer({ replay, onExit }: { replay: SavedReplay; onExit: () => v
   const [coach, setCoach] = useState<MissedLethal[] | null>(null)
   const [coachBusy, setCoachBusy] = useState<number | null>(null)
   const [coachDetail, setCoachDetail] = useState<{ turn: number; steps: string[] } | null>(null)
+  const [trades, setTrades] = useState<BadTrade[] | null>(null)
 
   const frame = replay.frames[Math.min(idx, replay.frames.length - 1)]
   const state = frame.state
@@ -287,6 +288,9 @@ function ReplayPlayer({ replay, onExit }: { replay: SavedReplay; onExit: () => v
             const found = await scanReplayAsync(replay, {
               onProgress: (done, total) => setCoachBusy(total ? Math.round((100 * done) / total) : 100),
             })
+            // 亏本交换是纯算术(两次 evaluate),和斩杀搜索的开销不在一个量级,
+            // 所以放在同一个按钮里一起出 —— 玩家不该为了看另一半分析再点一次。
+            setTrades(scanBadTrades(replay))
             setCoachBusy(null)
             setCoach(found)
           }}
@@ -341,6 +345,43 @@ function ReplayPlayer({ replay, onExit }: { replay: SavedReplay; onExit: () => v
                   </li>
                 ))}
               </ol>
+            )}
+
+            {/* 亏本交换。错过的斩杀一局只有 0–2 次,而这个每局都在发生 ——
+                多数人真正输掉的地方在这儿,但它没有「本来能赢」那个时刻,
+                自己复盘时根本注意不到。 */}
+            {trades && trades.length > 0 && (
+              <>
+                <div className={styles.coachTitle}>{t('亏本交换', 'Costly Trades')}</div>
+                <ol className={styles.coachList}>
+                  {trades.map((tr) => {
+                    const name = (id: string) =>
+                      id ? pickText(CARDS_BY_ID[id]?.name ?? { zh: id, en: id }) : t('一名武将', 'a general')
+                    const killed = tr.killedDefIds.map(name).join('、')
+                    const what = tr.attackerDied
+                      ? killed
+                        ? t(`${name(tr.attackerDefId)} 换掉了 ${killed}`, `${name(tr.attackerDefId)} traded for ${killed}`)
+                        : t(`${name(tr.attackerDefId)} 白送了`, `${name(tr.attackerDefId)} died for nothing`)
+                      : t(`${name(tr.attackerDefId)} 这一刀砍空了`, `${name(tr.attackerDefId)} swung for little`)
+                    return (
+                      <li key={tr.frameIndex}>
+                        <button
+                          className={styles.coachItem}
+                          onClick={() => {
+                            setIdx(tr.frameIndex)
+                            setCoach(null)
+                          }}
+                        >
+                          {t(
+                            `第 ${tr.turn} 回合 —— ${what}(局面 -${tr.loss})`,
+                            `Turn ${tr.turn} — ${what} (board ${-tr.loss})`,
+                          )}
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ol>
+              </>
             )}
             <button className={styles.plainBtn} onClick={() => setCoach(null)}>
               {t('关闭', 'Close')}
