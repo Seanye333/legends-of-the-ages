@@ -731,3 +731,37 @@
 .deckInfo {
   gap: 10px;
 }
+
+/* 军令状 / 伏笔。放在伏兵区**下面**一行:伏兵是「对手不知道是什么」,
+   这两样是「双方都知道,只是还没到时候」—— 语义不同,不该混在一排里。
+   两者共用一个胶囊样式,靠符号(⚔ 军令 / ⧗ 伏笔)与色相区分。 */
+.quests {
+  position: absolute;
+  top: 26px;
+  right: 4px;
+  display: flex;
+  gap: 3px;
+}
+
+.quest,
+.fuse {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 5px;
+  height: 17px;
+  border-radius: 9px;
+  border: 1px solid rgba(212, 168, 74, 0.6);
+  background: rgba(24, 16, 10, 0.9);
+  color: var(--gold-bright);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: help;
+}
+
+/* 伏笔用青色:它是一条**计时器**,和金色的「进度」不是一回事 */
+.fuse {
+  border-color: rgba(143, 184, 160, 0.65);
+  color: #9fd0bb;
+}

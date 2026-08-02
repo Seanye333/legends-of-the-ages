@@ -248,6 +248,42 @@ export function HeroPlate({
           })}
         </div>
       )}
+      {/* 军令状与伏笔。两者都**对双方公开**(见 PlayerState 上的说明),所以
+          和伏兵区不同,这里连内容一起显示 —— 对手看得见你在攒什么,
+          才有「抢在他攒满之前打完」这个决策。
+          没有它们的时候整块不渲染:大多数对局一条都不会出现。 */}
+      {((ps.quests?.length ?? 0) > 0 || (ps.delayed?.length ?? 0) > 0) && (
+        <div className={styles.quests}>
+          {(ps.quests ?? []).map((q) => (
+            <span
+              key={q.defId}
+              className={styles.quest}
+              title={t(
+                `军令 · ${q.name.zh}:${q.progress}/${q.goal.count}`,
+                `Quest · ${q.name.en}: ${q.progress}/${q.goal.count}`,
+              )}
+            >
+              ⚔ {q.progress}/{q.goal.count}
+            </span>
+          ))}
+          {(ps.delayed ?? []).map((d, i) => {
+            const card = CARDS_BY_ID[d.sourceDefId]
+            const name = card ? (lang === 'en' ? card.name.en : card.name.zh) : d.sourceDefId
+            return (
+              <span
+                key={`${d.sourceDefId}-${i}`}
+                className={styles.fuse}
+                title={t(
+                  `伏笔 · ${name}:还有 ${d.turnsLeft} 个回合应验`,
+                  `Fuse · ${name}: ${d.turnsLeft} turn${d.turnsLeft === 1 ? '' : 's'} to go`,
+                )}
+              >
+                ⧗ {d.turnsLeft}
+              </span>
+            )
+          })}
+        </div>
+      )}
       {power && (
         <button
           type="button"

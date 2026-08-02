@@ -274,6 +274,23 @@ export function evaluate(
   // 那需要对手模型,而这一层是刻意贪心的(见 ARCHITECTURE.md 的平衡一节)。
   score += me.secrets.length * 1.6 - foe.secrets.length * 1.6
 
+  // ---- 第二十二卡包:军令状 / 伏笔 ----
+  // 两者对贪心 AI 都是**不可见的价值**,和伏兵、主公技升阶一模一样的毛病:
+  // 打出去场面一点变化都没有,于是纯贪心永远不会领军令、不会埋伏笔,
+  // 那两批卡在 AI 手里等于废牌(而它们是这一包的主轴)。
+  //
+  // 军令按**进度比例**给分而不是给一个固定值:领下来只是买了一张期票,
+  // 攒到 3/4 才是真的快兑现了。封顶在 6(约等于一个中等身材),
+  // 免得 AI 为了推进度去做亏本交换 —— 那正是军令状最容易毁掉一局的方式。
+  const questValue = (p: typeof me) =>
+    (p.quests ?? []).reduce((n, q) => n + 1.5 + 4.5 * (q.progress / Math.max(1, q.goal.count)), 0)
+  score += questValue(me) - questValue(foe)
+  // 伏笔:越接近应验越值钱(和军令同一个道理)。1 回合后就炸的那条给足分,
+  // 三回合之后的只给一半 —— 中间对手有的是机会把局面翻过去。
+  const fuseValue = (p: typeof me) =>
+    (p.delayed ?? []).reduce((n, d) => n + 2.4 / Math.max(1, d.turnsLeft), 0)
+  score += fuseValue(me) - fuseValue(foe)
+
   // 过载是**下回合的债**。不记这一笔的话,AI 眼里过载牌就是白送的超模身材,
   // 会毫不犹豫地连着两张过载把自己锁死。按每点 0.5 折算(略低于一点法力的
   // 即时价值,因为债要下回合才还,中间还有一回合的场面收益)。
