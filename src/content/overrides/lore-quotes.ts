@@ -167,7 +167,7 @@ export const LORE_OVERRIDES: Record<string, LoreOverride> = {
   'hist-zhang-xun': {
     // 《旧唐书·张巡传》—— 睢阳城破被执时语
     quote: { zh: '吾志吞逆賊,但力不遂耳。', en: 'I meant to swallow the rebels whole. Only my strength fell short.' },
-    line: { zh: '睢陽still在,江淮就在。', en: 'While Suiyang stands, the south stands.' },
+    line: { zh: '睢陽尚在,江淮就在。', en: 'While Suiyang stands, the south stands.' },
   },
   'hist-yan-gaoqing': {
     // 《旧唐书·颜杲卿传》—— 被执后骂安禄山;文天祥《正气歌》「为颜常山舌」即指此
@@ -508,5 +508,135 @@ export const LORE_OVERRIDES: Record<string, LoreOverride> = {
       en: 'As for preserving all under Heaven — even the humblest commoner bears a share of that duty.',
     },
     line: { zh: '行萬里路,讀萬卷書。', en: 'Ten thousand li walked; ten thousand volumes read.' },
+  },
+  // ═══════════ 史诗档 · 第二批(21 条)═══════════
+  'pang-tong': {
+    // 《三国志·庞统传》—— 劝刘备取益州
+    quote: { zh: '權變之時,固非一道所能定也。', en: 'In a time of shifting power, no single road decides the matter.' },
+    line: { zh: '鳳雛在此,何必問路。', en: 'The Fledgling Phoenix is here. You need not ask the way.' },
+  },
+  'zhang-lu': {
+    // 《三国志·张鲁传》裴注引《魏略》—— 降曹前语
+    quote: { zh: '寧為曹公作奴,不為劉備上客。', en: 'Sooner a slave in Lord Cao’s house than an honoured guest in Liu Bei’s.' },
+    line: { zh: '五斗米道,漢中三十年。', en: 'The Way of Five Pecks — thirty years in Hanzhong.' },
+  },
+  'hist-sima-rangju': {
+    // 《司马法·仁本》—— 传世兵学名句
+    quote: {
+      zh: '國雖大,好戰必亡;天下雖安,忘戰必危。',
+      en: 'A state though great, if it loves war, will perish; the realm though at peace, if it forgets war, stands in danger.',
+    },
+    line: { zh: '軍法無貴賤。', en: 'Military law knows no rank.' },
+  },
+  'hist-zheng-zhuanggong': {
+    // 《左传·隐公元年》—— 与母誓于黄泉,后掘地及泉而见
+    quote: { zh: '不及黃泉,無相見也。', en: 'Not until the Yellow Springs shall we meet again.' },
+    line: { zh: '多行不義必自斃。', en: 'He who heaps up wrong will bring himself down.' },
+  },
+  'hist-li-kui-ws': {
+    // 《汉书·食货志》—— 尽地力之教
+    quote: { zh: '盡地力之教。', en: 'Teach the land to give all it can.' },
+    line: { zh: '法經六篇,天下之法自此始。', en: 'Six chapters of the Canon of Law — from here all law begins.' },
+  },
+  'hist-guiguzi': {
+    // 《鬼谷子·捭阖》
+    quote: { zh: '捭闔者,天地之道。', en: 'Opening and closing — this is the way of Heaven and Earth.' },
+    line: { zh: '我不出谷,谷中人出。', en: 'I do not leave the valley. Those I taught do.' },
+  },
+  'hist-huangshigong': {
+    // 《史记·留侯世家》—— 圯上授书张良
+    quote: { zh: '孺子可教矣。', en: 'The lad can be taught.' },
+    line: { zh: '十三年後,濟北穀城山下黃石即我。', en: 'In thirteen years, the yellow stone at Gucheng will be me.' },
+  },
+  'hist-qi-weiwang': {
+    // 《史记·田敬仲完世家》—— 答魏惠王问宝
+    quote: {
+      zh: '此四臣者,將照千里,豈特十二乘哉!',
+      en: 'These four ministers will light a thousand li — what are twelve chariots beside them?',
+    },
+    line: { zh: '寡人之寶,不在車上。', en: 'My treasures are not carried on chariots.' },
+  },
+  'hist-tang-sui': {
+    // 《战国策·魏策四》—— 唐雎不辱使命
+    quote: {
+      zh: '若士必怒,伏屍二人,流血五步,天下縞素。',
+      en: 'If a man of resolve is angered — two corpses, five paces of blood, and all under Heaven in mourning white.',
+    },
+    line: { zh: '布衣之怒,也是怒。', en: 'The anger of a commoner is anger still.' },
+  },
+  'hist-li-zuoche': {
+    // 《史记·淮阴侯列传》—— 井陉之战后答韩信
+    quote: {
+      zh: '智者千慮,必有一失;愚者千慮,必有一得。',
+      en: 'The wise, in a thousand thoughts, must err once; the fool, in a thousand thoughts, must once be right.',
+    },
+    line: { zh: '井陘之計,可惜未用。', en: 'My plan for Jingxing — a pity it went unused.' },
+  },
+  'hist-gong-sui': {
+    // 《汉书·龚遂传》—— 治渤海,劝民归农
+    quote: { zh: '賣劍買牛,賣刀買犢。', en: 'Sell your sword and buy an ox; sell your knife and buy a calf.' },
+    line: { zh: '盜賊本是良民。', en: 'The bandits were honest folk once.' },
+  },
+  'hist-shen-qingzhi': {
+    // 《宋书·沈庆之传》—— 谏北伐,反对与文吏议兵
+    quote: {
+      zh: '治國譬如治家,耕當問奴,織當訪婢。',
+      en: 'Governing a state is like governing a house: for ploughing ask the farmhand, for weaving ask the maid.',
+    },
+    line: { zh: '陛下要伐北,先問問帶兵的。', en: 'If Your Majesty would march north, ask the men who lead troops.' },
+  },
+  'hist-duan-xiushi': {
+    // 《旧唐书·段秀实传》—— 以笏击朱泚
+    quote: { zh: '我雖不能殺汝,豈能從汝反耶!', en: 'I cannot kill you — but shall I join you in rebellion?' },
+    line: { zh: '手中無兵,有笏。', en: 'No weapon in my hand — only this tablet of office.' },
+  },
+  'hist-qian-liu': {
+    // 《吴越备史》所载致夫人书,苏轼《陌上花》引之
+    quote: { zh: '陌上花開,可緩緩歸矣。', en: 'The flowers are out along the field paths — you may come home slowly.' },
+    line: { zh: '保境安民,不爭天下。', en: 'Guard the borders, keep the people. I do not contend for the realm.' },
+  },
+  'hist-yelu-deguang': {
+    // 《资治通鉴》—— 入汴后北归途中语
+    quote: { zh: '我不知中國之人難制如此。', en: 'I did not know the people of the Middle Kingdom were so hard to govern.' },
+    line: { zh: '打草穀,原不該。', en: 'The foraging raids — they should never have been.' },
+  },
+  'hist-di-qing': {
+    // 《宋史·狄青传》—— 仁宗劝其除去面上黥文
+    quote: {
+      zh: '陛下以功擢臣,不問門地,願留以勸軍中。',
+      en: 'Your Majesty raised me for merit, not for birth. Let the mark stay — it will encourage the ranks.',
+    },
+    line: { zh: '面上這幾個字,是我的出身。', en: 'These characters on my face are where I came from.' },
+  },
+  'hist-chenheshang': {
+    // 《金史·完颜陈和尚传》—— 兵败被执,不肯混死乱军
+    quote: {
+      zh: '我金國大將,欲死於亂軍中,人將謂我降也。',
+      en: 'I am a great general of Jin. Were I to die in the press, men would say I had surrendered.',
+    },
+    line: { zh: '忠孝軍,四百破八千。', en: 'The Loyal and Filial — four hundred broke eight thousand.' },
+  },
+  'hist-lu-xiangsheng': {
+    // 卢象升誓师军令,《明史·卢象升传》述其治军
+    quote: {
+      zh: '刀必見血,人必帶傷,馬必喘汗,違者以軍法從事。',
+      en: 'Every blade must show blood, every man a wound, every horse a lather — or answer to military law.',
+    },
+    line: { zh: '天雄軍在,我在。', en: 'While the Tianxiong stand, I stand.' },
+  },
+  'hist-tang-yin': {
+    // 唐寅《桃花庵歌》
+    quote: { zh: '別人笑我太瘋癲,我笑他人看不穿。', en: 'They laugh at me for a madman; I laugh that they see nothing through.' },
+    line: { zh: '不煉金丹不坐禪,不為商賈不耕田。', en: 'No elixirs, no meditation; no trade, no plough.' },
+  },
+  'hist-huang-daozhou': {
+    // 黄道周临刑血书,《明史·黄道周传》
+    quote: { zh: '綱常萬古,節義千秋。', en: 'The bonds endure ten thousand ages; honour and duty, a thousand autumns.' },
+    line: { zh: '殺我可,改我不可。', en: 'Kill me — you will not change me.' },
+  },
+  'hist-wang-fuzhi': {
+    // 王夫之自题堂联,见《船山遗书》
+    quote: { zh: '六經責我開生面,七尺從天乞活埋。', en: 'The Six Classics charge me to open a new face; this seven-foot body begs of Heaven a living burial.' },
+    line: { zh: '天下無必敗之理,只有未盡之力。', en: 'There is no law of defeat — only strength not yet spent.' },
   },
 }

@@ -45,6 +45,19 @@ describe('手写名言与台词', () => {
     }
   })
 
+  it('中文里不许混进英文单词 —— 手写时真的会漏', () => {
+    // 实际发生过两次:「睢陽still在」「天下無defeat之理」——
+    // 边写中英双语边打字,英文那半会串到中文里来。
+    // 类型系统与既有测试都拦不住(它是合法字符串),但玩家一眼就看见。
+    for (const [id, ov] of Object.entries(LORE_OVERRIDES)) {
+      for (const key of ['quote', 'line', 'poem'] as const) {
+        const zh = ov[key]?.zh
+        if (!zh) continue
+        expect(zh, `${id}.${key} 的中文里混进了英文`).not.toMatch(/[A-Za-z]{2,}/)
+      }
+    }
+  })
+
   it('本作自造的卡不许有名言 —— 它们没有史料', () => {
     // 說客(纵横家的泛称)与長蛇陣旗(阵形旗)是我们造的,给风味可以,给「名言」不行
     for (const id of ['gen-fame-lobbyist', 'gen-chang-she-qi']) {
