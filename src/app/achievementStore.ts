@@ -60,6 +60,14 @@ export type StatKey =
   | 'bossRushBest' // 群雄连斩最远打到第几关(取最大)
   | 'lessonsDone' // 讲堂实练完成数
   | 'historyCleared' // 历史名战通关场数
+  // ---- 第二十二/二十三卡包 ----
+  // 这五条全部从**既有事件流**推出来,不需要引擎多发一个字节:
+  // 军令达成、伏笔应验、断粮张数、驱散、兵器损毁。
+  | 'questsCompleted'
+  | 'fusesFired'
+  | 'cardsMilled'
+  | 'dispels'
+  | 'weaponsBroken'
   | 'collectionSize' // 收藏里程碑:拥有的**不同**卡牌数(取历史最大)
   | 'legendariesOwned' // 拥有的不同传说卡数(取历史最大)
   | `won_${Doctrine}`
@@ -147,6 +155,49 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     [10, 100],
     [50, 250],
   ),
+  // ---- 第二十二/二十三卡包的五条新轴,各给一个目标 ----
+  // 成就在这里的作用不是发奖,是**指路**:2400 张卡里玩家根本不知道
+  // 「断粮道」是一条能赢的路,一条成就摆在那儿就等于告诉他这条路存在。
+  {
+    id: 'ach-quest',
+    name: { zh: '軍令如山', en: 'The Order Stands' },
+    desc: { zh: '完成 10 道军令状', en: 'Complete 10 quests' },
+    stat: 'questsCompleted',
+    goal: 10,
+    merit: 120,
+  },
+  {
+    id: 'ach-fuse',
+    name: { zh: '如期而至', en: 'Right on Schedule' },
+    desc: { zh: '让 15 条伏笔应验', en: 'See 15 fuses go off' },
+    stat: 'fusesFired',
+    goal: 15,
+    merit: 110,
+  },
+  {
+    id: 'ach-mill',
+    name: { zh: '絕其糧道', en: 'Cut the Road' },
+    desc: { zh: '让对手损失 100 张牌', en: 'Strip 100 cards from your opponents' },
+    stat: 'cardsMilled',
+    goal: 100,
+    merit: 130,
+  },
+  {
+    id: 'ach-dispel',
+    name: { zh: '解甲', en: 'Unmade' },
+    desc: { zh: '打出 25 张驱散牌', en: 'Play 25 dispel cards' },
+    stat: 'dispels',
+    goal: 25,
+    merit: 90,
+  },
+  {
+    id: 'ach-weapon',
+    name: { zh: '折戟沉沙', en: 'Broken Blades' },
+    desc: { zh: '把 15 件兵器用到损毁', en: 'Wear 15 weapons down to nothing' },
+    stat: 'weaponsBroken',
+    goal: 15,
+    merit: 100,
+  },
   {
     id: 'ach-silence',
     name: { zh: '止水', en: 'Still Waters' },
@@ -430,6 +481,11 @@ export function tallyStats(events: GameEvent[], myHeroId: string): Stats {
         const def = CARDS_BY_ID[ev.defId]
         if (def?.type === 'general') add('generalsPlayed', 1)
         else if (def?.type === 'stratagem') add('stratagemsCast', 1)
+        // 驱散没有专属事件(它复用 GeneralBuffed 的负值),所以从卡面上认:
+        // 为了一条成就去新增一个事件不划算,而「我打出了一张驱散牌」这个口径
+        // 对玩家来说也够用了。
+        const scripts = [def?.spell, def?.battlecry, def?.combo]
+        if (scripts.some((sc) => sc?.ops.some((o) => o.op === 'dispel'))) add('dispels', 1)
         break
       }
       case 'EquipmentAttached':
@@ -467,6 +523,24 @@ export function tallyStats(events: GameEvent[], myHeroId: string): Stats {
         break
       case 'DiscoverPicked':
         if (ev.player === 0) add('discoveries', 1)
+        break
+      // ---- 第二十二卡包 ----
+      case 'QuestCompleted':
+        if (ev.player === 0) add('questsCompleted', 1)
+        break
+      // 伏笔应验没有专属事件,它复用 EffectTriggered 的 kind ——
+      // 这也是当初刻意不新增事件的代价:统计层得认这个 kind。
+      case 'EffectTriggered':
+        if (ev.player === 0 && ev.kind === 'delayed') add('fusesFired', 1)
+        break
+      case 'EquipmentBroken':
+        if (ev.player === 0) add('weaponsBroken', 1)
+        break
+      // 断粮:CardDiscarded 同时也是「对手弃牌」的载体,所以只数**敌方**那一侧。
+      // 这会把离间/弃牌类效果也算进去 —— 从玩家角度它们都是「让对面少一张牌」,
+      // 归成一个成就反而更好读。
+      case 'CardDiscarded':
+        if (ev.player === 1) add('cardsMilled', 1)
         break
       default:
         break

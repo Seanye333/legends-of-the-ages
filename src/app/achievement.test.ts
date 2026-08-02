@@ -30,6 +30,13 @@ const SAMPLE_EVENTS: GameEvent[] = [
   { type: 'ManaLocked', player: 0, amount: 2 },
   { type: 'ChooseModePlayed', player: 0, defId: 'strat-choose-royal', mode: 0 },
   { type: 'DiscoverPicked', player: 0, defId: 'guan-yu' },
+  // ---- 第二十二/二十三卡包 ----
+  { type: 'QuestCompleted', player: 0, defId: 'quest-jue-sheng' },
+  { type: 'EffectTriggered', player: 0, sourceDefId: 'strat-qi-xing-tan', kind: 'delayed' },
+  { type: 'CardDiscarded', player: 1, iid: 20, defId: 'guan-yu' },
+  { type: 'EquipmentBroken', player: 0, iid: 1, defId: 'eq-long-quan-jian' },
+  // 驱散没有专属事件,从打出的卡面上认(见 tallyStats 里的注释)
+  { type: 'CardPlayed', player: 0, iid: 21, defId: 'strat-po-jia', cost: 1 },
 ]
 
 describe('achievement stats', () => {
