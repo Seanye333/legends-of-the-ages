@@ -982,6 +982,8 @@ export interface ScriptCtx {
     | 'heroPower'
     | 'secret'
     | 'combo'
+    | 'delayed'
+    | 'quest'
   depth?: number
 }
 

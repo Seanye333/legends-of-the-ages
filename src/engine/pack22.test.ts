@@ -691,11 +691,13 @@ describe('装备耐久', () => {
       { board: [{ defId: 'e-dummy' }] },
     )
     const meIid = s.players[0].board[0].iid
-    let st = applyCommand(s, 0, {
+    const equipped = applyCommand(s, 0, {
       type: 'PlayCard',
       iid: s.players[0].hand[0].iid,
       target: { kind: 'general', iid: meIid },
-    }, lib).state as GameState
+    }, lib)
+    if (!equipped.ok) throw new Error(equipped.error)
+    let st = equipped.state
     expect(st.players[0].board[0].attack).toBe(4)
 
     const swing = () => {
@@ -729,11 +731,13 @@ describe('装备耐久', () => {
       { board: [{ defId: 'e-dummy' }] },
     )
     const meIid = s.players[0].board[0].iid
-    let st = applyCommand(s, 0, {
+    const equipped = applyCommand(s, 0, {
       type: 'PlayCard',
       iid: s.players[0].hand[0].iid,
       target: { kind: 'general', iid: meIid },
-    }, lib2).state as GameState
+    }, lib2)
+    if (!equipped.ok) throw new Error(equipped.error)
+    let st = equipped.state
     for (let i = 0; i < 3; i++) {
       st.players[0].board[0].attacksUsed = 0
       const r = applyCommand(st, 0, {
