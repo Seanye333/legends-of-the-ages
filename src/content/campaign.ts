@@ -701,11 +701,18 @@ export const BOSSES: BossDef[] = [
     power: power(
       'bp-shouji',
       { zh: '九門禦敵', en: 'Nine Gates Held' },
-      { zh: '召喚一個 0/4 的守軍(守護),並獲得 2 點護甲。', en: 'Summon a 0/4 Guard defender and gain 2 Armor.' },
+      { zh: '召喚一個 1/3 的守軍(守護),並對敵方生命最低的武將造成 2 點傷害。', en: 'Summon a 1/3 Guard defender and deal 2 damage to the enemy general with the lowest health.' },
       2,
+      // 【为什么从「0/4 守护 + 2 护甲」改成「1/3 守护 + 2 点伤害」】
+      // 实测 tune-campaign 网格:于謙**每一档 deckTier 玩家胜率都在 81–100%**,
+      // 也就是说卡组质量根本救不了他 —— 问题在主公技。
+      // 0 攻的守军对贪心 AI 是**零威胁**:它只会一直垒墙,永远打不死人;
+      // 而护甲在 AI 的评分里近乎为零(割据主公技上交过同样的学费)。
+      // 换成「有攻击的身体 + 一点点点杀」之后,他终于会赢了 —— 主题没变,
+      // 九门御敌仍然是守城,只是城头上现在有人放箭。
       [
-        { op: 'summon', defId: 'token-shui-zhai', count: 1 },
-        { op: 'gainArmor', amount: 2 },
+        { op: 'summon', defId: 'token-danyang-bing', count: 1 },
+        { op: 'damage', amount: 2, target: 'weakestEnemyGeneral' },
       ],
     ),
     rewardMerit: 1250,

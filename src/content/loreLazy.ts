@@ -1,4 +1,4 @@
-import type { CardLore } from './generated/lore.gen'
+import type { CardLore, RelEdge } from './generated/lore.gen'
 
 // 列传按需加载。
 //
@@ -16,6 +16,9 @@ import type { CardLore } from './generated/lore.gen'
 // 就不再有那一帧的空档了 —— 只有全程第一次会看到列传区域晚一帧出现。
 let cache: Record<string, CardLore> | null = null
 let traitCache: Record<string, { zh: string; en: string }> = {}
+// 关系按 id 建反向索引:详情页问的永远是「这个人有哪些关系」,
+// 每次去 2,620 条里 filter 一遍太浪费(详情页是长按就要弹出来的东西)。
+let relCache: Record<string, RelEdge[]> = {}
 let inflight: Promise<Record<string, CardLore>> | null = null
 
 export function loadLore(): Promise<Record<string, CardLore>> {
@@ -26,10 +29,21 @@ export function loadLore(): Promise<Record<string, CardLore>> {
       // 性格特质的译名和列传住在同一个 chunk —— **必须一起从这里取**,
       // 静态 import 会把 1.2MB 的列传拖回调用方的 chunk 里(懒加载白做)。
       traitCache = m.TRAIT_NAMES
+      const idx: Record<string, RelEdge[]> = {}
+      for (const e of m.RELATION_EDGES) {
+        ;(idx[e.a] ??= []).push(e)
+        ;(idx[e.b] ??= []).push(e)
+      }
+      relCache = idx
       return cache
     })
   }
   return inflight
+}
+
+// 某人的史料关系(生平里互相点到名的那些人)。没加载完之前是空数组。
+export function relationsNow(id: string): RelEdge[] {
+  return relCache[id] ?? []
 }
 
 // 性格特质译名。没加载完之前是空表,调用点回落到原始 id(不会渲染成 undefined)。

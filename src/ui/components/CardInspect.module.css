@@ -600,3 +600,55 @@
   color: rgba(200, 170, 140, 0.75);
   font-style: italic;
 }
+
+/* ---- 史料关系 ----
+   每行:类型徽章 + 那个人 + **出处原文**。
+   出处是这一块可信度的全部 —— 关系是从生平里抽出来的,把原句摆出来,
+   玩家自己就能判断它可不可信,而不是让他相信一个算法。 */
+.relations {
+  margin: 8px 0 2px;
+  display: grid;
+  gap: 3px;
+}
+
+.relationsTitle {
+  font-size: 11px;
+  color: rgba(212, 168, 74, 0.8);
+  letter-spacing: 0.08em;
+}
+
+.relationRow {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.relationKind {
+  padding: 0 5px;
+  border-radius: 8px;
+  border: 1px solid currentColor;
+  font-size: 10px;
+  opacity: 0.85;
+}
+
+/* 五种关系各一个色相 —— 不读字也能扫出「这个人身边是敌是友」 */
+.rel_kin { color: #c9a86a; }
+.rel_liege { color: #88b7e8; }
+.rel_foe { color: #c96a5a; }
+.rel_friend { color: #8fb88a; }
+.rel_era { color: rgba(232, 220, 198, 0.45); }
+
+.relationWho {
+  color: rgba(232, 220, 198, 0.9);
+  white-space: nowrap;
+}
+
+.relationQuote {
+  color: rgba(232, 220, 198, 0.45);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

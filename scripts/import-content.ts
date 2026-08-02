@@ -652,6 +652,81 @@ for (const o of unique) {
   if (Object.keys(entry).length > 0) lore[id] = entry
 }
 const handWrittenBios = tally.quote
+// ---------- 史料关系网(从生平原文里互相点名抽出来)----------
+//
+// 【为什么值得单独做一层】
+// 游戏里此前只有 31 条羁绊 + 29 对宿敌,覆盖 98 名武将(4.3%)——
+// 而「谁和谁有关系」恰恰是这个题材唯一的护城河。
+// 真实素材其实一直在眼前:**生平里点到名的那个人,就是一条有出处的关系**。
+// 麋竺的传里写着糜芳、劉禪的传里写着諸葛亮、華歆的传里写着管寧。
+// 实测能抽出 1,241 组、覆盖 657 名武将 —— 是现有羁绊的六倍多。
+//
+// 【为什么只做展示,不做羁绊光环】
+// 羁绊是**带增益的机制**。几百条一次性上线,等于给六套预组白送强度,
+// 会把刚调好的平衡再打一次(而且这一次是几百个来源,查都没法查)。
+// 所以这一层只进图鉴与列传页:它回答「这个人和谁有关系」,不改任何数值。
+// 将来要把其中一部分提成真羁绊,那是一次**人工挑选**,不是自动生成。
+//
+// 【关系类型怎么判】
+// 看点到名字的那一句里有什么词 —— 这是有出处的判断,不是猜:
+//   亲族(弟/兄/父/子/妻)· 君臣(從/事/佐/薦/舉)· 敵對(斬/敗/破/攻/拒/降)
+//   交好(友/善/交/與…同)· 其余归「同时」(同一段历史里出现过)
+interface RelEdge {
+  a: string
+  b: string
+  kind: 'kin' | 'liege' | 'foe' | 'friend' | 'era'
+  quote: string // 出处:点到名字的那一句原文
+}
+
+const REL_RULES: [RegExp, RelEdge['kind']][] = [
+  // 亲族要求**明确的亲属结构**,不能只认单字:「起兵討董卓,挾天子以令諸侯」
+  // 里的「子」来自「天子」,单字规则会把曹操和董卓判成亲族。
+  [/(之|族|從|親)(弟|兄|子|父|妻|女|母|叔|姪|孫)|兄弟|父子|夫人/, 'kin'],
+  [/斬|敗|破|攻|拒|殺|降|叛|討|圍|擒/, 'foe'],
+  [/從|事|佐|薦|舉|仕|歸|投|輔/, 'liege'],
+  [/友|善|交|同坐|莫逆|結/, 'friend'],
+]
+
+const nameToId = new Map<string, string>()
+for (const o of unique) {
+  // 同名的人不建关系(2,400 张的池子里重名不少,连错了比不连更糟)
+  if (nameToId.has(o.name.zh)) nameToId.set(o.name.zh, '')
+  else nameToId.set(o.name.zh, o.id)
+}
+const edges: RelEdge[] = []
+const seenEdge = new Set<string>()
+for (const o of unique) {
+  const bio = BIOGRAPHIES[o.id]?.zh
+  if (!bio) continue
+  // 按句号切句 —— 关系类型要看**点到名字的那一句**,整段扫会把无关的词算进来
+  for (const sentence of bio.split(/[。;!?]/)) {
+    for (const [name, otherId] of nameToId) {
+      if (!otherId || otherId === o.id || name.length < 2) continue
+      if (!sentence.includes(name)) continue
+      const key = [o.id, otherId].sort().join('|')
+      if (seenEdge.has(key)) continue
+      seenEdge.add(key)
+      // 在**名字附近**认词,而不是整句扫。
+      // 「曹操之子,封濟陽公。從袁紹征…」整句里既有「子」又有「征」,
+      // 整句扫会把关系判成亲族 —— 而那个「子」说的不是袁绍。
+      // 取名字前后各 6 个字的窗口:关系词在中文里几乎总是紧挨着人名的
+      //(「X 之弟」「從 X」「斬 X」「與 X 善」)。窗口里认不到就归「同时」。
+      const at = sentence.indexOf(name)
+      const win = sentence.slice(Math.max(0, at - 6), at + name.length + 6)
+      let kind: RelEdge['kind'] = 'era'
+      for (const [re, k] of REL_RULES) {
+        if (re.test(win)) {
+          kind = k
+          break
+        }
+      }
+      edges.push({ a: o.id, b: otherId, kind, quote: sentence.trim().slice(0, 40) })
+    }
+  }
+}
+const relPeople = new Set(edges.flatMap((e) => [e.a, e.b]))
+const relKinds = edges.reduce<Record<string, number>>((m, e) => ({ ...m, [e.kind]: (m[e.kind] ?? 0) + 1 }), {})
+
 writeFileSync(
   join(OUT_GEN, 'lore.gen.ts'),
   [
@@ -675,6 +750,16 @@ writeFileSync(
     '',
     'export const LORE = JSON.parse(rawJson) as Record<string, CardLore>',
     '',
+    '// 史料关系网:生平原文里互相点名的那些人(只做展示,不给增益)',
+    'export interface RelEdge {',
+    '  a: string',
+    '  b: string',
+    "  kind: 'kin' | 'liege' | 'foe' | 'friend' | 'era'",
+    '  quote: string',
+    '}',
+    `const relJson = ${JSON.stringify(JSON.stringify(edges))}`,
+    'export const RELATION_EDGES = JSON.parse(relJson) as RelEdge[]',
+    '',
     '// 性格特质译名 —— 和 traits 一起生成,免得两处漂移',
     `export const TRAIT_NAMES: Record<string, { zh: string; en: string }> = ${JSON.stringify(
       Object.fromEntries(TRAIT_DEFS.map((t) => [t.id, { zh: t.name.zh, en: t.name.en }])),
@@ -688,6 +773,12 @@ console.log(
   `lore.gen.ts: ${Object.keys(lore).length} 条档案 —— ` +
     `生平 ${tally.bio} · 名言 ${tally.quote} · 绝命诗 ${tally.poem} · 台词 ${tally.line} · ` +
     `表字 ${tally.courtesy} · 籍贯 ${tally.home} · 生卒 ${tally.life} · 性格 ${tally.traits} · 五维 ${tally.stats}`,
+)
+console.log(
+  `  史料关系网:${edges.length} 组,涉及 ${relPeople.size} 名武将 —— ` +
+    Object.entries(relKinds)
+      .map(([k, n]) => `${k} ${n}`)
+      .join(' · '),
 )
 void handWrittenBios
 

@@ -12,7 +12,7 @@ import {
   dynastyName,
 } from '../doctrineColors'
 import { exportCardImage, probeCardArt } from '../cardExport'
-import { loadLore, loreNow, traitNamesNow } from '../../content/loreLazy'
+import { loadLore, loreNow, relationsNow, traitNamesNow } from '../../content/loreLazy'
 import { bondsOf, bondRoster, cardName, rivalsOf, rivalLore } from '../../content/relations'
 import { TROOP_NAME } from '../../content/troops'
 import { Portrait } from './Portrait'
@@ -36,6 +36,15 @@ interface CardInspectProps {
 
 // 卡牌详情:长按/点选打开 —— 全身立绘 + 数值 + 效果文本 + 关键词图例
 // (+ 图鉴入口下的分解/合成)。
+// 关系类型的译名。era = 「同時」:生平里同框出现,但看不出更具体的关系。
+const REL_KIND: Record<string, { zh: string; en: string }> = {
+  kin: { zh: '親族', en: 'Kin' },
+  liege: { zh: '君臣', en: 'Served' },
+  foe: { zh: '敵對', en: 'Foe' },
+  friend: { zh: '交好', en: 'Friend' },
+  era: { zh: '同時', en: 'Contemporary' },
+}
+
 // 有没有值得单独摆一行的「事实」。全空时整块不渲染 —— 少数武将确实什么都查不到。
 function hasDossier(l: { courtesy?: unknown; home?: unknown; life?: unknown; traits?: string[] }): boolean {
   return Boolean(l.courtesy || l.home || l.life || l.traits?.length)
@@ -90,6 +99,9 @@ export function CardInspect({ def, onClose, forge = false }: CardInspectProps) {
   const [LORE, setLore] = useState(loreNow)
   // 特质译名与列传同一个 chunk,所以跟着 LORE 一起重渲染即可
   const TRAIT_NAMES = traitNamesNow()
+  // 史料关系:生平里互相点到名的人。**只做展示不给增益** ——
+  // 几百条羁绊一次性上线等于给预组白送强度(见生成脚本里的说明)。
+  const relEdges = LORE[def.id] ? relationsNow(def.id).slice(0, 6) : []
   useEffect(() => {
     let live = true
     loadLore().then((l) => {
@@ -351,6 +363,26 @@ export function CardInspect({ def, onClose, forge = false }: CardInspectProps) {
                   {t('絕命', 'Last words')} · {pick(LORE[def.id].poem!)}
                 </p>
               )}
+            </div>
+          )}
+          {relEdges.length > 0 && (
+            <div className={styles.relations}>
+              <div className={styles.relationsTitle}>{t('史料關係', 'Attested Ties')}</div>
+              {relEdges.map((e) => {
+                const otherId = e.a === def.id ? e.b : e.a
+                const kindText = REL_KIND[e.kind]
+                return (
+                  <div key={`${e.a}-${e.b}`} className={styles.relationRow}>
+                    <span className={`${styles.relationKind} ${styles[`rel_${e.kind}`]}`}>
+                      {pickCompact(kindText)}
+                    </span>
+                    <span className={styles.relationWho}>{pickCompact(cardName(otherId))}</span>
+                    {/* 出处原文 —— 关系是从这句话里抽出来的,把它摆出来,
+                        玩家自己就能判断这条关系可不可信 */}
+                    <span className={styles.relationQuote}>{e.quote}</span>
+                  </div>
+                )
+              })}
             </div>
           )}
           {/* 底部动作区整体 sticky —— 保存卡面原来单独 position:sticky,
