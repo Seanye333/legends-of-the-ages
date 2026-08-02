@@ -639,4 +639,93 @@ export const LORE_OVERRIDES: Record<string, LoreOverride> = {
     quote: { zh: '六經責我開生面,七尺從天乞活埋。', en: 'The Six Classics charge me to open a new face; this seven-foot body begs of Heaven a living burial.' },
     line: { zh: '天下無必敗之理,只有未盡之力。', en: 'There is no law of defeat — only strength not yet spent.' },
   },
+  // ═══════════ 史诗档 · 第三批 ═══════════
+  //
+  // 【这一批为什么以台词为主】
+  // 名言那口井到这里见底了 —— 剩下的史诗人物,汉文史料里多是**事迹而无原话**
+  // (北族君主、五代武将、明清督抚)。再往下写就得编,那条线不能越。
+  // 所以这一批只补 7 条有出处的名言,其余全给**出战台词**:
+  // 台词是游戏风味,不是史料主张,可以写 —— 但要写得像那个人。
+  'hist-zhao-xiangzi': {
+    // 《史记·刺客列传》—— 释豫让
+    quote: { zh: '彼義士也,吾謹避之耳。', en: 'He is a man of honour. I shall simply keep out of his way.' },
+    line: { zh: '三家分晉,自我始。', en: 'The three houses divide Jin — beginning with me.' },
+  },
+  'hist-pingyuan-jun': {
+    // 《史记·平原君虞卿列传》—— 毛遂自荐之后
+    quote: { zh: '勝不敢復相士。', en: 'I dare not judge men again.' },
+    line: { zh: '食客三千,識人者幾?', en: 'Three thousand retainers — and how many did I truly know?' },
+  },
+  'hist-wei-liao': {
+    // 《尉缭子·武议》
+    quote: { zh: '兵者,凶器也;爭者,逆德也。', en: 'Arms are instruments of ill omen; strife is a violation of virtue.' },
+    line: { zh: '不得已而用之。', en: 'One uses them only when there is no other way.' },
+  },
+  'hist-mingde-mahuanghou': {
+    // 《后汉书·明德马皇后纪》—— 拒封外戚
+    quote: { zh: '吾為天下母,而身服大練。', en: 'I am mother to the realm, and I wear coarse silk.' },
+    line: { zh: '外戚封侯,非國之福。', en: 'Marquisates for the empress’s kin bring no good to the state.' },
+  },
+  'hist-liu-yuan': {
+    // 《晋书·刘元海载记》—— 自述志向
+    quote: {
+      zh: '大丈夫當為漢高、魏武,呼韓邪何足效哉!',
+      en: 'A true man should be a Han Gaozu or a Cao Cao. Why should I model myself on Huhanye?',
+    },
+    line: { zh: '我亦漢家外孫。', en: 'I too am a grandson of the House of Han.' },
+  },
+  'hist-li-mi-sui': {
+    // 讨隋檄文(祖君彦代笔,署李密名),《旧唐书·李密传》载其文
+    quote: {
+      zh: '罄南山之竹,書罪無窮;決東海之波,流惡難盡。',
+      en: 'Exhaust the bamboo of the southern hills — his crimes are not written out; loose the waves of the eastern sea — his evil is not washed away.',
+    },
+    line: { zh: '瓦崗一起,天下響應。', en: 'Wagang rises — and the realm answers.' },
+  },
+  'hist-gao-xianzhi': {
+    // 《旧唐书·高仙芝传》—— 临刑辩诬
+    quote: {
+      zh: '我遇敵而退,死則宜矣;若言我盜減糧賜,則誣也。',
+      en: 'That I fell back before the enemy — for that I deserve death. But that I stole from the ration silver is a lie.',
+    },
+    line: { zh: '蔥嶺之上,唐旗未倒。', en: 'On the Pamirs, the Tang banner has not fallen.' },
+  },
+
+  // ── 以下只给出战台词(游戏风味,不作史料主张)──
+  'dong-zhuo': { line: { zh: '我不負天下,天下負我。', en: 'I have not wronged the realm. The realm has wronged me.' } },
+  'sun-jian': { line: { zh: '江東的路,是我先走的。', en: 'The road east of the river — I walked it first.' } },
+  'yuan-shu': { line: { zh: '傳國玉璽在此,誰敢不服?', en: 'The Imperial Seal is here. Who dares refuse?' } },
+  'sima-shi': { line: { zh: '目疾未愈,手未曾抖。', en: 'My eye has not healed. My hand has not shaken.' } },
+  'sima-zhao': { line: { zh: '蜀已入囊中,吳不過遲早。', en: 'Shu is in the bag. Wu is only a matter of time.' } },
+  'chen-qun': { line: { zh: '九品定人,亦是定國。', en: 'To rank men in nine grades is to order the state.' } },
+  'hist-gao-huan': { line: { zh: '敕勒川,陰山下 —— 唱給我聽。', en: 'The Chile plain, beneath the Yin Mountains — sing it for me.' } },
+  'hist-hulu-guang': { line: { zh: '落雕都督,一箭一雕。', en: 'The Eagle-Felling Commander — one arrow, one eagle.' } },
+  'hist-wei-rui': { line: { zh: '白袍不執刃,亦能破敵。', en: 'The white robe carries no blade, and still it breaks them.' } },
+  'hist-chen-baxian': { line: { zh: '江南初定,朕從吏卒起。', en: 'The south is barely settled — and I began as a clerk.' } },
+  'hist-yang-su': { line: { zh: '軍法之下,無人可退。', en: 'Under my law, no man may step back.' } },
+  'hist-gao-jiong': { line: { zh: '平陳之策,臣已具矣。', en: 'The plan for taking Chen is already drawn.' } },
+  'hist-su-dingfang': { line: { zh: '滅三國,皆生擒其主。', en: 'Three kingdoms broken — and each of their lords taken alive.' } },
+  'hist-luo-cheng': { line: { zh: '槍出如龍,回馬更快。', en: 'The spear strikes like a dragon — and the turn is faster still.' } },
+  'hist-li-su': { line: { zh: '雪夜入蔡州,不鳴鼓。', en: 'Into Caizhou through the snow — and no drum sounded.' } },
+  'hist-di-renjie': { line: { zh: '斷案一萬七千,無一冤者。', en: 'Seventeen thousand cases judged. Not one man wronged.' } },
+  'hist-yao-chong': { line: { zh: '十事不從,臣不敢奉詔。', en: 'If the ten articles are refused, I dare not accept the office.' } },
+  'hist-guo-wei': { line: { zh: '朕死,以瓦棺紙衣葬。', en: 'When I die — a clay coffin and paper robes.' } },
+  'hist-cao-bin': { line: { zh: '克金陵,不妄殺一人。', en: 'Jinling taken — and not one man killed without cause.' } },
+  'hist-yang-yanzhao': { line: { zh: '父在時守北,父去了還守北。', en: 'My father held the north. He is gone. I hold the north.' } },
+  'hist-liu-qi': { line: { zh: '順昌城下,見過我的旗。', en: 'Beneath the walls of Shunchang — they have seen my banner.' } },
+  'hist-wu-jie': { line: { zh: '和尚原,一步不讓。', en: 'At Heshang Plateau — not one step given.' } },
+  'hist-yu-yunwen': { line: { zh: '書生亦可督戰。', en: 'A scholar, too, may command a battle.' } },
+  'hist-meng-gong': { line: { zh: '機動防禦,不與爭一城。', en: 'Move and strike. I do not quarrel over a single city.' } },
+  'hist-liang-hongyu': { line: { zh: '鼓在我手,將士看我。', en: 'The drum is in my hands. The men watch me.' } },
+  'hist-she-taijun': { line: { zh: '楊家還有人。', en: 'The House of Yang is not yet ended.' } },
+  'hist-li-gang': { line: { zh: '京城可守,不可棄。', en: 'The capital can be held. It must not be abandoned.' } },
+  'hist-yu-jie': { line: { zh: '山城為棋,蜀口為局。', en: 'Mountain forts for stones; the gate of Shu for a board.' } },
+  'hist-wang-jian-song': { line: { zh: '釣魚城,不降。', en: 'Diaoyu Fortress does not surrender.' } },
+  'hist-qin-liangyu': { line: { zh: '白桿兵,聽我號令。', en: 'White-Staff soldiers — on my word.' } },
+  'hist-shi-dakai': { line: { zh: '大渡河前,我一人可死。', en: 'Before the Dadu River — I alone may die.' } },
+  'hist-feng-zicai': { line: { zh: '七十歲了,還提得動刀。', en: 'Seventy years old — and the blade is not too heavy yet.' } },
+  'hist-huang-xing': { line: { zh: '斷指之手,仍能持槍。', en: 'A hand with fingers gone can still hold a rifle.' } },
+  'hist-yu-dayou': { line: { zh: '兵法在心,不在多。', en: 'The art of war lives in the mind, not in numbers.' } },
+  'hist-sun-chengzong': { line: { zh: '關寧一線,築到底。', en: 'The Guanning line — I will build it to the end.' } },
+  'hist-li-dingguo': { line: { zh: '兩蹶名王,天下震動。', en: 'Two royal princes felled — and the realm shook.' } },
 }

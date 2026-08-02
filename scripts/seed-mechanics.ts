@@ -577,6 +577,125 @@ const POOL: Cand[] = [
       t(o, '我方回合結束時:對現存生命最低的敵將造成 2 點傷害。', 'At the end of your turn: deal 2 damage to the enemy general with the lowest health.')
     },
   },
+  // ══════ 中费变体(2.0–2.6 点)══════
+  //
+  // 3-4 费段实测 60.3% 有双胞胎,而这一段的身材预算是 7-9 点 ——
+  // **不是钱不够,是候选不够**:同一个画像下能命中的形状就那么几个,
+  // 于是几百个人挤在同一张牌上。这一批不开新闸门、不改命中率,
+  // 只是往同一个价位塞更多**互不相同的**选择(纯变体)。
+  //
+  // 定价刻意贴着既有中费候选(2.0–2.6),所以卡池的构成一分不动 ——
+  // 冒险模式那三次塌陷的教训:动构成就要重调整条难度曲线。
+  {
+    key: 'var-shield-wall',
+    weight: 0.9,
+    points: 2.2,
+    when: (c) => c.cost >= 3 && c.cost <= 6 && c.s.leadership >= 62,
+    emit: (o) => {
+      o.battlecry = { ops: [{ op: 'buffStats', attack: 0, health: 2, target: 'allFriendlyOthers' }] }
+      o.points += 2.2
+      t(o, '戰吼:其餘友方武將 +0/+2。', 'Battlecry: Give your other generals +0/+2.')
+    },
+  },
+  {
+    key: 'var-skirmish-line',
+    weight: 0.9,
+    points: 2.4,
+    when: (c) => c.cost >= 3 && c.cost <= 6 && c.s.war >= 66,
+    emit: (o) => {
+      o.battlecry = { ops: [{ op: 'damage', amount: 2, target: 'allEnemyGenerals' }] }
+      o.points += 2.4
+      t(o, '戰吼:對敵方全場造成 2 點傷害。', 'Battlecry: Deal 2 damage to all enemy generals.')
+    },
+  },
+  {
+    key: 'var-forced-march',
+    weight: 0.85,
+    points: 2.0,
+    when: (c) => c.cost >= 3 && c.cost <= 6 && c.s.war >= 58,
+    emit: (o) => {
+      o.battlecry = { ops: [{ op: 'grantKeyword', keyword: 'rush', target: 'allFriendlyOthers', duration: 'endOfTurn' }] }
+      o.points += 2.0
+      t(o, '戰吼:本回合其餘友方武將獲得【突襲】。', 'Battlecry: Your other generals gain [Rush] this turn.')
+    },
+  },
+  {
+    key: 'var-quartermaster',
+    weight: 0.85,
+    points: 2.1,
+    when: (c) => c.cost >= 3 && c.cost <= 6 && c.s.politics >= 60,
+    emit: (o) => {
+      o.battlecry = { ops: [{ op: 'gainSupply', amount: 3 }, { op: 'gainArmor', amount: 3 }] }
+      o.points += 2.1
+      t(o, '戰吼:屯糧 +3,主公獲得 3 點護甲。', 'Battlecry: Gain 3 Supply and 3 Armor.')
+    },
+  },
+  {
+    key: 'var-counsel',
+    weight: 0.85,
+    points: 2.3,
+    when: (c) => c.cost >= 3 && c.cost <= 6 && c.s.intelligence >= 64,
+    emit: (o) => {
+      o.battlecry = { ops: [{ op: 'tutor', kind: 'general', count: 1 }, { op: 'reduceCost', amount: 1, filter: 'generals' }] }
+      o.points += 2.3
+      t(o, '戰吼:檢索 1 名武將,並使手牌中的武將 -1 費。', 'Battlecry: Draw a general from your deck; generals in your hand cost 1 less.')
+    },
+  },
+  {
+    key: 'var-executioner',
+    weight: 0.85,
+    points: 2.5,
+    when: (c) => c.cost >= 4 && c.cost <= 7 && c.s.war >= 70,
+    emit: (o) => {
+      o.battlecry = { ops: [{ op: 'damage', amount: 3, target: 'weakestEnemyGeneral' }, { op: 'damage', amount: 3, target: 'weakestEnemyGeneral' }] }
+      o.points += 2.5
+      t(o, '戰吼:對現存生命最低的敵將造成 3 點傷害,兩次。', 'Battlecry: Deal 3 damage to the lowest-health enemy general, twice.')
+    },
+  },
+  {
+    key: 'var-vigil',
+    weight: 0.8,
+    points: 2.2,
+    when: (c) => c.cost >= 3 && c.cost <= 6 && c.s.charisma >= 62,
+    emit: (o) => {
+      o.endOfTurn = { ops: [{ op: 'heal', amount: 2, target: 'allFriendlyGenerals' }] }
+      o.points += 2.2
+      t(o, '我方回合結束時:友方全場恢復 2 點生命。', 'At the end of your turn: restore 2 Health to all your generals.')
+    },
+  },
+  {
+    key: 'var-turncoat',
+    weight: 0.8,
+    points: 2.6,
+    when: (c) => c.cost >= 4 && c.cost <= 7 && c.s.intelligence >= 60,
+    emit: (o) => {
+      o.battlecry = { ops: [{ op: 'borrow', target: 'weakestEnemyGeneral' }] }
+      o.points += 2.6
+      t(o, '戰吼:借將 —— 奪取敵方生命最低的武將,回合結束歸還。', 'Battlecry: Borrow the lowest-health enemy general; it returns at end of turn.')
+    },
+  },
+  {
+    key: 'var-signal-fire',
+    weight: 0.8,
+    points: 2.3,
+    when: (c) => c.cost >= 3 && c.cost <= 6 && c.s.intelligence >= 55,
+    emit: (o) => {
+      o.deathrattle = { ops: [{ op: 'delay', turns: 1, script: { ops: [{ op: 'recruit', count: 1 }] } }] }
+      o.points += 2.3
+      t(o, '亡語:伏筆 —— 1 個我方回合後,從牌庫召喚 1 名武將。', 'Deathrattle: Fuse — in 1 of your turns, summon a general from your deck.')
+    },
+  },
+  {
+    key: 'var-stone-wall',
+    weight: 0.8,
+    points: 2.4,
+    when: (c) => c.cost >= 4 && c.cost <= 7 && c.s.leadership >= 68,
+    emit: (o) => {
+      o.aura = { scope: 'adjacent', attack: 1, health: 2 }
+      o.points += 2.4
+      t(o, '光環:左右相鄰的友軍 +1/+2。', 'Aura: Adjacent friendly generals have +1/+2.')
+    },
+  },
   // ══════ 无名微效果(0.3 点,**不扣身材**)══════
   //
   // 【它补的是哪一批人】
