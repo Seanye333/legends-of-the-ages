@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { LORE, TRAIT_NAMES } from './generated/lore.gen'
-import { CARDS_BY_ID } from './cards'
+import { LORE_OVERRIDES } from './overrides/lore-quotes'
+import { CARDS_BY_ID, COLLECTIBLE_CARDS } from './cards'
 
 // 武将档案的**出处闸门**。
 //
@@ -103,5 +104,46 @@ describe('武将档案的出处', () => {
       }
     }
     expect(bad.slice(0, 10)).toEqual([])
+  })
+})
+
+// 覆盖率基线。
+//
+// 【为什么要钉住】
+// 这些数字是一轮轮抠出来的:籍贯 34.9% → 40.1% 靠改抽法,性格 42.8% → 43.8%
+// 靠补词表,生平 95.7% → 96.0% 靠手写八条。而它们**掉下去不会有任何提示** ——
+// 改一个正则、动一次源数据、删一条覆盖,少掉两百条档案照样全绿。
+// `npm run audit-generals` 看得见,但盘点脚本要有人主动去跑。
+//
+// 钉的是**下限不是等值**:内容只会越补越多,涨了不该红。
+// 下限比当前值留 1–2 个百分点的余量,免得源数据小幅波动就误报。
+describe('档案覆盖率基线', () => {
+  const G = COLLECTIBLE_CARDS.filter((c) => c.type === 'general')
+  const merged = (id: string) => ({ ...LORE[id], ...LORE_OVERRIDES[id] })
+  const rate = (has: (l: ReturnType<typeof merged>) => boolean) =>
+    G.filter((c) => has(merged(c.id))).length / G.length
+
+  const FLOORS: [string, (l: ReturnType<typeof merged>) => boolean, number][] = [
+    ['生平', (l) => Boolean(l.bio?.zh), 0.94],
+    ['表字', (l) => Boolean(l.courtesy?.zh), 0.51],
+    ['籍贯', (l) => Boolean(l.home?.zh), 0.38],
+    ['生卒年', (l) => Boolean(l.life?.zh), 0.48],
+    ['五维', (l) => Boolean(l.stats), 0.95],
+    ['性格', (l) => Boolean(l.traits?.length), 0.41],
+    ['尊号', (l) => Boolean(l.era?.zh), 0.24],
+    ['名言', (l) => Boolean(l.quote?.zh), 0.10],
+    ['出战台词', (l) => Boolean(l.line?.zh), 0.12],
+  ]
+
+  for (const [name, has, floor] of FLOORS) {
+    it(`${name}覆盖率不低于 ${(floor * 100).toFixed(0)}%`, () => {
+      const r = rate(has)
+      expect(r, `${name} 实测 ${(r * 100).toFixed(1)}%`).toBeGreaterThanOrEqual(floor)
+    })
+  }
+
+  it('家族覆盖率不低于 18%', () => {
+    const r = G.filter((c) => c.clan).length / G.length
+    expect(r, `实测 ${(r * 100).toFixed(1)}%`).toBeGreaterThanOrEqual(0.18)
   })
 })
