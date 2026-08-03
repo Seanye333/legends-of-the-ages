@@ -1,8 +1,9 @@
 import type { HeroDef } from '../engine/types'
+import { CLAN_QUORUM } from '../engine/types'
 
 import { CARDS_BY_ID } from '../content/cards'
 import { deckHealth } from '../content/deckHealth'
-import { deckBonds } from '../content/relations'
+import { deckBonds, deckClans } from '../content/relations'
 import { DOCTRINE_COLORS, DOCTRINE_GLYPH } from './doctrineColors'
 import type { ExportOutcome } from './cardExport'
 
@@ -44,12 +45,15 @@ export function renderDeckPNG(
   const cardIds = entries.flatMap(([id, n]) => Array<string>(n).fill(id))
   const health = deckHealth(cardIds)
   const bonds = deckBonds(entries.map(([id]) => id)).filter((b) => b.missing.length === 0)
+  // 家族同理只报**成得了的**那些(两个不同的族人)。分享图是给人看的,
+  // 「差一个人的家族」是构筑器该说的话,不是海报该说的话。
+  const clans = deckClans(entries.map(([id]) => id)).filter((c) => c.have.length >= CLAN_QUORUM)
 
   // 两栏排版:三十张牌一栏放不下,一栏又太长
   const rows = Math.ceil(entries.length / 2)
   // 高度是算出来的,不是拍的:头部 150 + 卡表 + 页脚 66(码 + 一行说明)+ 羁绊行。
   // 第一版尾部留了 90,实测底下空出一大条 —— 图要发出去,留白就是浪费像素。
-  const H = PAD + 150 + rows * ROW_H + 66 + (bonds.length > 0 ? 34 : 0)
+  const H = PAD + 150 + rows * ROW_H + 66 + (bonds.length > 0 ? 34 : 0) + (clans.length > 0 ? 34 : 0)
 
   const canvas = document.createElement('canvas')
   canvas.width = W
@@ -129,6 +133,18 @@ export function renderDeckPNG(
     ctx.font = '16px "PingFang SC", sans-serif'
     ctx.fillText(
       `${zh ? '羈絆' : 'Bonds'}  ${bonds.map((b) => (zh ? b.ref.bond.name.zh : b.ref.bond.name.en)).join(' · ')}`,
+      PAD,
+      cursor,
+    )
+    cursor += 34
+  }
+
+  // 家族:和羁绊同一行高、同一种口吻 —— 它也是「这副牌的理由」
+  if (clans.length > 0) {
+    ctx.fillStyle = '#d4a84a'
+    ctx.font = '16px "PingFang SC", sans-serif'
+    ctx.fillText(
+      `${zh ? '家族' : 'Clans'}  ${clans.map((c) => `${zh ? c.name.zh : c.name.en}·${c.have.length}`).join('  ')}`,
       PAD,
       cursor,
     )

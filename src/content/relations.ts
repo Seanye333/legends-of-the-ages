@@ -1,4 +1,5 @@
 import type { BondDef, CardDef, LocalizedText, RivalDef } from '../engine/types'
+import { CLAN_QUORUM } from '../engine/types'
 import { CARDS, CARDS_BY_ID } from './cards'
 import { RIVAL_LORE } from './overrides/rivals'
 
@@ -109,6 +110,32 @@ export function deckBonds(cardIds: string[]): DeckBond[] {
     out.push({ ref, have, missing: roster.filter((id) => !inDeck.has(id)) })
   }
   return out.sort((a, b) => a.missing.length - b.missing.length || b.have.length - a.have.length)
+}
+
+// 这副牌里的家族。和羁绊的区别在于**没有「凑齐」这回事**:
+// 家族只要两个不同的人同时在场就成立,所以要报的不是「还差谁」,
+// 而是「你带了几个、够不够两个」。带一个的也要列 —— 那正是提示玩家
+// 「再加一个同族就有增益了」的时刻,而这是构筑器唯一该说话的地方。
+export interface DeckClan {
+  id: string
+  name: LocalizedText
+  have: string[] // 卡组里这一族的成员(按不同的人算,不算份数)
+  size: number // 全卡池里这一族有多少人
+}
+
+export function deckClans(cardIds: string[]): DeckClan[] {
+  const byClan = new Map<string, DeckClan>()
+  for (const id of new Set(cardIds)) {
+    const clan = CARDS_BY_ID[id]?.clan
+    if (!clan) continue
+    const row = byClan.get(clan.id)
+    if (row) row.have.push(id)
+    else byClan.set(clan.id, { id: clan.id, name: clan.name, have: [id], size: clan.size })
+  }
+  // 成得了的排前面,同样成得了的人多的排前面
+  return [...byClan.values()].sort(
+    (a, b) => Number(b.have.length >= CLAN_QUORUM) - Number(a.have.length >= CLAN_QUORUM) || b.have.length - a.have.length,
+  )
 }
 
 // 这副牌里带着的宿敌 —— 不需要凑齐(对手带不带不由你),只是提示「你带了戏」。

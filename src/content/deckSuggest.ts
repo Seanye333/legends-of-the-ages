@@ -1,7 +1,7 @@
-import type { CardDef, Doctrine } from '../engine/types'
-import { DECK_SIZE } from '../engine/types'
+import type { CardDef, Doctrine, LocalizedText } from '../engine/types'
+import { CLAN_QUORUM, DECK_SIZE } from '../engine/types'
 import { CARDS_BY_ID, COLLECTIBLE_CARDS } from './cards'
-import { ALL_BONDS, bondRoster, type BondRef } from './relations'
+import { ALL_BONDS, bondRoster, clanRoster, type BondRef } from './relations'
 import { deckHealth } from './deckHealth'
 
 // 以羁绊为种子的自动组卡。
@@ -62,6 +62,13 @@ export function suggestDeckForBond(
   doctrine: Doctrine,
   owned: Record<string, number>,
 ): SuggestResult {
+  return fillDeck(bondRoster(ref), doctrine, owned)
+}
+
+// 组卡的共同骨架:先放种子(羁绊成员 / 同族),再按曲线填,最后放宽补齐。
+// 抽出来是因为家族那条路线**只有种子不同**,后面两步一模一样 ——
+// 复制一份的话,以后调曲线只会调到其中一条上(那正是「两套事实」的开头)。
+function fillDeck(seedIds: string[], doctrine: Doctrine, owned: Record<string, number>): SuggestResult {
   const have = (id: string) => owned[id] ?? 0
   const limitOf = (id: string) => (CARDS_BY_ID[id]?.rarity === 'legendary' ? 1 : 2)
   const picked: string[] = []
@@ -78,9 +85,9 @@ export function suggestDeckForBond(
     return true
   }
 
-  // 1) 羁绊成员优先 —— 这是这副牌的理由
+  // 1) 种子优先 —— 这是这副牌的理由
   const missing: string[] = []
-  for (const id of bondRoster(ref)) {
+  for (const id of seedIds) {
     if (!take(id)) missing.push(id)
   }
 
@@ -104,6 +111,40 @@ export function suggestDeckForBond(
   }
 
   return { cardIds: picked, missing }
+}
+
+// ---------- 以家族为种子 ----------
+//
+// 和羁绊那条路线的区别只有一处,但很关键:**羁绊要凑齐,家族只要凑够两个**。
+// 所以「按家族组卡」不报 missing —— 手上有两个同族的人,这副牌就已经成立了,
+// 再报「你还缺另外二十五个曹」纯属添乱。多余的族人当作优先填充位。
+export function suggestDeckForClan(
+  clanId: string,
+  doctrine: Doctrine,
+  owned: Record<string, number>,
+): SuggestResult {
+  const roster = clanRoster(clanId).filter(
+    (id) => (owned[id] ?? 0) > 0 && playable(CARDS_BY_ID[id] ?? ({} as CardDef), doctrine),
+  )
+  return fillDeck(roster, doctrine, owned)
+}
+
+// 给 UI 排序用:**已经凑得起来**(手上有 ≥CLAN_QUORUM 个不同族人)的家族,
+// 人多的排前面。全池 156 个族一次铺出来没有意义 —— 玩家能用的只有手上有的那几族。
+export function clansByReadiness(
+  doctrine: Doctrine,
+  owned: Record<string, number>,
+): { id: string; name: LocalizedText; have: number; size: number }[] {
+  const seen = new Map<string, { id: string; name: LocalizedText; have: number; size: number }>()
+  for (const c of COLLECTIBLE_CARDS) {
+    if (!c.clan || (owned[c.id] ?? 0) === 0 || !playable(c, doctrine)) continue
+    const row = seen.get(c.clan.id)
+    if (row) row.have++
+    else seen.set(c.clan.id, { id: c.clan.id, name: c.clan.name, have: 1, size: c.clan.size })
+  }
+  return [...seen.values()]
+    .filter((x) => x.have >= CLAN_QUORUM)
+    .sort((a, b) => b.have - a.have || a.id.localeCompare(b.id))
 }
 
 // 给 UI 排序用:能凑得**最齐**的羁绊排在前面。

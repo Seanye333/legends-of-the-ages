@@ -13,8 +13,8 @@ const HERO_PICKS = [...ALL_HEROES].sort(
 )
 import { decodeDeck, encodeDeck } from '../../content/deckCode'
 import { useCollection, copyLimit } from '../../app/collectionStore'
-import { cardName, deckBonds } from '../../content/relations'
-import { bondsByReadiness, suggestDeckForBond } from '../../content/deckSuggest'
+import { cardName, deckBonds, deckClans } from '../../content/relations'
+import { bondsByReadiness, clansByReadiness, suggestDeckForBond, suggestDeckForClan } from '../../content/deckSuggest'
 import { deckHealth, verdictOf } from '../../content/deckHealth'
 import { exportDeckImage } from '../deckExport'
 import { useSettings } from '../../app/settingsStore'
@@ -129,6 +129,13 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
   // 羁绊只看**带了哪些卡**,不看带了几张 —— 同一条羁绊带两份不会触发两次
   const deckBondList = useMemo(
     () => deckBonds(Object.keys(counts).filter((id) => (counts[id] ?? 0) > 0)),
+    [counts],
+  )
+
+  // 家族同理只看带了哪些卡。和羁绊不同的是它没有「凑齐」——
+  // 两个不同的族人就成立,所以面板要报的是「够不够两个」而不是「还差谁」。
+  const deckClanList = useMemo(
+    () => deckClans(Object.keys(counts).filter((id) => (counts[id] ?? 0) > 0)),
     [counts],
   )
 
@@ -551,9 +558,59 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
                       </span>
                     </button>
                   ))}
+                {/* 家族也是一样好的种子,而且它**凑得起来的概率高得多**:
+                    羁绊要点名的两三个人全在手上,家族只要同一族里随便两个。
+                    实测手上有几十张牌就能凑出好几族,而羁绊常常一条都凑不齐。 */}
+                {clansByReadiness(hero.doctrine, owned)
+                  .slice(0, 6)
+                  .map((clan) => (
+                    <button
+                      key={clan.id}
+                      className={styles.seedRow}
+                      onClick={() => {
+                        playSfx('cardPlay')
+                        const { cardIds } = suggestDeckForClan(clan.id, hero.doctrine, owned)
+                        const next: Record<string, number> = {}
+                        for (const id of cardIds) next[id] = (next[id] ?? 0) + 1
+                        setCounts(next)
+                        setDeckName(pickCompact(clan.name))
+                        setSeedNote(
+                          t(
+                            `已按「${pickCompact(clan.name)}」配好 ${cardIds.length} 张,族人 ${clan.have} 名在列`,
+                            `Built ${cardIds.length} cards — ${clan.have} kinsmen of this house are in the deck`,
+                          ),
+                        )
+                      }}
+                    >
+                      <span className={styles.bondLabel}>{pickCompact(clan.name)}</span>
+                      <span className={styles.bondNeed}>
+                        {clan.have}/{clan.size}
+                      </span>
+                    </button>
+                  ))}
                 {seedNote && <p className={styles.seedNote}>{seedNote}</p>}
               </div>
             </details>
+          )}
+          {/* 家族面板。带一个的也列出来 —— 那正是「再加一个同族就有增益了」
+              的时刻,而构筑器是唯一该说这句话的地方(牌桌上说就晚了)。 */}
+          {deckClanList.length > 0 && (
+            <div className={styles.bonds}>
+              <div className={styles.bondsHead}>{t('家族', 'Clans')}</div>
+              {deckClanList.slice(0, 6).map((clan) => (
+                <div
+                  key={clan.id}
+                  className={clan.have.length >= 2 ? styles.bondDone : styles.bondPartial}
+                >
+                  <span className={styles.bondLabel}>{pickCompact(clan.name)}</span>
+                  <span className={styles.bondNeed}>
+                    {clan.have.length >= 2
+                      ? t(`${clan.have.length} 人在列`, `${clan.have.length} kinsmen`)
+                      : t('再加一名族人即成', 'one more kinsman and it holds')}
+                  </span>
+                </div>
+              ))}
+            </div>
           )}
           {/* 羁绊面板:构筑的叙事钩子。只列「已经带了至少一个人」的,
               重点是**还差谁** —— 全池 31 条铺出来对玩家没有意义。 */}

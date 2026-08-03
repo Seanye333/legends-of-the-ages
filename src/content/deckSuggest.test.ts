@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { bondsByReadiness, suggestDeckForBond } from './deckSuggest'
-import { ALL_BONDS, bondRoster } from './relations'
+import { bondsByReadiness, clansByReadiness, suggestDeckForBond, suggestDeckForClan } from './deckSuggest'
+import { ALL_BONDS, bondRoster, clanRoster, deckClans } from './relations'
+import { CLAN_QUORUM } from '../engine/types'
 import { CARDS_BY_ID, COLLECTIBLE_CARDS } from './cards'
 import { validateDeck } from './decks'
 import { HEROES_BY_ID } from './overrides/heroes'
@@ -70,5 +71,46 @@ describe('以羁绊为种子的自动组卡', () => {
     for (let i = 1; i < royal.length; i++) {
       expect(royal[i - 1].have).toBeGreaterThanOrEqual(royal[i].have)
     }
+  })
+})
+
+// 家族那条种子路线。它和羁绊共用 fillDeck 的后两步,所以这里只钉住**不同的那部分**:
+// 家族没有「凑齐」—— 手上有两个同族就成立,不该报 missing。
+describe('以家族为种子的自动组卡', () => {
+  it('每个凑得起来的家族都能产出一副通过合法性校验的三十张牌', () => {
+    const doctrine = 'royal'
+    const hero = Object.values(HEROES_BY_ID).find((h) => h.doctrine === doctrine)!
+    const ready = clansByReadiness(doctrine, ALL_OWNED)
+    expect(ready.length, '全收藏下应当有一批凑得起来的家族').toBeGreaterThan(20)
+    for (const clan of ready.slice(0, 25)) {
+      const { cardIds, missing } = suggestDeckForClan(clan.id, doctrine, ALL_OWNED)
+      expect(cardIds, clan.id).toHaveLength(DECK_SIZE)
+      // 种子是先筛过「拥有 + 主义可用」的,所以不该有缺口
+      expect(missing, clan.id).toEqual([])
+      const errs = validateDeck(
+        { name: { zh: 't', en: 't' }, heroId: hero.id, cardIds },
+        CARDS_BY_ID,
+        HEROES_BY_ID,
+      )
+      expect(errs, `${clan.id}: ${errs.join(' / ')}`).toEqual([])
+    }
+  })
+
+  it('配出来的牌里,那一族真的凑够了人 —— 否则这颗种子等于没种', () => {
+    const doctrine = 'royal'
+    for (const clan of clansByReadiness(doctrine, ALL_OWNED).slice(0, 15)) {
+      const { cardIds } = suggestDeckForClan(clan.id, doctrine, ALL_OWNED)
+      const row = deckClans(cardIds).find((c) => c.id === clan.id)
+      expect(row, clan.id).toBeDefined()
+      expect(row!.have.length, `${clan.id} 只放进了 ${row!.have.length} 人`).toBeGreaterThanOrEqual(CLAN_QUORUM)
+    }
+  })
+
+  it('只列手上真凑得起来的家族 —— 一个都没有的收藏下应当是空的', () => {
+    expect(clansByReadiness('royal', {})).toEqual([])
+    // 只拥有某一族的一个人时,那一族也不该出现在「可以按它组卡」里
+    const someClan = clanRoster(clansByReadiness('royal', ALL_OWNED)[0].id)
+    const onlyOne: Record<string, number> = { [someClan[0]]: 2 }
+    expect(clansByReadiness('royal', onlyOne).length).toBe(0)
   })
 })
