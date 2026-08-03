@@ -375,6 +375,23 @@ function generateCard(
   // 它会去抬对应机制的权重(见 seed-mechanics 的 DEED_AFFINITY)——
   // 播种因此从「加权随机」变成「有出处的确定性」。
   const deeds = deedsOf(BIOGRAPHIES[officer.id]?.zh)
+  // 兵种:生平里写明了的,直接照抄,不交给 deriveTroop 去猜。
+  //
+  // 【为什么必须在这里定】
+  // content/troops.ts 的 deriveTroop 是**按攻血与朝代的画像猜**的(约三分之一走
+  // 哈希兜底),而生平里白纸黑字写着「善射」「水軍都督」「鎮守」的人有 540 名 ——
+  // 实测其中 399 名的兵种与生平**不符**:养由基百步穿杨却被判成步兵。
+  // 事迹标签本来就抽好了(播种在用),接到兵种上是同一份数据、零额外成本。
+  // 生成层写进 CardDef.troop,合并层的 `withText.troop ?? deriveTroop(...)` 自然优先它。
+  const troopFromDeeds: CardDef['troop'] | undefined = deeds.includes('archery')
+    ? 'archer'
+    : deeds.includes('navy')
+      ? 'navy'
+      : deeds.includes('cavalry')
+        ? 'cavalry'
+        : deeds.includes('defend')
+          ? 'infantry'
+          : undefined
   // 性格特质:源头的 HISTORICAL_TRAITS 只覆盖 17.8%,其余从生平原文抽。
   // 两条轴正交 —— 事迹说他做过什么,性格说他是什么人。
   const traits = HISTORICAL_TRAITS[officer.id]?.length
@@ -412,6 +429,7 @@ function generateCard(
     health,
     keywords: seeded.keywords as CardDef['keywords'],
   }
+  if (troopFromDeeds) card.troop = troopFromDeeds
   if (seeded.battlecry) card.battlecry = seeded.battlecry as CardDef['battlecry']
   if (seeded.deathrattle) card.deathrattle = seeded.deathrattle as CardDef['deathrattle']
   if (seeded.endOfTurn) card.endOfTurn = seeded.endOfTurn as CardDef['endOfTurn']

@@ -93,9 +93,16 @@ export function QuizScreen({ onBack }: Props) {
     setDone(false)
   }
 
-  // 朝代题的选项是 dynasty tag,其余两类都是人名 id
+  // 选项的形态按题型分三种:朝代题给 dynasty tag、籍贯题给**地名原文**
+  // (它不是 id,直接显示)、其余都是人名 id。
+  // 漏掉籍贯题这一支的话,四个选项会全部退化成「東海朐人」查不到卡而显示原串 ——
+  // 碰巧也能看,但那是巧合不是设计。
   const label = (value: string) =>
-    q.kind === 'whichDynasty' ? pick(dynastyName(value)) : pick(personLabel(value))
+    q.kind === 'whichDynasty'
+      ? pick(dynastyName(value))
+      : q.kind === 'whereFrom'
+        ? value
+        : pick(personLabel(value))
 
   return (
     <div className={styles.screen}>
@@ -122,7 +129,13 @@ export function QuizScreen({ onBack }: Props) {
               ? t('列传所载,此人是谁?', 'Whose chronicle is this?')
               : q.kind === 'whichDynasty'
                 ? t('此人属哪一朝代阵营?', 'Which dynasty did they serve?')
-                : t('此人的宿敵是誰?', 'Who was their sworn rival?')}
+                : q.kind === 'whoIsRival'
+                  ? t('此人的宿敵是誰?', 'Who was their sworn rival?')
+                  : q.kind === 'whoseCourtesy'
+                    ? t('這是誰的表字?', 'Whose courtesy name is this?')
+                    : q.kind === 'whereFrom'
+                      ? t('此人是哪裡人?', 'Where was this general from?')
+                      : t('史書說誰有此性情?', 'Of whom does the record say this?')}
           </div>
           <p className={styles.prompt}>{pick(q.prompt)}</p>
           <div className={styles.options}>

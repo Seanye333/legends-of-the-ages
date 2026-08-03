@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import { CARDS_BY_ID, SIGNATURE_IDS } from '../../content/cards'
-import { LORE } from '../../content/generated/lore.gen'
+import { LORE, TRAIT_NAMES } from '../../content/generated/lore.gen'
 import { useCollection } from '../../app/collectionStore'
 import { Portrait } from '../components/Portrait'
 import { DOCTRINE_COLORS, dynastyName } from '../doctrineColors'
@@ -291,9 +291,57 @@ export function LoreScreen({ onBack }: Props) {
           {selLore.era && selOwned && <div className={styles.detailEra}>{pick(selLore.era)}</div>}
           {selOwned ? (
             <>
+              {/* 档案:字 / 籍贯 / 生卒 / 性格 / 五维。
+                  **这一屏是专门看人的**,却一直只显示尊号与生平四行 ——
+                  而卡牌详情页(长按卡面)反倒把档案摆全了。位置颠倒了:
+                  牌桌上要的是快速判断,列传页要的才是这个人的全部。 */}
+              {(selLore.courtesy || selLore.home || selLore.life) && (
+                <div className={styles.dossier}>
+                  {selLore.courtesy && (
+                    <span>{t('字', 'Courtesy')} {pickCompact(selLore.courtesy)}</span>
+                  )}
+                  {selLore.home && <span>{t('籍', 'From')} {pickCompact(selLore.home)}</span>}
+                  {selLore.life && <span>{pickCompact(selLore.life)}</span>}
+                </div>
+              )}
+              {(selLore.traits ?? []).length > 0 && (
+                <div className={styles.traits}>
+                  {selLore.traits!.slice(0, 6).map((tr) => (
+                    <span key={tr} className={styles.trait}>
+                      {TRAIT_NAMES[tr] ? pickCompact(TRAIT_NAMES[tr]) : tr}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {selLore.stats && (
+                <div className={styles.stats5}>
+                  {(
+                    [
+                      ['統率', 'LEAD', selLore.stats.ld],
+                      ['武力', 'WAR', selLore.stats.war],
+                      ['智力', 'INT', selLore.stats.int],
+                      ['政治', 'POL', selLore.stats.pol],
+                      ['魅力', 'CHA', selLore.stats.cha],
+                    ] as const
+                  ).map(([zh, en, v]) => (
+                    <span key={en} className={styles.stat5}>
+                      <span className={styles.stat5Label}>{t(zh, en)}</span>
+                      <span className={styles.stat5Bar}>
+                        <i style={{ width: `${v}%` }} />
+                      </span>
+                      <span className={styles.stat5Num}>{v}</span>
+                    </span>
+                  ))}
+                </div>
+              )}
               {selLore.bio && <p className={styles.bio}>{pick(selLore.bio)}</p>}
               {selLore.quote && <p className={styles.quote}>「{pick(selLore.quote)}」</p>}
               {selLore.line && <p className={styles.line}>{pick(selLore.line)}</p>}
+              {selLore.poem && (
+                <p className={styles.poem}>
+                  {t('絕命', 'Last words')} · {pick(selLore.poem)}
+                </p>
+              )}
               {/* 这一位的关系网。通览那张表在「關係圖譜」页;这里回答的是
                   另一个问题 —— **我点开的这个人跟谁有关系**。
                   点节点直接跳过去,列传于是能一路顺着关系翻下去。 */}
