@@ -51,6 +51,30 @@ describe('武将档案的出处', () => {
     expect([...missing]).toEqual([])
   })
 
+  // 性格是从生平原文用正则抠的,失败模式有两种,而且都不会红:
+  //   · **抠得太松** —— 一条单字正则(「仁」「義」「忠」)把半个卡池都吃了,
+  //     于是「性格」变成人人都有的装饰。踩过:黃忠的传里必然有「忠」、
+  //     曹仁的传里必然有「仁」,每个人先从自己的名字里领一条性格。
+  //   · **抠得太少** —— 词表塌成十来种,两千人共用几个标签。
+  // 两头各钉一根桩,中间那片才是「细致」。
+  it('性格没有哪一条吃掉半个卡池(单字正则失控的信号)', () => {
+    const n = new Map<string, number>()
+    for (const id of GENERALS) for (const tr of LORE[id].traits ?? []) n.set(tr, (n.get(tr) ?? 0) + 1)
+    const tagged = GENERALS.filter((id) => LORE[id].traits?.length).length
+    const worst = [...n.entries()].sort((a, b) => b[1] - a[1])[0]
+    expect(worst[1] / tagged, `${TRAIT_NAMES[worst[0]]?.zh} 占了 ${worst[1]}/${tagged}`).toBeLessThan(0.25)
+  })
+
+  it('性格词表铺得开 —— 至少一百种在用,每人至多四条', () => {
+    const kinds = new Set<string>()
+    for (const id of GENERALS) {
+      const tr = LORE[id].traits ?? []
+      expect(tr.length, id).toBeLessThanOrEqual(4)
+      for (const t of tr) kinds.add(t)
+    }
+    expect(kinds.size).toBeGreaterThan(100)
+  })
+
   it('五维都在 0–100,条形图不会画出格', () => {
     for (const id of GENERALS) {
       const s = LORE[id].stats

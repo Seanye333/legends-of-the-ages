@@ -35,6 +35,7 @@
 // 等源头问题解决后重跑 import-content + 全部平衡闸门,这两条才会真的生效。
 
 import type { DynastyTag, Rarity } from '../src/engine/types'
+import { toSimplified } from '../src/ui/zhVariant'
 
 export interface Stats {
   leadership: number
@@ -278,9 +279,31 @@ export const DEED_BOOST = 6
 // 源头的 HISTORICAL_TRAITS 只覆盖 401 名(17.8%),而生平原文里到处是这些词。
 // trait id 取自姊妹仓库的 TRAIT_DEFS(译名一起生成,见 import-content)。
 const TRAIT_WORDS: [RegExp, string][] = [
+  // ── 一句话就能认出这个人的那种 ──────────────────────────────
+  // 放在最前面是因为 traitsOf 只留前四条:張飛的「聲若巨雷」、關羽的「面如重棗」、
+  // 曹植的「七步成詩」都写在传的头一句里,它们比「忠」「勇」更能把人认出来。
+  // 姊妹仓库的 TRAIT_DEFS 有 202 条,此前只用到 46 条 —— 剩下那 156 条不是没用,
+  // 是没人去把它们和原文里的话接上。
+  // 臥龍 / 鳳雛 试过又撤了:史书写的是**合称**「號臥龍鳳雛」,
+  // 于是龐統的传里两个绰号都在,匹配出来他既是臥龍又是鳳雛。
+  // 合称这种东西没法靠字面切开,要么手写要么不做。
+  [/七步成詩|七步/, 'quick-verse'],
+  [/獨眼|拔矢啖睛|眇一目/, 'one-eyed'],
+  [/聲若巨雷|聲如雷|聲震/, 'thunder-voice'],
+  [/面如重棗|赤面/, 'red-faced'],
+  [/觀星|夜觀天象|仰觀/, 'star-reader'],
+  [/採藥|本草|青囊/, 'herbalist'],
+  [/一騎當千|萬夫不當/, 'matchless'],
+  [/笑裡藏刀|口蜜腹劍/, 'smiling-blade'],
+  [/木牛流馬|巧思|機巧|作器/, 'inventive'],
+  [/料事|先知|前知|神算/, 'precognitive'],
+  [/姿顏雄偉|風神|儀表/, 'handsome-noble'],
+  [/目光如電|銳目|虎目/, 'piercing-eyes'],
+  [/日行|倍道|急行/, 'tireless-march'],
+  // ── 原有的一批 ─────────────────────────────────────────────
   [/嗜酒|醉|好酒|酗/, 'drunkard'],
   [/多疑|猜忌|忌之/, 'suspicious'],
-  [/仁|寬厚|愛民|恤/, 'benevolent'],
+  [/仁厚|仁德|寬厚|寬仁|愛民|恤民|愛人/, 'benevolent'],
   [/剛愎|固執|不聽|自用/, 'stubborn'],
   [/懼|怯|遁走|棄軍/, 'cowardly'],
   [/野心|圖之|篡|自立/, 'ambitious'],
@@ -290,25 +313,25 @@ const TRAIT_WORDS: [RegExp, string][] = [
   [/謹慎|持重|不輕/, 'cautious'],
   [/傲|矜|自負/, 'arrogant'],
   [/詐|譎|反間|離間/, 'cunning'],
-  [/怒|暴怒|鞭撻/, 'wrathful'],
-  [/義|俠|重然諾/, 'chivalrous'],
+  [/暴怒|性怒|忿|鞭撻|怒斬/, 'wrathful'],
+  [/大義|義氣|俠義|義薄雲天|重然諾|輕財重義/, 'chivalrous'],
   [/驍勇|萬人敵|勇冠|力戰/, 'martial-valor'],
   [/沉毅|鎮定|不動|從容/, 'composed'],
   [/寡言|木訥|訥/, 'taciturn'],
   [/宗室|封王|封侯|公子|太子/, 'noble'],
-  [/病|疾卒|疾篤/, 'sickly'],
+  [/多病|疾篤|羸|疾卒|素有疾/, 'sickly'],
   [/年八十|壽|高齡|年九十/, 'long-lived'],
   [/殘|暴虐|坑殺|屠/, 'cruel'],
   [/儉|樸素|不治產/, 'frugal'],
   [/廉|不受/, 'incorruptible'],
   [/孝/, 'filial'],
-  [/善射|百步穿楊|射藝/, 'sharpshooter'],
+  [/善射|百步穿楊|射藝|弓馬|箭無虛發/, 'sharpshooter'],
   [/矛|槍/, 'spear-master'],
   [/騎射|善騎|輕騎/, 'cavalryman'],
   [/水軍|舟師|樓船/, 'navy-master'],
   [/攻城|器械|礮/, 'siege-expert'],
   [/鎮守|守城|拒守/, 'fortress-keeper'],
-  [/宿將|老將|歷仕/, 'veteran'],
+  [/宿將|老將|歷仕|老當益壯|老而彌堅|白首/, 'veteran'],
   [/伏兵|設伏|夜襲/, 'ambush-master'],
   [/弩/, 'crossbow-adept'],
   [/先登|先鋒|陷陣/, 'vanguard'],
@@ -321,9 +344,77 @@ const TRAIT_WORDS: [RegExp, string][] = [
   [/辯|說之|遊說/, 'persuasive'],
   [/直言|抗表|犯顏|切諫/, 'honest-to-fault'],
   [/隱居|不仕|辭疾/, 'ascetic'],
-  [/美姿|姿容|貌美|美/, 'beautiful'],
+  [/美姿|姿容|貌美|色美|美如玉|昳麗/, 'beautiful'],
   [/身長|長八尺|長九尺/, 'tall'],
-  [/力能|扛鼎|絕人/, 'mighty-strength'],
+  [/力能|扛鼎|絕人|力大|膂力過人|拔山/, 'mighty-strength'],
+  // ── 补的一批(2026-08-02):原文里到处是这些词,只是从前没人接 ──
+  // 1,417 名有生平的武将一条性格都抽不出来,而性格是**列传上直接显示的东西**。
+  // 这一批只做风味不进 TRAIT_AFFINITY(除非注明)—— 它们改的是「这个人是谁」,
+  // 不是「这张卡怎么打」。
+  [/慷慨|好施|散財/, 'generous'],
+  [/寬厚|寬仁|寬和/, 'lenient'],
+  [/嚴峻|嚴刻|峻法/, 'stern'],
+  [/嚴明|賞罰必信/, 'strict-fair'],
+  [/雄辯|口辯|善辯|辯給/, 'eloquent'],
+  [/博學|博覽|群書|通經史/, 'erudite'],
+  [/多智|智謀過人|智計/, 'wise'],
+  [/遠見|先見|深慮/, 'visionary'],
+  [/刑名|法家|申韓|明法/, 'legalist'],
+  [/勤|夙夜|不倦|孜孜/, 'diligent'],
+  [/謙|遜|不伐/, 'humble'],
+  [/然諾|守信|不欺/, 'keeps-word'],
+  [/舉賢|薦士|任賢|好士/, 'meritocratic'],
+  [/報恩|知遇|感恩/, 'grateful'],
+  [/念舊|故舊/, 'nostalgic'],
+  [/嫉惡|疾惡/, 'hates-evil'],
+  [/仗義|急人之難/, 'stand-for-justice'],
+  [/重義|義烈/, 'honor-bound'],
+  [/豪放|豪邁|任俠|不羈/, 'unrestrained'],
+  [/詼諧|滑稽|善謔/, 'humorous'],
+  [/嚴肅|莊重/, 'solemn'],
+  [/機警|機智|敏捷應對/, 'quick-witted'],
+  [/機變|權變|應變/, 'adaptable'],
+  [/務實|不尚虛/, 'pragmatic'],
+  [/高傲|倨傲/, 'haughty'],
+  [/寡情|薄情|少恩/, 'cold'],
+  [/質直|直率|訥直/, 'frank'],
+  [/圓滑|周旋/, 'smooth'],
+  [/心狠|忍人|殘忍/, 'ruthless'],
+  [/嗜殺|好殺|不眨眼/, 'bloodthirsty'],
+  [/報仇|復仇|雪恥|報怨/, 'vengeful'],
+  [/嫉|妒/, 'jealous'],
+  [/怠|惰|不事事/, 'lazy'],
+  [/急躁|性急|褊急/, 'impatient'],
+  [/暴烈|性烈|剛烈/, 'explosive'],
+  [/沉勇|沉毅有勇|臨危不亂/, 'stoic-brave'],
+  [/文武雙全|文武兼/, 'versatile'],
+  [/好色|淫/, 'lustful'],
+  [/慈|哀矜|恤民|憐/, 'compassionate'],
+  [/膂力|強健|壯健/, 'robust'],
+  [/貌醜|形陋|醜/, 'ugly'],
+  [/文弱|體弱|羸/, 'frail'],
+  [/敏捷|矯健|輕捷/, 'nimble'],
+  [/戟/, 'pikeman'],
+  [/盾|楯/, 'shield-bearer'],
+  [/夜襲|夜擊|乘夜/, 'night-raider'],
+  [/殿後|斷後|殿軍/, 'rear-guard'],
+  [/死戰|力戰不退|奮擊/, 'berserker'],
+  [/水淹|決水|灌城|決河/, 'water-tactician'],
+  [/軍法|治軍嚴|不擾民|秋毫無犯/, 'iron-discipline'],
+  [/野戰|野合/, 'field-tactician'],
+  [/奔襲|急襲|輕騎襲/, 'raid-style'],
+  [/山戰|據險/, 'hill-fighter'],
+  [/邊|塞|禦胡|防秋/, 'desert-rider'],
+  [/河防|守河|漕/, 'river-warden'],
+  [/旗|麾下嚴整|部伍/, 'banner-master'],
+  [/守節|不事二/, 'principled'],
+  [/愛國|憂國/, 'patriotic'],
+  [/寬容|能容|不校/, 'tolerant'],
+  [/自律|克己/, 'self-disciplined'],
+  [/虔|奉道|事佛|齋/, 'pious'],
+  [/開朗|樂易|坦率/, 'cheerful'],
+  [/風流|放達/, 'refined'],
+  [/風雅|雅好/, 'graceful'],
 ]
 
 // 性格 → 它想要的关键词/形状。比事迹那张表克制得多 ——
@@ -355,10 +446,22 @@ const TRAIT_AFFINITY: Record<string, { kw?: string[]; shapes?: string[] }> = {
 }
 
 // 从生平原文抽性格。同 deedsOf:纯函数,产物逐字节可复现。
-export function traitsOf(bioZh: string | undefined): string[] {
+// 【为什么要先把本人的名字抠掉】
+// 单字规则碰上人名就翻车:黃忠的传里必然有「忠」、曹仁的传里必然有「仁」、
+// 關羽的传里必然有「羽」—— 于是**每个人都从自己的名字里领到一条性格**。
+// 这类错在列传上直接可见,而且看着还挺像回事,不查原文根本发现不了。
+// 顺手也把「字X」那三个字抠掉(表字同样常用仁/忠/義)。
+function withoutSelf(bioZh: string, selfName?: string): string {
+  let out = bioZh
+  if (selfName) out = out.split(selfName).join('　')
+  return out.replace(/^字[一-龥]{1,3}/, '')
+}
+
+export function traitsOf(bioZh: string | undefined, selfName?: string): string[] {
   if (!bioZh) return []
+  const hay = toSimplified(withoutSelf(bioZh, selfName))
   const out: string[] = []
-  for (const [re, tag] of TRAIT_WORDS) if (re.test(bioZh)) out.push(tag)
+  for (const [re, tag] of TRAIT_RE) if (re.test(hay)) out.push(tag)
   // 一个人身上挂七八条性格等于没有性格 —— 只留前四条(表的顺序就是优先级:
   // 越靠前的越是「一句话能概括这个人」的那种特质)
   return out.slice(0, 4)
@@ -381,13 +484,35 @@ const DEED_WORDS: [RegExp, string][] = [
   [/諫|直言|抗表|犯顏/, 'remonstrate'],
   [/酒|醉/, 'wine'],
   [/斬|首級|殺之|梟/, 'slay'],
-  [/萬人敵|勇冠|力能|扛鼎|虎/, 'might'],
+  [/萬人敵|萬夫不當|勇冠|力能|扛鼎|虎|膽烈|絕倫/, 'might'],
   [/書|經|學|文章|著/, 'letters'],
   [/使|說|辯|遊說/, 'envoy'],
   [/屯田|糧|倉|轉運/, 'supply'],
   [/早卒|病卒|遇害|死於|自殺|伏誅/, 'doomed'],
   [/托孤|輔政|顧命/, 'regent'],
   [/隱|不仕|辭/, 'recluse'],
+  // ── 补的一批(2026-08-02)──────────────────────────────────
+  // 2,165 条生平里有 **818 条一个事迹都抽不出来**,而且抽不出来的恰恰是最有名的那批:
+  // 曹操(「少時機警,有權數」)、劉備(「桃園結義」)、樂進(「每戰必先登」)、
+  // 典韋(「萬夫不當之勇」)、諸葛恪(「平山越,伐魏」)。
+  // 词表只有二十条,漏的不是生僻词,是**史书最常用的那几种写法**。
+  //
+  // 【为什么这一批全是新标签,而不是往老标签里加词】
+  // 老标签下面挂着**只有它才开得了的候选**(deed-mid-defend 之类)。
+  // 给老标签加词 = 给几百个人开了新候选 = 卡池身材整体缩水 = 平衡闸门要重跑
+  //(这一课在放宽播种闸门时交过学费:身材 7.53→7.29,冒险关底当场崩)。
+  // 新标签只进 DEED_AFFINITY(抬权重、不开新候选),改的是**挑哪一个**,
+  // 不是**能不能挑** —— 那是实测过的、成分中性的那条路。
+  [/先登|先鋒|陷陣|首入|冒矢石|每戰必先/, 'vanguard'],
+  [/結義|義兄弟|歃血|同生共死|刎頸|莫逆/, 'oath'],
+  [/篡|廢帝|自立|專權|挾天子|矯詔/, 'usurp'],
+  [/死節|不降|自刎|伏劍|殉|夷三族|夷滅/, 'martyr'],
+  [/少有|幼有|早慧|神童|少而|年十/, 'prodigy'],
+  [/安撫|招撫|懷柔|綏|平定|山越/, 'pacify'],
+  [/匈奴|鮮卑|烏桓|羌|氐|南蠻|禦邊|塞外/, 'frontier'],
+  [/廷尉|治獄|明斷|決獄|刑獄|執法/, 'judge'],
+  [/築|治水|渠|營建|修城|堰/, 'builder'],
+  [/名重|海內|望重|時人稱|名士|四世三公|評之/, 'renown'],
 ]
 
 // 标签 → 它想要的关键词与效果形状。一个标签可以点名多个,权重一起抬。
@@ -412,14 +537,40 @@ const DEED_AFFINITY: Record<string, { kw?: string[]; shapes?: string[] }> = {
   doomed: { shapes: ['dr-strike', 'dr-summon', 'dr-draw', 'dr-legacy', 'dr-avenge', 'dr-armor'] },
   regent: { kw: ['guard'], shapes: ['aura-both', 'aura-hp', 'lo-hearten', 'bc-kin'] },
   recluse: { kw: ['stealth'], shapes: ['lo-veil', 'bc-discover-costly', 'choose-scholar'] },
+  // 新标签只抬权重,下面没有任何「只有它才开得了」的候选(见 DEED_WORDS 那段说明)
+  vanguard: { kw: ['charge', 'rush'], shapes: ['bc-face', 'oa-press', 'oa-momentum'] },
+  oath: { shapes: ['aura-both', 'lo-hearten', 'bc-kin', 'bc-summon-pair'] },
+  usurp: { shapes: ['bc-seize', 'bc-steal', 'bc-silence', 'lo-ruse'] },
+  martyr: { shapes: ['dr-strike', 'dr-avenge', 'dr-legacy', 'dr-summon'] },
+  prodigy: { shapes: ['bc-draw', 'lo-scribe', 'bc-discover-strat'] },
+  pacify: { shapes: ['lo-mend', 'bc-heal-general', 'aura-hp', 'od-rally'] },
+  frontier: { kw: ['rush'], shapes: ['bc-summon-pair', 'lo-skirmish', 'bc-recruit'] },
+  judge: { shapes: ['bc-silence', 'lo-ruse', 'choose-scholar'] },
+  builder: { shapes: ['eot-armor', 'bc-armor', 'lo-palisade', 'bc-wall'] },
+  renown: { shapes: ['lo-hearten', 'bc-warcry', 'bc-discover-general'] },
 }
 
 // 从生平原文抽标签。**纯函数**(同一段文字永远给同一批标签),
 // 所以产物依旧逐字节可复现 —— 这是生成层的铁律。
-export function deedsOf(bioZh: string | undefined): string[] {
+// 【为什么要先折成简体再匹配】
+// 2,180 条生平里有 **523 条(24%)混着简体字** —— 而且是句内混:
+// 曹操传写「漢相曹參之后」、關羽传写「義薄云天」、諸葛亮传写「躬耕于南陽」。
+// 上面两张表全是繁體正则,碰上简体那半个字就整条不命中,
+// 于是**最有名的那批人反而抽不出事迹**:曹操、劉備、孫堅、樂進、典韋一个都没有。
+//
+// 折的方向只能是繁→简:繁→简是多对一(纯查表,永不出错),
+// 简→繁是一对多(「发」是發还是髮要看词)—— 见 src/ui/zhVariant.ts 的长注释。
+// 所以把**两边**都折到简体这个公共空间里再比:表照旧用繁體写(与卡池文案一致),
+// 载入时用同一张表把正则源码也折一遍,不用手工维护两套写法。
+const foldRe = (re: RegExp): RegExp => new RegExp(toSimplified(re.source))
+const DEED_RE: [RegExp, string][] = DEED_WORDS.map(([re, tag]) => [foldRe(re), tag])
+const TRAIT_RE: [RegExp, string][] = TRAIT_WORDS.map(([re, tag]) => [foldRe(re), tag])
+
+export function deedsOf(bioZh: string | undefined, selfName?: string): string[] {
   if (!bioZh) return []
+  const hay = toSimplified(withoutSelf(bioZh, selfName))
   const out: string[] = []
-  for (const [re, tag] of DEED_WORDS) if (re.test(bioZh)) out.push(tag)
+  for (const [re, tag] of DEED_RE) if (re.test(hay)) out.push(tag)
   return out
 }
 

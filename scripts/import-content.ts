@@ -374,7 +374,7 @@ function generateCard(
   // 事迹标签:从**真实生平原文**抽出来的、这个人身上确实发生过的事。
   // 它会去抬对应机制的权重(见 seed-mechanics 的 DEED_AFFINITY)——
   // 播种因此从「加权随机」变成「有出处的确定性」。
-  const deeds = deedsOf(BIOGRAPHIES[officer.id]?.zh)
+  const deeds = deedsOf(BIOGRAPHIES[officer.id]?.zh, officer.name.zh)
   // 兵种:生平里写明了的,直接照抄,不交给 deriveTroop 去猜。
   //
   // 【为什么必须在这里定】
@@ -396,7 +396,7 @@ function generateCard(
   // 两条轴正交 —— 事迹说他做过什么,性格说他是什么人。
   const traits = HISTORICAL_TRAITS[officer.id]?.length
     ? HISTORICAL_TRAITS[officer.id].slice(0, 4)
-    : traitsOf(BIOGRAPHIES[officer.id]?.zh)
+    : traitsOf(BIOGRAPHIES[officer.id]?.zh, officer.name.zh)
   const kw = handAuthored
     ? null
     : seedKeyword(officer.id, s, archetype, rarity, era, dynasty, cost, deeds, traits)
@@ -794,7 +794,7 @@ for (const o of unique) {
   // 否则卡面上写着「嗜酒」而机制里按别的算,那就成了两套事实)
   const traits = HISTORICAL_TRAITS[id]?.length
     ? HISTORICAL_TRAITS[id].slice(0, 4)
-    : traitsOf(BIOGRAPHIES[id]?.zh)
+    : traitsOf(BIOGRAPHIES[id]?.zh, o.name.zh)
   if (traits.length) {
     entry.traits = traits
     tally.traits++
