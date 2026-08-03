@@ -1,0 +1,75 @@
+import { describe, expect, it } from 'vitest'
+import { LORE, TRAIT_NAMES } from './generated/lore.gen'
+import { CARDS_BY_ID } from './cards'
+
+// 武将档案的**出处闸门**。
+//
+// 【为什么需要它】
+// 档案里的字段分两种来源:从生平原文抠的,和从姊妹仓库名册字段读的。
+// 后者踩过一次大坑:名册有个 `hometownCityId`,名字看着就是籍贯,
+// 实际是那个游戏**战棋地图上的驻地** —— 关羽记成濮陽、刘备记成北平
+// (那是他投公孙瓒的地方)、荀彧记成许昌(那是他后来任职的地方)。
+// 两者都有的 623 人里只有 20% 对得上,而错的那 1,100 多条照样进了列传、
+// 进了图鉴、还被稽古拿去出题「谁是潁川人」。
+//
+// 这类错**不会崩、不会红**,只会在玩家查史料时露馅。唯一拦得住的办法是
+// 断言「显示出来的东西必须在原文里找得到」—— 照抄可以,推断不行。
+const GENERALS = Object.keys(LORE).filter((id) => CARDS_BY_ID[id])
+
+describe('武将档案的出处', () => {
+  it('籍贯必须是生平原文里的原话(照抄,不许推断)', () => {
+    const orphans: string[] = []
+    for (const id of GENERALS) {
+      const home = LORE[id].home?.zh
+      if (!home) continue
+      const bio = LORE[id].bio?.zh ?? ''
+      if (!bio.includes(home)) orphans.push(`${CARDS_BY_ID[id].name.zh}(${id}): 籍贯「${home}」在传里找不到`)
+    }
+    expect(orphans.slice(0, 10)).toEqual([])
+  })
+
+  it('籍贯规模没有悄悄归零 —— 换了抽法也得还有三成人有', () => {
+    const n = GENERALS.filter((id) => LORE[id].home).length
+    expect(n).toBeGreaterThan(600)
+  })
+
+  it('表字是一到三个字,不会把整句话抠进来', () => {
+    const bad: string[] = []
+    for (const id of GENERALS) {
+      const cz = LORE[id].courtesy?.zh
+      if (!cz) continue
+      if (cz.length < 1 || cz.length > 3) bad.push(`${CARDS_BY_ID[id].name.zh}: 「${cz}」`)
+      // 表字里不该出现标点或「字」本身
+      if (/[,,。;;字]/.test(cz)) bad.push(`${CARDS_BY_ID[id].name.zh}: 「${cz}」含标点`)
+    }
+    expect(bad.slice(0, 10)).toEqual([])
+  })
+
+  it('性格特质都能翻出译名 —— 否则列传上显示的是 id', () => {
+    const missing = new Set<string>()
+    for (const id of GENERALS) for (const tr of LORE[id].traits ?? []) if (!TRAIT_NAMES[tr]) missing.add(tr)
+    expect([...missing]).toEqual([])
+  })
+
+  it('五维都在 0–100,条形图不会画出格', () => {
+    for (const id of GENERALS) {
+      const s = LORE[id].stats
+      if (!s) continue
+      for (const [k, v] of Object.entries(s)) {
+        expect(v, `${id}.${k}`).toBeGreaterThanOrEqual(0)
+        expect(v, `${id}.${k}`).toBeLessThanOrEqual(100)
+      }
+    }
+  })
+
+  it('中文档案里不许混进英文单词(名言那条闸门的同款)', () => {
+    const bad: string[] = []
+    for (const id of GENERALS) {
+      for (const field of ['home', 'courtesy', 'era'] as const) {
+        const v = LORE[id][field]?.zh
+        if (v && /[A-Za-z]{2,}/.test(v)) bad.push(`${id}.${field}: 「${v}」`)
+      }
+    }
+    expect(bad.slice(0, 10)).toEqual([])
+  })
+})

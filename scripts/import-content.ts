@@ -668,18 +668,19 @@ for (const o of unique) {
       tally.courtesy++
     }
   }
-  const city = (o as { hometownCityId?: string }).hometownCityId
-  const cityName = city ? CITY_NAMES_BY_ID[city] : undefined
-  if (cityName) {
-    entry.home = cityName
+  // 籍贯**只认生平原文**。传里的「東海朐人」「潁川人」就是籍贯本身,照抄。
+  //
+  // 【为什么把名册的 hometownCityId 整个扔了】
+  // 那个字段名叫 hometown,实际是姊妹仓库**战棋地图上的驻地**,不是籍贯。
+  // 两者都有的 623 人里只有 20% 对得上,而且对不上的全是硬伤:
+  //   關羽 河東解良 → 记成濮陽 · 劉備 涿郡涿縣 → 记成北平(那是他投公孫瓚的地方)
+  //   荀彧 潁川潁陰 → 记成許昌(那是他后来任职的地方)· 呂布 五原九原 → 记成雁門
+  // 覆盖率因此从 1,916 掉到 788,但那 1,916 里有一千多条是错的 ——
+  // 而籍贯会进列传、进图鉴、还被稽古拿去出题(「谁是潁川人」),错的比没有更糟。
+  const m = bioZh?.match(HOME_RE)
+  if (m) {
+    entry.home = { zh: m[1], en: m[1] }
     tally.home++
-  } else {
-    // 同上:传里的「東海朐人」「潁川人」就是籍贯本身,照抄
-    const m = bioZh?.match(HOME_RE)
-    if (m) {
-      entry.home = { zh: m[1], en: m[1] }
-      tally.home++
-    }
   }
   const life = lifeOf(id, o)
   if (life) {
