@@ -368,40 +368,6 @@
   color: rgba(212, 168, 74, 0.9);
 }
 
-.stats5 {
-  display: grid;
-  gap: 3px;
-  margin: 0 auto 10px;
-  max-width: 320px;
-  font-size: 11px;
-  color: rgba(232, 220, 198, 0.6);
-}
-
-.stat5 {
-  display: grid;
-  grid-template-columns: 3.2em 1fr 2.2em;
-  align-items: center;
-  gap: 6px;
-}
-
-.stat5Bar {
-  height: 4px;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.07);
-  overflow: hidden;
-}
-
-.stat5Bar i {
-  display: block;
-  height: 100%;
-  background: linear-gradient(90deg, rgba(212, 168, 74, 0.45), rgba(212, 168, 74, 0.95));
-}
-
-.stat5Num {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
 .poem {
   margin: 6px 0 0;
   font-size: 12px;

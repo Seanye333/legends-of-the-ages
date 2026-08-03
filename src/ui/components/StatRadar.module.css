@@ -1,0 +1,64 @@
+.wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 2px auto 8px;
+  max-width: 320px;
+}
+
+.svg {
+  width: 118px;
+  height: 106px;
+  flex: none;
+}
+
+.grid {
+  fill: none;
+  stroke: rgba(232, 220, 198, 0.13);
+  stroke-width: 0.6;
+}
+
+.spoke {
+  stroke: rgba(232, 220, 198, 0.1);
+  stroke-width: 0.6;
+}
+
+.shape {
+  fill-opacity: 0.22;
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+}
+
+.axisLabel {
+  fill: rgba(232, 220, 198, 0.5);
+  font-size: 7px;
+  text-anchor: middle;
+}
+
+/* 数值那一列不是装饰:图形是 aria-hidden 的,读屏器只读得到这里 */
+.readout {
+  display: grid;
+  gap: 1px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 11px;
+  color: rgba(232, 220, 198, 0.6);
+}
+
+.readout li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 68px;
+}
+
+.readout b {
+  color: rgba(232, 220, 198, 0.9);
+  font-weight: 600;
+}
+
+.readoutLabel {
+  letter-spacing: 0.04em;
+}

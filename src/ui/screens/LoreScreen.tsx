@@ -11,6 +11,7 @@ import { RelationGraph } from '../components/RelationGraph'
 import { EraScroll } from '../components/EraScroll'
 import { ERA_OF, type Era } from '../../content/eras'
 import { RelationWeb } from '../components/RelationWeb'
+import { StatRadar } from '../components/StatRadar'
 import { playSfx } from '../sound'
 import { useDialog } from '../useDialog'
 import styles from './LoreScreen.module.css'
@@ -328,26 +329,13 @@ export function LoreScreen({ onBack }: Props) {
                   ))}
                 </div>
               )}
+              {/* 五维从条形换成雷达:条形回答「统率多少」,雷达回答
+                  「这是个什么样的人」—— 后者才是列传要说的话。 */}
               {selLore.stats && (
-                <div className={styles.stats5}>
-                  {(
-                    [
-                      ['統率', 'LEAD', selLore.stats.ld],
-                      ['武力', 'WAR', selLore.stats.war],
-                      ['智力', 'INT', selLore.stats.int],
-                      ['政治', 'POL', selLore.stats.pol],
-                      ['魅力', 'CHA', selLore.stats.cha],
-                    ] as const
-                  ).map(([zh, en, v]) => (
-                    <span key={en} className={styles.stat5}>
-                      <span className={styles.stat5Label}>{t(zh, en)}</span>
-                      <span className={styles.stat5Bar}>
-                        <i style={{ width: `${v}%` }} />
-                      </span>
-                      <span className={styles.stat5Num}>{v}</span>
-                    </span>
-                  ))}
-                </div>
+                <StatRadar
+                  stats={selLore.stats}
+                  color={DOCTRINE_COLORS[sel.doctrine]}
+                />
               )}
               {selLore.bio && <p className={styles.bio}>{pick(selLore.bio)}</p>}
               {selLore.quote && <p className={styles.quote}>「{pick(selLore.quote)}」</p>}
