@@ -21,6 +21,13 @@ export interface LoreOverride {
   line?: { zh: string; en: string }
   // 绝命诗。标准与名言相同 —— 必须是真的传世之作,不是我们替他写的。
   poem?: { zh: string; en: string }
+  // 生平。**只写给源头压根没有传的那几位**(魏文侯、李悝、西門豹、項燕…),
+  // 标准是「史书里查得到的事实摘要」,和名言那条不同:
+  // 摘要可以由我们组织语言,原话不可以由我们组织语言。
+  //
+  // 注意它只进**显示层** —— 播种用的是姊妹仓库的 BIOGRAPHIES,
+  // 所以这几位不会因此多出事迹/性格标签,卡面机制一个字都不动。
+  bio?: { zh: string; en: string }
 }
 
 export const LORE_OVERRIDES: Record<string, LoreOverride> = {
@@ -308,6 +315,10 @@ export const LORE_OVERRIDES: Record<string, LoreOverride> = {
       en: 'If the River Earl takes no bride, then trouble the head shamaness to go down and tell him so.',
     },
     line: { zh: '渠成,鄴無水患。', en: 'The channels are cut. Ye fears the river no longer.' },
+    bio: {
+      zh: '魏文侯時為鄴令。時巫祝與三老歲為「河伯娶婦」,歛民財、沉民女。豹至,以其人投之河,其俗遂絕。又發民鑿十二渠引漳水溉田,鄴以富饒。',
+      en: 'Magistrate of Ye under Marquis Wen of Wei. Each year the shamans and elders married a girl to the River Lord, drowning her and stripping the people of their money. Ximen Bao threw the shamans into the river instead, and the custom ended. He then had twelve canals cut to draw the Zhang river onto the fields, and Ye grew rich.',
+    },
   },
   'hist-tian-dan': {
     // 《史记·田单列传》—— 火牛阵前托神
@@ -537,6 +548,10 @@ export const LORE_OVERRIDES: Record<string, LoreOverride> = {
     // 《汉书·食货志》—— 尽地力之教
     quote: { zh: '盡地力之教。', en: 'Teach the land to give all it can.' },
     line: { zh: '法經六篇,天下之法自此始。', en: 'Six chapters of the Canon of Law — from here all law begins.' },
+    bio: {
+      zh: '魏文侯相。作《法經》六篇,為後世律令之祖。行「盡地力之教」以厚農,設「平糴法」以平穀價;廢世卿世祿,食有勞而祿有功。戰國變法自此始。',
+      en: 'Chancellor to Marquis Wen of Wei. His Canon of Law in six books became the ancestor of later codes. He taught the full use of the soil to enrich farming and set the price-levelling granaries to steady the cost of grain; he ended hereditary office so that food followed labour and salary followed merit. The reform age of the Warring States begins here.',
+    },
   },
   'hist-guiguzi': {
     // 《鬼谷子·捭阖》
@@ -693,7 +708,11 @@ export const LORE_OVERRIDES: Record<string, LoreOverride> = {
 
   // ── 以下只给出战台词(游戏风味,不作史料主张)──
   'dong-zhuo': { line: { zh: '我不負天下,天下負我。', en: 'I have not wronged the realm. The realm has wronged me.' } },
-  'sun-jian': { line: { zh: '江東的路,是我先走的。', en: 'The road east of the river — I walked it first.' } },
+  'sun-jian': {
+    // 《三国志·孙破虏讨逆传》—— 答董卓使者,拒绝联姻
+    quote: { zh: '今不夷汝三族,懸示四海,則吾死不瞑目。', en: 'If I do not wipe out your three kindreds and hang the sight of it before the world, I shall not close my eyes in death.' },
+    line: { zh: '江東的路,是我先走的。', en: 'The road east of the river — I walked it first.' },
+  },
   'yuan-shu': { line: { zh: '傳國玉璽在此,誰敢不服?', en: 'The Imperial Seal is here. Who dares refuse?' } },
   'sima-shi': { line: { zh: '目疾未愈,手未曾抖。', en: 'My eye has not healed. My hand has not shaken.' } },
   'sima-zhao': { line: { zh: '蜀已入囊中,吳不過遲早。', en: 'Shu is in the bag. Wu is only a matter of time.' } },
@@ -866,6 +885,10 @@ export const LORE_OVERRIDES: Record<string, LoreOverride> = {
     // 《史记·魏世家》—— 与李克论相
     quote: { zh: '家貧則思良妻,國亂則思良相。', en: 'A poor house longs for a good wife; a troubled state, for a good minister.' },
     line: { zh: '過段干木之閭,寡人下車。', en: 'Passing Duangan Mu\u2019s gate, I step down from my chariot.' },
+    bio: {
+      zh: '名斯,魏桓子之孫,戰國魏國開國之君。師事子夏、田子方,過段干木之閭必軾。用李悝變法、西門豹治鄴、樂羊伐中山、吳起守西河,魏遂為戰國首霸。',
+      en: 'Named Si, grandson of Wei Huanzi and founding lord of Wei. He studied under Zixia and bowed at Duangan Mu\u2019s gate whenever he passed it. With Li Kui\u2019s reforms, Ximen Bao at Ye, Yue Yang against Zhongshan and Wu Qi on the western march, Wei became the first hegemon of the Warring States.',
+    },
   },
   'hist-qin-zhaoxiang': {
     // 《史记·范雎蔡泽列传》—— 跪请范雎
@@ -943,4 +966,62 @@ export const LORE_OVERRIDES: Record<string, LoreOverride> = {
   'hist-dorgon': { line: { zh: '攝政七年,只差一步。', en: 'Seven years as regent — one step short.' } },
   'hist-shao-gong-shi': { line: { zh: '甘棠之下,聽訟不擾民。', en: 'Beneath the sweet pear tree I heard their cases, and troubled no one.' } },
   'hist-qin-huiwen': { line: { zh: '商鞅該死,新法不該廢。', en: 'Shang Yang had to die. His laws did not.' } },
+  // ═══════════════ 第三批(2026-08-03):补传与史诗名言 ═══════════════
+  //
+  // 【补传】传奇 + 史诗里有 8 位**真实历史人物一条生平都没有**
+  //(其余缺传的二十来张是本作自造的泛用卡:說客、虎豹騎督、老卒…,
+  //  它们没有传是对的,不该补)。魏文侯是 8 费传奇、战国首霸,
+  // 点开列传是一片空白。
+  'hist-xu-da': {
+    bio: {
+      zh: '字天德,濠州鍾離人。明開國第一功臣。從朱元璋起兵,鄱陽破陳友諒,平江滅張士誠,北伐克大都而元亡。位太傅、中書右丞相,封魏國公。持重寡言,師出必勝而不矜。',
+      en: 'Courtesy name Tiande, of Zhongli in Haozhou. First among the founding officers of Ming. He rose with Zhu Yuanzhang, broke Chen Youliang at Poyang, destroyed Zhang Shicheng at Pingjiang, and took Dadu in the northern campaign, ending the Yuan. Grave and sparing of speech; he never once boasted of a victory.',
+    },
+  },
+  'hist-liu-bowen': {
+    bio: {
+      zh: '名基,字伯溫,處州青田人。元進士,棄官歸隱。朱元璋聘之,陳時務十八策,佐平陳友諒、張士誠。明立,授御史中丞,封誠意伯。通經史、曉天文,世傳其能前知。',
+      en: 'Named Ji, courtesy name Bowen, of Qingtian in Chuzhou. A Yuan graduate who resigned office and withdrew. Summoned by Zhu Yuanzhang, he laid out eighteen policies for the hour and helped bring down Chen Youliang and Zhang Shicheng. Under Ming he became Vice Censor-in-Chief and Earl of Chengyi. Learned in the classics and the stars — legend made a prophet of him.',
+    },
+  },
+  'hist-xiang-yan': {
+    bio: {
+      zh: '楚國名將,項羽之祖。秦將李信以二十萬伐楚,項燕三日三夜不頓舍,大破之。王翦繼以六十萬來,燕兵敗自殺。楚人憐之,故有「楚雖三戶,亡秦必楚」之語。',
+      en: 'General of Chu and grandfather of Xiang Yu. When Li Xin of Qin came with two hundred thousand, Xiang Yan pursued him three days and nights without making camp and shattered his army. Wang Jian then came with six hundred thousand; Xiang Yan was beaten and took his own life. Chu mourned him — hence the saying that though three households remain in Chu, Chu will be the end of Qin.',
+    },
+  },
+  'hist-lu-zhi-tang': {
+    bio: {
+      zh: '字敬輿,蘇州嘉興人。唐德宗翰林學士。朱泚之亂扈從奉天,所草詔書明白剴切,將士讀之流涕,時號「內相」。後為裴延齡所讒,貶忠州別駕,居十年而卒。',
+      en: 'Courtesy name Jingyu, of Jiaxing in Suzhou. Hanlin academician to Emperor Dezong of Tang. He followed the court to Fengtian during Zhu Ci\u2019s revolt; the edicts he drafted were so plain and piercing that soldiers wept reading them, and men called him the Inner Chancellor. Slandered later by Pei Yanling, he was demoted to Zhongzhou and died there after ten years.',
+    },
+  },
+  'hist-zhang-xianzhong': {
+    bio: {
+      zh: '字秉忠,延安柳樹澗人。明末民變首領,與李自成並起。轉戰荊襄,破武昌,入蜀據成都,國號大西。後清兵入川,中矢死於西充鳳凰山。',
+      en: 'Courtesy name Bingzhong, of Liushujian in Yan\u2019an. A leader of the late-Ming risings, rising alongside Li Zicheng. He fought across Jing and Xiang, took Wuchang, entered Shu and held Chengdu under the title Great Xi. When Qing troops came into Sichuan he was shot dead at Phoenix Hill in Xichong.',
+    },
+  },
+
+  // 【史诗名言】155 张史诗缺名言,这里只补五条 —— 同样是能指着书说出处的那几条
+  // 杜預在池子里有两张(传奇 du-yu / 史诗 hist-du-yu)。名言已经给了传奇那张,
+  // 这里只给台词 —— 同一个人的两张牌说同一句话,牌桌上会像复读机。
+  'hist-du-yu': {
+    line: { zh: '書生也能滅國。', en: 'A scholar, too, can end a kingdom.' },
+  },
+  'hist-xiao-yan': {
+    // 《南史·梁本纪》—— 侯景之乱,台城陷后
+    quote: { zh: '自我得之,自我失之,亦復何恨。', en: 'I won it myself and I lost it myself. What is there to regret?' },
+    line: { zh: '朕捨身同泰寺,三次。', en: 'Three times I gave myself to the Tongtai Monastery.' },
+  },
+  'hist-zhang-qian': {
+    // 《史记·大宛列传》—— 出使归来奏武帝,凿空西域
+    quote: { zh: '臣在大夏時,見邛竹杖、蜀布。', en: 'While I was in Daxia I saw bamboo staves from Qiong and cloth from Shu.' },
+    line: { zh: '去了十三年,回來只剩兩個人。', en: 'Thirteen years away. Two of us came back.' },
+  },
+  'hist-cixi': {
+    // 《清实录》光绪二十六年上谕 —— 庚子议和
+    quote: { zh: '量中華之物力,結與國之歡心。', en: 'Measure the substance of China, and secure the goodwill of the allied powers.' },
+    line: { zh: '這天下,哀家垂簾看了四十年。', en: 'Forty years I have watched this realm from behind the curtain.' },
+  },
 }
