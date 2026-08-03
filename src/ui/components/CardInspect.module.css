@@ -634,8 +634,11 @@
   opacity: 0.85;
 }
 
-/* 五种关系各一个色相 —— 不读字也能扫出「这个人身边是敌是友」 */
+/* 六种关系各一个色相 —— 不读字也能扫出「这个人身边是敌是友」。
+   类名与 RelEdge['kind'] 一一对应,少一条不会报错只会变成默认色,
+   所以 relationKinds.test 会去数这里的 .rel_* 够不够。 */
 .rel_kin { color: #c9a86a; }
+.rel_mentor { color: #b79ad6; }
 .rel_liege { color: #88b7e8; }
 .rel_foe { color: #c96a5a; }
 .rel_friend { color: #8fb88a; }

@@ -23,6 +23,7 @@ const FIELDS: [string, (c: CardDef) => boolean][] = [
   ['表字', (c) => Boolean(LORE[c.id]?.courtesy?.zh)],
   ['籍贯', (c) => Boolean(LORE[c.id]?.home?.zh)],
   ['生卒年', (c) => Boolean(LORE[c.id]?.life?.zh)],
+  ['官爵', (c) => Boolean(LORE[c.id]?.office?.zh)],
   ['五维', (c) => Boolean(LORE[c.id]?.stats)],
   ['性格特质', (c) => Boolean(LORE[c.id]?.traits?.length)],
   ['尊号', (c) => Boolean(LORE[c.id]?.era?.zh)],

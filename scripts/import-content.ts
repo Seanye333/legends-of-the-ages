@@ -721,6 +721,7 @@ interface CardLore {
   courtesy?: { zh: string; en: string } // 表字
   home?: { zh: string; en: string } // 籍贯
   life?: { zh: string; en: string } // 生卒年
+  office?: { zh: string; en: string } // 官爵(位至X · 封X侯)
   poem?: { zh: string; en: string } // 绝命诗
   taunt?: { zh: string; en: string } // 挑衅
   traits?: string[] // 性格特质 id(译名表在内容层)
@@ -746,12 +747,18 @@ const NOT_A_PLACE = /[過过成貴贵美夫愛爱殺杀活用知待後后時时�
 // 谥号/世称/尊号 —— 它们恰恰是最该显示的那种称呼。
 // 只认「諡曰」「世稱」三四种写法时只有 15 条,而「尊為武聖」(關羽)这种
 // 最该显示的反倒漏了;补齐常见写法后 24 条。
+// 官职与爵位:传里明说「位至/官至/累遷至」的才算最高位 ——
+// 「遷為X」「拜X」是履历上的一站,不是终点,混进来就成了随手一职。
+// 爵位单认「封/追封/進封 + X王/公/侯」。两者都有就并列显示(司徒 · 安國亭侯)。
+// 覆盖率不高(官职 4.3% + 爵位 6.1%),但每一条都是原文里明写的。
+const OFFICE_RE = /(?:位至|官至|累官至|累遷至|終至|後至)([一-龥]{2,7})[,,。;;]/
+const TITLE_RE = /(?:封|追封|進封|襲封)([一-龥]{1,4}(?:王|公|侯))[,,。;;]/
 const POSTH_RE =
   /(?:諡曰|谥曰|追諡|追谥|諡號|谥号|世稱|世称|人稱|人称|號曰|号曰|時人謂之|时人谓之|後世尊為|后世尊为|追尊為|追尊为|尊為|尊为|封為|封为)([一-龥]{2,6})/
 
 const officerById = new Map(unique.map((o) => [o.id, o]))
 const lore: Record<string, CardLore> = {}
-const tally = { bio: 0, quote: 0, poem: 0, line: 0, courtesy: 0, home: 0, life: 0, traits: 0, stats: 0 }
+const tally = { bio: 0, quote: 0, poem: 0, line: 0, courtesy: 0, home: 0, life: 0, office: 0, traits: 0, stats: 0 }
 // 生卒年:源头的 HISTORICAL_LIFESPANS 只覆盖歷代名將;三国那批用名册上的
 // birthYear/deathYear 现拼(两者格式不同,所以不能混成一个来源)
 const lifeOf = (id: string, o: (typeof unique)[number]): { zh: string; en: string } | undefined => {
@@ -820,6 +827,11 @@ for (const o of unique) {
     entry.home = { zh: m[1], en: m[1] }
     tally.home++
   }
+  const office = [bioZh?.match(OFFICE_RE)?.[1], bioZh?.match(TITLE_RE)?.[1]].filter(Boolean)
+  if (office.length) {
+    entry.office = { zh: office.join(' · '), en: office.join(' · ') }
+    tally.office++
+  }
   const life = lifeOf(id, o)
   if (life) {
     entry.life = life
@@ -870,11 +882,15 @@ const handWrittenBios = tally.quote
 interface RelEdge {
   a: string
   b: string
-  kind: 'kin' | 'liege' | 'foe' | 'friend' | 'era'
+  kind: 'kin' | 'mentor' | 'liege' | 'foe' | 'friend' | 'era'
   quote: string // 出处:点到名字的那一句原文
 }
 
 const REL_RULES: [RegExp, RelEdge['kind']][] = [
+  // 师承排在最前:它比「君臣」更具体,而「從X學」同时命中 liege 的「從」。
+  // 只有 40 条,但连出来的是鬼谷门下(蘇秦/張儀/孫臏/龐涓)、
+  // 盧植門下(劉備/公孫瓚)、司馬徽門下(徐庶/諸葛亮)这几条最有名的学脉。
+  [/師事|受業於|從.{1,4}學|門下|弟子|師從|授業/, 'mentor'],
   // 亲族要求**明确的亲属结构**,不能只认单字:「起兵討董卓,挾天子以令諸侯」
   // 里的「子」来自「天子」,单字规则会把曹操和董卓判成亲族。
   // 异姓亲属单列一组:養子/女婿/外甥这些**写法本身就是明确的亲属结构**,
@@ -941,6 +957,7 @@ writeFileSync(
     '  courtesy?: { zh: string; en: string }',
     '  home?: { zh: string; en: string }',
     '  life?: { zh: string; en: string }',
+    '  office?: { zh: string; en: string }',
     '  poem?: { zh: string; en: string }',
     '  taunt?: { zh: string; en: string }',
     '  traits?: string[]',
@@ -955,7 +972,7 @@ writeFileSync(
     'export interface RelEdge {',
     '  a: string',
     '  b: string',
-    "  kind: 'kin' | 'liege' | 'foe' | 'friend' | 'era'",
+    "  kind: 'kin' | 'mentor' | 'liege' | 'foe' | 'friend' | 'era'",
     '  quote: string',
     '}',
     `const relJson = ${JSON.stringify(JSON.stringify(edges))}`,
@@ -973,7 +990,7 @@ writeFileSync(
 console.log(
   `lore.gen.ts: ${Object.keys(lore).length} 条档案 —— ` +
     `生平 ${tally.bio} · 名言 ${tally.quote} · 绝命诗 ${tally.poem} · 台词 ${tally.line} · ` +
-    `表字 ${tally.courtesy} · 籍贯 ${tally.home} · 生卒 ${tally.life} · 性格 ${tally.traits} · 五维 ${tally.stats}`,
+    `表字 ${tally.courtesy} · 籍贯 ${tally.home} · 生卒 ${tally.life} · 官爵 ${tally.office} · 性格 ${tally.traits} · 五维 ${tally.stats}`,
 )
 console.log(
   `  史料关系网:${edges.length} 组,涉及 ${relPeople.size} 名武将 —— ` +

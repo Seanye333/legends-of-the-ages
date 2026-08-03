@@ -13,6 +13,7 @@ import {
 } from '../doctrineColors'
 import { exportCardImage, probeCardArt } from '../cardExport'
 import { loadLore, loreNow, relationsNow, traitNamesNow } from '../../content/loreLazy'
+import type { RelEdge } from '../../content/generated/lore.gen'
 import { bondsOf, bondRoster, cardName, clanRoster, rivalsOf, rivalLore } from '../../content/relations'
 import { TROOP_NAME } from '../../content/troops'
 import { Portrait } from './Portrait'
@@ -37,8 +38,11 @@ interface CardInspectProps {
 // 卡牌详情:长按/点选打开 —— 全身立绘 + 数值 + 效果文本 + 关键词图例
 // (+ 图鉴入口下的分解/合成)。
 // 关系类型的译名。era = 「同時」:生平里同框出现,但看不出更具体的关系。
-const REL_KIND: Record<string, { zh: string; en: string }> = {
+// **类型钉成 RelEdge['kind']** —— 从前是 Record<string,…>,
+// 加一种关系忘了补译名不报错,界面上直接渲染 undefined。
+const REL_KIND: Record<RelEdge['kind'], { zh: string; en: string }> = {
   kin: { zh: '親族', en: 'Kin' },
+  mentor: { zh: '師承', en: 'Taught' },
   liege: { zh: '君臣', en: 'Served' },
   foe: { zh: '敵對', en: 'Foe' },
   friend: { zh: '交好', en: 'Friend' },
@@ -46,8 +50,14 @@ const REL_KIND: Record<string, { zh: string; en: string }> = {
 }
 
 // 有没有值得单独摆一行的「事实」。全空时整块不渲染 —— 少数武将确实什么都查不到。
-function hasDossier(l: { courtesy?: unknown; home?: unknown; life?: unknown; traits?: string[] }): boolean {
-  return Boolean(l.courtesy || l.home || l.life || l.traits?.length)
+function hasDossier(l: {
+  courtesy?: unknown
+  home?: unknown
+  life?: unknown
+  office?: unknown
+  traits?: string[]
+}): boolean {
+  return Boolean(l.courtesy || l.home || l.life || l.office || l.traits?.length)
 }
 
 export function CardInspect({ def, onClose, forge = false }: CardInspectProps) {
@@ -334,6 +344,9 @@ export function CardInspect({ def, onClose, forge = false }: CardInspectProps) {
               )}
               {LORE[def.id].life && (
                 <span className={styles.dossierItem}>{pickCompact(LORE[def.id].life!)}</span>
+              )}
+              {LORE[def.id].office && (
+                <span className={styles.dossierItem}>{pickCompact(LORE[def.id].office!)}</span>
               )}
               {(LORE[def.id].traits ?? []).slice(0, 4).map((tr) => (
                 <span key={tr} className={styles.dossierTrait}>
