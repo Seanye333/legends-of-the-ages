@@ -487,10 +487,113 @@ const unique = all.filter((o) => {
   return true
 })
 
+// ---------- 家族(从生平原文抠出的宗族网)----------
+//
+// 羁绊只能覆盖「桃園結義」这种有名字的关系,三十来条就到头(4.3% 的武将)。
+// 而「谁和谁是一家人」在史料里成百上千条,且写法极其规整:
+// 「夏侯惇之從弟」「關羽長子」「馬良之弟」—— 照抄就是,不用推断。
+//
+// 【为什么必须同姓才算】
+// 窗口里认到「之子」还不够:「曹操之子,封濟陽公。從袁紹征…」这种句子里
+// 亲属词离得近的未必是同一个人。加一条「两人同姓」实测剔掉 102 次误判,
+// 而真同族异姓的情况(过继、赐姓)在这份语料里少到可以整批放弃 ——
+// 宁可漏,不可错:错一条就是卡面上写着家族、玩家查史料查不到。
+const DOUBLE_SURNAMES = [
+  '司馬', '諸葛', '夏侯', '歐陽', '上官', '皇甫', '公孫', '慕容', '宇文', '長孫',
+  '尉遲', '獨孤', '拓跋', '赫連', '宗政', '濮陽', '淳于', '單于', '太叔', '申屠',
+  '公羊', '東方', '司徒', '司空', '令狐', '鍾離', '閭丘', '南宮', '第五', '完顏', '耶律',
+]
+const surnameOf = (n: string) => (DOUBLE_SURNAMES.some((d) => n.startsWith(d)) ? n.slice(0, 2) : n.slice(0, 1))
+// 亲属结构词。**只认带结构的写法**,不认单字 ——
+// 「挾天子以令諸侯」里的「子」来自「天子」,单字规则会把曹操判成谁的儿子。
+const KIN_RE = /(之(弟|兄|子|父|女|母|叔|姪|孫|妻)|兄弟|父子|從弟|從兄|族弟|族兄|長子|次子|少子)/
+
+const clanNameToId = new Map<string, string>()
+for (const o of unique) {
+  // 同名的人不建亲族(重名连错了比不连更糟,和关系网同一条标准)
+  if (clanNameToId.has(o.name.zh)) clanNameToId.set(o.name.zh, '')
+  else clanNameToId.set(o.name.zh, o.id)
+}
+const kinParent = new Map<string, string>()
+const kinFind = (x: string): string => {
+  if (!kinParent.has(x)) kinParent.set(x, x)
+  let r = kinParent.get(x)!
+  while (r !== kinParent.get(r)!) r = kinParent.get(r)!
+  kinParent.set(x, r)
+  return r
+}
+let kinPairs = 0
+for (const o of unique) {
+  const bio = BIOGRAPHIES[o.id]?.zh
+  if (!bio) continue
+  const mySurname = surnameOf(o.name.zh)
+  for (const sentence of bio.split(/[。;!?]/)) {
+    for (const [name, otherId] of clanNameToId) {
+      if (!otherId || otherId === o.id || name.length < 2) continue
+      const at = sentence.indexOf(name)
+      if (at < 0) continue
+      // 在名字前后各 6 字的窗口里认亲属词(和关系网同一套窗口逻辑)
+      if (!KIN_RE.test(sentence.slice(Math.max(0, at - 6), at + name.length + 6))) continue
+      if (surnameOf(name) !== mySurname) continue
+      kinPairs++
+      kinParent.set(kinFind(o.id), kinFind(otherId))
+    }
+  }
+}
+// 连通分量 = 一个家族。族长取 collectorNo 最小的那位,只为让 id 稳定。
+const clanMembers = new Map<string, string[]>()
+for (const x of [...kinParent.keys()]) {
+  const root = kinFind(x)
+  const bucket = clanMembers.get(root)
+  if (bucket) bucket.push(x)
+  else clanMembers.set(root, [x])
+}
+const officerForClan = new Map(unique.map((o) => [o.id, o]))
+const clanOf = new Map<string, CardDef['clan']>()
+// 先按族长归好队,再统一起名 —— 因为「这个姓有几支」要等全部建完才知道。
+const clanHeads = [...clanMembers.values()].map((members) =>
+  [...members].sort((a, b) => (CARD_INDEX[a] ?? 0) - (CARD_INDEX[b] ?? 0) || a.localeCompare(b)),
+)
+// 同姓不同宗的有 27 个姓:程昱这一支和程普那一支都叫「程氏」,劉姓有八支。
+// 光写姓氏,玩家在牌桌上分不出「我这两张程氏算不算一家」——
+// 而这恰恰是这条机制唯一需要玩家判断的事。所以撞车的姓要缀上族长名。
+//
+// 本想按郡望起名(「汝南袁氏」才是史书的叫法),查了一遍放弃:
+// 郡望得从籍贯来,而名册那份籍贯 80% 是错的(见上面 entry.home 那段),
+// 传里抠出来的又只覆盖三分之一。宁可叫得笨,不可叫得错。
+const surnameCount = new Map<string, number>()
+for (const sorted of clanHeads) {
+  const zh = surnameOf(officerForClan.get(sorted[0])!.name.zh)
+  surnameCount.set(zh, (surnameCount.get(zh) ?? 0) + 1)
+}
+for (const sorted of clanHeads) {
+  const head = officerForClan.get(sorted[0])!
+  const zh = surnameOf(head.name.zh)
+  const en = head.name.en.split(/[\s-]/)[0]
+  const forked = (surnameCount.get(zh) ?? 1) > 1
+  const def = {
+    id: `clan-${sorted[0]}`,
+    name: forked
+      ? { zh: `${zh}氏 · ${head.name.zh}一支`, en: `House of ${en} (${head.name.en}'s line)` }
+      : { zh: `${zh}氏`, en: `House of ${en}` },
+    size: sorted.length,
+  }
+  for (const m of sorted) clanOf.set(m, def)
+}
+console.log(
+  `家族:${clanMembers.size} 个,${clanOf.size} 名武将(${((clanOf.size / unique.length) * 100).toFixed(1)}%),` +
+    `${kinPairs} 组亲族对 —— 最大 ${Math.max(...[...clanMembers.values()].map((m) => m.length))} 人`,
+)
+
 const rarityOf = makeRarityOf(unique.map((o) => fame(o.stats)))
 const costOf = makeCostOf(unique.map((o) => might(o.stats)))
 const cards = unique
-  .map((o) => generateCard(o, rarityOf))
+  .map((o) => {
+    const card = generateCard(o, rarityOf)
+    const clan = clanOf.get(o.id)
+    if (clan) card.clan = clan
+    return card
+  })
   .sort((a, b) => a.collectorNo - b.collectorNo || a.id.localeCompare(b.id))
 
 const rarityCount: Record<string, number> = {}

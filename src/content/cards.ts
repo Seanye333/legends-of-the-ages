@@ -1,4 +1,5 @@
 import type { CardDef, CardLibrary, Keyword, LocalizedText } from '../engine/types'
+import { CLAN_ATTACK, CLAN_HEALTH } from '../engine/types'
 import { GENERATED_CARDS } from './generated/cards.gen'
 import { SIGNATURE_OVERRIDES } from './overrides/signature'
 import { SIGNATURE_SKILLS } from './overrides/signature-skills'
@@ -133,6 +134,17 @@ function withBondRivalText(card: CardDef, nameOf: Record<string, LocalizedText>)
     lines.push({
       zh: `宿敵 · ${r.name.zh}:敵方場上有${label(r.foe, 'zh')}時,雙方各 ${s.zh}。`,
       en: `Rival · ${r.name.en}: while ${label(r.foe, 'en')} is on the enemy field, both gain ${s.en}.`,
+    })
+  }
+  // 家族没有锚点,文案里也就不点名成员(曹氏 27 人,列出来没人读)。
+  // 但**必须写清族人数**:同姓不等于同族(張遼不是張飛的族人),
+  // 玩家只有看见「27 人」才会去点开看名单,而不是照着姓氏猜。
+  if (card.clan) {
+    const c = card.clan
+    const s = statText(CLAN_ATTACK, CLAN_HEALTH)
+    lines.push({
+      zh: `家族 · ${c.name.zh}(${c.size} 人):另有族人在場時,同族各 ${s.zh}。`,
+      en: `Clan · ${c.name.en} (${c.size}): while a kinsman is also on your field, each member gains ${s.en}.`,
     })
   }
   if (lines.length === 0) return card

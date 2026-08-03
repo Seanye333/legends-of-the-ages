@@ -378,6 +378,8 @@ export interface CardDef {
   bond?: BondDef
   // 宿敌:与 bond 同源的镜面 —— `foe` 在**敌方**场上时,双方一起获得增益。
   rival?: RivalDef
+  // 家族:同族两人同时在场即成立(不挂锚点,见 ClanDef)。由生平原文抠出,生成层写入。
+  clan?: ClanDef
   endOfTurn?: EffectScript // 我方回合结束时
   startOfTurn?: EffectScript // 我方回合开始时
   onDamaged?: EffectScript // 自身受伤后(有递归深度上限)
@@ -891,6 +893,25 @@ export interface RivalDef {
   health: number
 }
 
+// 家族 —— 羁绊的规模化版本。
+//
+// 羁绊要点名列成员,所以它只能覆盖「桃園結義」这种**有名字的**关系,
+// 三十来条就到头了(实测覆盖 4.3% 的武将)。而「谁和谁是一家人」在史料里
+// 是成百上千条:生平原文写着「夏侯惇之從弟」「關羽長子」「馬良之弟」——
+// 照抄就有 328 组、155 个家族、455 名武将。
+//
+// 所以家族**不挂锚点**:同族的每个人都带同一个 clan.id,场上凑够两个就成立。
+// 没有「谁是这条羁绊的主人」这个概念,也就不需要 O(n²) 地互相点名。
+//
+// 定价:条件比羁绊松得多(曹氏 27 人,随便两个都算),所以只给 CLAN_BONUS
+// 那一档,而且**不随人数叠加** —— 摆三个曹家人也还是各 +1/+1。
+// 叠加会让宗族牌组在六费直接滚雪球,那是另一个游戏。
+export interface ClanDef {
+  id: string // 家族 id(clan-cao…)
+  name: LocalizedText // 「曹氏」/ House of Cao
+  size: number // 全卡池里的族人数 —— 卡面文案要写,免得玩家以为同姓就算
+}
+
 export interface GameConfig {
   seed: number
   heroIds: [string, string]
@@ -937,3 +958,13 @@ export const QUEST_LIMIT = 1
 // 攻城:攻击主公时的额外伤害。写成常量是因为它会被定价脚本读到 ——
 // 散在卡面上的话,以后想调这条轴就得挨张改。
 export const SIEGE_BONUS = 2
+// 家族:同族 ≥CLAN_QUORUM 人同时在场时,这些人各 +CLAN_ATTACK/+CLAN_HEALTH。
+// 两人就成立,是因为大多数家族只有两个人(155 个家族里 101 个是两人);
+// 门槛提到三,那 101 个就等于没做。
+export const CLAN_QUORUM = 2
+// 只加血不加攻 —— 和士气那条常量的取舍正好相反,理由也正好相反:
+// 宗族是**聚而不散**,不是打得更凶。而且实测加攻不行:+1/+1 时
+// 魏武揮鞭(曹昂/曹叡/曹霖 五张同族)从 50% 冲到 61.8%,矩阵直接出闸门 ——
+// 贪心 AI 把攻击直接换成脸伤,而血只换来多活一轮。
+export const CLAN_ATTACK = 0
+export const CLAN_HEALTH = 1

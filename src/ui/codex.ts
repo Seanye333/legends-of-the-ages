@@ -259,6 +259,19 @@ export const CODEX: CodexSection[] = [
         example: (c) => c.rival !== undefined,
       },
       {
+        id: 'clan',
+        term: { zh: '家族 Clan', en: 'Clan' },
+        rule: {
+          zh: '同一家族的两名**不同**武将同时在我方场上时,该家族全员各 +1/+1。',
+          en: 'While two different generals of the same house share your field, every member of that house on it gains +1/+1.',
+        },
+        note: {
+          zh: '族谱不是按姓氏猜的,是从生平原文里抠的:「夏侯惇之從弟」「關羽長子」「馬良之弟」—— 所以**同姓未必同族**,張遼不在張飛那一族里。卡面会写这一族共有多少人,点开列传能看全名单。同一个人的两张牌不算一族(那是同一个人)。',
+          en: 'Lineage is read from the biographies, not guessed from surnames — so a shared surname is not a clan: Zhang Liao is not of Zhang Fei\'s house. The card states how many kinsmen exist; the dossier lists them. Two copies of one general do not count — that is one person.',
+        },
+        example: (c) => c.clan !== undefined,
+      },
+      {
         id: 'secret',
         term: { zh: '伏兵 Secret', en: 'Secret' },
         rule: { zh: '打出后不结算,埋在主帅面板旁;由对手的动作触发才翻开。', en: 'Played face-down beside your hero. It resolves only when the opponent does something specific.' },

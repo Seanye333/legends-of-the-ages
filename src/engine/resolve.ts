@@ -27,6 +27,9 @@ import type {
 } from './types'
 import {
   BOARD_LIMIT,
+  CLAN_ATTACK,
+  CLAN_HEALTH,
+  CLAN_QUORUM,
   HAND_LIMIT,
   MANA_CAP,
   MORALE_CAP,
@@ -259,6 +262,34 @@ export function refreshAuras(state: GameState, lib: CardLibrary): void {
       for (const inst of board) {
         if (inst.iid !== source.iid && !bond.members.includes(inst.defId)) continue
         inst.enchants.push({ attack: bond.attack, health: bond.health, auraFrom: source.iid })
+        refreshInstance(inst, lib)
+      }
+    }
+    // 家族:同族在场 ≥CLAN_QUORUM 人 → 这些人各吃一份(见 ClanDef)。
+    //
+    // 和羁绊的区别在于**没有锚点**:不存在「谁发的这份增益」,所以 auraFrom
+    // 用哨兵 -3(战场环境占 -1、士气占 -2)。开头那轮「撤掉所有 auraFrom 附魔」
+    // 照样清得干净,所以死一个人就自动散,不需要反向登记。
+    //
+    // 被沉默的人**既不算人头也不吃增益** —— 沉默的语义是「这张卡上写的字都不算数了」,
+    // 而家族是写在卡面上的(见 cards.withClanText)。羁绊那轮只挡了锚点,
+    // 是因为羁绊的字只写在锚点上;家族每个人身上都有,所以两边都要挡。
+    const byClan = new Map<string, CardInstance[]>()
+    for (const inst of board) {
+      if (inst.silenced) continue
+      const clan = lib[inst.defId]?.clan
+      if (!clan) continue
+      const bucket = byClan.get(clan.id)
+      if (bucket) bucket.push(inst)
+      else byClan.set(clan.id, [inst])
+    }
+    // 人头按**不同的人**数,不按张数:同一个人的两张牌不构成一个家族
+    //(「兩個司馬懿在場」是同一个人,不是父子)。附带好处是堵掉一条捷径 ——
+    // 否则带两张同族传说就自动 +1/+1,而家族本该是构筑上的取舍。
+    for (const kin of byClan.values()) {
+      if (new Set(kin.map((u) => u.defId)).size < CLAN_QUORUM) continue
+      for (const inst of kin) {
+        inst.enchants.push({ attack: CLAN_ATTACK, health: CLAN_HEALTH, auraFrom: -3 })
         refreshInstance(inst, lib)
       }
     }

@@ -29,6 +29,7 @@ const FIELDS: [string, (c: CardDef) => boolean][] = [
   ['名言', (c) => Boolean(LORE[c.id]?.quote?.zh)],
   ['绝命诗', (c) => Boolean(LORE[c.id]?.poem?.zh)],
   ['出战台词', (c) => Boolean(LORE[c.id]?.line?.zh)],
+  ['家族', (c) => Boolean(c.clan)],
 ]
 
 console.log(`武将 ${G.length} 名\n【档案覆盖率】`)

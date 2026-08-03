@@ -75,6 +75,20 @@ export function cardName(id: string): LocalizedText {
   return CARDS_BY_ID[id]?.name ?? { zh: id, en: id }
 }
 
+// 家族名册。卡面只写得下「曹氏(27 人)」,谁是那 27 个得能查得到 ——
+// 否则玩家没法判断自己手里那两张到底算不算一家(同姓不等于同族)。
+const CLAN_ROSTER = new Map<string, string[]>()
+for (const c of CARDS) {
+  if (!c.clan) continue
+  const list = CLAN_ROSTER.get(c.clan.id)
+  if (list) list.push(c.id)
+  else CLAN_ROSTER.set(c.clan.id, [c.id])
+}
+
+export function clanRoster(clanId: string): string[] {
+  return CLAN_ROSTER.get(clanId) ?? []
+}
+
 // ---------- 构筑器:这副牌能凑成哪几条 ----------
 
 export interface DeckBond {

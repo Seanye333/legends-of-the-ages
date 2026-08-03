@@ -320,6 +320,38 @@
   color: rgba(232, 220, 198, 0.65);
 }
 
+/* 族人名册:族名一枚印,后面挂一串可点的族人 */
+.clan {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 4px 6px;
+  margin: 4px 0 6px;
+}
+
+.clanName {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: rgba(216, 178, 106, 0.9);
+}
+
+.clanKin {
+  padding: 1px 7px;
+  border: 1px solid rgba(216, 178, 106, 0.28);
+  border-radius: 9px;
+  background: rgba(216, 178, 106, 0.08);
+  color: rgba(232, 220, 198, 0.82);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.clanKin:hover {
+  border-color: rgba(216, 178, 106, 0.6);
+  color: #f0e6d2;
+}
+
 .traits {
   display: flex;
   flex-wrap: wrap;

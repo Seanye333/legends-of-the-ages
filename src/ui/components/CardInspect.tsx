@@ -13,7 +13,7 @@ import {
 } from '../doctrineColors'
 import { exportCardImage, probeCardArt } from '../cardExport'
 import { loadLore, loreNow, relationsNow, traitNamesNow } from '../../content/loreLazy'
-import { bondsOf, bondRoster, cardName, rivalsOf, rivalLore } from '../../content/relations'
+import { bondsOf, bondRoster, cardName, clanRoster, rivalsOf, rivalLore } from '../../content/relations'
 import { TROOP_NAME } from '../../content/troops'
 import { Portrait } from './Portrait'
 import { usePickCompact, usePickText, useT } from '../i18n'
@@ -297,6 +297,23 @@ export function CardInspect({ def, onClose, forge = false }: CardInspectProps) {
                   )}
                 </div>
               ))}
+            </div>
+          )}
+          {/* 家族名册:卡面只写得下人数,谁是族人得在这里查 ——
+              「同姓不等于同族」这件事,只有摆出名单才说得清楚。 */}
+          {def.clan && (
+            <div className={styles.relations}>
+              <div className={styles.bondRow}>
+                <span className={styles.bondName}>
+                  {t('家族 · ', 'Clan · ')}
+                  {pick(def.clan.name)}
+                </span>
+                <span className={styles.bondMembers}>
+                  {clanRoster(def.clan.id)
+                    .map((id) => pickCompact(cardName(id)))
+                    .join(' · ')}
+                </span>
+              </div>
             </div>
           )}
           {/* 武将档案:字 / 籍贯 / 生卒 / 性格 / 五维。

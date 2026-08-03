@@ -6,7 +6,7 @@ import { useCollection } from '../../app/collectionStore'
 import { Portrait } from '../components/Portrait'
 import { DOCTRINE_COLORS, dynastyName } from '../doctrineColors'
 import { usePickCompact, usePickText, useT } from '../i18n'
-import { ALL_BONDS, ALL_RIVALS, bondRoster, cardName, rivalLore } from '../../content/relations'
+import { ALL_BONDS, ALL_RIVALS, bondRoster, cardName, clanRoster, rivalLore } from '../../content/relations'
 import { RelationGraph } from '../components/RelationGraph'
 import { EraScroll } from '../components/EraScroll'
 import { ERA_OF, type Era } from '../../content/eras'
@@ -302,6 +302,20 @@ export function LoreScreen({ onBack }: Props) {
                   )}
                   {selLore.home && <span>{t('籍', 'From')} {pickCompact(selLore.home)}</span>}
                   {selLore.life && <span>{pickCompact(selLore.life)}</span>}
+                </div>
+              )}
+              {/* 族人名册。列传是**顺着人往下翻**的地方,家族正好是一条现成的线索:
+                  点开曹操看见二十七个曹,再点进去就是另一段传。 */}
+              {sel.clan && (
+                <div className={styles.clan}>
+                  <span className={styles.clanName}>{pick(sel.clan.name)}</span>
+                  {clanRoster(sel.clan.id)
+                    .filter((id) => id !== sel.id)
+                    .map((id) => (
+                      <button key={id} className={styles.clanKin} onClick={() => setSelected(id)}>
+                        {pickCompact(cardName(id))}
+                      </button>
+                    ))}
                 </div>
               )}
               {(selLore.traits ?? []).length > 0 && (
