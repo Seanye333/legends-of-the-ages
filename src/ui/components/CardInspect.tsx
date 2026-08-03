@@ -112,6 +112,22 @@ export function CardInspect({ def, onClose, forge = false }: CardInspectProps) {
   // 史料关系:生平里互相点到名的人。**只做展示不给增益** ——
   // 几百条羁绊一次性上线等于给预组白送强度(见生成脚本里的说明)。
   const relEdges = LORE[def.id] ? relationsNow(def.id).slice(0, 6) : []
+  // 族人名单:默认只露十个,已拥有的排前面(自己排最前)
+  const [clanOpen, setClanOpen] = useState(false)
+  const ownedMap = useCollection((s) => s.owned)
+  const clanKin = (() => {
+    if (!def.clan) return { shown: [] as string[], rest: 0 }
+    const all = clanRoster(def.clan.id)
+      .slice()
+      .sort(
+        (a, b) =>
+          Number(b === def.id) - Number(a === def.id) ||
+          Number((ownedMap[b] ?? 0) > 0) - Number((ownedMap[a] ?? 0) > 0),
+      )
+    return clanOpen || all.length <= 10
+      ? { shown: all, rest: 0 }
+      : { shown: all.slice(0, 10), rest: all.length - 10 }
+  })()
   useEffect(() => {
     let live = true
     loadLore().then((l) => {
@@ -318,10 +334,16 @@ export function CardInspect({ def, onClose, forge = false }: CardInspectProps) {
                   {t('家族 · ', 'Clan · ')}
                   {pick(def.clan.name)}
                 </span>
+                {/* 曹氏 27 人整串铺出来是一堵墙 —— 超过十个就折起来。
+                    先列的是**收藏里已有的**:玩家真正要判断的是「我手上这几张算不算一家」,
+                    而不是把全族名单背下来。 */}
                 <span className={styles.bondMembers}>
-                  {clanRoster(def.clan.id)
-                    .map((id) => pickCompact(cardName(id)))
-                    .join(' · ')}
+                  {clanKin.shown.map((id) => pickCompact(cardName(id))).join(' · ')}
+                  {clanKin.rest > 0 && (
+                    <button className={styles.clanMore} onClick={() => setClanOpen((v) => !v)}>
+                      {clanOpen ? t('收起', 'less') : t(`…另 ${clanKin.rest} 人`, `…${clanKin.rest} more`)}
+                    </button>
+                  )}
                 </span>
               </div>
             </div>

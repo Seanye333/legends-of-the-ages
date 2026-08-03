@@ -637,6 +637,22 @@
 /* 六种关系各一个色相 —— 不读字也能扫出「这个人身边是敌是友」。
    类名与 RelEdge['kind'] 一一对应,少一条不会报错只会变成默认色,
    所以 relationKinds.test 会去数这里的 .rel_* 够不够。 */
+.clanMore {
+  margin-left: 6px;
+  padding: 0 4px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(216, 178, 106, 0.14);
+  color: rgba(216, 178, 106, 0.92);
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+}
+
+.clanMore:hover {
+  background: rgba(216, 178, 106, 0.26);
+}
+
 .rel_kin { color: #c9a86a; }
 .rel_mentor { color: #b79ad6; }
 .rel_liege { color: #88b7e8; }
