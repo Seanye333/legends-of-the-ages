@@ -50,9 +50,22 @@ for (const r of ['legendary', 'epic', 'rare', 'common'] as const) {
   }
 }
 
-// 机制重复度 —— 第二条主线的尺子
+// 机制重复度 —— 第二条主线的尺子。
+//
+// 【2026-08-02 修了这把尺子】
+// 原来只看 battlecry / deathrattle / aura 三样,于是**只带回合触发的卡在尺子眼里
+// 等于白板**:anon-forage(回合结束屯粮)、anon-runner(攻击后士气)、
+// 营建型(回合结束护甲)全被算成同一张牌。
+// 那批微效果本来就是**专门为最大同质组做的**,做完了尺子却看不见 ——
+// 于是「加了效果、重复度反而涨」这种读数是尺子给的,不是卡池给的。
+// 现在把全部机制字段都算进指纹。
 const fp = (c: CardDef) =>
-  JSON.stringify([c.cost, c.attack, c.health, [...c.keywords].sort(), c.battlecry?.ops, c.deathrattle?.ops, c.aura, c.troop])
+  JSON.stringify([
+    c.cost, c.attack, c.health, [...c.keywords].sort(), c.troop,
+    c.battlecry?.ops, c.deathrattle?.ops, c.aura,
+    c.endOfTurn?.ops, c.startOfTurn?.ops, c.onAttack?.ops, c.onDamaged?.ops, c.onSpellCast?.ops,
+    c.combo?.ops, c.choose, c.enrage, c.overload, c.spellDamage, c.formation, c.clan?.id,
+  ])
 const groups = new Map<string, CardDef[]>()
 for (const c of G) groups.set(fp(c), [...(groups.get(fp(c)) ?? []), c])
 const sorted = [...groups.values()].sort((a, b) => b.length - a.length)

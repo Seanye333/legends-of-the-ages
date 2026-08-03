@@ -537,17 +537,20 @@ const DEED_AFFINITY: Record<string, { kw?: string[]; shapes?: string[] }> = {
   doomed: { shapes: ['dr-strike', 'dr-summon', 'dr-draw', 'dr-legacy', 'dr-avenge', 'dr-armor'] },
   regent: { kw: ['guard'], shapes: ['aura-both', 'aura-hp', 'lo-hearten', 'bc-kin'] },
   recluse: { kw: ['stealth'], shapes: ['lo-veil', 'bc-discover-costly', 'choose-scholar'] },
-  // 新标签只抬权重,下面没有任何「只有它才开得了」的候选(见 DEED_WORDS 那段说明)
-  vanguard: { kw: ['charge', 'rush'], shapes: ['bc-face', 'oa-press', 'oa-momentum'] },
-  oath: { shapes: ['aura-both', 'lo-hearten', 'bc-kin', 'bc-summon-pair'] },
-  usurp: { shapes: ['bc-seize', 'bc-steal', 'bc-silence', 'lo-ruse'] },
-  martyr: { shapes: ['dr-strike', 'dr-avenge', 'dr-legacy', 'dr-summon'] },
-  prodigy: { shapes: ['bc-draw', 'lo-scribe', 'bc-discover-strat'] },
-  pacify: { shapes: ['lo-mend', 'bc-heal-general', 'aura-hp', 'od-rally'] },
-  frontier: { kw: ['rush'], shapes: ['bc-summon-pair', 'lo-skirmish', 'bc-recruit'] },
-  judge: { shapes: ['bc-silence', 'lo-ruse', 'choose-scholar'] },
-  builder: { shapes: ['eot-armor', 'bc-armor', 'lo-palisade', 'bc-wall'] },
-  renown: { shapes: ['lo-hearten', 'bc-warcry', 'bc-discover-general'] },
+  // 新标签:抬权重的形状**加上**自己那条中费效果(deed-mid-*)。
+  // 一开始故意不列自己那条 —— 结果是它几乎抽不中(DEED_BOOST 是 6 倍,
+  // 没进这张表的候选等于要以 1 打 6),十条新效果全池只落到 12 张卡上。
+  // 抬权重这件事**只对表里的键生效**,写了候选不进表 = 没写。
+  vanguard: { kw: ['charge', 'rush'], shapes: ['bc-face', 'oa-press', 'oa-momentum', 'deed-mid-vanguard'] },
+  oath: { shapes: ['aura-both', 'lo-hearten', 'bc-kin', 'bc-summon-pair', 'deed-mid-oath'] },
+  usurp: { shapes: ['bc-seize', 'bc-steal', 'bc-silence', 'lo-ruse', 'deed-mid-usurp'] },
+  martyr: { shapes: ['dr-strike', 'dr-avenge', 'dr-legacy', 'dr-summon', 'deed-mid-martyr'] },
+  prodigy: { shapes: ['bc-draw', 'lo-scribe', 'bc-discover-strat', 'deed-mid-prodigy'] },
+  pacify: { shapes: ['lo-mend', 'bc-heal-general', 'aura-hp', 'od-rally', 'deed-mid-pacify'] },
+  frontier: { kw: ['rush'], shapes: ['bc-summon-pair', 'lo-skirmish', 'bc-recruit', 'deed-mid-frontier'] },
+  judge: { shapes: ['bc-silence', 'lo-ruse', 'choose-scholar', 'deed-mid-judge'] },
+  builder: { shapes: ['eot-armor', 'bc-armor', 'lo-palisade', 'bc-wall', 'deed-mid-builder'] },
+  renown: { shapes: ['lo-hearten', 'bc-warcry', 'bc-discover-general', 'deed-mid-renown'] },
 }
 
 // 从生平原文抽标签。**纯函数**(同一段文字永远给同一批标签),
@@ -607,6 +610,10 @@ export const TRAIT_BOOST = 3
 //
 // 权重是相对的,不是概率。同一张卡通常有 10-25 个候选命中条件,
 // 权重决定它们之间的份额。定价(points)必须诚实 —— 它会从身材里扣。
+
+// 「亲兵型 vs 主将型」—— 五维里最能把这两类人分开的一条轴。
+// 新事迹的中费效果每条都按它分两路(见下面那段说明)。
+const bold = (c: Ctx) => c.s.war >= c.s.leadership
 
 const POOL: Cand[] = [
   // ══════ 事迹中效果(1.8–2.6 点,3-6 费段)══════
@@ -726,6 +733,192 @@ const POOL: Cand[] = [
       o.endOfTurn = { ops: [{ op: 'damage', amount: 2, target: 'weakestEnemyGeneral' }] }
       o.points += 2.2
       t(o, '我方回合結束時:對現存生命最低的敵將造成 2 點傷害。', 'At the end of your turn: deal 2 damage to the enemy general with the lowest health.')
+    },
+  },
+  // ══════ 新事迹的中费效果(2026-08-02,1.9–2.6 点)══════
+  //
+  // 上一轮补了十条新事迹标签,但它们**只进了 DEED_AFFINITY** —— 只抬权重,
+  // 没有自己的效果。那一步是刻意的:先证明成分不动,再往上加东西。
+  //
+  // 【每条为什么要分两路】
+  // 第一版是一条标签一个固定效果,结果**重复度反而涨了**(42.4% → 43.8%):
+  // 禦邊的有 78 人、死節的有 65 人,他们原本分散在十几种形状里,
+  // 现在一条权重 1.3 的专属候选把他们收拢成了同一张牌。
+  // 「给这批人一个专属效果」和「让这批人各不相同」是两件事,第一版只做到了前者。
+  // 所以每条按**武力 vs 統率**分两路:同样是先登,猛将自己先冲,统帅带着人冲。
+  // 这条轴不是随手挑的 —— 它是五维里最能分开「亲兵型」和「主将型」的一条。
+  {
+    key: 'deed-mid-vanguard',
+    weight: 1.3,
+    points: 2.4,
+    // 先登:第一个爬上城墙的人
+    when: (c) => c.deeds.includes('vanguard') && c.cost >= 3 && c.cost <= 7,
+    emit: (o, c) => {
+      if (bold(c)) {
+        o.keywords.push('charge')
+        o.battlecry = { ops: [{ op: 'buffStats', attack: 2, health: 0, target: 'self' }] }
+        t(o, '衝鋒。戰吼:自身獲得 +2/+0。', 'Charge. Battlecry: This general gains +2/+0.')
+      } else {
+        o.battlecry = { ops: [{ op: 'grantKeyword', keyword: 'rush', target: 'allFriendlyOthers' }] }
+        t(o, '戰吼:其餘友方武將獲得【突襲】。', 'Battlecry: Your other generals gain [Rush].')
+      }
+      o.points += 2.4
+    },
+  },
+  {
+    key: 'deed-mid-oath',
+    weight: 1.3,
+    points: 2.3,
+    // 結義:誓同生死 —— 谁先倒下,另一个接着打
+    when: (c) => c.deeds.includes('oath') && c.cost >= 3 && c.cost <= 7,
+    emit: (o, c) => {
+      if (bold(c)) {
+        o.deathrattle = { ops: [{ op: 'buffStats', attack: 3, health: 0, target: 'randomFriendlyGeneral' }] }
+        t(o, '亡語:隨機一名友方武將獲得 +3/+0。', 'Deathrattle: A random friendly general gains +3/+0.')
+      } else {
+        o.deathrattle = { ops: [{ op: 'buffStats', attack: 1, health: 3, target: 'randomFriendlyGeneral' }] }
+        t(o, '亡語:隨機一名友方武將獲得 +1/+3。', 'Deathrattle: A random friendly general gains +1/+3.')
+      }
+      o.points += 2.3
+    },
+  },
+  {
+    key: 'deed-mid-usurp',
+    weight: 1.2,
+    points: 2.6,
+    // 篡立:挾天子以令諸侯 —— 把对面的人拿过来用
+    when: (c) => c.deeds.includes('usurp') && c.cost >= 4 && c.cost <= 7,
+    emit: (o, c) => {
+      if (bold(c)) {
+        o.battlecry = { ops: [{ op: 'seize', target: 'weakestEnemyGeneral' }] }
+        t(o, '戰吼:策反敵方生命最低的武將。', 'Battlecry: Seize the enemy general with the lowest health.')
+      } else {
+        o.battlecry = { ops: [{ op: 'stealCard', count: 2 }] }
+        t(o, '戰吼:從對手手牌取 2 張。', "Battlecry: Take 2 cards from your opponent's hand.")
+      }
+      o.points += 2.6
+    },
+  },
+  {
+    key: 'deed-mid-martyr',
+    weight: 1.3,
+    points: 2.2,
+    // 死節:自刎、伏劍、夷三族 —— 死得比活着更响
+    when: (c) => c.deeds.includes('martyr') && c.cost >= 3 && c.cost <= 7,
+    emit: (o, c) => {
+      if (bold(c)) {
+        o.deathrattle = { ops: [{ op: 'damage', amount: 3, target: 'strongestEnemyGeneral' }, { op: 'draw', count: 1 }] }
+        t(o, '亡語:對敵方攻擊最高的武將造成 3 點傷害,並抽 1 張牌。', 'Deathrattle: Deal 3 damage to the enemy general with the highest attack, then draw a card.')
+      } else {
+        o.deathrattle = { ops: [{ op: 'aoeDamage', amount: 1 }, { op: 'gainMorale', amount: 1 }] }
+        t(o, '亡語:對敵方全場造成 1 點傷害,士氣 +1。', 'Deathrattle: Deal 1 damage to all enemy generals and gain 1 Morale.')
+      }
+      o.points += 2.2
+    },
+  },
+  {
+    key: 'deed-mid-prodigy',
+    weight: 1.2,
+    points: 2.3,
+    // 少有奇才:早慧的人先看到别人还没看到的牌
+    when: (c) => c.deeds.includes('prodigy') && c.cost >= 3 && c.cost <= 6,
+    emit: (o, c) => {
+      if (bold(c)) {
+        o.battlecry = { ops: [{ op: 'draw', count: 1 }, { op: 'buffStats', attack: 2, health: 2, target: 'self' }] }
+        t(o, '戰吼:抽 1 張牌,自身獲得 +2/+2。', 'Battlecry: Draw a card; this general gains +2/+2.')
+      } else {
+        o.battlecry = { ops: [{ op: 'draw', count: 2 }, { op: 'reduceCost', amount: 1, filter: 'all' }] }
+        t(o, '戰吼:抽 2 張牌,手牌全部 -1 費。', 'Battlecry: Draw 2 cards; cards in your hand cost 1 less.')
+      }
+      o.points += 2.3
+    },
+  },
+  {
+    key: 'deed-mid-pacify',
+    weight: 1.2,
+    points: 2.1,
+    // 招撫:七擒七縱那一路 —— 不杀,收
+    when: (c) => c.deeds.includes('pacify') && c.cost >= 3 && c.cost <= 7,
+    emit: (o, c) => {
+      if (bold(c)) {
+        o.battlecry = { ops: [{ op: 'heal', amount: 4, target: 'weakestFriendlyGeneral' }, { op: 'gainMorale', amount: 1 }] }
+        t(o, '戰吼:使生命最低的友方武將恢復 4 點生命,士氣 +1。', 'Battlecry: Restore 4 Health to your lowest-health general and gain 1 Morale.')
+      } else {
+        o.battlecry = { ops: [{ op: 'heal', amount: 3, target: 'allFriendlyGenerals' }] }
+        t(o, '戰吼:友方全場恢復 3 點生命。', 'Battlecry: Restore 3 Health to all friendly generals.')
+      }
+      o.points += 2.1
+    },
+  },
+  {
+    key: 'deed-mid-frontier',
+    weight: 1.3,
+    points: 2.4,
+    // 禦邊:边军是常年拉起来的,不是临时召的
+    when: (c) => c.deeds.includes('frontier') && c.cost >= 3 && c.cost <= 7,
+    emit: (o, c) => {
+      if (bold(c)) {
+        o.onAttack = { ops: [{ op: 'damage', amount: 1, target: 'enemyHero' }] }
+        o.keywords.push('rush')
+        t(o, '突襲。此武將攻擊後:對敵方主公造成 1 點傷害。', 'Rush. After this general attacks: deal 1 damage to the enemy hero.')
+      } else {
+        o.startOfTurn = { ops: [{ op: 'summon', defId: 'token-xiangyong', count: 1 }] }
+        t(o, '我方回合開始時:召喚一個 1/1 鄉勇。', 'At the start of your turn: summon a 1/1 Village Levy.')
+      }
+      o.points += 2.4
+    },
+  },
+  {
+    key: 'deed-mid-judge',
+    weight: 1.2,
+    points: 2.2,
+    // 治獄:明斷 —— 把对面那张最能说的牌说没了
+    when: (c) => c.deeds.includes('judge') && c.cost >= 3 && c.cost <= 7,
+    emit: (o, c) => {
+      if (bold(c)) {
+        o.battlecry = { ops: [{ op: 'silence', target: 'strongestEnemyGeneral' }, { op: 'damage', amount: 2, target: 'strongestEnemyGeneral' }] }
+        t(o, '戰吼:沉默敵方攻擊最高的武將,並對其造成 2 點傷害。', 'Battlecry: Silence the enemy general with the highest attack and deal 2 damage to it.')
+      } else {
+        o.battlecry = { ops: [{ op: 'silence', target: 'strongestEnemyGeneral' }, { op: 'draw', count: 1 }] }
+        t(o, '戰吼:沉默敵方攻擊最高的武將,並抽 1 張牌。', 'Battlecry: Silence the enemy general with the highest attack, then draw a card.')
+      }
+      o.points += 2.2
+    },
+  },
+  {
+    key: 'deed-mid-builder',
+    weight: 1.2,
+    points: 2.0,
+    // 營建:修城、治水、開渠 —— 慢,但每回合都在长
+    when: (c) => c.deeds.includes('builder') && c.cost >= 3 && c.cost <= 7,
+    emit: (o, c) => {
+      if (bold(c)) {
+        o.keywords.push('guard')
+        o.battlecry = { ops: [{ op: 'gainArmor', amount: 5 }] }
+        t(o, '守護。戰吼:主公獲得 5 點護甲。', 'Guard. Battlecry: Your hero gains 5 Armor.')
+      } else {
+        o.keywords.push('guard')
+        o.endOfTurn = { ops: [{ op: 'gainArmor', amount: 2 }] }
+        t(o, '守護。我方回合結束時:主公獲得 2 點護甲。', 'Guard. At the end of your turn: your hero gains 2 Armor.')
+      }
+      o.points += 2.0
+    },
+  },
+  {
+    key: 'deed-mid-renown',
+    weight: 1.2,
+    points: 2.2,
+    // 名重海內:名声本身就是号召力 —— 望重者一到,人就来了
+    when: (c) => c.deeds.includes('renown') && c.cost >= 3 && c.cost <= 7,
+    emit: (o, c) => {
+      if (bold(c)) {
+        o.battlecry = { ops: [{ op: 'recruit', count: 1 }, { op: 'gainMorale', amount: 1 }] }
+        t(o, '戰吼:從牌庫召喚 1 名武將,士氣 +1。', 'Battlecry: Summon a general from your deck and gain 1 Morale.')
+      } else {
+        o.battlecry = { ops: [{ op: 'tutor', kind: 'general', count: 1 }, { op: 'gainMorale', amount: 1 }] }
+        t(o, '戰吼:檢索 1 名武將,士氣 +1。', 'Battlecry: Draw a general from your deck and gain 1 Morale.')
+      }
+      o.points += 2.2
     },
   },
   // ══════ 中费变体(2.0–2.6 点)══════
