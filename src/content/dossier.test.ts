@@ -33,6 +33,14 @@ describe('武将档案的出处', () => {
     expect(n).toBeGreaterThan(600)
   })
 
+  // 源头有 17 条「生平」其实是交叉引用(「參見「hist-xu-da」(明初徐達)。」)。
+  // 徐達是冒险第二章的关底 —— 他的列传上就印着这一行坏指针。
+  // 这类内容不会崩、不会红,只是**读起来像个 bug**,而它确实是。
+  it('生平里没有坏指针 —— 交叉引用要么解开要么空着', () => {
+    const bad = GENERALS.filter((id) => /^參見|^参见/.test(LORE[id].bio?.zh?.trim() ?? ''))
+    expect(bad.map((id) => `${CARDS_BY_ID[id].name.zh}: ${LORE[id].bio!.zh.slice(0, 20)}`)).toEqual([])
+  })
+
   it('表字是一到三个字,不会把整句话抠进来', () => {
     const bad: string[] = []
     for (const id of GENERALS) {

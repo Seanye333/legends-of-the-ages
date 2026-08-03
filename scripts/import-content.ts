@@ -35,6 +35,26 @@ import { deriveDoctrine } from '../../ThreeKingdomMastersIOS/src/game/data/offic
 // 那种程序生成的「他统率很高,善于治军」正是我们要摆脱的东西 ——
 // 列传要么是真的,要么就空着(空着至少诚实,而且能被盘点脚本数出来)。
 import { BIOGRAPHIES } from '../../ThreeKingdomMastersIOS/src/game/data/biographies'
+
+// 生平里有 17 条根本不是传,是**交叉引用**:「參見「hist-xu-da」(明初徐達)。」
+// 徐達是冒险第二章的关底,他的列传上此前就写着这一行 —— 玩家看到的是一个坏指针。
+//
+// 能解开的解开(皇太極 → hist-huangtaiji、孟嘗君 → hist-mengchang-jun、
+// 晉室那一串司馬 → 三国册的同一个人),12 条因此拿到了真的传;
+// 剩下 5 条是指向自己或指向不存在的 id —— 那种**宁可空着**:
+// 空的列传至少诚实,而且会被盘点脚本数出来,坏指针只会被当成正文读。
+// 写法不止一种:「參見「hist-xu-da」」也有「參見前述「hist-zhang-xian」」——
+// 中间那两个字是被闸门(dossier.test)抓出来的,凭眼睛扫源数据扫不到。
+const BIO_REF = /^參見[^「『"]{0,4}[「『"]?([a-z0-9-]+)/
+function bioOf(id: string): { zh: string; en: string; era?: { zh: string; en: string }; quote?: { zh: string; en: string } } | undefined {
+  const b = BIOGRAPHIES[id]
+  if (!b) return undefined
+  const m = b.zh.trim().match(BIO_REF)
+  if (!m || m[1] === id) return m ? undefined : b
+  const t = BIOGRAPHIES[m[1]]
+  // 只跟一跳:指针链在这份数据里不存在,而无限跟指针需要防环
+  return t && !BIO_REF.test(t.zh.trim()) ? t : undefined
+}
 import { OFFICER_DUEL_LINES } from '../../ThreeKingdomMastersIOS/src/game/data/officerLines'
 import { DEATH_POEMS } from '../../ThreeKingdomMastersIOS/src/game/data/deathPoems'
 import { HISTORICAL_LIFESPANS } from '../../ThreeKingdomMastersIOS/src/game/data/historicalLifespans'
@@ -374,7 +394,7 @@ function generateCard(
   // 事迹标签:从**真实生平原文**抽出来的、这个人身上确实发生过的事。
   // 它会去抬对应机制的权重(见 seed-mechanics 的 DEED_AFFINITY)——
   // 播种因此从「加权随机」变成「有出处的确定性」。
-  const deeds = deedsOf(BIOGRAPHIES[officer.id]?.zh, officer.name.zh)
+  const deeds = deedsOf(bioOf(officer.id)?.zh, officer.name.zh)
   // 兵种:生平里写明了的,直接照抄,不交给 deriveTroop 去猜。
   //
   // 【为什么必须在这里定】
@@ -396,7 +416,7 @@ function generateCard(
   // 两条轴正交 —— 事迹说他做过什么,性格说他是什么人。
   const traits = HISTORICAL_TRAITS[officer.id]?.length
     ? HISTORICAL_TRAITS[officer.id].slice(0, 4)
-    : traitsOf(BIOGRAPHIES[officer.id]?.zh, officer.name.zh)
+    : traitsOf(bioOf(officer.id)?.zh, officer.name.zh)
   const kw = handAuthored
     ? null
     : seedKeyword(officer.id, s, archetype, rarity, era, dynasty, cost, deeds, traits)
@@ -524,7 +544,7 @@ const kinFind = (x: string): string => {
 }
 let kinPairs = 0
 for (const o of unique) {
-  const bio = BIOGRAPHIES[o.id]?.zh
+  const bio = bioOf(o.id)?.zh
   if (!bio) continue
   const mySurname = surnameOf(o.name.zh)
   for (const sentence of bio.split(/[。;!?]/)) {
@@ -711,9 +731,23 @@ interface CardLore {
 // 源头名册没给的那一半可以直接从传里抽 —— 这不是推断,是**照抄原文**。
 // 实测 2,180 条生平里能抽出 860 个表字、789 个籍贯,和名册的覆盖正好互补。
 const CZ_RE = /字([一-龥]{1,3})[,,。;;]/
-const HOME_RE = /^(?:字[一-龥]{1,3}[,,])?([一-龥]{2,7}人)[,,。;;]/
-// 谥号/世称只有十几条,但它们恰恰是最该显示的那种称呼(「後世尊為武聖」)
-const POSTH_RE = /(?:諡曰|谥曰|世稱|世称|後世尊為|后世尊为|追尊為|追尊为)([一-龥]{2,6})/
+// 籍贯:**在头一句里找**,不再死锚句首。
+// 锚句首漏掉的是「名機,字仲景,南陽人」「字文舉,孔子二十世孫,魯國人」
+// 这种前面多带了一节的写法 —— 实测多捞回九十来条,全是真籍贯。
+//
+// 但窗口一放宽就会捞到「而才識過人」「有若成人」「獻帝貴人」——
+// 它们也以「人」收尾,却根本不是地名。所以「人」前面那个字要过一道排除:
+// 这些词的倒数第二个字是**形容/身份**(過成貴美夫…),而地名收尾的是
+// **行政区划或方位**(縣郡國州陽平城…)。排除表比白名单短得多,也更好维护。
+const HOME_RE = /(?:^|[,,])([一-龥]{2,7}人)[,,。;;]/
+// 「人」前面那个字是形容/身份(過成貴美…)或**数词**(「從食客中選二十人」
+// 「殺諫者二十七人」)的,都不是籍贯。数词那一类是放宽窗口后才冒出来的。
+const NOT_A_PLACE = /[過过成貴贵美夫愛爱殺杀活用知待後后時时他眾众奇異异常善罪僕仆一二三四五六七八九十百千萬万餘余數数\d]人$/
+// 谥号/世称/尊号 —— 它们恰恰是最该显示的那种称呼。
+// 只认「諡曰」「世稱」三四种写法时只有 15 条,而「尊為武聖」(關羽)这种
+// 最该显示的反倒漏了;补齐常见写法后 24 条。
+const POSTH_RE =
+  /(?:諡曰|谥曰|追諡|追谥|諡號|谥号|世稱|世称|人稱|人称|號曰|号曰|時人謂之|时人谓之|後世尊為|后世尊为|追尊為|追尊为|尊為|尊为|封為|封为)([一-龥]{2,6})/
 
 const officerById = new Map(unique.map((o) => [o.id, o]))
 const lore: Record<string, CardLore> = {}
@@ -731,7 +765,7 @@ const lifeOf = (id: string, o: (typeof unique)[number]): { zh: string; en: strin
 for (const o of unique) {
   const id = o.id
   const entry: CardLore = {}
-  const bio = BIOGRAPHIES[id]
+  const bio = bioOf(id)
   if (bio) {
     entry.bio = { zh: bio.zh, en: bio.en }
     tally.bio++
@@ -780,8 +814,9 @@ for (const o of unique) {
   //   荀彧 潁川潁陰 → 记成許昌(那是他后来任职的地方)· 呂布 五原九原 → 记成雁門
   // 覆盖率因此从 1,916 掉到 788,但那 1,916 里有一千多条是错的 ——
   // 而籍贯会进列传、进图鉴、还被稽古拿去出题(「谁是潁川人」),错的比没有更糟。
-  const m = bioZh?.match(HOME_RE)
-  if (m) {
+  // 只在头一句附近找(30 字):籍贯是传的第一句写的事,再往后就是别人的籍贯了
+  const m = bioZh?.slice(0, 30).match(HOME_RE)
+  if (m && !NOT_A_PLACE.test(m[1])) {
     entry.home = { zh: m[1], en: m[1] }
     tally.home++
   }
@@ -794,7 +829,7 @@ for (const o of unique) {
   // 否则卡面上写着「嗜酒」而机制里按别的算,那就成了两套事实)
   const traits = HISTORICAL_TRAITS[id]?.length
     ? HISTORICAL_TRAITS[id].slice(0, 4)
-    : traitsOf(BIOGRAPHIES[id]?.zh, o.name.zh)
+    : traitsOf(bioOf(id)?.zh, o.name.zh)
   if (traits.length) {
     entry.traits = traits
     tally.traits++
@@ -857,7 +892,7 @@ for (const o of unique) {
 const edges: RelEdge[] = []
 const seenEdge = new Set<string>()
 for (const o of unique) {
-  const bio = BIOGRAPHIES[o.id]?.zh
+  const bio = bioOf(o.id)?.zh
   if (!bio) continue
   // 按句号切句 —— 关系类型要看**点到名字的那一句**,整段扫会把无关的词算进来
   for (const sentence of bio.split(/[。;!?]/)) {

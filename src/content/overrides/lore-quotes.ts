@@ -832,4 +832,115 @@ export const LORE_OVERRIDES: Record<string, LoreOverride> = {
     quote: { zh: '公,天威也,南人不復反矣。', en: 'Yours is the awe of Heaven, my lord. The men of the south will not rebel again.' },
     line: { zh: '再放我一次,我還來。', en: 'Let me go once more — and I shall come again.' },
   },
+
+  // ═══════════════ 第二批(2026-08-02):传奇档补遗 ═══════════════
+  //
+  // 124 张传奇里有 46 张一句名言都没有。这一批补 18 条 ——
+  // **只补我能指着书说出处的**,剩下 28 位仍然空着,原因和上一批一样:
+  // 北族君主(阿保機、阿骨打、木華黎、速不台、旭烈兀)与部分开国之君,
+  // 汉文史料里留下的是事迹不是原话。编一句放上去,这个游戏就不值得信了。
+  //
+  // 台词(line)标准低一档 —— 它是游戏风味,不是史料主张,所以补得多一些:
+  // 空着的传奇卡在牌桌上一句话都不说,那才是最不像「名将」的地方。
+  'hist-qi-huan-gong': {
+    // 《史记·齐太公世家》—— 桓公自述霸业
+    quote: { zh: '寡人兵車之會三,乘車之會六,九合諸侯,一匡天下。', en: 'Thrice I gathered them in war-chariots, six times in state; nine times I assembled the lords and set the realm right.' },
+    line: { zh: '尊王攘夷 —— 這四個字,是寡人先說的。', en: 'Honour the king, expel the barbarian. I said it first.' },
+  },
+  'hist-baili-xi': {
+    // 《史记·秦本纪》—— 五羖大夫初见秦穆公
+    quote: { zh: '臣亡國之臣,何足問?', en: 'I am the minister of a fallen state. What is there to ask of me?' },
+    line: { zh: '七十歲才遇上明主,不算晚。', en: 'Seventy years before I met a true lord. Not too late.' },
+  },
+  'hist-hu-yan': {
+    // 《左传·僖公二十七年》—— 城濮之战前论教民
+    quote: { zh: '民未知義,未安其居。', en: 'The people do not yet know righteousness, nor rest easy in their homes.' },
+    line: { zh: '流亡十九年,教會他一件事:等。', en: 'Nineteen years in exile taught him one thing — to wait.' },
+  },
+  'hist-xinling-jun': {
+    // 《史记·魏公子列传》—— 侯嬴死后,公子追悔
+    quote: { zh: '吾且死,而侯生曾無一言半辭送我。', en: 'I go to my death, and Master Hou did not send me off with half a word.' },
+    line: { zh: '竊符者,魏無忌也。', en: 'It was I, Wei Wuji, who stole the tally.' },
+  },
+  'hist-wei-wenhou': {
+    // 《史记·魏世家》—— 与李克论相
+    quote: { zh: '家貧則思良妻,國亂則思良相。', en: 'A poor house longs for a good wife; a troubled state, for a good minister.' },
+    line: { zh: '過段干木之閭,寡人下車。', en: 'Passing Duangan Mu\u2019s gate, I step down from my chariot.' },
+  },
+  'hist-qin-zhaoxiang': {
+    // 《史记·范雎蔡泽列传》—— 跪请范雎
+    quote: { zh: '先生何以幸教寡人?', en: 'With what teaching will you favour me, master?' },
+    line: { zh: '在位五十六年,寡人只做一件事:削諸侯。', en: 'Fifty-six years on the throne, and one task only: to cut the lords down.' },
+  },
+  'hist-huo-guang': {
+    // 《汉书·霍光传》—— 议废昌邑王
+    quote: { zh: '昌邑王行昏亂,恐危社稷,如何?', en: 'The King of Changyi rules in darkness. The altars of state are in peril. What is to be done?' },
+    line: { zh: '廢立之事,臣做過一次。', en: 'To unmake a sovereign — I have done it once.' },
+  },
+  'ju-shou': {
+    // 《后汉书·袁绍传》—— 官渡兵败被俘,不降
+    quote: { zh: '授不降也,為兵所執耳。', en: 'Ju Shou does not surrender — I was merely taken by soldiers.' },
+    line: { zh: '我勸過他。三次。', en: 'I warned him. Three times.' },
+  },
+  'hist-lanlingwang': {
+    // 《北齐书·兰陵王传》—— 帝问何以身犯险,答此
+    quote: { zh: '家事親切,不覺遂然。', en: 'It was my own house at stake. I did not stop to think.' },
+  },
+  'hist-yuwen-yong': {
+    // 《广弘明集》—— 周武帝灭佛时答群臣
+    quote: { zh: '但令百姓得安,朕亦不辭地獄諸苦。', en: 'If it brings the people peace, I will not shrink from every torment of hell.' },
+    line: { zh: '權臣殺得,佛也拆得。', en: 'If I can kill a regent, I can pull down a temple.' },
+  },
+  'hist-wei-xiaokuan': {
+    // 《周书·韦孝宽传》—— 玉璧之战拒高欢
+    quote: { zh: '我城池嚴固,兵食有餘,攻者自勞,守者常逸。', en: 'My walls are firm and my stores full. The attacker wears himself out; the defender rests.' },
+    line: { zh: '玉璧城下,五十日。', en: 'Fifty days beneath the walls of Yubi.' },
+  },
+  'hist-qin-qiong': {
+    // 《旧唐书·秦叔宝传》—— 晚年多病,自述
+    quote: { zh: '吾少長戎馬,所經二百餘陣,屢中重瘡,出血亦數斛矣,安得不病乎?', en: 'I grew up among warhorses and fought in two hundred ranks; wound upon wound, blood by the bucket. How should I not be ill?' },
+    line: { zh: '兩百戰,血流了幾斛。', en: 'Two hundred battles. Blood by the bucket.' },
+  },
+  'hist-guo-ziyi': {
+    line: { zh: '單騎去見他們,不必帶甲。', en: 'I will ride to them alone. No armour needed.' },
+  },
+  // 劉裕:讨桓玄檄文的原句我核不准,所以只写台词 —— 名言那一栏宁可空着
+  'hist-liu-yu': {
+    line: { zh: '寄奴出身寒微,不妨礙北伐。', en: 'Jinu was born low. It never slowed the march north.' },
+  },
+  'hist-nurhaci': {
+    // 《满洲实录》七大恨告天 —— 第一恨
+    quote: { zh: '我祖父未嘗損明邊一草寸土,明無端起釁邊陲,害我祖父。', en: 'My forebears never took a blade of grass from Ming\u2019s frontier. Ming raised strife on the border without cause, and killed them.' },
+    line: { zh: '十三副遺甲起兵。', en: 'Thirteen suits of inherited armour — that is how it began.' },
+  },
+  'hist-tuoba-tao': {
+    line: { zh: '柔然、赫連、北涼 —— 一個一個平。', en: 'Rouran, Helian, Northern Liang — one after another.' },
+  },
+  // 楊堅:《隋书》里留下的多是政令与他人评价,自述之语我指不出确切一句
+  'hist-sui-wendi': {
+    line: { zh: '四百年分裂,到朕為止。', en: 'Four centuries of division end with me.' },
+  },
+  // 周文王:「文王拘而演《周易》」是太史公**说他**,不是他说的话 ——
+  // 名言那一栏要的是他自己的声音,写反了就是另一种编造
+  'hist-zhou-wenwang': {
+    line: { zh: '羑里七年,不算白坐。', en: 'Seven years at Youli were not wasted.' },
+  },
+
+  // ── 只补台词的(名言查不到确切出处,但牌桌上不能一句话不说)──
+  'hist-murong-ke': { line: { zh: '幼主在上,臣不敢有二心。', en: 'A child sits the throne. I will not harbour a second heart.' } },
+  'hist-murong-chui': { line: { zh: '燕國亡過一次,不會亡第二次。', en: 'Yan fell once. It will not fall twice.' } },
+  'hist-yuwen-tai': { line: { zh: '關中是我的,天子也是。', en: 'Guanzhong is mine — and so is the Son of Heaven.' } },
+  'hist-feng-taihou': { line: { zh: '兩朝聽政,二十年。', en: 'Two reigns, twenty years, behind the curtain.' } },
+  'hist-xiao-taihou': { line: { zh: '澶淵之下,誰先開口誰輸。', en: 'At Chanyuan, whoever speaks first has lost.' } },
+  'hist-abaoji': { line: { zh: '八部推一人,那個人是我。', en: 'Eight tribes chose one man. That man was me.' } },
+  'hist-aguda': { line: { zh: '女真滿萬,不可敵。', en: 'Ten thousand Jurchen — none can stand against them.' } },
+  'hist-zonghan': { line: { zh: '兩路南下,汴京在中間。', en: 'Two columns south. Bianjing lies between them.' } },
+  'hist-wanyan-yong': { line: { zh: '打完了,該讀書了。', en: 'The fighting is done. Now let us read.' } },
+  'hist-muqali': { line: { zh: '大汗西征,中原交給我。', en: 'The Khan rides west. The Central Plain is mine to hold.' } },
+  'hist-subutai': { line: { zh: '從黃河到多瑙河,我都走過。', en: 'From the Yellow River to the Danube — I have ridden them all.' } },
+  'hist-hulagu': { line: { zh: '巴格達的圖書館,燒了七天。', en: 'The libraries of Baghdad burned for seven days.' } },
+  'hist-li-yuanhao': { line: { zh: '党項有自己的字,也該有自己的國。', en: 'The Tangut have their own script. They should have their own state.' } },
+  'hist-dorgon': { line: { zh: '攝政七年,只差一步。', en: 'Seven years as regent — one step short.' } },
+  'hist-shao-gong-shi': { line: { zh: '甘棠之下,聽訟不擾民。', en: 'Beneath the sweet pear tree I heard their cases, and troubled no one.' } },
+  'hist-qin-huiwen': { line: { zh: '商鞅該死,新法不該廢。', en: 'Shang Yang had to die. His laws did not.' } },
 }
