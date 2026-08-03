@@ -87,6 +87,7 @@ const pad = (s: string, w: number) => s.padEnd(w, '　').slice(0, w)
 console.log('\n胜率矩阵(行 vs 列):')
 console.log(pad('', 6) + names.map((x) => pad(x, 6)).join(''))
 const overall: number[] = []
+const ci: number[] = []
 for (let i = 0; i < n; i++) {
   const row = [pad(names[i], 6)]
   let w = 0
@@ -102,8 +103,21 @@ for (let i = 0; i < n; i++) {
     g += games[i][j]
   }
   overall[i] = g ? (100 * w) / g : 0
-  console.log(row.join('') + `  总:${overall[i].toFixed(1)}%`)
+  // 总胜率的 95% 置信半宽。**必须印出来** —— 这个矩阵天天被拿来判断
+  // 「刚才那一改是不是把某套牌顶上去了」。
+  //
+  // 模拟是确定性的(种子固定,同一份卡池重跑逐格一致),所以半宽说的不是
+  // 「重跑会飘」,而是「这 500 局只是所有可能对局的一个样本」——
+  // 半宽约 ±4.4:56.0% 和 51.6% 之间的差,可能只是抽到的对局不同。
+  // 单格更糟:100 局的半宽约 ±9.8,42% 与 58% 几乎分不开。
+  // 不印的话,读的人(包括我)会把抽样差异当成信号去追。
+  ci[i] = g ? 196 * Math.sqrt(((overall[i] / 100) * (1 - overall[i] / 100)) / g) : 0
+  console.log(row.join('') + `  总:${overall[i].toFixed(1)}% ±${ci[i].toFixed(1)}`)
 }
+console.log(
+  `\n(每格 ${GAMES_PER_PAIR} 局,单格 95% 置信半宽约 ±${(196 * Math.sqrt(0.25 / GAMES_PER_PAIR)).toFixed(1)} 个百分点;` +
+    `总胜率那一列是 ${GAMES_PER_PAIR * (n - 1)} 局)`,
+)
 // ---------- 验收闸门 ----------
 // 两道:总胜率 40-60%,以及**单个对位** 30-70%。
 // 只看总胜率是不够的 —— 六套卡组互相克制、各自总分都在 50% 附近,

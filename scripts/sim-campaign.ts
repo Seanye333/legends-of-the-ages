@@ -71,13 +71,26 @@ for (let b = 0; b < BOSSES.length; b++) {
   }
   const pct = Math.round((wins / GAMES) * 100)
   rates.push(pct)
+  // 95% 置信半宽。
+  //
+  // 【它说的不是「重跑会飘」】这个模拟是**确定性的** —— 种子固定,
+  // 同一份卡池重跑逐格一致(实测验过两遍)。半宽说的是另一件事:
+  // 这 60 局只是「所有可能对局」的一个样本。两个版本之间小于这个幅度的差值,
+  // 完全可能只是**抽到的这 60 局不同**,而不是改动真的动了难度曲线。
+  // 60 局/关的半宽最大 ±13 —— 「白起 35% → 33%」这种读数落在里面。
+  const half = Math.round(196 * Math.sqrt(((wins / GAMES) * (1 - wins / GAMES)) / GAMES))
   const bar = '█'.repeat(Math.max(0, Math.round(pct / 4)))
   console.log(
     `${String(b + 1).padStart(2)}. 第${bossChapter(BOSSES[b])}章 ${BOSSES[b].name.zh.padEnd(4)} ` +
-      `hp=${String(BOSSES[b].hp).padStart(2)}  玩家胜率 ${String(pct).padStart(3)}%  ${bar}`,
+      `hp=${String(BOSSES[b].hp).padStart(2)}  玩家胜率 ${String(pct).padStart(3)}% ±${String(half).padStart(2)}  ${bar}`,
   )
 }
-console.log(`\n(${((performance.now() - t0) / 1000).toFixed(1)}s)`)
+console.log(
+  `\n(${((performance.now() - t0) / 1000).toFixed(1)}s · 每关 ${GAMES} 局,` +
+    `95% 置信半宽最大 ±${Math.round(196 * Math.sqrt(0.25 / GAMES))} 个百分点。` +
+    `模拟本身是确定的,这个半宽说的是「这些局只是一个样本」—— ` +
+    `两版之间小于它的差值别拿来调参,要下结论用 GAMES=240 重跑。)`,
+)
 
 // 闸门按**章**分段:每章各是一条独立曲线(第二章开章时玩家已成军,
 // 不该拿它去比张角那关的友好度)。逐章校验:
