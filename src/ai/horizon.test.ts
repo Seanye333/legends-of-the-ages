@@ -40,7 +40,9 @@ function unit(iid: number, attack: number, health: number, keywords: string[] = 
     canAttack: true,
     attacksThisTurn: 0,
     enchants: [],
-  } as CardInstance
+    // CardInstance 上还有一批可选字段(damage / silenced / borrowedFrom …),
+    // 这里刻意只给评估函数读得到的那几个 —— 所以要先过 unknown。
+  } as unknown as CardInstance
 }
 
 const score = (s: GameState, w: Partial<typeof DEFAULT_WEIGHTS> = {}) =>
