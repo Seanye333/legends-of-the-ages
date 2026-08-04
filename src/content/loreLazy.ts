@@ -20,6 +20,7 @@ let traitCache: Record<string, { zh: string; en: string }> = {}
 // 关系按 id 建反向索引:详情页问的永远是「这个人有哪些关系」,
 // 每次去 2,620 条里 filter 一遍太浪费(详情页是长按就要弹出来的东西)。
 let relCache: Record<string, RelEdge[]> = {}
+let battleCache: { name: { zh: string; en: string }; ids: string[] }[] = []
 let inflight: Promise<Record<string, CardLore>> | null = null
 
 export function loadLore(): Promise<Record<string, CardLore>> {
@@ -44,6 +45,7 @@ export function loadLore(): Promise<Record<string, CardLore>> {
         ;(idx[e.b] ??= []).push(e)
       }
       relCache = idx
+      battleCache = m.BATTLE_INDEX
       return cache
     })
   }
@@ -61,6 +63,11 @@ export function traitNamesNow(): Record<string, { zh: string; en: string }> {
 }
 
 // 已经加载过就同步给,没加载过给空表 —— 调用点按「暂时没有列传」渲染即可。
+// 战役索引:和列传同一个 chunk,所以必须从这里取(静态 import 会把 1.2MB 拖回来)
+export function battlesNow(): { name: { zh: string; en: string }; ids: string[] }[] {
+  return battleCache
+}
+
 export function loreNow(): Record<string, CardLore> {
   return cache ?? {}
 }

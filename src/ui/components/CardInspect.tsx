@@ -55,9 +55,10 @@ function hasDossier(l: {
   home?: unknown
   life?: unknown
   office?: unknown
+  alias?: unknown
   traits?: string[]
 }): boolean {
-  return Boolean(l.courtesy || l.home || l.life || l.office || l.traits?.length)
+  return Boolean(l.courtesy || l.home || l.life || l.office || l.alias || l.traits?.length)
 }
 
 export function CardInspect({ def, onClose, forge = false }: CardInspectProps) {
@@ -369,6 +370,9 @@ export function CardInspect({ def, onClose, forge = false }: CardInspectProps) {
               )}
               {LORE[def.id].office && (
                 <span className={styles.dossierItem}>{pickCompact(LORE[def.id].office!)}</span>
+              )}
+              {LORE[def.id].alias && (
+                <span className={styles.dossierItem}>「{pickCompact(LORE[def.id].alias!)}」</span>
               )}
               {(LORE[def.id].traits ?? []).slice(0, 4).map((tr) => (
                 <span key={tr} className={styles.dossierTrait}>

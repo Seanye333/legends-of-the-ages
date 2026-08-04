@@ -722,6 +722,7 @@ interface CardLore {
   home?: { zh: string; en: string } // 籍贯
   life?: { zh: string; en: string } // 生卒年
   office?: { zh: string; en: string } // 官爵(位至X · 封X侯)
+  alias?: { zh: string; en: string } // 绰号 / 别称(「飛虎將」「古之惡來」)
   poem?: { zh: string; en: string } // 绝命诗
   taunt?: { zh: string; en: string } // 挑衅
   traits?: string[] // 性格特质 id(译名表在内容层)
@@ -753,12 +754,25 @@ const NOT_A_PLACE = /[過过成貴贵美夫愛爱殺杀活用知待後后時时�
 // 覆盖率不高(官职 4.3% + 爵位 6.1%),但每一条都是原文里明写的。
 const OFFICE_RE = /(?:位至|官至|累官至|累遷至|終至|後至)([一-龥]{2,7})[,,。;;]/
 const TITLE_RE = /(?:封|追封|進封|襲封)([一-龥]{1,4}(?:王|公|侯))[,,。;;]/
+// 绰号:**只认加了引号的**。「號『飛虎將』」「人稱『白騎賊帥』」这种才是绰号,
+// 而不加引号的「號」后面接的往往是别的东西 —— 实测不限定引号会抠出
+// 「稱帝」「起義」「太康之治」「其勇略不下徐」这类完全不是绰号的片段。
+// 加了引号之后 161 条降到几十条,但每一条都是真绰号。
+const ALIAS_RE = /(?:號|号|人稱|人称|自號|自号|時人謂之|时人谓之|軍中號|军中号)\s*[「『"']([一-龥]{2,6})[」』"']/
+// 加了引号仍会混进**不是人的**东西:「號『和氏之璧』」说的是那块玉、
+// 「號『太康之治』」说的是那个年号、「號『蔡侯紙』」说的是纸。
+// 判据两条:带「之」的多半是事件/年号/器物;收尾字是碑評紙璧治爭亂友言的同理。
+// 再加一条「绰号不能就是他自己的名字」(高敖曹「高敖曹」这种循环)。
+// 50 条降到三十几条,但剩下的全是真绰号:呂布「三姓家奴」、白起「人屠」、
+// 楊業「楊無敵」、李克用「獨眼龍」、李自成「闖王」、鰲拜「滿洲第一勇士」。
+// 例外:「古之惡來」「今之X」是**绰号的固定句式**,别被「之」那条一起筛掉
+const NOT_AN_ALIAS = /^(?!古之|今之).*之|[碑評评紙纸璧治爭争亂乱友言集]$/
 const POSTH_RE =
   /(?:諡曰|谥曰|追諡|追谥|諡號|谥号|世稱|世称|人稱|人称|號曰|号曰|時人謂之|时人谓之|後世尊為|后世尊为|追尊為|追尊为|尊為|尊为|封為|封为)([一-龥]{2,6})/
 
 const officerById = new Map(unique.map((o) => [o.id, o]))
 const lore: Record<string, CardLore> = {}
-const tally = { bio: 0, quote: 0, poem: 0, line: 0, courtesy: 0, home: 0, life: 0, office: 0, traits: 0, stats: 0 }
+const tally = { bio: 0, quote: 0, poem: 0, line: 0, courtesy: 0, home: 0, life: 0, office: 0, alias: 0, traits: 0, stats: 0 }
 // 生卒年:源头的 HISTORICAL_LIFESPANS 只覆盖歷代名將;三国那批用名册上的
 // birthYear/deathYear 现拼(两者格式不同,所以不能混成一个来源)
 const lifeOf = (id: string, o: (typeof unique)[number]): { zh: string; en: string } | undefined => {
@@ -826,6 +840,11 @@ for (const o of unique) {
   if (m && !NOT_A_PLACE.test(m[1])) {
     entry.home = { zh: m[1], en: m[1] }
     tally.home++
+  }
+  const alias = bioZh?.match(ALIAS_RE)?.[1]
+  if (alias && !NOT_AN_ALIAS.test(alias) && !alias.includes(o.name.zh) && !o.name.zh.includes(alias)) {
+    entry.alias = { zh: alias, en: alias }
+    tally.alias++
   }
   const office = [bioZh?.match(OFFICE_RE)?.[1], bioZh?.match(TITLE_RE)?.[1]].filter(Boolean)
   if (office.length) {
@@ -941,6 +960,53 @@ for (const o of unique) {
     }
   }
 }
+// ---------- 战役索引 ----------
+//
+// 生平里点到的战役名,反向索引成「参加过此战的人」。
+// 【为什么值得单列一层】列传现在能顺着**人**翻(关系/家族/同乡),
+// 但翻不动**事**:赤壁之战牵涉十几个人,而玩家要一个一个点进去才拼得出来。
+//
+// 战役表是**手写**的(24 场),因为「哪些字算一场战役」没法从文本自动判断 ——
+// 「攻」「破」到处都是。手写清单的老问题(写了没人读 / 读了没内容)
+// 由 battleIndex.test 守着:每一场都必须真的连出人来。
+const BATTLES: [zh: string, en: string, re: RegExp][] = [
+  ['官渡之戰', 'Guandu', /官渡/],
+  ['赤壁之戰', 'Red Cliffs', /赤壁/],
+  ['夷陵之戰', 'Xiaoting', /夷陵|猇亭/],
+  ['街亭', 'Jieting', /街亭/],
+  ['定軍山', 'Mount Dingjun', /定軍山/],
+  ['襄樊之戰', 'Fancheng', /襄樊|水淹七軍/],
+  ['長坂坡', 'Changban', /長坂/],
+  ['合肥 · 逍遙津', 'Hefei', /合肥|逍遙津/],
+  ['潼關之戰', 'Tong Pass', /潼關/],
+  ['虎牢關', 'Hulao Pass', /虎牢/],
+  ['長平之戰', 'Changping', /長平/],
+  ['馬陵之戰', 'Maling', /馬陵/],
+  ['鉅鹿之戰', 'Julu', /鉅鹿/],
+  ['垓下之圍', 'Gaixia', /垓下/],
+  ['昆陽之戰', 'Kunyang', /昆陽/],
+  ['白登之圍', 'Baideng', /白登/],
+  ['漠北之戰', 'The Northern Desert', /漠北/],
+  ['淝水之戰', 'Fei River', /淝水/],
+  ['安史之亂', 'The An–Shi Rebellion', /安史|安祿山之亂/],
+  ['郾城之戰', 'Yancheng', /郾城/],
+  ['采石之戰', 'Caishi', /采石/],
+  ['釣魚城', 'Diaoyu Fortress', /釣魚城/],
+  ['崖山之戰', 'Yamen', /崖山/],
+  ['鄱陽湖之戰', 'Lake Poyang', /鄱陽/],
+  ['土木堡之變', 'Tumu', /土木/],
+  ['薩爾滸之戰', 'Sarhu', /薩爾滸/],
+  ['山海關之戰', 'Shanhai Pass', /山海關/],
+]
+const battleIndex = BATTLES.map(([zh, en, re]) => ({
+  name: { zh, en },
+  ids: unique.filter((o) => re.test(bioOf(o.id)?.zh ?? '')).map((o) => o.id),
+})).filter((b) => b.ids.length >= 2)
+console.log(
+  `  战役索引:${battleIndex.length} 场 / ${BATTLES.length} 场候选,` +
+    `合计 ${battleIndex.reduce((n, b) => n + b.ids.length, 0)} 人次`,
+)
+
 const relPeople = new Set(edges.flatMap((e) => [e.a, e.b]))
 const relKinds = edges.reduce<Record<string, number>>((m, e) => ({ ...m, [e.kind]: (m[e.kind] ?? 0) + 1 }), {})
 
@@ -958,6 +1024,7 @@ writeFileSync(
     '  home?: { zh: string; en: string }',
     '  life?: { zh: string; en: string }',
     '  office?: { zh: string; en: string }',
+    '  alias?: { zh: string; en: string }',
     '  poem?: { zh: string; en: string }',
     '  taunt?: { zh: string; en: string }',
     '  traits?: string[]',
@@ -978,6 +1045,14 @@ writeFileSync(
     `const relJson = ${JSON.stringify(JSON.stringify(edges))}`,
     'export const RELATION_EDGES = JSON.parse(relJson) as RelEdge[]',
     '',
+    '// 战役索引:生平里点到某场战役的人。手写战役表 + 从原文反查(见生成脚本)',
+    'export interface BattleEntry {',
+    '  name: { zh: string; en: string }',
+    '  ids: string[]',
+    '}',
+    `const battleJson = ${JSON.stringify(JSON.stringify(battleIndex))}`,
+    'export const BATTLE_INDEX = JSON.parse(battleJson) as BattleEntry[]',
+    '',
     '// 性格特质译名 —— 和 traits 一起生成,免得两处漂移',
     `export const TRAIT_NAMES: Record<string, { zh: string; en: string }> = ${JSON.stringify(
       Object.fromEntries(TRAIT_DEFS.map((t) => [t.id, { zh: t.name.zh, en: t.name.en }])),
@@ -990,7 +1065,7 @@ writeFileSync(
 console.log(
   `lore.gen.ts: ${Object.keys(lore).length} 条档案 —— ` +
     `生平 ${tally.bio} · 名言 ${tally.quote} · 绝命诗 ${tally.poem} · 台词 ${tally.line} · ` +
-    `表字 ${tally.courtesy} · 籍贯 ${tally.home} · 生卒 ${tally.life} · 官爵 ${tally.office} · 性格 ${tally.traits} · 五维 ${tally.stats}`,
+    `表字 ${tally.courtesy} · 籍贯 ${tally.home} · 生卒 ${tally.life} · 官爵 ${tally.office} · 绰号 ${tally.alias} · 性格 ${tally.traits} · 五维 ${tally.stats}`,
 )
 console.log(
   `  史料关系网:${edges.length} 组,涉及 ${relPeople.size} 名武将 —— ` +

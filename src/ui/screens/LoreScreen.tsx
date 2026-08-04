@@ -12,6 +12,7 @@ import { EraScroll } from '../components/EraScroll'
 import { ERA_OF, type Era } from '../../content/eras'
 import { RelationWeb } from '../components/RelationWeb'
 import { StatRadar } from '../components/StatRadar'
+import { LoreIndex } from '../components/LoreIndex'
 import { playSfx } from '../sound'
 import { useDialog } from '../useDialog'
 import styles from './LoreScreen.module.css'
@@ -72,7 +73,7 @@ export function LoreScreen({ onBack }: Props) {
   const [dynFilter, setDynFilter] = useState<string>('all')
   // 三种读法:列传(按人)/ 關係圖譜(按关系)/ 時代長卷(按时间)。
   // 同一批内容,三个不同的问题 —— 一屏塞不下,但一个 tab 装得下。
-  const [view, setView] = useState<'lives' | 'graph' | 'era'>('lives')
+  const [view, setView] = useState<'lives' | 'graph' | 'era' | 'index'>('lives')
   // 默认落在长卷的**第一块**:横滚容器初始位置在最左,
   // 选中块要是落在视野外,「哪一块是选中的」就成了看不见的信息。
   const [eraFilter, setEraFilter] = useState<Era>('pre-qin')
@@ -140,6 +141,7 @@ export function LoreScreen({ onBack }: Props) {
             ['lives', t('列传', 'Lives')],
             ['graph', t('關係圖譜', 'Relations')],
             ['era', t('時代長卷', 'The Scroll')],
+            ['index', t('索引', 'Index')],
           ] as const
         ).map(([key, label]) => (
           <button
@@ -163,6 +165,17 @@ export function LoreScreen({ onBack }: Props) {
             setEraFilter(era)
           }}
           onPickCard={(id) => setSelected(id)}
+        />
+      )}
+
+      {/* 索引:列传原本只能顺着人翻,翻不动事 —— 赤壁牵涉十几个人,
+          此前得一个一个点进去才拼得出来。 */}
+      {view === 'index' && (
+        <LoreIndex
+          onPick={(id) => {
+            setSelected(id)
+            setView('lives')
+          }}
         />
       )}
 
@@ -296,7 +309,7 @@ export function LoreScreen({ onBack }: Props) {
                   **这一屏是专门看人的**,却一直只显示尊号与生平四行 ——
                   而卡牌详情页(长按卡面)反倒把档案摆全了。位置颠倒了:
                   牌桌上要的是快速判断,列传页要的才是这个人的全部。 */}
-              {(selLore.courtesy || selLore.home || selLore.life || selLore.office) && (
+              {(selLore.courtesy || selLore.home || selLore.life || selLore.office || selLore.alias) && (
                 <div className={styles.dossier}>
                   {selLore.courtesy && (
                     <span>{t('字', 'Courtesy')} {pickCompact(selLore.courtesy)}</span>
@@ -304,6 +317,7 @@ export function LoreScreen({ onBack }: Props) {
                   {selLore.home && <span>{t('籍', 'From')} {pickCompact(selLore.home)}</span>}
                   {selLore.life && <span>{pickCompact(selLore.life)}</span>}
                   {selLore.office && <span>{pickCompact(selLore.office)}</span>}
+                  {selLore.alias && <span>「{pickCompact(selLore.alias)}」</span>}
                 </div>
               )}
               {/* 族人名册。列传是**顺着人往下翻**的地方,家族正好是一条现成的线索:
