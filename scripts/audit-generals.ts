@@ -28,6 +28,8 @@ const FIELDS: [string, (c: CardDef) => boolean][] = [
   ['结局', (c) => Boolean(LORE[c.id]?.fate?.zh)],
   ['著作', (c) => Boolean(LORE[c.id]?.works?.zh)],
   ['族属', (c) => Boolean(LORE[c.id]?.ethnos?.zh)],
+  ['镇守地', (c) => Boolean(LORE[c.id]?.garrison?.zh)],
+  ['归附', (c) => Boolean(LORE[c.id]?.defected?.zh)],
   ['五维', (c) => Boolean(LORE[c.id]?.stats)],
   ['性格特质', (c) => Boolean(LORE[c.id]?.traits?.length)],
   ['尊号', (c) => Boolean(LORE[c.id]?.era?.zh)],

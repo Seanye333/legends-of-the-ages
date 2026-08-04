@@ -36,7 +36,7 @@ describe('武将档案的出处', () => {
     const orphans: string[] = []
     for (const id of GENERALS) {
       const bio = LORE[id].bio?.zh ?? ''
-      for (const f of ['fate', 'alias'] as const) {
+      for (const f of ['fate', 'alias', 'garrison', 'defected'] as const) {
         const v = LORE[id][f]?.zh
         if (v && !bio.includes(v)) orphans.push(`${CARDS_BY_ID[id].name.zh}.${f}「${v}」在传里找不到`)
       }
@@ -166,6 +166,7 @@ describe('档案覆盖率基线', () => {
     ['出战台词', (l) => Boolean(l.line?.zh), 0.12],
     ['结局', (l) => Boolean(l.fate?.zh), 0.11],
     ['著作', (l) => Boolean(l.works?.zh), 0.06],
+    ['镇守地', (l) => Boolean(l.garrison?.zh), 0.08],
   ]
 
   for (const [name, has, floor] of FLOORS) {

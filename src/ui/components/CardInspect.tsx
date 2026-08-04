@@ -49,9 +49,11 @@ function hasDossier(l: {
   arms?: unknown
   works?: unknown
   ethnos?: unknown
+  garrison?: unknown
+  defected?: unknown
   traits?: string[]
 }): boolean {
-  return Boolean(l.courtesy || l.home || l.life || l.office || l.alias || l.fate || l.arms || l.works || l.ethnos || l.traits?.length)
+  return Boolean(l.courtesy || l.home || l.life || l.office || l.alias || l.fate || l.arms || l.works || l.ethnos || l.garrison || l.defected || l.traits?.length)
 }
 
 export function CardInspect({ def, onClose, forge = false }: CardInspectProps) {
@@ -369,6 +371,12 @@ export function CardInspect({ def, onClose, forge = false }: CardInspectProps) {
               )}
               {LORE[def.id].ethnos && (
                 <span className={styles.dossierItem}>{pickCompact(LORE[def.id].ethnos!)}</span>
+              )}
+              {LORE[def.id].garrison && (
+                <span className={styles.dossierItem}>鎮{pickCompact(LORE[def.id].garrison!)}</span>
+              )}
+              {LORE[def.id].defected && (
+                <span className={styles.dossierItem}>{pickCompact(LORE[def.id].defected!)}</span>
               )}
               {LORE[def.id].works && (
                 <span className={styles.dossierItem}>{LORE[def.id].works!.zh}</span>

@@ -727,6 +727,8 @@ interface CardLore {
   fate?: { zh: string; en: string } // 结局(中流矢 / 自刎 / 夷三族 / 善終)
   works?: { zh: string; en: string } // 著作(《傷寒雜病論》)
   ethnos?: { zh: string; en: string } // 族属(羌 / 氐 / 女真)
+  garrison?: { zh: string; en: string } // 镇守地(鎮漢中 / 守樊城)—— 与籍贯不同,是他驻守过哪
+  defected?: { zh: string; en: string } // 归附(降曹操 / 歸劉備)
   poem?: { zh: string; en: string } // 绝命诗
   taunt?: { zh: string; en: string } // 挑衅
   traits?: string[] // 性格特质 id(译名表在内容层)
@@ -810,12 +812,19 @@ const ETHNOS_EN: Record<string, string> = {
 const ETHNOS_RE = new RegExp(
   `(?:^|[,,。])[一-龥]{0,4}?(${Object.keys(ETHNOS_EN).join('|')})(?:族|人|部)|(${Object.keys(ETHNOS_EN).join('|')})(?:族)?血脈`,
 )
+// 镇守地:「鎮漢中」「守樊城」「鎮幽州」。和籍贯是两条不同的轴 ——
+// 籍贯是他从哪来,镇守是他在哪镇着。实测 221 人(10.2%),
+// 是这一批里唯一达到规模的(举荐 22、子嗣 22、出仕年龄 3、谥号 0,都太薄不做)。
+const GARRISON_RE = /(?:出鎮|鎮守|鎮|守)([一-龥]{2,4})[,,。;;]/
+// 归附:「降曹操」「歸劉備」。降将这条轴在这个题材里有分量 ——
+// 张郃、黄盖、马超、庞德、徐晃、王平都是这么来的。
+const DEFECT_RE = /(?:降|歸|投)((?:曹操|劉備|孫權|袁紹|呂布|董卓|曹魏|蜀漢|東吳|劉表|劉璋|公孫瓚|唐|宋|元|明|清))/
 const POSTH_RE =
   /(?:諡曰|谥曰|追諡|追谥|諡號|谥号|世稱|世称|人稱|人称|號曰|号曰|時人謂之|时人谓之|後世尊為|后世尊为|追尊為|追尊为|尊為|尊为|封為|封为)([一-龥]{2,6})/
 
 const officerById = new Map(unique.map((o) => [o.id, o]))
 const lore: Record<string, CardLore> = {}
-const tally = { bio: 0, quote: 0, poem: 0, line: 0, courtesy: 0, home: 0, life: 0, office: 0, alias: 0, fate: 0, works: 0, ethnos: 0, traits: 0, stats: 0 }
+const tally = { bio: 0, quote: 0, poem: 0, line: 0, courtesy: 0, home: 0, life: 0, office: 0, alias: 0, fate: 0, garrison: 0, defected: 0, works: 0, ethnos: 0, traits: 0, stats: 0 }
 // 生卒年:源头的 HISTORICAL_LIFESPANS 只覆盖歷代名將;三国那批用名册上的
 // birthYear/deathYear 现拼(两者格式不同,所以不能混成一个来源)
 const lifeOf = (id: string, o: (typeof unique)[number]): { zh: string; en: string } | undefined => {
@@ -904,6 +913,17 @@ for (const o of unique) {
   if (ethName) {
     entry.ethnos = { zh: ethName, en: ETHNOS_EN[ethName] }
     tally.ethnos++
+  }
+  // 「鎮地方」「守城」这类泛指不是地名,挡掉
+  const gm = bioZh?.match(GARRISON_RE)?.[1]
+  if (gm && !/^(?:地方|城|其地|之|邊|要|險)$/.test(gm) && gm.length >= 2) {
+    entry.garrison = { zh: gm, en: gm }
+    tally.garrison++
+  }
+  const dm = bioZh?.match(DEFECT_RE)
+  if (dm) {
+    entry.defected = { zh: dm[0], en: dm[0] }
+    tally.defected++
   }
   const office = [bioZh?.match(OFFICE_RE)?.[1], bioZh?.match(TITLE_RE)?.[1]].filter(Boolean)
   if (office.length) {
@@ -1087,6 +1107,8 @@ writeFileSync(
     '  fate?: { zh: string; en: string }',
     '  works?: { zh: string; en: string }',
     '  ethnos?: { zh: string; en: string }',
+    '  garrison?: { zh: string; en: string }',
+    '  defected?: { zh: string; en: string }',
     '  poem?: { zh: string; en: string }',
     '  taunt?: { zh: string; en: string }',
     '  traits?: string[]',
@@ -1127,7 +1149,7 @@ writeFileSync(
 console.log(
   `lore.gen.ts: ${Object.keys(lore).length} 条档案 —— ` +
     `生平 ${tally.bio} · 名言 ${tally.quote} · 绝命诗 ${tally.poem} · 台词 ${tally.line} · ` +
-    `表字 ${tally.courtesy} · 籍贯 ${tally.home} · 生卒 ${tally.life} · 官爵 ${tally.office} · 绰号 ${tally.alias} · 结局 ${tally.fate} · 著作 ${tally.works} · 族属 ${tally.ethnos} · 性格 ${tally.traits} · 五维 ${tally.stats}`,
+    `表字 ${tally.courtesy} · 籍贯 ${tally.home} · 生卒 ${tally.life} · 官爵 ${tally.office} · 绰号 ${tally.alias} · 结局 ${tally.fate} · 镇守 ${tally.garrison} · 归附 ${tally.defected} · 著作 ${tally.works} · 族属 ${tally.ethnos} · 性格 ${tally.traits} · 五维 ${tally.stats}`,
 )
 console.log(
   `  史料关系网:${edges.length} 组,涉及 ${relPeople.size} 名武将 —— ` +

@@ -323,7 +323,7 @@ export function LoreScreen({ onBack }: Props) {
                   **这一屏是专门看人的**,却一直只显示尊号与生平四行 ——
                   而卡牌详情页(长按卡面)反倒把档案摆全了。位置颠倒了:
                   牌桌上要的是快速判断,列传页要的才是这个人的全部。 */}
-              {(selLore.courtesy || selLore.home || selLore.life || selLore.office || selLore.alias || selLore.fate || selLore.arms || selLore.works || selLore.ethnos) && (
+              {(selLore.courtesy || selLore.home || selLore.life || selLore.office || selLore.alias || selLore.fate || selLore.arms || selLore.works || selLore.ethnos || selLore.garrison || selLore.defected) && (
                 <div className={styles.dossier}>
                   {selLore.courtesy && (
                     <span>{t('字', 'Courtesy')} {pickCompact(selLore.courtesy)}</span>
@@ -333,6 +333,8 @@ export function LoreScreen({ onBack }: Props) {
                   {selLore.office && <span>{pickCompact(selLore.office)}</span>}
                   {selLore.alias && <span>「{pickCompact(selLore.alias)}」</span>}
                   {selLore.ethnos && <span>{pickCompact(selLore.ethnos)}</span>}
+                  {selLore.garrison && <span>鎮{pickCompact(selLore.garrison)}</span>}
+                  {selLore.defected && <span>{pickCompact(selLore.defected)}</span>}
                   {selLore.works && <span>{selLore.works.zh}</span>}
                   {selLore.fate && <span className={styles.fate}>{pickCompact(selLore.fate)}</span>}
                   {selLore.arms && <span className={styles.arms}>{pickCompact(selLore.arms)}</span>}
