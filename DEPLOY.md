@@ -6,13 +6,31 @@
 
 差的不是代码,是这份清单。三步,十分钟。
 
+**2026-08 复核**:构建与绑定已经干跑验过了 ——
+
+```
+npx wrangler deploy --dry-run
+  Total Upload: 1441.36 KiB / gzip: 232.26 KiB
+  env.QUEUE (QueueDO) / env.MATCH (MatchDO) / env.ROOM (RoomDO)
+  env.RATINGS (RatingsDO) / env.PROFILE (ProfileDO)      ← 五个绑定齐全
+```
+
+同一轮把 MatchDO / QueueDO / RoomDO 的**零单测**补上了(server 测试 30 → 81 条),
+其中抓到一个只在线上才会犯的错:限流用「窗口起点 === 此刻」判新窗口,
+而 workerd 为缓解 Spectre **把时钟冻在没有 I/O 的执行块内** ——
+垃圾消息走不到任何 I/O,计数每条都被重置成 1,限流形同虚设。已修并钉了回归测试。
+**这条如果带着上线,一个 while 循环就能把对局的存储刷爆(按次计费)。**
+
+所以现在真正缺的只有下面这两条命令 —— `wrangler login` 要走浏览器 OAuth,
+只能你本人来。
+
 ---
 
 ## 一、部署联机服务器
 
 ```bash
 cd server
-npx wrangler login          # 首次
+npx wrangler login          # 首次;要开浏览器授权,没法脚本化
 npx wrangler deploy
 ```
 
