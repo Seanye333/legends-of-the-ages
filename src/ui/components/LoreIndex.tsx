@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { CARDS_BY_ID, COLLECTIBLE_CARDS } from '../../content/cards'
-import { battlesNow, loreNow } from '../../content/loreLazy'
+import { battlesNow, loreNow, relationPath } from '../../content/loreLazy'
 import { usePickCompact, useT } from '../i18n'
+import { REL_KIND } from '../relationLabels'
 import { playSfx } from '../sound'
 import styles from './LoreIndex.module.css'
 
@@ -19,7 +20,7 @@ type Group = { key: string; label: string; ids: string[] }
 export function LoreIndex({ onPick }: { onPick: (id: string) => void }) {
   const t = useT()
   const pickCompact = usePickCompact()
-  const [kind, setKind] = useState<'battle' | 'home' | 'clan'>('battle')
+  const [kind, setKind] = useState<'battle' | 'home' | 'clan' | 'path'>('battle')
   const [open, setOpen] = useState<string | null>(null)
 
   const groups = useMemo((): Group[] => {
@@ -63,6 +64,7 @@ export function LoreIndex({ onPick }: { onPick: (id: string) => void }) {
             ['battle', t('戰役', 'Battles')],
             ['home', t('郡望', 'Origins')],
             ['clan', t('家族', 'Houses')],
+            ['path', t('牽連', 'Six Degrees')],
           ] as const
         ).map(([k, label]) => (
           <button
@@ -78,6 +80,8 @@ export function LoreIndex({ onPick }: { onPick: (id: string) => void }) {
           </button>
         ))}
       </div>
+      {kind === 'path' && <PathFinder onPick={onPick} />}
+      {kind !== 'path' && (
       <p className={styles.lede}>
         {kind === 'battle'
           ? t('生平里点到这一仗的人。索引从原文反查,不是我们编的名单。', 'Everyone whose chronicle names this battle — read out of the sources, not assembled by us.')
@@ -85,6 +89,8 @@ export function LoreIndex({ onPick }: { onPick: (id: string) => void }) {
             ? t('同郡出身的人。籍贯取自生平原文,按郡归堆。', 'Men of the same commandery, grouped from the birthplaces named in their chronicles.')
             : t('同族的人。族谱从生平里的亲属关系抠出来。', 'Kinsmen, read out of the family ties named in their chronicles.')}
       </p>
+      )}
+      {kind !== 'path' && (
       <div className={styles.list}>
         {groups.map((g) => (
           <div key={g.key} className={styles.group}>
@@ -111,6 +117,69 @@ export function LoreIndex({ onPick }: { onPick: (id: string) => void }) {
           </div>
         ))}
       </div>
+      )}
+    </div>
+  )
+}
+
+// 「這兩個人有關係嗎」—— 从关系网里找最短的一条链,每一跳都摆出处原文。
+//
+// 这个功能只有这个题材做得出来:链子不是「系统认为他们有关系」,
+// 是「这句史料里他点了他的名」。所以每一跳都必须把那句话摆出来,
+// 摆不出来的那一跳就不该存在。
+function PathFinder({ onPick }: { onPick: (id: string) => void }) {
+  const t = useT()
+  const pickCompact = usePickCompact()
+  const [a, setA] = useState('')
+  const [b, setB] = useState('')
+  const byName = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const c of COLLECTIBLE_CARDS) if (c.type === 'general' && !m.has(c.name.zh)) m.set(c.name.zh, c.id)
+    return m
+  }, [])
+  const idA = byName.get(a.trim())
+  const idB = byName.get(b.trim())
+  const path = idA && idB ? relationPath(idA, idB) : undefined
+
+  return (
+    <div className={styles.path}>
+      <p className={styles.lede}>
+        {t(
+          '输入两位武将的名字,看史料里他们隔了几层。每一跳都附出处原文。',
+          'Name two generals and see how many links of recorded history stand between them. Every hop cites its source.',
+        )}
+      </p>
+      <div className={styles.pathInputs}>
+        <input className={styles.pathInput} value={a} onChange={(e) => setA(e.target.value)} placeholder={t('如 關羽', 'e.g. Guan Yu')} />
+        <span className={styles.pathArrow}>→</span>
+        <input className={styles.pathInput} value={b} onChange={(e) => setB(e.target.value)} placeholder={t('如 岳飛', 'e.g. Yue Fei')} />
+      </div>
+      {a.trim() && !idA && <p className={styles.pathNote}>{t(`查无此人:${a}`, `No such general: ${a}`)}</p>}
+      {b.trim() && !idB && <p className={styles.pathNote}>{t(`查无此人:${b}`, `No such general: ${b}`)}</p>}
+      {path === null && (
+        <p className={styles.pathNote}>
+          {t('六层之内查不到牵连 —— 史料里他们没有交集。', 'No link within six hops — the sources never bring them together.')}
+        </p>
+      )}
+      {path && path.length === 0 && <p className={styles.pathNote}>{t('是同一个人。', 'Same person.')}</p>}
+      {path && path.length > 0 && (
+        <ol className={styles.pathList}>
+          {path.map((e, i) => (
+            <li key={`${e.a}-${e.b}-${i}`}>
+              <span className={styles.pathHop}>
+                <button className={styles.member} onClick={() => onPick(e.a)}>
+                  {pickCompact(CARDS_BY_ID[e.a]?.name ?? { zh: e.a, en: e.a })}
+                </button>
+                <span className={styles.pathKind}>{pickCompact(REL_KIND[e.kind])}</span>
+                <button className={styles.member} onClick={() => onPick(e.b)}>
+                  {pickCompact(CARDS_BY_ID[e.b]?.name ?? { zh: e.b, en: e.b })}
+                </button>
+              </span>
+              <span className={styles.pathQuote}>{e.quote}</span>
+            </li>
+          ))}
+        </ol>
+      )}
     </div>
   )
 }

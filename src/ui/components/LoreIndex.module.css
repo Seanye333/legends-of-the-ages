@@ -106,3 +106,72 @@
   border-color: rgba(216, 178, 106, 0.6);
   color: #f0e6d2;
 }
+
+/* ---- 牽連(最短关系链)---- */
+.path {
+  display: grid;
+  gap: 8px;
+}
+
+.pathInputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pathInput {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(122, 100, 58, 0.55);
+  background: rgba(20, 16, 10, 0.8);
+  color: var(--parchment);
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.pathInput:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+.pathArrow {
+  color: var(--parchment-faint);
+}
+
+.pathNote {
+  margin: 0;
+  font-size: 12px;
+  color: var(--parchment-faint);
+}
+
+.pathList {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0 0 0 18px;
+}
+
+.pathList li {
+  display: grid;
+  gap: 2px;
+}
+
+.pathHop {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pathKind {
+  font-size: 11px;
+  color: var(--parchment-faint);
+}
+
+.pathQuote {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: rgba(232, 220, 198, 0.55);
+}

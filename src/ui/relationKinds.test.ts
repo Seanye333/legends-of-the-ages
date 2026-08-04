@@ -4,14 +4,14 @@ import { RELATION_EDGES } from '../content/generated/lore.gen'
 
 // 关系类型是**三处手写清单**共用的一个词汇表:
 //   1. 生成层的 REL_RULES(哪种写法算哪种关系)
-//   2. CardInspect 的 REL_KIND(译名)—— 已经钉成 Record<RelEdge['kind'],…>,tsc 管得住
+//   2. relationLabels.ts 的 REL_KIND(译名)—— 钉成 Record<RelEdge['kind'],…>,tsc 管得住
 //   3. CardInspect.module.css 的 .rel_*(颜色)—— **CSS 没有类型**,漏了不报错,
 //      表现是那一类关系变成默认色:不崩、不红,只是「这一类看起来和别的一样」
 //
 // 第 3 处就是这个文件存在的理由。顺带也验一遍:实际数据里出现的每一种
 // kind 都在译名表里 —— 生成层加了一种而 UI 忘了补,界面上会渲染成 undefined。
 const CSS = readFileSync(new URL('./components/CardInspect.module.css', import.meta.url), 'utf8')
-const TSX = readFileSync(new URL('./components/CardInspect.tsx', import.meta.url), 'utf8')
+const TSX = readFileSync(new URL('./relationLabels.ts', import.meta.url), 'utf8')
 
 const KINDS = [...new Set(RELATION_EDGES.map((e) => e.kind))].sort()
 

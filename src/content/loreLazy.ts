@@ -68,6 +68,45 @@ export function battlesNow(): { name: { zh: string; en: string }; ids: string[] 
   return battleCache
 }
 
+// 两个人之间的最短关系链(广度优先)。
+//
+// 【为什么这个功能只有这个题材做得出来】
+// 关系网的每一跳都带**出处原文** —— 所以链子不是「系统认为他们有关系」,
+// 是「这句史料里他点了他的名」。别家 CCG 要先编三百年世界观才有这东西。
+//
+// 图是 1,566 个点 / 2,663 条边,BFS 一次不到一毫秒,不必预处理。
+// 上限六跳:再远的链子读起来已经不像「有牵连」,像「都是中国人」。
+export function relationPath(from: string, to: string): RelEdge[] | null {
+  if (from === to) return []
+  const prev = new Map<string, { via: RelEdge; from: string }>()
+  let front = [from]
+  const seen = new Set([from])
+  for (let depth = 0; depth < 6 && front.length; depth++) {
+    const next: string[] = []
+    for (const id of front) {
+      for (const e of relCache[id] ?? []) {
+        const other = e.a === id ? e.b : e.a
+        if (seen.has(other)) continue
+        seen.add(other)
+        prev.set(other, { via: e, from: id })
+        if (other === to) {
+          const path: RelEdge[] = []
+          let cur = to
+          while (cur !== from) {
+            const step = prev.get(cur)!
+            path.unshift(step.via)
+            cur = step.from
+          }
+          return path
+        }
+        next.push(other)
+      }
+    }
+    front = next
+  }
+  return null
+}
+
 export function loreNow(): Record<string, CardLore> {
   return cache ?? {}
 }
