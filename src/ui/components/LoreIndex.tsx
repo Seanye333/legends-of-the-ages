@@ -20,12 +20,31 @@ type Group = { key: string; label: string; ids: string[] }
 export function LoreIndex({ onPick }: { onPick: (id: string) => void }) {
   const t = useT()
   const pickCompact = usePickCompact()
-  const [kind, setKind] = useState<'battle' | 'home' | 'clan' | 'path'>('battle')
+  const [kind, setKind] = useState<'battle' | 'home' | 'clan' | 'fate' | 'path'>('battle')
   const [open, setOpen] = useState<string | null>(null)
 
   const groups = useMemo((): Group[] => {
     if (kind === 'battle') {
       return battlesNow().map((b) => ({ key: b.name.zh, label: pickCompact(b.name), ids: b.ids }))
+    }
+    if (kind === 'fate') {
+      // 按结局归类。用的是**类别**不是原文那个词 —— 「中流矢」「陣亡」「力戰而死」
+      // 是同一件事,分开列就成了三堆各两个人的碎屑。
+      const LORE = loreNow()
+      const KINDS: [string, RegExp][] = [
+        ['自刎', /自刎|自剄|伏劍|自縊|飲鴆|自殺|投水而死|投江/],
+        ['戰死', /戰死|陣亡|中流矢|中箭|力戰而死|沒於陣|死於陣|歿於軍/],
+        ['被誅', /夷三族|夷滅|伏誅|賜死|被殺|被害|遇害|見殺|所殺|所害|誅死|坐誅/],
+        ['善終', /病卒|病死|疾卒|以疾卒|病篤而卒|善終|壽終/],
+      ]
+      return KINDS.map(([label, re]) => ({
+        key: label,
+        label,
+        ids: COLLECTIBLE_CARDS.filter((c) => {
+          const f = LORE[c.id]?.fate?.zh
+          return Boolean(f && re.test(f))
+        }).map((c) => c.id),
+      })).filter((g) => g.ids.length >= 3)
     }
     if (kind === 'home') {
       const LORE = loreNow()
@@ -64,6 +83,7 @@ export function LoreIndex({ onPick }: { onPick: (id: string) => void }) {
             ['battle', t('戰役', 'Battles')],
             ['home', t('郡望', 'Origins')],
             ['clan', t('家族', 'Houses')],
+            ['fate', t('結局', 'Ends')],
             ['path', t('牽連', 'Six Degrees')],
           ] as const
         ).map(([k, label]) => (
@@ -87,7 +107,9 @@ export function LoreIndex({ onPick }: { onPick: (id: string) => void }) {
           ? t('生平里点到这一仗的人。索引从原文反查,不是我们编的名单。', 'Everyone whose chronicle names this battle — read out of the sources, not assembled by us.')
           : kind === 'home'
             ? t('同郡出身的人。籍贯取自生平原文,按郡归堆。', 'Men of the same commandery, grouped from the birthplaces named in their chronicles.')
-            : t('同族的人。族谱从生平里的亲属关系抠出来。', 'Kinsmen, read out of the family ties named in their chronicles.')}
+            : kind === 'fate'
+              ? t('怎么收场的。只取传的末尾两句 —— 别人的死不算他的。', 'How each life ended, read only from the closing lines of the chronicle — another man\u2019s death is not his.')
+              : t('同族的人。族谱从生平里的亲属关系抠出来。', 'Kinsmen, read out of the family ties named in their chronicles.')}
       </p>
       )}
       {kind !== 'path' && (
