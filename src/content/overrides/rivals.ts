@@ -323,10 +323,115 @@ export const RIVAL_OVERRIDES: Record<string, Partial<CardDef>> = {
       health: 1,
     },
   },
+  // ═══════════ 第二批(2026-08-03)═══════════
+  //
+  // 从史料关系网(2,663 组)里挑出来的:**高稀有度、双方真的打过、且现有羁绊宿敌没覆盖**
+  // 的 28 对里选 12 对。挑的标准是「这一仗值不值得玩家去查」——
+  // 「原從呂布,敗后歸曹操」那种把降将与旧主判成敌对的不算真宿敌,一律不取。
+  //
+  // 宿敌是**双方同吃**的,所以加多少条都不改变强弱对比,只改变戏份 ——
+  // 这也是先把宿敌补满、羁绊留到以后单独调一轮的原因。
+  'hist-li-mu': {
+    // 战国末:李牧屡败王翦,秦人不能克,最后靠反间计除掉他。
+    rival: { id: 'rival-lianpo-wangjian', name: { zh: '宜安之戰', en: 'Yi\u2019an' }, foe: 'hist-wang-jian', attack: 2, health: 1 },
+  },
+  'hist-wei-xiaokuan': {
+    // 玉璧:以一城之兵拒高欢十万,围五十日不下,高欢忿恚而退,不久病死。
+    rival: { id: 'rival-yubi', name: { zh: '玉璧之圍', en: 'The Siege of Yubi' }, foe: 'hist-gao-huan', attack: 1, health: 2 },
+  },
+  'hist-li-guangbi': {
+    // 太原:以孤城拒史思明十万,守四十余日。
+    rival: { id: 'rival-taiyuan', name: { zh: '太原守禦', en: 'The Defence of Taiyuan' }, foe: 'hist-shi-siming', attack: 1, health: 2 },
+  },
+  'hist-yelu-xiezhen': {
+    // 陈家谷:杨业孤军无援,力战被擒,绝食三日而死。
+    rival: { id: 'rival-chenjiagu', name: { zh: '陳家谷', en: 'Chenjia Valley' }, foe: 'hist-yang-ye', attack: 2, health: 1 },
+  },
+  'hist-tie-xuan': {
+    // 济南:铁铉以孤城拒燕王,悬太祖神主于城头,朱棣不敢炮击。
+    rival: { id: 'rival-jinan', name: { zh: '濟南拒燕', en: 'Jinan Holds' }, foe: 'hist-yongle', attack: 1, health: 2 },
+  },
+  'hist-li-dingguo': {
+    // 两蹶名王之后,终为吴三桂所破,忧愤卒于缅甸。
+    rival: { id: 'rival-mianbei', name: { zh: '兩蹶名王', en: 'Two Princes Felled' }, foe: 'hist-wu-sangui', attack: 2, health: 1 },
+  },
+  'hist-li-xiucheng': {
+    // 天京:苦守数年,城陷被擒,自述数万言而死。
+    rival: { id: 'rival-tianjing', name: { zh: '天京圍城', en: 'The Siege of Tianjing' }, foe: 'hist-zeng-guofan', attack: 1, health: 2 },
+  },
+  'hist-luo-bingzhang': {
+    // 大渡河:石达开陷绝地,以身饲刀求全三军。
+    rival: { id: 'rival-dadu', name: { zh: '大渡河', en: 'The Dadu River' }, foe: 'hist-shi-dakai', attack: 2, health: 1 },
+  },
+  'hist-ji-kang': {
+    // 刑东市,三千太学生请以为师，不许。顾日影而弹《广陵散》。
+    rival: { id: 'rival-guangling', name: { zh: '廣陵散絕', en: 'The Last Guangling' }, foe: 'sima-zhao', attack: 1, health: 2 },
+  },
+  'xu-huang': {
+    // 襄樊:以新募之兵长驱直入,破关羽十重鹿角,曹操称「用兵如晃」。
+    rival: { id: 'rival-fancheng', name: { zh: '樊城解圍', en: 'Fancheng Relieved' }, foe: 'guan-yu', attack: 2, health: 1 },
+  },
+  'hist-jebe': {
+    // 哲别本名只儿豁阿歹,射中铁木真坐骑,被擒后自陈,遂得名「哲别」(箭镞)。
+    rival: { id: 'rival-jebe', name: { zh: '一箭之遇', en: 'The Arrow That Met a Khan' }, foe: 'hist-genghis', attack: 2, health: 1 },
+  },
+  'hist-lu-zhi': {
+    // 长乐钟室:韩信为吕后所诱,斩于钟室,夷三族。
+    rival: { id: 'rival-zhongshi', name: { zh: '長樂鐘室', en: 'The Bell Chamber' }, foe: 'hist-han-xin', attack: 2, health: 1 },
+  },
 }
 
 // 史料一句 —— 图鉴/列传点开宿敌时显示。放在内容层,引擎不需要知道它。
 export const RIVAL_LORE: Record<string, LocalizedText> = {
+  'rival-lianpo-wangjian': {
+    zh: '李牧屢敗秦師,秦人不能克 —— 直到用反間計,趙王自斬其將。',
+    en: 'Li Mu beat back Qin again and again. Qin could not take him — so they bought his king instead.',
+  },
+  'rival-yubi': {
+    zh: '以一城之兵拒十萬,圍五十日不下。高歡忿恚,班師而卒。',
+    en: 'One city against a hundred thousand, fifty days unbroken. Gao Huan withdrew in fury, and died soon after.',
+  },
+  'rival-taiyuan': {
+    zh: '孤城守四十餘日,無援而不下。',
+    en: 'Forty days alone, with no relief, and it did not fall.',
+  },
+  'rival-chenjiagu': {
+    zh: '援兵不至,楊業力戰被擒,絕食三日而死。',
+    en: 'The relief never came. Yang Ye fought until taken, and starved himself for three days.',
+  },
+  'rival-jinan': {
+    zh: '懸太祖神主於城頭,燕兵不敢發砲。',
+    en: 'He hung the founder\u2019s spirit tablet on the wall, and the guns of Yan fell silent.',
+  },
+  'rival-mianbei': {
+    zh: '兩蹶名王,天下震動 —— 而最後敗於昔日的同袍。',
+    en: 'Two Qing princes felled, and the empire shook. In the end he was broken by a man who had once worn the same colours.',
+  },
+  'rival-tianjing': {
+    zh: '苦守數年,城陷被擒,獄中自述數萬言。',
+    en: 'Years of siege, then capture — and in prison, tens of thousands of words in his own hand.',
+  },
+  'rival-dadu': {
+    zh: '陷絕地,以身飼刀,求全三軍。',
+    en: 'Trapped at the river, he gave himself to the blade to buy his army out.',
+  },
+  'rival-guangling': {
+    zh: '刑東市,顧日影而彈,曰:「《廣陵散》於今絕矣。」',
+    en: 'At the execution ground he watched the shadow move, played once, and said: the Guangling melody ends today.',
+  },
+  'rival-fancheng': {
+    zh: '以新募之兵長驅,破十重鹿角。操曰:「用兵如晃。」',
+    en: 'With raw recruits he drove straight through ten rings of abatis. Cao Cao said: this is how war is made.',
+  },
+  'rival-jebe': {
+    zh: '射中鐵木真坐騎,被擒不諱,遂賜名「哲別」——箭鏃。',
+    en: 'He shot the Khan\u2019s horse from under him, admitted it when taken, and was named Jebe: the arrowhead.',
+  },
+  'rival-zhongshi': {
+    zh: '誘入長樂鐘室,斬之,夷三族。',
+    en: 'Lured into the bell chamber of Changle, and cut down there with all his kin.',
+  },
+
   'rival-maling': {
     zh: '減灶誘敵,龐涓夜至馬陵,自剄曰:「遂成豎子之名!」',
     en: 'Sun Bin thinned his cookfires to feign desertion; Pang Juan took his own life at Maling.',
