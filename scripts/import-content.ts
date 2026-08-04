@@ -70,6 +70,7 @@ import {
   KEYWORD_POINTS,
   hash01,
   deedsOf,
+  fateTagOf,
   seedKeyword,
   traitsOf,
   seedMechanics,
@@ -394,7 +395,9 @@ function generateCard(
   // 事迹标签:从**真实生平原文**抽出来的、这个人身上确实发生过的事。
   // 它会去抬对应机制的权重(见 seed-mechanics 的 DEED_AFFINITY)——
   // 播种因此从「加权随机」变成「有出处的确定性」。
-  const deeds = deedsOf(bioOf(officer.id)?.zh, officer.name.zh)
+  // 结局也当一条事迹标签用(只抬权重、不开新候选,见 DEED_AFFINITY 里的说明)
+  const fateTag = fateTagOf(bioOf(officer.id)?.zh)
+  const deeds = [...deedsOf(bioOf(officer.id)?.zh, officer.name.zh), ...(fateTag ? [fateTag] : [])]
   // 兵种:生平里写明了的,直接照抄,不交给 deriveTroop 去猜。
   //
   // 【为什么必须在这里定】

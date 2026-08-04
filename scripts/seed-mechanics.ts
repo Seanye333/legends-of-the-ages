@@ -576,6 +576,24 @@ const foldRe = (re: RegExp): RegExp => new RegExp(toSimplified(re.source))
 const DEED_RE: [RegExp, string][] = DEED_WORDS.map(([re, tag]) => [foldRe(re), tag])
 const TRAIT_RE: [RegExp, string][] = TRAIT_WORDS.map(([re, tag]) => [foldRe(re), tag])
 
+// 结局标签:和 import-content 的 fateOf 用同一套词表,但这里只要**类别**
+// (机制关心的是「怎么死的」,不关心原文用的是「中流矢」还是「戰死」)。
+// 只看传的末尾两句 —— 理由见 import-content 里 fateOf 那一段。
+const FATE_TAGS: [RegExp, string][] = [
+  [/自刎|自剄|伏劍|自縊|飲鴆|自殺|投水而死|投江/, 'fate-suicide'],
+  [/戰死|陣亡|中流矢|中箭|力戰而死|沒於陣|死於陣|歿於軍/, 'fate-kia'],
+  [/夷三族|夷滅|伏誅|賜死|被殺|被害|遇害|見殺|所殺|所害|誅死|坐誅/, 'fate-executed'],
+  [/病卒|病死|疾卒|以疾卒|病篤而卒|善終|壽終/, 'fate-illness'],
+]
+
+export function fateTagOf(bioZh: string | undefined): string | undefined {
+  if (!bioZh) return undefined
+  const parts = bioZh.split(/[。;!?]/).filter((x) => x.trim())
+  const tail = toSimplified(parts.slice(-2).join('。'))
+  for (const [re, tag] of FATE_TAGS) if (new RegExp(toSimplified(re.source)).test(tail)) return tag
+  return undefined
+}
+
 export function deedsOf(bioZh: string | undefined, selfName?: string): string[] {
   if (!bioZh) return []
   const hay = toSimplified(withoutSelf(bioZh, selfName))
