@@ -148,6 +148,17 @@ export type CountSource =
   // 它和 friendlyGenerals 的区别不只是换个符号:go-wide 的对手无法靠**不铺场**来躲,
   // 而 friendlyGenerals 系的卡是自己铺出来的,先手劣势方永远吃不到。
   | { kind: 'enemyGenerals' }
+  // ---- 战役同袍(2026-08-03)----
+  // 与来源卡**同赴过一场战役**的友方武将(不含自己)。
+  //
+  // 【为什么这条只有这个题材做得出来】
+  // 势力/兵种是设计出来的分组,而「谁和谁同赴过赤壁」是**史料里现成的**:
+  // 生平原文点到那一仗的人就是那一仗的人(24 场 / 150 人次,见 lore 的战役索引)。
+  // 别家 CCG 想要这个分组得先编一段战史,这里只要照抄。
+  //
+  // 名单挂在**卡上**(CardDef.battles),不在引擎里建表 —— 和 clan / bond 同一条铁律:
+  // 引擎存 id 去内容层查,服务端权威对局和老战报就会依赖内容版本。
+  | { kind: 'friendlyBattle' }
   // 我方手牌数:囤牌流的 payoff(与 ifHandCount 成对)。
   | { kind: 'handCount' }
 
@@ -380,6 +391,9 @@ export interface CardDef {
   rival?: RivalDef
   // 家族:同族两人同时在场即成立(不挂锚点,见 ClanDef)。由生平原文抠出,生成层写入。
   clan?: ClanDef
+  // 参加过的战役(生平原文里点到的那几场)。只用于 CountSource.friendlyBattle,
+  // 由生成层写入 —— 和 clan 一样,定义整份挂在卡上,引擎不查表。
+  battles?: string[]
   endOfTurn?: EffectScript // 我方回合结束时
   startOfTurn?: EffectScript // 我方回合开始时
   onDamaged?: EffectScript // 自身受伤后(有递归深度上限)

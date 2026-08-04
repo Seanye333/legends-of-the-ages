@@ -844,6 +844,16 @@ function countFor(
       const dynasty = lib[sourceDefId]?.dynasty
       return board.filter((c) => lib[c.defId]?.dynasty === dynasty).length
     }
+    case 'friendlyBattle': {
+      // 同赴过任意一场战役即算同袍。不含自己 —— 和 friendlyDynasty 一致:
+      // 「每有一名同袍」读起来就不该把自己数进去。
+      const mine = lib[sourceDefId]?.battles
+      if (!mine?.length) return 0
+      const set = new Set(mine)
+      return board.filter(
+        (c) => c.defId !== sourceDefId && (lib[c.defId]?.battles ?? []).some((b) => set.has(b)),
+      ).length
+    }
     case 'friendlyTroop':
       return board.filter((c) => lib[c.defId]?.troop === per.troop).length
     case 'friendlyGraveyard':

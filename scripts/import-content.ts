@@ -396,6 +396,7 @@ function generateCard(
   // 结局也当一条事迹标签用(只抬权重、不开新候选,见 DEED_AFFINITY 里的说明)
   const fateTag = fateTagOf(bioOf(officer.id)?.zh)
   const deeds = [...deedsOf(bioOf(officer.id)?.zh, officer.name.zh), ...(fateTag ? [fateTag] : [])]
+  const battles = battlesOf.get(officer.id) ?? []
   // 兵种:生平里写明了的,直接照抄,不交给 deriveTroop 去猜。
   //
   // 【为什么必须在这里定】
@@ -424,7 +425,7 @@ function generateCard(
   const empty: Seeded = { keywords: [], points: 0, textZh: [], textEn: [], shape: null }
   const seeded = handAuthored
     ? empty
-    : seedMechanics(officer.id, s, archetype, rarity, kw, era, dynasty, cost, budget, deeds, traits)
+    : seedMechanics(officer.id, s, archetype, rarity, kw, era, dynasty, cost, budget, deeds, traits, battles)
   // 签名卡不播种,但**覆盖里声明的关键词照样要付账** —— 否则它白拿一个关键词还留着满额身材。
   // (233 张里有 16 张没在覆盖里钉死攻血,吃的是这里算出来的身材;
   //  廖化就是其中之一,不收这笔钱它会从 3/3 变成 4/3,凭空强一档。)
@@ -451,6 +452,9 @@ function generateCard(
     keywords: seeded.keywords as CardDef['keywords'],
   }
   if (troopFromDeeds) card.troop = troopFromDeeds
+  // 引擎的 friendlyBattle 只读 CardDef.battles,不查任何表
+  //(和 clan / bond 同一条铁律:引擎存 id 去内容层查,老战报就会依赖内容版本)
+  if (battles.length) card.battles = battles
   if (seeded.battlecry) card.battlecry = seeded.battlecry as CardDef['battlecry']
   if (seeded.deathrattle) card.deathrattle = seeded.deathrattle as CardDef['deathrattle']
   if (seeded.endOfTurn) card.endOfTurn = seeded.endOfTurn as CardDef['endOfTurn']
@@ -605,6 +609,57 @@ console.log(
   `家族:${clanMembers.size} 个,${clanOf.size} 名武将(${((clanOf.size / unique.length) * 100).toFixed(1)}%),` +
     `${kinPairs} 组亲族对 —— 最大 ${Math.max(...[...clanMembers.values()].map((m) => m.length))} 人`,
 )
+
+// ---------- 战役索引 ----------
+//
+// 生平里点到的战役名,反向索引成「参加过此战的人」。
+// 【为什么值得单列一层】列传现在能顺着**人**翻(关系/家族/同乡),
+// 但翻不动**事**:赤壁之战牵涉十几个人,而玩家要一个一个点进去才拼得出来。
+//
+// 战役表是**手写**的(24 场),因为「哪些字算一场战役」没法从文本自动判断 ——
+// 「攻」「破」到处都是。手写清单的老问题(写了没人读 / 读了没内容)
+// 由 battleIndex.test 守着:每一场都必须真的连出人来。
+const BATTLES: [zh: string, en: string, re: RegExp][] = [
+  ['官渡之戰', 'Guandu', /官渡/],
+  ['赤壁之戰', 'Red Cliffs', /赤壁/],
+  ['夷陵之戰', 'Xiaoting', /夷陵|猇亭/],
+  ['街亭', 'Jieting', /街亭/],
+  ['定軍山', 'Mount Dingjun', /定軍山/],
+  ['襄樊之戰', 'Fancheng', /襄樊|水淹七軍/],
+  ['長坂坡', 'Changban', /長坂/],
+  ['合肥 · 逍遙津', 'Hefei', /合肥|逍遙津/],
+  ['潼關之戰', 'Tong Pass', /潼關/],
+  ['虎牢關', 'Hulao Pass', /虎牢/],
+  ['長平之戰', 'Changping', /長平/],
+  ['馬陵之戰', 'Maling', /馬陵/],
+  ['鉅鹿之戰', 'Julu', /鉅鹿/],
+  ['垓下之圍', 'Gaixia', /垓下/],
+  ['昆陽之戰', 'Kunyang', /昆陽/],
+  ['白登之圍', 'Baideng', /白登/],
+  ['漠北之戰', 'The Northern Desert', /漠北/],
+  ['淝水之戰', 'Fei River', /淝水/],
+  ['安史之亂', 'The An–Shi Rebellion', /安史|安祿山之亂/],
+  ['郾城之戰', 'Yancheng', /郾城/],
+  ['采石之戰', 'Caishi', /采石/],
+  ['釣魚城', 'Diaoyu Fortress', /釣魚城/],
+  ['崖山之戰', 'Yamen', /崖山/],
+  ['鄱陽湖之戰', 'Lake Poyang', /鄱陽/],
+  ['土木堡之變', 'Tumu', /土木/],
+  ['薩爾滸之戰', 'Sarhu', /薩爾滸/],
+  ['山海關之戰', 'Shanhai Pass', /山海關/],
+]
+const battleIndex = BATTLES.map(([zh, en, re]) => ({
+  name: { zh, en },
+  ids: unique.filter((o) => re.test(bioOf(o.id)?.zh ?? '')).map((o) => o.id),
+})).filter((b) => b.ids.length >= 2)
+console.log(
+  `  战役索引:${battleIndex.length} 场 / ${BATTLES.length} 场候选,` +
+    `合计 ${battleIndex.reduce((n, b) => n + b.ids.length, 0)} 人次`,
+)
+
+// 每个人参加过哪几场 —— generateCard 要用它开「同袍」那条候选
+const battlesOf = new Map<string, string[]>()
+for (const b of battleIndex) for (const id of b.ids) battlesOf.set(id, [...(battlesOf.get(id) ?? []), b.name.zh])
 
 const rarityOf = makeRarityOf(unique.map((o) => fame(o.stats)))
 const costOf = makeCostOf(unique.map((o) => might(o.stats)))
@@ -1039,53 +1094,6 @@ for (const o of unique) {
     }
   }
 }
-// ---------- 战役索引 ----------
-//
-// 生平里点到的战役名,反向索引成「参加过此战的人」。
-// 【为什么值得单列一层】列传现在能顺着**人**翻(关系/家族/同乡),
-// 但翻不动**事**:赤壁之战牵涉十几个人,而玩家要一个一个点进去才拼得出来。
-//
-// 战役表是**手写**的(24 场),因为「哪些字算一场战役」没法从文本自动判断 ——
-// 「攻」「破」到处都是。手写清单的老问题(写了没人读 / 读了没内容)
-// 由 battleIndex.test 守着:每一场都必须真的连出人来。
-const BATTLES: [zh: string, en: string, re: RegExp][] = [
-  ['官渡之戰', 'Guandu', /官渡/],
-  ['赤壁之戰', 'Red Cliffs', /赤壁/],
-  ['夷陵之戰', 'Xiaoting', /夷陵|猇亭/],
-  ['街亭', 'Jieting', /街亭/],
-  ['定軍山', 'Mount Dingjun', /定軍山/],
-  ['襄樊之戰', 'Fancheng', /襄樊|水淹七軍/],
-  ['長坂坡', 'Changban', /長坂/],
-  ['合肥 · 逍遙津', 'Hefei', /合肥|逍遙津/],
-  ['潼關之戰', 'Tong Pass', /潼關/],
-  ['虎牢關', 'Hulao Pass', /虎牢/],
-  ['長平之戰', 'Changping', /長平/],
-  ['馬陵之戰', 'Maling', /馬陵/],
-  ['鉅鹿之戰', 'Julu', /鉅鹿/],
-  ['垓下之圍', 'Gaixia', /垓下/],
-  ['昆陽之戰', 'Kunyang', /昆陽/],
-  ['白登之圍', 'Baideng', /白登/],
-  ['漠北之戰', 'The Northern Desert', /漠北/],
-  ['淝水之戰', 'Fei River', /淝水/],
-  ['安史之亂', 'The An–Shi Rebellion', /安史|安祿山之亂/],
-  ['郾城之戰', 'Yancheng', /郾城/],
-  ['采石之戰', 'Caishi', /采石/],
-  ['釣魚城', 'Diaoyu Fortress', /釣魚城/],
-  ['崖山之戰', 'Yamen', /崖山/],
-  ['鄱陽湖之戰', 'Lake Poyang', /鄱陽/],
-  ['土木堡之變', 'Tumu', /土木/],
-  ['薩爾滸之戰', 'Sarhu', /薩爾滸/],
-  ['山海關之戰', 'Shanhai Pass', /山海關/],
-]
-const battleIndex = BATTLES.map(([zh, en, re]) => ({
-  name: { zh, en },
-  ids: unique.filter((o) => re.test(bioOf(o.id)?.zh ?? '')).map((o) => o.id),
-})).filter((b) => b.ids.length >= 2)
-console.log(
-  `  战役索引:${battleIndex.length} 场 / ${BATTLES.length} 场候选,` +
-    `合计 ${battleIndex.reduce((n, b) => n + b.ids.length, 0)} 人次`,
-)
-
 const relPeople = new Set(edges.flatMap((e) => [e.a, e.b]))
 const relKinds = edges.reduce<Record<string, number>>((m, e) => ({ ...m, [e.kind]: (m[e.kind] ?? 0) + 1 }), {})
 

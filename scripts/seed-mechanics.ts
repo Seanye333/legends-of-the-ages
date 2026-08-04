@@ -130,6 +130,8 @@ interface Ctx {
   budget: number
   mag: number
   kw: string | null
+  // 参加过的战役(生平原文里点到的那几场)。只有它才开得了「同袍」那条候选。
+  battles: string[]
   // 事迹标签(见 DEED_WORDS)。下面有一整批**只由事迹开门**的候选 ——
   // 它们不看五维,因为那批人五维本来就低,看五维他们永远够不着任何候选。
   deeds: string[]
@@ -772,6 +774,29 @@ const POOL: Cand[] = [
   // 「给这批人一个专属效果」和「让这批人各不相同」是两件事,第一版只做到了前者。
   // 所以每条按**武力 vs 統率**分两路:同样是先登,猛将自己先冲,统帅带着人冲。
   // 这条轴不是随手挑的 —— 它是五维里最能分开「亲兵型」和「主将型」的一条。
+  {
+    key: 'deed-mid-comrade',
+    weight: 1.4,
+    points: 2.3,
+    // 同赴一战者。**这条只有这个题材写得出来** —— 势力和兵种是设计出来的分组,
+    // 而「谁和谁同赴过赤壁」是史料里现成的(24 场 / 150 人次)。
+    // 只有 150 人开得了这条候选,所以权重给到 1.4 也不会淹掉别的。
+    when: (c) => c.battles.length > 0 && c.cost >= 3 && c.cost <= 7,
+    emit: (o, c) => {
+      if (bold(c)) {
+        o.battlecry = {
+          ops: [{ op: 'buffPer', per: { kind: 'friendlyBattle' }, attack: 2, health: 0, target: 'self' }],
+        }
+        t(o, '戰吼:每有一名同赴一戰的友軍,自身獲得 +2/+0。', 'Battlecry: This general gains +2/+0 for each friendly general who fought beside them in a recorded battle.')
+      } else {
+        o.battlecry = {
+          ops: [{ op: 'buffPer', per: { kind: 'friendlyBattle' }, attack: 0, health: 2, target: 'self' }],
+        }
+        t(o, '戰吼:每有一名同赴一戰的友軍,自身獲得 +0/+2。', 'Battlecry: This general gains +0/+2 for each friendly general who fought beside them in a recorded battle.')
+      }
+      o.points += 2.3
+    },
+  },
   {
     key: 'deed-mid-vanguard',
     weight: 1.3,
@@ -2570,6 +2595,7 @@ export function seedMechanics(
   budget: number,
   deeds: string[] = [],
   traits: string[] = [],
+  battles: string[] = [],
 ): Seeded {
   const out: Seeded = { keywords: [], points: 0, textZh: [], textEn: [], shape: null }
   if (hasKeyword) {
@@ -2592,6 +2618,7 @@ export function seedMechanics(
     kw: hasKeyword,
     deeds,
     traits,
+    battles,
   }
 
   // 已经带了关键词的卡再给效果容易变成「什么都会」,命中率打八折。

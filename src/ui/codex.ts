@@ -272,6 +272,19 @@ export const CODEX: CodexSection[] = [
         example: (c) => c.clan !== undefined,
       },
       {
+        id: 'comrade',
+        term: { zh: '同袍 Comrades', en: 'Comrades-in-Arms' },
+        rule: {
+          zh: '有些卡会数你场上「与他同赴过一场战役」的武将,越多越强。',
+          en: 'Some cards count the generals on your field who fought beside them in a recorded battle — the more, the stronger.',
+        },
+        note: {
+          zh: '名单不是设计出来的,是**从生平原文里反查的**:传里点到「赤壁」的人就是赤壁那一仗的人(24 场、150 人次,列传的「索引 · 戰役」页可以通览)。势力和兵种是我们划的分组,同袍不是 —— 它本来就写在史书里。数人头时不含自己。',
+          en: 'The rosters are not designed — they are read back out of the chronicles: whoever\u2019s biography names Red Cliffs fought at Red Cliffs (24 battles, 150 entries; browse them under Chronicles → Index → Battles). Doctrine and troop type are groupings we invented; this one was already in the histories. The general itself is not counted.',
+        },
+        example: (c) => JSON.stringify(c).includes('friendlyBattle'),
+      },
+      {
         id: 'secret',
         term: { zh: '伏兵 Secret', en: 'Secret' },
         rule: { zh: '打出后不结算,埋在主帅面板旁;由对手的动作触发才翻开。', en: 'Played face-down beside your hero. It resolves only when the opponent does something specific.' },
