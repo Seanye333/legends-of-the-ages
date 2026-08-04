@@ -58,7 +58,6 @@ import { DEATH_POEMS } from '../../ThreeKingdomMastersIOS/src/game/data/deathPoe
 import { HISTORICAL_LIFESPANS } from '../../ThreeKingdomMastersIOS/src/game/data/historicalLifespans'
 import { HISTORICAL_TRAITS } from '../../ThreeKingdomMastersIOS/src/game/data/historicalAttributes'
 import { TRAIT_DEFS } from '../../ThreeKingdomMastersIOS/src/game/data/personality'
-import { CITY_NAMES_BY_ID } from '../../ThreeKingdomMastersIOS/src/game/data/cities'
 import type { CardDef, DynastyTag, Rarity } from '../src/engine/types'
 import { SIGNATURE_OVERRIDES } from '../src/content/overrides/signature'
 import { PRECON_DECKS } from '../src/content/decks'
@@ -877,7 +876,6 @@ const DEFECT_RE = /(?:降|歸|投)((?:曹操|劉備|孫權|袁紹|呂布|董卓|
 const POSTH_RE =
   /(?:諡曰|谥曰|追諡|追谥|諡號|谥号|世稱|世称|人稱|人称|號曰|号曰|時人謂之|时人谓之|後世尊為|后世尊为|追尊為|追尊为|尊為|尊为|封為|封为)([一-龥]{2,6})/
 
-const officerById = new Map(unique.map((o) => [o.id, o]))
 const lore: Record<string, CardLore> = {}
 const tally = { bio: 0, quote: 0, poem: 0, line: 0, courtesy: 0, home: 0, life: 0, office: 0, alias: 0, fate: 0, garrison: 0, defected: 0, works: 0, ethnos: 0, traits: 0, stats: 0 }
 // 生卒年:源头的 HISTORICAL_LIFESPANS 只覆盖歷代名將;三国那批用名册上的

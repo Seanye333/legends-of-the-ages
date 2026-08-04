@@ -21,7 +21,7 @@ import type {
 } from '../engine/types'
 import { applyCommand } from '../engine/reducer'
 import { legalCommands } from '../engine/legal'
-import { canAttackNow, maxAttacksOf } from '../engine/combat'
+import { canAttackNow, hasKeyword, maxAttacksOf } from '../engine/combat'
 import { rngNext } from '../engine/rng'
 import { plannedStep } from './planner'
 import { mctsStep } from './mcts'
@@ -58,7 +58,27 @@ export interface AiConfig {
   holdValue?: boolean
 }
 
-export const AI_NORMAL: AiConfig = { blunderChance: 0, lethalSearch: true }
+// 基准尺(铁律 9)。sim-balance / sim-campaign / price-cards / deck-stats
+// 的全部数字都是拿它量的 —— **改它等于让所有历史数字作废**。
+//
+// ⚠️ **这个文件会打包进浏览器**(AI 跑在客户端)—— 不许碰 process / node API。
+// 2026-08 我在这里写过 `process.env.RULER === 'legacy' ? 0 : 0.35`,想留一个
+// 新旧尺子的对照开关。tsc 过了、980 个单测过了(**vitest 跑在 node 里,
+// 那里真的有 process**)、lint 与构建也过了,而真实浏览器在模块求值那一刻就抛
+// `process is not defined`,标题页一个按钮都渲染不出来 —— 整个应用打不开。
+// 是 e2e 抓到的,而且报的是「找不到某个按钮」,离根因很远。
+// 现在有 engine/browserSafe.test.ts 扫这一类了。要做新旧对照,
+// 在**脚本侧**构造 `{ ...AI_NORMAL, weights: { persist: 0 } }`。
+//
+// 2026-08 改过一次,加了 persist:0.35(威胁存续)。这不是调参,是修尺子:
+// 在这之前它是纯单帧估值,给潜行/铁壁/治疗/高血量的跨回合价值判零,
+// 于是任何往防守方向做的设计在这把尺子上量出来都是弱的(铁律 8)。
+// 实测新尺子对旧尺子 54.6%(864 局,z = 2.7)。重基线数字记在 campaign.ts。
+export const AI_NORMAL: AiConfig = {
+  blunderChance: 0,
+  lethalSearch: true,
+  weights: { persist: 0.35 },
+}
 export const AI_EASY: AiConfig = { blunderChance: 0.25, lethalSearch: false }
 
 // 四档难度(UI 用兵法称谓:新兵/宿将/名将/军神)。
@@ -73,7 +93,16 @@ export const AI_LEVELS = {
   recruit: { blunderChance: 0.35, lethalSearch: false },
   veteran: { blunderChance: 0.12, lethalSearch: false },
   // 名将起开「按曲线调度」:低两档保持无脑留低费(那正是新手会犯的错)。
-  general: { blunderChance: 0, lethalSearch: true, foresight: true, smartMulligan: true },
+  // 「看得见跨回合价值」和 foresight 一样是一条**难度轴**:
+  // 新兵/宿将照旧只看此刻的场面(那正是新手会犯的错 —— 换掉守护去多打两点脸),
+  // 名将起才会为「这份威胁下回合还在不在」付钱。
+  general: {
+    blunderChance: 0,
+    lethalSearch: true,
+    foresight: true,
+    smartMulligan: true,
+    weights: { persist: 0.35 },
+  },
   // 军神/天機再开「留牌有价值」—— 只有走 stopScore 的这两档吃得到它
   // (贪心是一步一评,不经过 stopScore)。
   marshal: {
@@ -83,6 +112,7 @@ export const AI_LEVELS = {
     planner: true,
     smartMulligan: true,
     holdValue: true,
+    weights: { persist: 0.35 },
   },
   // 天機。**已从玩家可选难度里下架**(见 settingsStore 的 Difficulty),
   // 但保留在这里 —— sim-ai-tiers 仍然要能测它,把它删掉等于把结论也删掉。
@@ -190,6 +220,70 @@ function incomingFaceDamage(state: GameState, player: PlayerIdx): number {
   return Math.max(0, swing - guardHp)
 }
 
+// ---------- 跨回合估值(2026-08) ----------
+//
+// 【为什么非加不可】
+// 在这之前 evaluate 是**纯单帧**的:场面身材 + 血 + 手牌,全是「此刻」。
+// 每一次有机制被证明看不见,做法都是再钉一个常数 —— 伏兵 +1.6、
+// 主公技阶 +4、过载 -0.5、留牌 +0.35。代码自己把这个毛病记录了四遍。
+//
+// 代价是实打实的(铁律 8):贪心给治疗、护甲、潜行的估值近乎为零,于是
+//   · 呂蒙「白衣渡江」改成潜行奇袭:镜像胜率 38% → 26%
+//   · 劉秀「柔道」改成回血 2 + 护甲 1:40% → 27%
+// 两次都被判成「设计不行」而回退,而真相是**尺子量不到**。
+// 铁律 9 又规定 AI_NORMAL 是唯一的尺子 —— 这个盲区在给整个卡池定价。
+//
+// 【为什么是「存续」,不是继续钉常数】
+// 钉常数只能修「这一个机制」;这一项修的是**类**:潜行、铁壁、高血量、
+// 治疗一个单位 —— 它们都不改变此刻的场面,改变的是「这份威胁下回合还在不在」。
+//
+// 【实测:同一轮里还写了第二项,砍掉了】
+// 第二项是「生存钟」——「还能撑几回合」而不是血量线性记分,本意是让回血/护甲
+// 按危险程度计价(满血时回血一分不值,5 血时价值连城)。听上去太合理了,
+// 所以更要把数字写下来,免得下次再试一遍(sim-ai-tiers,双方同牌同主公):
+//   存续 + 生存钟   54.6%   z = 2.7(864 局,SE 1.7pp)
+//   只开存续        54.6%   z = 2.7      ← 一模一样
+//   只开生存钟      50.9%   z = 0.4(576 局)  ← 等于没有
+// 而在 sim-hero-mirror 上**只开存续反而更好**:出界的主公技 3 个 vs 4 个,
+// 数字也更居中。于是只留存续。
+//
+// 【自己写漏的坑,也记着】
+// 第一版这两个函数完全不看 frozen。后果是「冻结」在新尺子上一分不值:
+// 劉秀「柔道」(冻结一名敌方武将)镜像胜率从 40% 掉到 25% —— 那不是技能变弱,
+// 是模型算漏了。冻结在**其控制者回合结束时**解除,也就是被冻的单位
+// 恰好错过自己的下一个回合。修完回到 43%。
+
+// 一个单位活到我下个回合的概率。粗糙,但要抓住主要因素。
+//
+// 不做真推演:对手怎么分配攻击是个指派问题,展开是几百个分支,
+// 而这里每评一次局面都要算一遍。要的只是「这个威胁站得住吗」的量级。
+function survivalOdds(inst: CardInstance, foe: PlayerState): number {
+  // 潜行:不能被指定攻击、也不能被点杀,只有 AoE 和随机伤害够得着
+  if (inst.keywords.includes('stealth')) return 0.85
+  let hp = inst.health
+  if (inst.keywords.includes('divineShield')) hp += 2 // 白吃一击 ≈ 两点血
+  // 对手能不能一口吃掉它:拿**最大的单个攻击力**当代理量,而不是总和 ——
+  // 对手通常不会把整个场面都换在一个单位上。
+  let biggest = 0
+  for (const u of foe.board) if (u.attack > biggest) biggest = u.attack
+  if (biggest === 0) return 0.9 // 对面空场
+  if (hp > biggest * 2) return 0.8
+  if (hp > biggest) return 0.6
+  return 0.25
+}
+
+// 我方场面里「活到下回合还挥得出来」的攻击力。
+function persistingThreat(me: PlayerState, foe: PlayerState): number {
+  let v = 0
+  for (const u of me.board) {
+    // 冻结/缴械的单位下回合挥不出来(见上面那段「自己写漏的坑」)
+    if (u.frozen) continue
+    if (hasKeyword(u, 'disarm')) continue
+    v += u.attack * maxAttacksOf(u) * survivalOdds(u, foe)
+  }
+  return v
+}
+
 // 评分权重 —— 同一套引擎,不同的性格。
 //
 // 关底 Boss 从前只有「血更厚 + 主公技更强 + 卡组更好」三个旋钮,
@@ -214,6 +308,9 @@ export interface EvalWeights {
   // 抽成权重之后它顺带成了一条**新的性格轴**:值高 = 这个 AI 见不得手里有钱,
   // 见牌就打;值低 = 它愿意攥着法力等一个更好的时机。
   mana: number
+  // 威胁存续(2026-08):活到下回合还能挥出来的攻击力。0 = 退回纯单帧估值。
+  // 见 evaluate 上方那段长注释 —— 实测数字与被砍掉的第二项都记在那里。
+  persist: number
 }
 
 // 数值与抽出来之前**逐字相同**(greedy 的 EndTurn 分支与 planner 的 stopScore
@@ -224,6 +321,9 @@ export const DEFAULT_WEIGHTS: EvalWeights = {
   foeHp: 0.6,
   hand: 0.4,
   mana: 0.18,
+  // 默认 0:不传权重的调用点(测试夹具、旧脚本)行为一字不变。
+  // 开关权在 AI_NORMAL 与 AI_LEVELS,不在这里 —— 谁在用新尺子一目了然。
+  persist: 0,
 }
 
 export function evaluate(
@@ -296,6 +396,11 @@ export function evaluate(
   // 即时价值,因为债要下回合才还,中间还有一回合的场面收益)。
   score -= me.overloadNext * 0.5
   score += foe.overloadNext * 0.5
+
+  // ---- 跨回合:威胁存续(默认权重 0 = 行为与历史一致;见上面那段)----
+  if (w.persist !== 0) {
+    score += (persistingThreat(me, foe) - persistingThreat(foe, me)) * w.persist
+  }
 
   // 一层前瞻(仅最高难度)
   if (foresight) {
