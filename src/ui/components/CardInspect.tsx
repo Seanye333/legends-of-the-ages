@@ -45,9 +45,12 @@ function hasDossier(l: {
   life?: unknown
   office?: unknown
   alias?: unknown
+  fate?: unknown
+  works?: unknown
+  ethnos?: unknown
   traits?: string[]
 }): boolean {
-  return Boolean(l.courtesy || l.home || l.life || l.office || l.alias || l.traits?.length)
+  return Boolean(l.courtesy || l.home || l.life || l.office || l.alias || l.fate || l.works || l.ethnos || l.traits?.length)
 }
 
 export function CardInspect({ def, onClose, forge = false }: CardInspectProps) {
@@ -362,6 +365,15 @@ export function CardInspect({ def, onClose, forge = false }: CardInspectProps) {
               )}
               {LORE[def.id].alias && (
                 <span className={styles.dossierItem}>「{pickCompact(LORE[def.id].alias!)}」</span>
+              )}
+              {LORE[def.id].ethnos && (
+                <span className={styles.dossierItem}>{pickCompact(LORE[def.id].ethnos!)}</span>
+              )}
+              {LORE[def.id].works && (
+                <span className={styles.dossierItem}>{LORE[def.id].works!.zh}</span>
+              )}
+              {LORE[def.id].fate && (
+                <span className={styles.dossierFate}>{pickCompact(LORE[def.id].fate!)}</span>
               )}
               {(LORE[def.id].traits ?? []).slice(0, 4).map((tr) => (
                 <span key={tr} className={styles.dossierTrait}>

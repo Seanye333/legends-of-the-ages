@@ -29,6 +29,37 @@ describe('武将档案的出处', () => {
     expect(orphans.slice(0, 10)).toEqual([])
   })
 
+  // 结局、著作、绰号和籍贯是同一条标准:显示出来的必须是原文里那个词。
+  // 结局尤其要守 —— 它是从**传的末尾两句**里抠的,一旦有人把窗口放宽到全篇,
+  // 吕后传里的「殺韓信、彭越」就会让吕后自己变成「被杀」。
+  it('结局 / 著作 / 绰号都是生平原文里的原话', () => {
+    const orphans: string[] = []
+    for (const id of GENERALS) {
+      const bio = LORE[id].bio?.zh ?? ''
+      for (const f of ['fate', 'alias'] as const) {
+        const v = LORE[id][f]?.zh
+        if (v && !bio.includes(v)) orphans.push(`${CARDS_BY_ID[id].name.zh}.${f}「${v}」在传里找不到`)
+      }
+      const w = LORE[id].works?.zh
+      if (w && !bio.includes(w.replace(/[《》]/g, ''))) {
+        orphans.push(`${CARDS_BY_ID[id].name.zh}.works「${w}」在传里找不到`)
+      }
+    }
+    expect(orphans.slice(0, 10)).toEqual([])
+  })
+
+  it('结局只从传的末尾抠 —— 别人的死不算他的', () => {
+    // 抽查:凡是判了结局的,那个词必须出现在**最后两句**里
+    const bad: string[] = []
+    for (const id of GENERALS) {
+      const v = LORE[id].fate?.zh
+      if (!v) continue
+      const parts = (LORE[id].bio?.zh ?? '').split(/[。;!?]/).filter((x) => x.trim())
+      if (!parts.slice(-2).join('。').includes(v)) bad.push(`${CARDS_BY_ID[id].name.zh}:「${v}」不在传的末尾`)
+    }
+    expect(bad.slice(0, 10)).toEqual([])
+  })
+
   it('籍贯规模没有悄悄归零 —— 换了抽法也得还有三成人有', () => {
     const n = GENERALS.filter((id) => LORE[id].home).length
     expect(n).toBeGreaterThan(600)
@@ -133,6 +164,8 @@ describe('档案覆盖率基线', () => {
     ['尊号', (l) => Boolean(l.era?.zh), 0.24],
     ['名言', (l) => Boolean(l.quote?.zh), 0.10],
     ['出战台词', (l) => Boolean(l.line?.zh), 0.12],
+    ['结局', (l) => Boolean(l.fate?.zh), 0.11],
+    ['著作', (l) => Boolean(l.works?.zh), 0.06],
   ]
 
   for (const [name, has, floor] of FLOORS) {

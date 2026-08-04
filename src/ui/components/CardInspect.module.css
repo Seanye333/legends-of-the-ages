@@ -671,3 +671,9 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* 结局单列一色:它是这一行里唯一「怎么收场」的信息,
+   和籍贯生卒那些平铺的事实不是同一类 */
+.dossierFate {
+  color: rgba(201, 106, 90, 0.85);
+}

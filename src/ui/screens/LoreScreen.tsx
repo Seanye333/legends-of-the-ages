@@ -309,7 +309,7 @@ export function LoreScreen({ onBack }: Props) {
                   **这一屏是专门看人的**,却一直只显示尊号与生平四行 ——
                   而卡牌详情页(长按卡面)反倒把档案摆全了。位置颠倒了:
                   牌桌上要的是快速判断,列传页要的才是这个人的全部。 */}
-              {(selLore.courtesy || selLore.home || selLore.life || selLore.office || selLore.alias) && (
+              {(selLore.courtesy || selLore.home || selLore.life || selLore.office || selLore.alias || selLore.fate || selLore.works || selLore.ethnos) && (
                 <div className={styles.dossier}>
                   {selLore.courtesy && (
                     <span>{t('字', 'Courtesy')} {pickCompact(selLore.courtesy)}</span>
@@ -318,6 +318,9 @@ export function LoreScreen({ onBack }: Props) {
                   {selLore.life && <span>{pickCompact(selLore.life)}</span>}
                   {selLore.office && <span>{pickCompact(selLore.office)}</span>}
                   {selLore.alias && <span>「{pickCompact(selLore.alias)}」</span>}
+                  {selLore.ethnos && <span>{pickCompact(selLore.ethnos)}</span>}
+                  {selLore.works && <span>{selLore.works.zh}</span>}
+                  {selLore.fate && <span className={styles.fate}>{pickCompact(selLore.fate)}</span>}
                 </div>
               )}
               {/* 族人名册。列传是**顺着人往下翻**的地方,家族正好是一条现成的线索:

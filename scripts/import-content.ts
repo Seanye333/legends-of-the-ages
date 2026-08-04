@@ -723,6 +723,9 @@ interface CardLore {
   life?: { zh: string; en: string } // 生卒年
   office?: { zh: string; en: string } // 官爵(位至X · 封X侯)
   alias?: { zh: string; en: string } // 绰号 / 别称(「飛虎將」「古之惡來」)
+  fate?: { zh: string; en: string } // 结局(中流矢 / 自刎 / 夷三族 / 善終)
+  works?: { zh: string; en: string } // 著作(《傷寒雜病論》)
+  ethnos?: { zh: string; en: string } // 族属(羌 / 氐 / 女真)
   poem?: { zh: string; en: string } // 绝命诗
   taunt?: { zh: string; en: string } // 挑衅
   traits?: string[] // 性格特质 id(译名表在内容层)
@@ -767,12 +770,51 @@ const ALIAS_RE = /(?:號|号|人稱|人称|自號|自号|時人謂之|时人谓�
 // 楊業「楊無敵」、李克用「獨眼龍」、李自成「闖王」、鰲拜「滿洲第一勇士」。
 // 例外:「古之惡來」「今之X」是**绰号的固定句式**,别被「之」那条一起筛掉
 const NOT_AN_ALIAS = /^(?!古之|今之).*之|[碑評评紙纸璧治爭争亂乱友言集]$/
+// ---- 结局 ----
+//
+// 【为什么只看传的末尾】
+// 史书体例:传的最后一句写他怎么死。扫全篇会把**别人**的死算到他头上 ——
+// 吕后传里的「殺韓信、彭越」会让吕后自己变成「被杀」。
+// 只取最后两句,精度立刻从「一半是错的」变成能用。
+//
+// 存的是**原文里那个词**(中流矢 / 自刎 / 夷三族),不是我归的类 ——
+// 和籍贯同一条标准:照抄可以,推断不行。英文那半给类别词,
+// 因为结局的类别是个封闭小词表,翻得准。
+const FATE_RULES: [RegExp, string][] = [
+  [/自刎|自剄|伏劍|自縊|飲鴆|自殺|投水而死|投江/, 'Took his own life'],
+  [/戰死|陣亡|中流矢|中箭|力戰而死|沒於陣|死於陣|歿於軍/, 'Killed in action'],
+  [/夷三族|夷滅|伏誅|賜死|被殺|被害|遇害|見殺|所殺|所害|誅死|坐誅/, 'Put to death'],
+  [/病卒|病死|疾卒|以疾卒|病篤而卒|善終|壽終/, 'Died of illness'],
+]
+const fateOf = (bioZh: string | undefined): { zh: string; en: string } | undefined => {
+  if (!bioZh) return undefined
+  const parts = bioZh.split(/[。;!?]/).filter((x) => x.trim())
+  const tail = parts.slice(-2).join('。')
+  for (const [re, en] of FATE_RULES) {
+    const m = tail.match(re)
+    if (m) return { zh: m[0], en }
+  }
+  return undefined
+}
+// 著作:要求「著/作/撰/注/編」紧邻书名号 —— 光认《》会把别人写他的那些也算进来
+//(甄氏传里的《洛神賦》是曹植写她的)。
+const WORK_RE = /(?:著|作|撰|注|編)有?《([一-龥]{2,10})》/
+// 族属:要求「X人/X族/X部」或「X血脈」。不能光认族名 ——
+// 「破羌」「討匈奴」满篇都是,那说的是他打谁,不是他是谁。
+const ETHNOS_EN: Record<string, string> = {
+  匈奴: 'Xiongnu', 鮮卑: 'Xianbei', 羌: 'Qiang', 氐: 'Di', 羯: 'Jie', 烏桓: 'Wuhuan',
+  党項: 'Tangut', 女真: 'Jurchen', 契丹: 'Khitan', 蒙古: 'Mongol', 滿洲: 'Manchu',
+  突厥: 'Turkic', 回紇: 'Uyghur', 吐蕃: 'Tibetan', 南蠻: 'Nanman',
+}
+const ETHNOS_RE = new RegExp(
+  `(?:^|[,,。])[一-龥]{0,4}?(${Object.keys(ETHNOS_EN).join('|')})(?:族|人|部)|(${Object.keys(ETHNOS_EN).join('|')})(?:族)?血脈`,
+)
 const POSTH_RE =
   /(?:諡曰|谥曰|追諡|追谥|諡號|谥号|世稱|世称|人稱|人称|號曰|号曰|時人謂之|时人谓之|後世尊為|后世尊为|追尊為|追尊为|尊為|尊为|封為|封为)([一-龥]{2,6})/
 
 const officerById = new Map(unique.map((o) => [o.id, o]))
 const lore: Record<string, CardLore> = {}
-const tally = { bio: 0, quote: 0, poem: 0, line: 0, courtesy: 0, home: 0, life: 0, office: 0, alias: 0, traits: 0, stats: 0 }
+const tally = { bio: 0, quote: 0, poem: 0, line: 0, courtesy: 0, home: 0, life: 0, office: 0, alias: 0, fate: 0, works: 0, ethnos: 0, traits: 0, stats: 0 }
 // 生卒年:源头的 HISTORICAL_LIFESPANS 只覆盖歷代名將;三国那批用名册上的
 // birthYear/deathYear 现拼(两者格式不同,所以不能混成一个来源)
 const lifeOf = (id: string, o: (typeof unique)[number]): { zh: string; en: string } | undefined => {
@@ -845,6 +887,22 @@ for (const o of unique) {
   if (alias && !NOT_AN_ALIAS.test(alias) && !alias.includes(o.name.zh) && !o.name.zh.includes(alias)) {
     entry.alias = { zh: alias, en: alias }
     tally.alias++
+  }
+  const fate = fateOf(bioZh)
+  if (fate) {
+    entry.fate = fate
+    tally.fate++
+  }
+  const work = bioZh?.match(WORK_RE)?.[1]
+  if (work) {
+    entry.works = { zh: `《${work}》`, en: `《${work}》` }
+    tally.works++
+  }
+  const eth = bioZh?.match(ETHNOS_RE)
+  const ethName = eth?.[1] ?? eth?.[2]
+  if (ethName) {
+    entry.ethnos = { zh: ethName, en: ETHNOS_EN[ethName] }
+    tally.ethnos++
   }
   const office = [bioZh?.match(OFFICE_RE)?.[1], bioZh?.match(TITLE_RE)?.[1]].filter(Boolean)
   if (office.length) {
@@ -1025,6 +1083,9 @@ writeFileSync(
     '  life?: { zh: string; en: string }',
     '  office?: { zh: string; en: string }',
     '  alias?: { zh: string; en: string }',
+    '  fate?: { zh: string; en: string }',
+    '  works?: { zh: string; en: string }',
+    '  ethnos?: { zh: string; en: string }',
     '  poem?: { zh: string; en: string }',
     '  taunt?: { zh: string; en: string }',
     '  traits?: string[]',
@@ -1065,7 +1126,7 @@ writeFileSync(
 console.log(
   `lore.gen.ts: ${Object.keys(lore).length} 条档案 —— ` +
     `生平 ${tally.bio} · 名言 ${tally.quote} · 绝命诗 ${tally.poem} · 台词 ${tally.line} · ` +
-    `表字 ${tally.courtesy} · 籍贯 ${tally.home} · 生卒 ${tally.life} · 官爵 ${tally.office} · 绰号 ${tally.alias} · 性格 ${tally.traits} · 五维 ${tally.stats}`,
+    `表字 ${tally.courtesy} · 籍贯 ${tally.home} · 生卒 ${tally.life} · 官爵 ${tally.office} · 绰号 ${tally.alias} · 结局 ${tally.fate} · 著作 ${tally.works} · 族属 ${tally.ethnos} · 性格 ${tally.traits} · 五维 ${tally.stats}`,
 )
 console.log(
   `  史料关系网:${edges.length} 组,涉及 ${relPeople.size} 名武将 —— ` +
