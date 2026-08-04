@@ -80,6 +80,19 @@ describe('手写名言与台词', () => {
     expect(shadowed).toEqual([])
   })
 
+  // 手写补遗只有**合并之后**才看得见。列传屏此前直接读生成层,
+  // 于是那八条手写生平(魏文侯、徐達、劉伯溫…)在专门看人的那一屏上一个字都不显示,
+  // 而卡牌详情页读的是合并版 —— 同一个人在两处内容不一样,不崩不红。
+  it('两处读列传的地方都读合并后的那一份', () => {
+    const src = (f: string) => readFileSync(new URL(f, import.meta.url), 'utf8')
+    for (const f of ['../ui/screens/LoreScreen.tsx', '../ui/components/CardInspect.tsx']) {
+      const code = src(f)
+      // 要么自己合并 LORE_OVERRIDES,要么走 loreLazy(它内部合并)
+      const merges = code.includes('LORE_OVERRIDES') || code.includes('loreNow')
+      expect(merges, `${f} 直接读了生成层,手写补遗会看不见`).toBe(true)
+    }
+  })
+
   it('本作自造的卡不许有名言 —— 它们没有史料', () => {
     // 說客(纵横家的泛称)与長蛇陣旗(阵形旗)是我们造的,给风味可以,给「名言」不行
     for (const id of ['gen-fame-lobbyist', 'gen-chang-she-qi']) {

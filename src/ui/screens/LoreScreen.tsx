@@ -1,7 +1,21 @@
 import { useCallback, useMemo, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import { CARDS_BY_ID, SIGNATURE_IDS } from '../../content/cards'
-import { LORE, TRAIT_NAMES } from '../../content/generated/lore.gen'
+import { LORE as GEN_LORE, TRAIT_NAMES } from '../../content/generated/lore.gen'
+import { LORE_OVERRIDES } from '../../content/overrides/lore-quotes'
+
+// 列传要读的是**合并后**的列传:生成层 ⊕ 手写补遗。
+// 这一屏此前直接读生成层,于是手写的名言、台词、绝命诗、以及那八条手写生平
+// (魏文侯、徐達、劉伯溫…)在**专门看人的那一屏上一个字都不显示** ——
+// 而卡牌详情页读的是 loreLazy 的合并版,同一个人在两处内容不一样。
+// 不崩、不红,只是少了东西,和这个仓库里其他几处静默失效同一类。
+const LORE: Record<string, (typeof GEN_LORE)[string] & (typeof LORE_OVERRIDES)[string]> =
+  Object.fromEntries(
+    [...new Set([...Object.keys(GEN_LORE), ...Object.keys(LORE_OVERRIDES)])].map((id) => [
+      id,
+      { ...GEN_LORE[id], ...LORE_OVERRIDES[id] },
+    ]),
+  )
 import { useCollection } from '../../app/collectionStore'
 import { Portrait } from '../components/Portrait'
 import { DOCTRINE_COLORS, dynastyName } from '../doctrineColors'
@@ -309,7 +323,7 @@ export function LoreScreen({ onBack }: Props) {
                   **这一屏是专门看人的**,却一直只显示尊号与生平四行 ——
                   而卡牌详情页(长按卡面)反倒把档案摆全了。位置颠倒了:
                   牌桌上要的是快速判断,列传页要的才是这个人的全部。 */}
-              {(selLore.courtesy || selLore.home || selLore.life || selLore.office || selLore.alias || selLore.fate || selLore.works || selLore.ethnos) && (
+              {(selLore.courtesy || selLore.home || selLore.life || selLore.office || selLore.alias || selLore.fate || selLore.arms || selLore.works || selLore.ethnos) && (
                 <div className={styles.dossier}>
                   {selLore.courtesy && (
                     <span>{t('字', 'Courtesy')} {pickCompact(selLore.courtesy)}</span>
@@ -321,6 +335,7 @@ export function LoreScreen({ onBack }: Props) {
                   {selLore.ethnos && <span>{pickCompact(selLore.ethnos)}</span>}
                   {selLore.works && <span>{selLore.works.zh}</span>}
                   {selLore.fate && <span className={styles.fate}>{pickCompact(selLore.fate)}</span>}
+                  {selLore.arms && <span className={styles.arms}>{pickCompact(selLore.arms)}</span>}
                 </div>
               )}
               {/* 族人名册。列传是**顺着人往下翻**的地方,家族正好是一条现成的线索:

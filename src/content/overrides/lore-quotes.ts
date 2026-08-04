@@ -21,6 +21,15 @@ export interface LoreOverride {
   line?: { zh: string; en: string }
   // 绝命诗。标准与名言相同 —— 必须是真的传世之作,不是我们替他写的。
   poem?: { zh: string; en: string }
+  // 兵器与坐骑。**标准和上面几条不同,必须单独说清楚**:
+  // 青龍偃月刀、丈八蛇矛、方天畫戟这些**出自《三國演義》,不是正史** ——
+  // 《三国志》里关羽用的是「刺」(矛槊类),没有具名兵器。
+  // 这个游戏本来就同时用演义与史书两套素材,所以演义的兵器可以写,
+  // 但**每一条都在注释里标明出处是演义还是正史**,界面上也和「结局」「著作」
+  // 那些史料字段分开显示(见 CardInspect 的 dossierArms)。
+  // 实测源头生平里具名兵器**一条都没有**(泛指的「弩」「矛」只有 18 条),
+  // 所以这一层只能手写 —— 而它恰恰是玩家最记得住的东西。
+  arms?: { zh: string; en: string }
   // 生平。**只写给源头压根没有传的那几位**(魏文侯、李悝、西門豹、項燕…),
   // 标准是「史书里查得到的事实摘要」,和名言那条不同:
   // 摘要可以由我们组织语言,原话不可以由我们组织语言。
@@ -445,6 +454,7 @@ export const LORE_OVERRIDES: Record<string, LoreOverride> = {
       en: 'His Majesty used me well; I meant to repay him by holding the border. Driven to this by treacherous men — with what face should I beg to live?',
     },
     line: { zh: '無敵,是他們叫的。', en: '“Invincible” — that was their word, not mine.' },
+    arms: { zh: '金刀', en: 'The Golden Blade' }, // 《杨家将演义》
   },
   'hist-zong-ze': {
     // 《宋史·宗泽传》—— 临终连呼三声,无一语及家事
@@ -923,6 +933,7 @@ export const LORE_OVERRIDES: Record<string, LoreOverride> = {
     // 《旧唐书·秦叔宝传》—— 晚年多病,自述
     quote: { zh: '吾少長戎馬,所經二百餘陣,屢中重瘡,出血亦數斛矣,安得不病乎?', en: 'I grew up among warhorses and fought in two hundred ranks; wound upon wound, blood by the bucket. How should I not be ill?' },
     line: { zh: '兩百戰,血流了幾斛。', en: 'Two hundred battles. Blood by the bucket.' },
+    arms: { zh: '雙鐧', en: 'Twin Maces' }, // 《隋唐演义》
   },
   'hist-guo-ziyi': {
     line: { zh: '單騎去見他們,不必帶甲。', en: 'I will ride to them alone. No armour needed.' },
@@ -1024,4 +1035,61 @@ export const LORE_OVERRIDES: Record<string, LoreOverride> = {
     quote: { zh: '量中華之物力,結與國之歡心。', en: 'Measure the substance of China, and secure the goodwill of the allied powers.' },
     line: { zh: '這天下,哀家垂簾看了四十年。', en: 'Forty years I have watched this realm from behind the curtain.' },
   },
+  // ═══════════════ 第四批(2026-08-03):绝命诗与兵器 ═══════════════
+  //
+  // 【绝命诗只补三位】这一栏挖得比想象中干净 —— 项羽、荆轲、文天祥、于谦、
+  // 谭嗣同、杨继盛、方孝孺、夏完淳、秋瑾、岳飞、史可法、袁崇焕都已经有了。
+  // 剩下缺的那批,多数**根本没有绝命之作**:王勃溺亡、邓世昌沉舰、
+  // 李自成九宫山遇害、辛弃疾病卒(临终大呼「杀贼」,那是话不是诗)。
+  //
+  // **石達開《入川題壁》没写** —— 「揚鞭慷慨蒞中原」那首流传极广,
+  // 但学界多认为是清末高天梅伪托。这一栏的标准是「必须是真的传世之作,
+  // 不是我们替他写的」,伪托同样不算。
+  'hist-yu-ji': {
+    // 《楚汉春秋》所载《和垓下歌》—— 项羽悲歌后虞姬和之,和罢自刎
+    poem: {
+      zh: '漢兵已略地,四方楚歌聲。大王意氣盡,賤妾何聊生!',
+      en: 'Han has taken the land; from every side the songs of Chu. My lord\u2019s spirit is spent — what is left for me to live for?',
+    },
+  },
+  'ji-kang': {
+    // 《幽愤诗》—— 下狱后作。临刑索琴弹《广陵散》,曰「於今絕矣」
+    poem: { zh: '昔慚柳惠,今愧孫登。內負宿心,外恧良朋。', en: 'Once I was shamed before Liuxia Hui; now before Sun Deng. Inwardly I have failed my own heart, outwardly my friends.' },
+    quote: { zh: '《廣陵散》於今絕矣。', en: 'The Guangling melody ends today.' },
+  },
+  'hist-ji-kang': {
+    // 同上(池子里有两张嵇康:三国册与历代册)—— 名言给这张,绝命诗给那张,
+    // 免得同一个人的两张牌在牌桌上说一模一样的话
+    poem: { zh: '昔慚柳惠,今愧孫登。內負宿心,外恧良朋。', en: 'Once I was shamed before Liuxia Hui; now before Sun Deng. Inwardly I have failed my own heart, outwardly my friends.' },
+  },
+  'hist-li-yu': {
+    // 《虞美人》—— 相传作此词后为宋太宗赐牵机药
+    poem: {
+      zh: '問君能有幾多愁?恰似一江春水向東流。',
+      en: 'How much sorrow can one man hold? As much as a river of spring water running east.',
+    },
+  },
+  'hist-xin-qiji': {
+    // 《康熙济南府志》等载其临终事 —— 大呼「杀贼」数声而卒
+    quote: { zh: '殺賊!殺賊!', en: 'Kill the invader! Kill the invader!' },
+  },
+
+  // ── 兵器与坐骑(标准见 LoreOverride.arms 的说明:演义可写,但标出处)──
+  'guan-yu': { arms: { zh: '青龍偃月刀 · 赤兔馬', en: 'Green Dragon Crescent Blade · Red Hare' } }, // 演义
+  'zhang-fei': { arms: { zh: '丈八蛇矛', en: 'Serpent Spear' } }, // 演义
+  'lu-bu': { arms: { zh: '方天畫戟 · 赤兔馬', en: 'Sky Piercer · Red Hare' } }, // 演义;赤兔见《三国志·吕布传》
+  'zhao-yun': { arms: { zh: '涯角槍 · 青釭劍', en: 'Yajiao Spear · Qinggang Sword' } }, // 演义
+  'dian-wei': { arms: { zh: '雙鐵戟', en: 'Twin Iron Halberds' } }, // 《三国志·典韦传》「好持大双戟」,正史
+  'cao-cao': { arms: { zh: '倚天劍 · 絕影', en: 'Heaven\u2019s Reliance · Jueying' } }, // 剑出演义;绝影见《魏书》
+  'liu-bei': { arms: { zh: '雙股劍 · 的盧', en: 'Twin Swords · Dilu' } }, // 剑出演义;的卢见《世说新语》
+  'sun-ce': { arms: { zh: '古錠刀', en: 'Guding Blade' } }, // 演义
+  'taishi-ci': { arms: { zh: '手戟', en: 'Hand Halberds' } }, // 《三国志·太史慈传》,正史
+  'huang-zhong': { arms: { zh: '弓', en: 'The Bow' } }, // 《三国志》称其「勇毅冠三军」,弓马见演义
+  'ma-chao': { arms: { zh: '銀槍', en: 'Silver Spear' } }, // 演义
+  'xu-chu': { arms: { zh: '大刀', en: 'Great Blade' } }, // 演义
+  'guan-ping': { arms: { zh: '大砍刀', en: 'Broad Blade' } }, // 演义
+  'zhou-cang': { arms: { zh: '扛刀', en: 'The Bearer\u2019s Blade' } }, // 演义:为关羽扛刀
+  'hist-xiang-yu': { arms: { zh: '烏騅馬', en: 'Wuzhui' } }, // 《史记·项羽本纪》「駿馬名騅」,正史
+  'hist-yue-fei': { arms: { zh: '瀝泉槍', en: 'Liquan Spear' } }, // 《说岳全传》,小说
+  'hist-yuchi-gong': { arms: { zh: '鋼鞭', en: 'Steel Whip' } }, // 《隋唐演义》
 }

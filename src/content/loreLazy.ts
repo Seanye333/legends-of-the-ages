@@ -1,5 +1,15 @@
-import type { CardLore, RelEdge } from './generated/lore.gen'
+import type { CardLore as GenLore, RelEdge } from './generated/lore.gen'
 import { LORE_OVERRIDES } from './overrides/lore-quotes'
+import type { LoreOverride } from './overrides/lore-quotes'
+
+// 对外的列传类型 = 生成层 ⊕ 手写补遗。
+//
+// **必须是这一份,不能是 lore.gen 的那一份** —— 手写层有生成层没有的字段
+// (名言/台词/绝命诗/生平/兵器),而合并是在运行时做的:
+// 用生成层的类型,tsc 会说「arms 不存在」,而更糟的是**反过来也不会报错** ——
+// 直接读 lore.gen 的地方编译得过,只是手写的内容一个字都不显示。
+// 列传屏就这么漏过:徐達那条手写的传写完了,而那一屏读的是生成层,还是空白。
+export type CardLore = GenLore & LoreOverride
 
 // 列传按需加载。
 //

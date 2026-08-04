@@ -46,11 +46,12 @@ function hasDossier(l: {
   office?: unknown
   alias?: unknown
   fate?: unknown
+  arms?: unknown
   works?: unknown
   ethnos?: unknown
   traits?: string[]
 }): boolean {
-  return Boolean(l.courtesy || l.home || l.life || l.office || l.alias || l.fate || l.works || l.ethnos || l.traits?.length)
+  return Boolean(l.courtesy || l.home || l.life || l.office || l.alias || l.fate || l.arms || l.works || l.ethnos || l.traits?.length)
 }
 
 export function CardInspect({ def, onClose, forge = false }: CardInspectProps) {
@@ -374,6 +375,10 @@ export function CardInspect({ def, onClose, forge = false }: CardInspectProps) {
               )}
               {LORE[def.id].fate && (
                 <span className={styles.dossierFate}>{pickCompact(LORE[def.id].fate!)}</span>
+              )}
+              {/* 兵器多数出自演义而非正史,所以视觉上和上面那些史料字段分开 */}
+              {LORE[def.id].arms && (
+                <span className={styles.dossierArms}>{pickCompact(LORE[def.id].arms!)}</span>
               )}
               {(LORE[def.id].traits ?? []).slice(0, 4).map((tr) => (
                 <span key={tr} className={styles.dossierTrait}>
