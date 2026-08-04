@@ -17,6 +17,7 @@ import { REL_KIND } from '../relationLabels'
 import { bondsOf, bondRoster, cardName, clanRoster, rivalsOf, rivalLore } from '../../content/relations'
 import { TROOP_NAME } from '../../content/troops'
 import { Portrait } from './Portrait'
+import { StatRadar } from './StatRadar'
 import { usePickCompact, usePickText, useT } from '../i18n'
 import { playSfx } from '../sound'
 import {
@@ -395,27 +396,10 @@ export function CardInspect({ def, onClose, forge = false }: CardInspectProps) {
               ))}
             </div>
           )}
+          {/* 五维用雷达图 —— 和列传页同一个组件。条形回答「统率多少」,
+              雷达回答「这是个什么样的人」,而详情页要的正是后者。 */}
           {LORE[def.id]?.stats && (
-            <div className={styles.stats5}>
-              {(
-                [
-                  ['統', 'LD', LORE[def.id].stats!.ld],
-                  ['武', 'WAR', LORE[def.id].stats!.war],
-                  ['智', 'INT', LORE[def.id].stats!.int],
-                  ['政', 'POL', LORE[def.id].stats!.pol],
-                  ['魅', 'CHA', LORE[def.id].stats!.cha],
-                ] as const
-              ).map(([zh, en, v]) => (
-                <span key={en} className={styles.stat5} title={`${zh} ${v}`}>
-                  <span className={styles.stat5Label}>{t(zh, en)}</span>
-                  {/* 条形比数字好读:一眼看出这个人是猛将还是文官 */}
-                  <span className={styles.stat5Bar}>
-                    <i style={{ width: `${v}%` }} />
-                  </span>
-                  <span className={styles.stat5Num}>{v}</span>
-                </span>
-              ))}
-            </div>
+            <StatRadar stats={LORE[def.id].stats!} color={DOCTRINE_COLORS[def.doctrine]} />
           )}
           {LORE[def.id] && (
             <div className={styles.lore}>

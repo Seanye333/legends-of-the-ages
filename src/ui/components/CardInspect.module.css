@@ -553,45 +553,6 @@
 }
 
 /* ---- 五维 ---- */
-.stats5 {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
-  gap: 2px 12px;
-  margin: 6px 0 2px;
-  font-size: 10px;
-  color: rgba(232, 220, 198, 0.55);
-}
-
-.stat5 {
-  display: grid;
-  grid-template-columns: 1.6em 1fr 2em;
-  align-items: center;
-  gap: 4px;
-}
-
-.stat5Label {
-  opacity: 0.75;
-}
-
-.stat5Bar {
-  height: 3px;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.08);
-  overflow: hidden;
-}
-
-.stat5Bar i {
-  display: block;
-  height: 100%;
-  background: linear-gradient(90deg, rgba(212, 168, 74, 0.5), rgba(212, 168, 74, 0.95));
-}
-
-.stat5Num {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  opacity: 0.7;
-}
-
 /* 绝命诗:比列传更轻、更收，像一句落款 */
 .lorePoem {
   margin: 6px 0 0;
