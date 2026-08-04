@@ -85,6 +85,9 @@ export function LoreScreen({ onBack }: Props) {
   // 写成内联的 () => setSelected(null) 的话每渲染一次焦点环就重挂一遍。
   const closeDetail = useCallback(() => setSelected(null), [])
   const [dynFilter, setDynFilter] = useState<string>('all')
+  // 搜索:233 条列传靠朝代筛还行,但玩家心里想的是一个**名字** ——
+  // 「张辽在哪」不该靠翻。同时搜名、字、绰号:很多人记得住的是「子龙」不是「赵云」。
+  const [query, setQuery] = useState('')
   // 三种读法:列传(按人)/ 關係圖譜(按关系)/ 時代長卷(按时间)。
   // 同一批内容,三个不同的问题 —— 一屏塞不下,但一个 tab 装得下。
   const [view, setView] = useState<'lives' | 'graph' | 'era' | 'index'>('lives')
@@ -108,12 +111,22 @@ export function LoreScreen({ onBack }: Props) {
 
   // 列传页按朝代筛,长卷页按时代块筛 —— 两个视图问的是不同粒度的问题,
   // 共用一个筛选器会互相踩(选了「魏」再切到长卷,长卷该高亮哪一块?)。
-  const shown =
+  const q = query.trim().toLowerCase()
+  const matches = (id: string) => {
+    if (!q) return true
+    const c = CARDS_BY_ID[id]
+    const l = LORE[id]
+    return [c.name.zh, c.name.en, l?.courtesy?.zh, l?.alias?.zh, l?.era?.zh]
+      .filter(Boolean)
+      .some((x) => x!.toLowerCase().includes(q))
+  }
+  const shown = (
     view === 'era'
       ? entries.filter((id) => ERA_OF[CARDS_BY_ID[id].dynasty] === eraFilter)
       : dynFilter === 'all'
         ? entries
         : entries.filter((id) => CARDS_BY_ID[id].dynasty === dynFilter)
+  ).filter(matches)
   const unlocked = entries.filter((id) => (owned[id] ?? 0) > 0).length
   const sel = selected ? CARDS_BY_ID[selected] : null
   const selLore = selected ? LORE[selected] : null
@@ -149,6 +162,16 @@ export function LoreScreen({ onBack }: Props) {
           而「通览」正是这个模式(名将列传 = 博物馆)该干的事。
           图用弦图不用力导向:98 个节点力导向必糊成毛线,而且要迭代(不确定);
           弦图的布局是确定的,同一份数据每次画出来一模一样。见 RelationGraph。 */}
+      {(view === 'lives' || view === 'era') && (
+        <input
+          className={styles.search}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={t('搜名 · 字 · 綽號(如「子龍」)', 'Search name, courtesy name or epithet')}
+          aria-label={t('搜索名将', 'Search generals')}
+        />
+      )}
+
       <div className={styles.filters}>
         {(
           [
