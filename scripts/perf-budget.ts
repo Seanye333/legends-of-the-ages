@@ -84,3 +84,34 @@ if (overKB > 0) {
   process.exit(1)
 }
 console.log(`\n✓ 首屏在预算内,余量 ${(-overKB).toFixed(1)} KB。`)
+
+// 单个 chunk 的基线。
+//
+// 【为什么总量之外还要按 chunk 钉】
+// 总预算只在**逼近 400KB 时**才报警,而余量现在只剩四十几 KB ——
+// 也就是说「某个 chunk 悄悄胖了 30KB」这件事,在撞线之前一次都不会被提。
+// 等撞线时已经分不清是谁胖的了(这一轮 content 这块加了十几个档案字段,
+// 每次都只涨一点点)。按 chunk 钉基线,谁胖了当场看得见。
+//
+// 钉的是**上限不是等值**:留 15% 余量,免得改一行文案就红。
+const CHUNK_CEILING: [RegExp, number, string][] = [
+  [/\/assets\/index-.*\.js$/, 190, '首屏主包'],
+  [/\/assets\/content-.*\.js$/, 150, '内容层(卡池 + 覆盖表)'],
+  [/\/assets\/vendor-.*\.js$/, 75, '第三方'],
+]
+let over = false
+for (const [re, ceilKB, label] of CHUNK_CEILING) {
+  const hit = entries.find((e) => re.test(e.file))
+  if (!hit) {
+    console.warn(`⚠ 找不到 chunk「${label}」—— 打包分块规则可能改了,基线失效`)
+    continue
+  }
+  const kbNow = hit.gz / 1024
+  const mark = kbNow > ceilKB ? '✗' : '·'
+  console.log(`  ${mark} ${label.padEnd(20)} ${kbNow.toFixed(1)} / ${ceilKB} KB`)
+  if (kbNow > ceilKB) over = true
+}
+if (over) {
+  console.error('\n✗ 有 chunk 超出基线 —— 要么瘦身,要么把基线连同理由一起调高。')
+  process.exit(1)
+}

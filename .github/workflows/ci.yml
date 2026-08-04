@@ -49,6 +49,18 @@ jobs:
       - name: 引擎确定性对拍(同一 seed 必须重演出同一局)
         run: npm run replay-diff
 
+      # 产物入库会**掩盖源头漂移**:姊妹仓库改了数据,已提交的卡池不会变、
+      # CI 也不会红,而下一个人重跑生成脚本时卡池就在他手里换了一副。
+      # 这一条断言「重跑产物与已提交的逐字节一致」——
+      # 它红了才说明源头真的漂了,那时候再做决定。
+      - name: 生成层漂移自检
+        run: npm run check-generated
+
+      # 三个盘点脚本此前全靠人主动跑。它们不 exit 1,所以只做记录 ——
+      # 真正的闸门在 vitest 里(dossier.test 的覆盖率下限、enPurity.test)。
+      - name: 内容盘点(记录用,不卡门)
+        run: npm run audit-all
+
       - name: 离线自检(PWA 断网可玩)
         run: npm run check-offline
 

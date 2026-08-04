@@ -66,3 +66,129 @@ export function fakeCtx(name?: string): FakeCtx {
   }
   return ctx
 }
+
+// ---------- WebSocket 替身 ----------
+//
+// 三个还没被单测覆盖的 DO(match / queue / room)全部走 **hibernation API**:
+// 状态不放内存,而是 serializeAttachment 到 socket 上,名单靠 ctx.getWebSockets()
+// 推导。也就是说**不模拟 socket 就一行都测不到** —— 这正是它们至今零单测的原因,
+// 也是为什么它们的 bug 只有 drive-test 抓得到(而 drive-test 要手动起 wrangler)。
+//
+// 这里只做 hibernation 这一小块语义,不做真 workerd:
+//   · attachment 结构化克隆(真 runtime 会序列化,直接存引用会让 bug 测不出来)
+//   · readyState 随 close 变化(几个 DO 都靠它过滤失效连接)
+//   · 收到的消息按序记下来,供断言
+// 真正需要 workerd 的(真的 hibernate、alarm 真被调度、WebSocketPair 的配对语义)
+// 仍然只能靠 server/drive-test.ts。
+export interface FakeSocket {
+  readyState: number
+  sent: string[]
+  closed: { code: number; reason: string } | null
+  send(data: string): void
+  close(code?: number, reason?: string): void
+  serializeAttachment(v: unknown): void
+  deserializeAttachment(): unknown
+  // 便利读取:把收到的 JSON 消息解出来
+  msgs<T = unknown>(): T[]
+}
+
+export const READY_STATE_OPEN = 1
+export const READY_STATE_CLOSED = 3
+
+export function fakeSocket(): FakeSocket {
+  let attachment: unknown = null
+  const ws: FakeSocket = {
+    readyState: READY_STATE_OPEN,
+    sent: [],
+    closed: null,
+    send(data: string) {
+      if (ws.readyState !== READY_STATE_OPEN) throw new Error('socket closed')
+      ws.sent.push(data)
+    },
+    close(code = 1000, reason = '') {
+      ws.readyState = READY_STATE_CLOSED
+      ws.closed = { code, reason }
+    },
+    serializeAttachment(v: unknown) {
+      attachment = v === null || v === undefined ? null : structuredClone(v)
+    },
+    deserializeAttachment() {
+      return attachment === null ? null : structuredClone(attachment)
+    },
+    msgs<T = unknown>() {
+      return ws.sent.map((s) => JSON.parse(s) as T)
+    },
+  }
+  return ws
+}
+
+export interface FakeSocketCtx extends FakeCtx {
+  _sockets: FakeSocket[]
+  acceptWebSocket(ws: unknown): void
+  getWebSockets(): unknown[]
+}
+
+// 带 socket 的 ctx。DO 内部调 acceptWebSocket 时会拿到 WebSocketPair 造出来的
+// server 端;测试里我们自己造 socket 传进 DO 的 fetch —— 见各 DO 测试里的
+// connect() 辅助函数(它替 WebSocketPair 打桩)。
+export function fakeSocketCtx(name?: string): FakeSocketCtx {
+  const base = fakeCtx(name) as FakeSocketCtx
+  base._sockets = []
+  base.acceptWebSocket = (ws: unknown) => {
+    base._sockets.push(ws as FakeSocket)
+  }
+  base.getWebSockets = () => base._sockets.filter((s) => s.readyState === READY_STATE_OPEN)
+  // deleteAlarm:RoomDO 撮合成功后会撤掉空房自毁闹钟
+  ;(base.storage as unknown as { deleteAlarm(): Promise<void> }).deleteAlarm = async () => {
+    base._alarm = null
+  }
+  return base
+}
+
+// workerd 的全局打桩。三个走 hibernation 的 DO 都要它,所以收在这里。
+//
+// 【为什么必须换掉 Response】
+// DO 的 WebSocket 入口一律 `return new Response(null, { status: 101, webSocket })`。
+// **node 的 Response 直接拒绝 101**(fetch 规范里 101 是保留给协议切换的,
+// 只有 workerd 这类实现才允许构造),于是测试里每一次连接都会抛
+// 「init["status"] must be in the range of 200 to 599」。
+// 换一个最小实现,把 101 放行,其余语义(status / json / text)照旧。
+export function installWorkerdGlobals(): { lastServer: () => FakeSocket } {
+  let last: FakeSocket
+  const g = globalThis as Record<string, unknown>
+  g.WebSocketPair = class {
+    constructor() {
+      last = fakeSocket()
+      // DO 里写的是 `const [client, server] = Object.values(pair)` —— client 在前
+      return { 0: {}, 1: last }
+    }
+  }
+  g.WebSocket = { READY_STATE_OPEN }
+  const RealResponse = g.Response as typeof Response
+  class WorkerdResponse {
+    status: number
+    private body: string | null
+    constructor(body?: BodyInit | null, init?: ResponseInit) {
+      this.status = init?.status ?? 200
+      this.body = typeof body === 'string' ? body : null
+    }
+    async json(): Promise<unknown> {
+      return this.body === null ? null : JSON.parse(this.body)
+    }
+    async text(): Promise<string> {
+      return this.body ?? ''
+    }
+    static json(data: unknown, init?: ResponseInit): WorkerdResponse {
+      return new WorkerdResponse(JSON.stringify(data), init)
+    }
+  }
+  // 只在 101 上偏离标准;其余交回真实现,免得顺手改坏了别的语义
+  g.Response = new Proxy(WorkerdResponse, {
+    construct(target, args: [BodyInit | null | undefined, ResponseInit | undefined]) {
+      const status = args[1]?.status ?? 200
+      if (status >= 200 && status <= 599) return new RealResponse(args[0], args[1])
+      return new target(...args)
+    },
+  })
+  return { lastServer: () => last }
+}

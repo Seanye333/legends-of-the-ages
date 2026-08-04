@@ -11,8 +11,10 @@ import { readdirSync, readFileSync } from 'node:fs'
 //     同一轮里又冲掉了魏文侯 / 李悝 / 西門豹三条已有的名言
 // 也就是说,唯一能发现它的办法是**去数源码里那个键出现了几次**。
 //
-// 加新覆盖表不需要改这个文件:它扫的是整个 overrides/ 目录。
-const DIR = new URL('./overrides/', import.meta.url)
+// 加新覆盖表不需要改这个文件:它扫的是整个 overrides/ 目录 **和 content/ 本身**
+// —— 撞键不是覆盖表专有的毛病,content/ 下的 campaign / brawls / relics /
+// warBooks / lessons 全是同一种 `Record<string, T>` 字面量。
+const DIRS = [new URL('./overrides/', import.meta.url), new URL('./', import.meta.url)]
 
 /**
  * 从一份覆盖表源码里找出撞键。
@@ -38,7 +40,11 @@ export function duplicateKeys(src: string): string[] {
   return out
 }
 
-const FILES = readdirSync(DIR).filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts'))
+const FILES = DIRS.flatMap((dir) =>
+  readdirSync(dir)
+    .filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts'))
+    .map((f) => ({ dir, f })),
+)
 
 describe('内容覆盖表', () => {
   it('闸门自检:这个检测器真的认得出撞键', () => {
@@ -60,13 +66,13 @@ describe('内容覆盖表', () => {
   })
 
   it('扫到的文件有规模 —— 目录改名时不能静默通过', () => {
-    expect(FILES.length).toBeGreaterThan(20)
+    expect(FILES.length).toBeGreaterThan(40)
   })
 
   it('每张覆盖表里都没有重复的 id', () => {
     const bad: string[] = []
-    for (const f of FILES) {
-      for (const k of duplicateKeys(readFileSync(new URL(f, DIR), 'utf8'))) bad.push(`${f}: ${k}`)
+    for (const { dir, f } of FILES) {
+      for (const k of duplicateKeys(readFileSync(new URL(f, dir), 'utf8'))) bad.push(`${f}: ${k}`)
     }
     expect(bad).toEqual([])
   })

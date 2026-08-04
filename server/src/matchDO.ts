@@ -235,8 +235,19 @@ export class MatchDO {
     // 限流:同一连接 10 秒内超过 120 条就直接断开。
     // 每条 cmd 都会 storage.put 整个 GameState,不限流的话一个循环就能把这局刷爆。
     const now = Date.now()
-    const windowStart = now - att.windowStart > RATE_WINDOW_MS ? now : att.windowStart
-    const msgCount = windowStart === now ? 1 : att.msgCount + 1
+    // 【为什么不能写成 windowStart === now 来判「新窗口」】
+    // 原来这里是 `const msgCount = windowStart === now ? 1 : att.msgCount + 1` ——
+    // 用「窗口起点正好等于此刻」来代表「刚开了新窗口」。这在 node 里只是
+    // 偶尔少数一条,在 **workerd 里会让整道限流失效**:
+    // Workers 为缓解 Spectre 把时钟**冻结在没有 I/O 的执行块内**,
+    // Date.now() 只在发生 I/O 之后才前进。而限流检查恰恰在任何 I/O 之前 ——
+    // load() 第一次之后就直接返回,坏 JSON / 未知类型的消息更是一路走不到落盘。
+    // 于是攻击者只要一直发**垃圾消息**(最便宜的那种洪水),
+    // now 永远等于 windowStart,计数每次都被重置成 1,连接永远不会被断。
+    // 改成显式的布尔量:窗口是不是刚滚过,由时间差决定,和「是否相等」无关。
+    const newWindow = now - att.windowStart > RATE_WINDOW_MS
+    const windowStart = newWindow ? now : att.windowStart
+    const msgCount = newWindow ? 1 : att.msgCount + 1
     ws.serializeAttachment({ seat: att.seat, windowStart, msgCount } satisfies SocketAttachment)
     if (msgCount > RATE_MAX_MSGS) {
       log.warn({ evt: 'match.rate_limited', match: this.ctx.id.name, seat: att.seat, msgCount })
