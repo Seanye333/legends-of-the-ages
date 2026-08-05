@@ -27,16 +27,46 @@ import { applyCommand } from '../src/engine/reducer'
 import { aiStep, AI_NORMAL } from '../src/ai/greedy'
 import { START_HP } from '../src/engine/types'
 import { judgeFirstPlayer } from './firstPlayerGate'
-import type { GameConfig, PlayerIdx, Winner } from '../src/engine/types'
+import type { GameConfig, PlayerIdx, RunModifiers, Winner } from '../src/engine/types'
 
 // 4 的倍数:座位 × 先手四种组合才跑得齐(见 simSeating.ts)
 const GAMES = Number(process.env.GAMES ?? 400)
 
-// 同一套预组自己打自己 —— 双方卡组、主公、AI 全同,唯一的不对称是先后手。
-// 返回「先手方是否获胜」。
-function playMirror(deckIdx: number, seed: number, first: PlayerIdx): Winner {
+// 【补偿方案试算】COMP=<方案> 给**后手方**加一份补偿再量一遍;COMP=sweep 全扫。
+//
+// 不需要动引擎一行:`RunModifiers` 早就有这几个旋钮了(远征宝物在用),
+// 而它是 GameConfig 的一部分、按座位给。这正是这个仓库反复用的那条路子 ——
+// 主公技、血量、战场环境都走 GameConfig,难度和变体都不必改引擎(见 campaign.ts)。
+//
+// 注意这里量的是**够不够**,不是**该用哪个**。「后手多两张牌」和「先攻币」
+// 就算把胜率拉到同一个数,对卡组构筑的影响也完全不同(多抽牌利好控场,
+// 临时法力利好抢节奏)。数字只能排除掉明显不够或明显过头的档,
+// 最终选哪种是设计决定。
+const COMPENSATIONS: Record<string, RunModifiers> = {
+  none: {},
+  'hand+1': { bonusHandSize: 1 }, // 起手 3 / 5
+  'hand+2': { bonusHandSize: 2 }, // 起手 3 / 6
+  'hand+3': { bonusHandSize: 3 }, // 起手 3 / 7
+  'cost-1': { handCostDelta: -1 }, // 起手全部手牌便宜 1(近似「先攻币」但更持久)
+  'armor+3': { startArmor: 3 },
+  'armor+6': { startArmor: 6 },
+  'hand+1,armor+3': { bonusHandSize: 1, startArmor: 3 },
+}
+const COMP = process.env.COMP ?? 'none'
+
+// 同一套预组自己打自己 —— 双方卡组、主公、AI 全同,唯一的不对称是先后手
+// (以及 comp:给后手方的补偿)。返回「先手方是否获胜」。
+function playMirror(
+  deckIdx: number,
+  seed: number,
+  first: PlayerIdx,
+  comp: RunModifiers,
+): Winner {
   const d = PRECON_DECKS[deckIdx]
   const hero = HEROES_BY_ID[d.heroId]
+  const second = (1 - first) as PlayerIdx
+  const mods: [RunModifiers | undefined, RunModifiers | undefined] = [undefined, undefined]
+  if (Object.keys(comp).length > 0) mods[second] = comp
   const cfg: GameConfig = {
     seed,
     heroIds: [d.heroId, d.heroId],
@@ -44,6 +74,7 @@ function playMirror(deckIdx: number, seed: number, first: PlayerIdx): Winner {
     first,
     heroPowers: [hero?.power, hero?.power],
     heroHps: [hero?.hp ?? START_HP, hero?.hp ?? START_HP],
+    modifiers: mods,
   }
   let state = createGame(cfg, CARDS_BY_ID)
   const rngs: [number, number] = [seed ^ 0x51, seed ^ 0x8f]
@@ -66,30 +97,71 @@ function playMirror(deckIdx: number, seed: number, first: PlayerIdx): Winner {
   return state.winner ?? 'draw'
 }
 
-console.log(`sim-firstplayer: ${PRECON_DECKS.length} 套预组自我对镜,每套 ${GAMES} 局\n`)
-console.log('每一格量的都是同一套牌打自己 —— 唯一的不对称是谁先手,理论值 50%。\n')
+// 跑一整轮(六套预组),返回每套的先手胜率百分数
+function runAll(comp: RunModifiers, verbose: boolean): number[] {
+  const out: number[] = []
+  for (let d = 0; d < PRECON_DECKS.length; d++) {
+    let firstWins = 0
+    let played = 0
+    for (let g = 0; g < GAMES; g++) {
+      // 先手方轮流坐两个座位 —— 座位本身不该有影响,轮换它可以把座位效应也平均掉
+      const first = (g & 1) as PlayerIdx
+      const w = playMirror(d, d * 7919 + g * 31 + 1, first, comp)
+      if (w === 'draw') continue
+      played++
+      if (w === first) firstWins++
+    }
+    const rate = (firstWins / Math.max(1, played)) * 100
+    out.push(rate)
+    if (verbose) {
+      const se = Math.sqrt(0.25 / Math.max(1, played)) * 100
+      const bar = '█'.repeat(Math.max(0, Math.round(rate / 4)))
+      console.log(
+        `  ${PRECON_DECKS[d].name.zh.padEnd(6, '　')} 先手胜率 ${rate.toFixed(1)}% ±${se.toFixed(1)}  ${bar}`,
+      )
+    }
+  }
+  return out
+}
+
+// ---- 补偿方案全扫 ----
+if (COMP === 'sweep') {
+  console.log(
+    `sim-firstplayer(补偿试算): ${Object.keys(COMPENSATIONS).length} 个方案 × ` +
+      `${PRECON_DECKS.length} 套预组 × ${GAMES} 局\n`,
+  )
+  console.log('每一格都是同一套牌打自己,补偿给**后手方**。目标:把先手胜率压回 50–55%。\n')
+  const t = performance.now()
+  const seSweep = Math.sqrt(0.25 / (GAMES * PRECON_DECKS.length)) * 100
+  console.log(`方案              先手胜率   评价`)
+  for (const [name, comp] of Object.entries(COMPENSATIONS)) {
+    const rs = runAll(comp, false)
+    const avg = rs.reduce((a, b) => a + b, 0) / rs.length
+    const verdict =
+      avg > 55 ? '仍然不够' : avg < 45 ? '补过头了(后手反而占优)' : '✓ 落在 45–55'
+    console.log(`${name.padEnd(16)} ${avg.toFixed(1)}% ±${seSweep.toFixed(1)}   ${verdict}`)
+  }
+  console.log(`\n(${((performance.now() - t) / 1000).toFixed(1)}s)`)
+  console.log(
+    `\n数字只能排除掉明显不够或明显过头的档。**最终选哪种是设计决定** ——\n` +
+      `「后手多两张牌」和「先攻币」就算把胜率拉到同一个数,对卡组构筑的影响也完全不同\n` +
+      `(多抽牌利好控场,临时法力利好抢节奏),而且补偿方案会改变所有卡的相对价值,\n` +
+      `落地时 sim-balance 的矩阵要整个重跑(见 campaign.ts 里兵种相克那一段的通则)。`,
+  )
+  process.exit(0)
+}
+
+const comp = COMPENSATIONS[COMP]
+if (!comp) {
+  console.log(`未知的 COMP=${COMP};可选:${Object.keys(COMPENSATIONS).join(' · ')} · sweep`)
+  process.exit(1)
+}
+console.log(`sim-firstplayer: ${PRECON_DECKS.length} 套预组自我对镜,每套 ${GAMES} 局`)
+if (COMP !== 'none') console.log(`后手方补偿:${COMP}`)
+console.log('\n每一格量的都是同一套牌打自己 —— 唯一的不对称是谁先手,理论值 50%。\n')
 const t0 = performance.now()
 
-const rates: number[] = []
-for (let d = 0; d < PRECON_DECKS.length; d++) {
-  let firstWins = 0
-  let played = 0
-  for (let g = 0; g < GAMES; g++) {
-    // 先手方轮流坐两个座位 —— 座位本身不该有影响,轮换它可以把座位效应也平均掉
-    const first = (g & 1) as PlayerIdx
-    const w = playMirror(d, d * 7919 + g * 31 + 1, first)
-    if (w === 'draw') continue
-    played++
-    if (w === first) firstWins++
-  }
-  const rate = (firstWins / Math.max(1, played)) * 100
-  rates.push(rate)
-  const se = Math.sqrt(0.25 / Math.max(1, played)) * 100
-  const bar = '█'.repeat(Math.max(0, Math.round(rate / 4)))
-  console.log(
-    `  ${PRECON_DECKS[d].name.zh.padEnd(6, '　')} 先手胜率 ${rate.toFixed(1)}% ±${se.toFixed(1)}  ${bar}`,
-  )
-}
+const rates = runAll(comp, true)
 
 const overall = rates.reduce((a, b) => a + b, 0) / rates.length
 const n = GAMES * PRECON_DECKS.length
