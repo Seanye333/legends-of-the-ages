@@ -17,3 +17,8 @@ server/.wrangler
 # 每跑一次 `wrangler dev` 这些 sqlite 文件都会变,跟踪它们只会让工作区常年是脏的。
 server/.wrangler/
 .env.local
+
+# 平衡基线(scripts/baseline.ts):每跑一次模拟就重写,跟踪它只会让工作区常年是脏的,
+# 而这个仓库的提交纪律是「按明确路径提交」(可能有另一个会话同时在改)。
+# 它是**本机的便利**,不是数据源 —— 权威数字仍然写在源码注释与 ROADMAP 里。
+.balance-baseline.json

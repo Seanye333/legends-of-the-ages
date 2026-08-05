@@ -8,6 +8,14 @@ import { applyCommand } from '../src/engine/reducer'
 import { aiStep, AI_NORMAL } from '../src/ai/greedy'
 import type { GameConfig, PlayerIdx, Winner } from '../src/engine/types'
 import { START_HP } from '../src/engine/types'
+import {
+  judgeBalance,
+  OVERALL_MIN,
+  OVERALL_MAX,
+  MATCHUP_MIN,
+  MATCHUP_MAX,
+} from './balanceGate'
+import { loadBaseline, reportDiff, saveBaseline } from './baseline'
 
 // 默认 100 局/对(约 30 秒)。40 局的噪声有 ±8 个百分点 —— 同一套牌能读出
 // 62% 和 55% 两种结果,拿它当闸门只会制造误报和假绿。要快速试探用 GAMES=40,
@@ -122,40 +130,37 @@ console.log(
 // 两道:总胜率 40-60%,以及**单个对位** 30-70%。
 // 只看总胜率是不够的 —— 六套卡组互相克制、各自总分都在 50% 附近,
 // 照样能通过检查,但玩家体验是选卡组即定胜负的猜拳,不是对局博弈。
-const OVERALL_MIN = 40
-const OVERALL_MAX = 60
-const MATCHUP_MIN = 30
-const MATCHUP_MAX = 70
-
-const overallOutliers = overall
-  .map((p, i) => ({ p, name: names[i] }))
-  .filter((x) => x.p < OVERALL_MIN || x.p > OVERALL_MAX)
-
-// 每个对位只报一次(i<j),取行方视角
-const matchupOutliers: { a: string; b: string; pct: number; n: number }[] = []
-for (let i = 0; i < n; i++) {
-  for (let j = i + 1; j < n; j++) {
-    if (!games[i][j]) continue
-    const pct = (100 * wins[i][j]) / games[i][j]
-    if (pct < MATCHUP_MIN || pct > MATCHUP_MAX) {
-      matchupOutliers.push({ a: names[i], b: names[j], pct, n: games[i][j] })
-    }
-  }
+// ---------- 与上一次跑对比 ----------
+// 闸门管「越没越线」,这一段管「动没动」—— 两件不同的事:
+// 一个改动完全可以没越线,却把整条曲线挪了 5 个点,而那往往才是你想知道的。
+// 只报超过 2 个标准误的变化(见 baseline.ts)。
+const snap = {
+  sim: 'sim-balance',
+  games: GAMES_PER_PAIR * (n - 1),
+  values: Object.fromEntries(names.map((nm, i) => [nm, overall[i]])),
+  stampedAt: new Date().toISOString().slice(0, 10),
 }
-matchupOutliers.sort((x, y) => Math.abs(y.pct - 50) - Math.abs(x.pct - 50))
+for (const line of reportDiff(loadBaseline()['sim-balance'], snap)) console.log(line)
+saveBaseline(snap)
+
+// 判定逻辑在 balanceGate.ts —— 抽出去是为了能不跑模拟就验证它。
+// 那边有一组自检钉着两个方向,其中最要紧的一条是「六套环形克制、
+// 各自总分都是 50%」必须被对位检查抓住(那正是这道闸门存在的理由)。
+// 顺便:那个文件的文件头算清了「阈值配不配得上样本量」——**配得上,不要改成 z 检验**。
+const verdict = judgeBalance({ names, wins, games })
+const overallOutliers = verdict.problems.filter((p) => p.startsWith('总胜率超出'))
+const matchupOutliers = verdict.problems.filter((p) => p.startsWith('对位极化'))
 
 if (overallOutliers.length) {
   console.log(`\n⚠ 总胜率超出 ${OVERALL_MIN}-${OVERALL_MAX}%(需要调卡):`)
-  for (const o of overallOutliers) console.log(`  ${o.name}: ${o.p.toFixed(1)}%`)
+  for (const p of overallOutliers) console.log(`  ${p.replace('总胜率超出 40-60%:', '')}`)
 }
 if (matchupOutliers.length) {
   console.log(`\n⚠ 对位极化,超出 ${MATCHUP_MIN}-${MATCHUP_MAX}%(胜负在选卡组时就定了):`)
-  for (const m of matchupOutliers) {
-    console.log(`  ${m.a} vs ${m.b}: ${m.pct.toFixed(0)}%  (${m.n} 局)`)
-  }
+  for (const p of matchupOutliers) console.log(`  ${p.replace('对位极化,超出 30-70%:', '')}`)
 }
-if (overallOutliers.length || matchupOutliers.length) {
-  const worst = matchupOutliers[0]
+if (verdict.problems.length > 0) {
+  const worst = verdict.worst
   if (worst) {
     console.log(
       `\n最极端对位:${worst.a} vs ${worst.b} = ${worst.pct.toFixed(0)}%。` +
