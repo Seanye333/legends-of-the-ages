@@ -212,7 +212,12 @@ export const LETHAL_PUZZLES: LethalPuzzle[] = [
   {
     id: 'lp-threeway',
     title: { zh: '絕地反擊', en: 'Last Gambit' },
-    situation: { zh: '乐进在场,手中一道锦囊,主公技尚存 —— 敌主帅 10 血。', en: 'Le Jin on board, a stratagem in hand, hero power ready. Enemy at 10.' },
+    // 敌主帅血量 = 樂進 5 攻(冲锋)+ 圍魏救趙 3 点 + 朱熹主公技,法力 5 = 3+2 刚好用尽。
+    // 主公技从 2 点降到 1 点(见 overrides/heroes.ts 那一段:当年是被坏掉的
+    // sim-hero-mirror 误判「太弱」才加上去的),所以这里从 10 对齐到 9 ——
+    // 三样资源依然一样都不能省,谜题结构没变。
+    // 这正是本文件 lp-massrush 那条注释说的做法:闸门会当场抓到,改 heroHp 对齐,别去改卡。
+    situation: { zh: '乐进在场,手中一道锦囊,主公技尚存 —— 敌主帅 9 血。', en: 'Le Jin on board, a stratagem in hand, hero power ready. Enemy at 9.' },
     hint: { zh: '场面、锦囊、主公技,一样都不能省。', en: 'Board, stratagem, hero power — spend all three.' },
     difficulty: 3,
     heroes: ['hist-zhu-xi', 'cao-cao'],
@@ -220,7 +225,7 @@ export const LETHAL_PUZZLES: LethalPuzzle[] = [
       activePlayer: 0,
       players: [
         { heroHp: 20, mana: 5, board: [{ defId: 'le-jin' }], hand: ['strat-weiwei-jiuzhao'] },
-        { heroHp: 10, mana: 0, board: [], hand: [] },
+        { heroHp: 9, mana: 0, board: [], hand: [] },
       ],
     },
   },
