@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 // 会打包进浏览器的代码里,不许出现 node 专有的全局。
@@ -20,7 +21,11 @@ import { describe, expect, it } from 'vitest'
 // 【为什么盯的是这几个】
 // process / __dirname / require / Buffer —— node 独有,浏览器里一律是 ReferenceError,
 // 而且都是「写的时候顺手、tsc 不拦」的那种。global 不查:它在某些打包配置下有别名。
-const ROOT = join(new URL('.', import.meta.url).pathname, '..')
+// 必须走 fileURLToPath,不能用 `new URL(...).pathname` ——
+// 后者在 Windows 上给的是 `/C:/…/All%20Codes/…`:多一个前导斜杠、空格还是 %20,
+// join 出来就成了 `C:\C:\…\All%20Codes\…`,readdirSync 直接 ENOENT。
+// macOS 上两种写法都能跑,所以这一类只在换机器时才炸(purity.test 一直是对的那种写法)。
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 
 // 只扫会进浏览器包的目录。scripts/ 和 server/ 不在此列(它们本来就跑在别处)
 const SHIPPED = ['engine', 'ai', 'app', 'ui', 'content']

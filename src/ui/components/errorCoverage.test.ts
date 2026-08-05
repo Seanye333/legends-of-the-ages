@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { matchErrorText } from './errorText'
 
@@ -14,7 +15,8 @@ import { matchErrorText } from './errorText'
 // 这类缺失人工发现不了:它不崩、不报错,只是文案难看,
 // 而写代码的人自己永远不会去输错房间码。所以让机器去扫。
 
-const ROOT = join(new URL('.', import.meta.url).pathname, '..', '..')
+// 走 fileURLToPath 而不是 `new URL(...).pathname`,理由见 browserSafe.test 同一行
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 
 // 从源码里抠错误码:引擎/服务端一律用 `error: 'kebab-case'` 或 `{ ok: false, error: '...' }`
 function scanCodes(dir: string, out: Set<string>): void {

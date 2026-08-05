@@ -1,4 +1,6 @@
 import { readFileSync, readdirSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import type { GameEvent } from '../engine/types'
 import { ACHIEVEMENTS, mergeStats, tallyStats } from './achievementStore'
@@ -132,10 +134,12 @@ describe('achievement stats', () => {
     // 上一条对 bump 类统计只能靠一份名单放行,而名单是人写的 ——
     // 「加了成就、把 stat 名加进名单、忘了真的调 bump」是最容易漏的那条路径,
     // 表现出来就是这个成就永远停在 0/N,没人会发现。这里去源码里查一遍。
-    const dir = new URL('.', import.meta.url).pathname
+    // 走 fileURLToPath 而不是 `new URL(...).pathname`,理由见 browserSafe.test 同一行。
+    // 拼路径也必须用 join:fileURLToPath 不带尾分隔符,`dir + f` 会把两段黏死。
+    const dir = dirname(fileURLToPath(import.meta.url))
     const src = readdirSync(dir)
       .filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts'))
-      .map((f) => readFileSync(dir + f, 'utf8'))
+      .map((f) => readFileSync(join(dir, f), 'utf8'))
       .join('\n')
     const tallied = new Set(Object.keys(tallyStats(SAMPLE_EVENTS, HERO)))
     for (const a of ACHIEVEMENTS) {
