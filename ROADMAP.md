@@ -67,6 +67,31 @@ npm run lint-content   # 卡池结构性自检
 - **`npm run perf-budget` 的 chunk 基线能默默失效** —— 正则失配时只 `console.warn`,
   打包分块一改名它就不再守任何东西,而 CI 照样绿。已改成硬失败。
 
+### 五道平衡模拟全部并行化(2026-08-05)
+
+跑一遍全套 **39 分钟 → 11 分钟**。公共外壳在 `scripts/parallel.ts`(保序 worker 池)。
+
+```
+sim-balance      289s → 52s   5.5x
+sim-hero-mirror  510s → 99s   5.1x
+sim-cards        481s → 131s  3.7x
+sim-campaign     725s → 250s  2.9x
+sim-firstplayer  316s → 141s  2.25x
+```
+
+**并行不影响任何一个数字**:每局的种子只由索引决定、引擎是纯函数、
+局与局之间零共享状态(铁律 1),所以按索引装回去就与串行逐位一致。
+每一道接入时都做过**并行/串行逐格对拍**,`JOBS=1` 保留作单线程对拍开关。
+
+**切分粒度要够碎**,同一个教训踩了两次:任务少而不齐时,尾部一堆线程在等最慢的那个
+(sim-campaign 按关切只有 2.0x → 按局段切才 2.9x;sim-firstplayer CHUNK=60 只有 1.9x
+→ CHUNK=20 才拉开)。只有 `sim-cards` 天然等长,不必再切。
+
+意义不在「快了几倍」,而在**样本量不再需要权衡** —— 这一轮踩的坑一大半根子都是
+「样本量不够又懒得加」,现在 `GAMES=1000` 也就几分钟。
+
+---
+
 一句话总结这一轮:**红的那几道没有一道是内容的问题,全是量它们的工具的问题。**
 而根因高度一致 ——「有人发现过、写进注释、然后就没有然后了」,
 或者「一次迁移只改了一半,剩下的地方悄悄失灵」。
@@ -470,15 +495,16 @@ npm run doctor           # 这台机器上什么能跑、什么不能、为什�
 
 # 平衡(**下结论一律用默认局数或更高**)
 #
-# 三道已并行(worker 池,见 scripts/parallel.ts),耗时为 10 线程实测:
+# 五道全部并行(worker 池,见 scripts/parallel.ts),耗时为 10 线程实测。
+# 跑一遍全套:**11 分钟**(串行要 39 分钟)。
 npm run sim-campaign     # 冒险 24 关难度曲线            ~4min   (串行 12min)
 npm run sim-firstplayer  # 先手优势 + 对镜类模拟的仪器自检 ~2.5min (串行 5min)
                          #   AI=tiers 换尺子 · COMP=sweep 试算后手补偿
+npm run sim-cards        # 单卡边际胜率(SAMPLE=400 可扫一大片)
 npm run sim-hero-mirror  # 备选主公技对镜                ~1.7min (串行 8.5min)
-npm run sim-balance      # 六套预组互搏矩阵              ~5min   (还没并行)
+npm run sim-balance      # 六套预组互搏矩阵              ~1min   (串行 5min)
                          #   跑完自动与上次基线对比
 npm run tune-campaign    # 关底 deckTier 网格扫描(只打印建议,不改代码)
-npm run sim-cards        # 单卡边际胜率(SAMPLE=400 可扫一大片)
 
 #   JOBS=1 退回单线程 —— 怀疑并行接错时用它对拍,走的是同一份代码
 #   JOBS=N 指定线程数;默认 核数-2,最多 16

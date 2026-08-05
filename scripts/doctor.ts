@@ -113,11 +113,12 @@ console.log(`
   npm run replay-diff      引擎确定性对拍              ~10s
   npm run check-offline    PWA 断网可玩                ~10s
 
-平衡(以下三道已并行,耗时是 10 线程实测):
+平衡(五道全部并行,耗时是 10 线程实测;全套约 11 分钟,串行要 39 分钟):
   npm run sim-campaign     冒险 24 关曲线    GAMES=240  ~4min   (串行 12min)
   npm run sim-firstplayer  先手优势/仪器自检 GAMES=400  ~2.5min (串行 5min)
+  npm run sim-cards        单卡边际胜率      SAMPLE=12  ~2min   (扫全池另算)
   npm run sim-hero-mirror  备选主公技对镜    GAMES=400  ~1.7min (串行 8.5min)
-  npm run sim-balance      六套预组互搏      GAMES=100  ~5min   (还没并行)
+  npm run sim-balance      六套预组互搏      GAMES=100  ~1min   (串行 5min)
 
   · JOBS=1 退回单线程 —— 怀疑并行接错时用它对拍,走的是同一份代码
   · JOBS=N 指定线程数;默认取 核数-2,最多 16
