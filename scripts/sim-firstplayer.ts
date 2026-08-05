@@ -24,13 +24,28 @@ import { CARDS_BY_ID } from '../src/content/cards'
 import { HEROES_BY_ID } from '../src/content/overrides/heroes'
 import { createGame } from '../src/engine/init'
 import { applyCommand } from '../src/engine/reducer'
-import { aiStep, AI_NORMAL } from '../src/ai/greedy'
+import { aiStep, AI_NORMAL, AI_LEVELS, type AiConfig } from '../src/ai/greedy'
 import { START_HP } from '../src/engine/types'
 import { judgeFirstPlayer } from './firstPlayerGate'
 import type { GameConfig, PlayerIdx, RunModifiers, Winner } from '../src/engine/types'
 
 // 4 的倍数:座位 × 先手四种组合才跑得齐(见 simSeating.ts)
 const GAMES = Number(process.env.GAMES ?? 400)
+
+// 【AI=<档位> 换一把尺子来量】默认 AI_NORMAL(与其它闸门同一把基准尺)。
+//
+// **这一条是必须做的验证,不是可选项。** 先手优势 73.8% 是拿 AI_NORMAL 量的,
+// 而贪心 AI 天生高估节奏:它一步一评,看不见「这回合亏一点、下回合赚回来」,
+// 于是「先动手」的价值被系统性放大。更要命的是 `smartMulligan` 只在名将档以上才开 ——
+// **AI_NORMAL 根本不会调度**,而调度正是后手用那多出来的一张牌翻盘的主要手段。
+//
+// 也就是说 73.8% 里有多少是游戏、有多少是尺子,不换档位量一遍是分不出来的。
+// 如果名将/军神档下它明显收窄,那这就**不是一个该靠改规则去修的问题**,
+// 围绕它做补偿反而会把真人玩家的对局搞坏。
+//   AI=normal(默认) · recruit · veteran · general · marshal · tiers(全扫)
+const AI = process.env.AI ?? 'normal'
+const aiFor = (name: string): AiConfig | undefined =>
+  name === 'normal' ? AI_NORMAL : (AI_LEVELS as Record<string, AiConfig>)[name]
 
 // 【补偿方案试算】COMP=<方案> 给**后手方**加一份补偿再量一遍;COMP=sweep 全扫。
 //
@@ -61,6 +76,7 @@ function playMirror(
   seed: number,
   first: PlayerIdx,
   comp: RunModifiers,
+  ai: AiConfig = AI_NORMAL,
 ): Winner {
   const d = PRECON_DECKS[deckIdx]
   const hero = HEROES_BY_ID[d.heroId]
@@ -88,7 +104,7 @@ function playMirror(
           ? 1
           : 0
         : state.activePlayer
-    const step = aiStep(state, actor, CARDS_BY_ID, rngs[actor], AI_NORMAL)
+    const step = aiStep(state, actor, CARDS_BY_ID, rngs[actor], ai)
     rngs[actor] = step.rng
     const r = applyCommand(state, actor, step.cmd, CARDS_BY_ID)
     if (!r.ok) throw new Error(`AI illegal (${r.error})`)
@@ -98,7 +114,7 @@ function playMirror(
 }
 
 // 跑一整轮(六套预组),返回每套的先手胜率百分数
-function runAll(comp: RunModifiers, verbose: boolean): number[] {
+function runAll(comp: RunModifiers, verbose: boolean, ai: AiConfig = AI_NORMAL): number[] {
   const out: number[] = []
   for (let d = 0; d < PRECON_DECKS.length; d++) {
     let firstWins = 0
@@ -106,7 +122,7 @@ function runAll(comp: RunModifiers, verbose: boolean): number[] {
     for (let g = 0; g < GAMES; g++) {
       // 先手方轮流坐两个座位 —— 座位本身不该有影响,轮换它可以把座位效应也平均掉
       const first = (g & 1) as PlayerIdx
-      const w = playMirror(d, d * 7919 + g * 31 + 1, first, comp)
+      const w = playMirror(d, d * 7919 + g * 31 + 1, first, comp, ai)
       if (w === 'draw') continue
       played++
       if (w === first) firstWins++
@@ -122,6 +138,41 @@ function runAll(comp: RunModifiers, verbose: boolean): number[] {
     }
   }
   return out
+}
+
+// ---- AI 档位全扫:73.8% 里有多少是游戏、有多少是尺子 ----
+if (AI === 'tiers') {
+  const TIERS = ['recruit', 'veteran', 'normal', 'general', 'marshal']
+  console.log(
+    `sim-firstplayer(换尺子): ${TIERS.length} 个 AI 档位 × ${PRECON_DECKS.length} 套预组 × ${GAMES} 局\n`,
+  )
+  console.log(
+    '每一格都是同一套牌打自己,双方同档。理论值 50% —— 偏离多少就是那把尺子看到的先手优势。\n' +
+      '**如果档位越高偏离越小,说明 73.8% 有相当一部分是贪心 AI 高估节奏造成的,\n' +
+      '  而不是游戏规则的问题** —— 那样的话围绕它改规则反而会把真人对局搞坏。\n',
+  )
+  const t = performance.now()
+  const seT = Math.sqrt(0.25 / (GAMES * PRECON_DECKS.length)) * 100
+  console.log('档位        先手胜率   相对 50% 的偏离')
+  for (const name of TIERS) {
+    const cfg = aiFor(name)
+    if (!cfg) {
+      console.log(`${name.padEnd(11)} (未知档位,跳过)`)
+      continue
+    }
+    const rs = runAll({}, false, cfg)
+    const avg = rs.reduce((a, b) => a + b, 0) / rs.length
+    console.log(
+      `${name.padEnd(11)} ${avg.toFixed(1)}% ±${seT.toFixed(1)}   ${avg >= 50 ? '+' : ''}${(avg - 50).toFixed(1)}`,
+    )
+  }
+  console.log(`\n(${((performance.now() - t) / 1000).toFixed(1)}s)`)
+  console.log(
+    `\n注:新兵/宿将带失误率(0.35 / 0.12),它们的数字掺着「谁先犯错」;\n` +
+      `名将起才零失误,而且**只有名将以上才开 smartMulligan** ——\n` +
+      `调度正是后手用多出来的那一张牌翻盘的主要手段,不会调度的尺子天然更吃先手。`,
+  )
+  process.exit(0)
 }
 
 // ---- 补偿方案全扫 ----
@@ -156,12 +207,18 @@ if (!comp) {
   console.log(`未知的 COMP=${COMP};可选:${Object.keys(COMPENSATIONS).join(' · ')} · sweep`)
   process.exit(1)
 }
+const aiCfg = aiFor(AI)
+if (!aiCfg) {
+  console.log(`未知的 AI=${AI};可选:normal · ${Object.keys(AI_LEVELS).join(' · ')} · tiers`)
+  process.exit(1)
+}
 console.log(`sim-firstplayer: ${PRECON_DECKS.length} 套预组自我对镜,每套 ${GAMES} 局`)
+if (AI !== 'normal') console.log(`尺子:AI=${AI}(默认是 normal,即其它闸门用的基准尺)`)
 if (COMP !== 'none') console.log(`后手方补偿:${COMP}`)
 console.log('\n每一格量的都是同一套牌打自己 —— 唯一的不对称是谁先手,理论值 50%。\n')
 const t0 = performance.now()
 
-const rates = runAll(comp, true)
+const rates = runAll(comp, true, aiCfg)
 
 const overall = rates.reduce((a, b) => a + b, 0) / rates.length
 const n = GAMES * PRECON_DECKS.length
