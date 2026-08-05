@@ -14,10 +14,27 @@ import { HEROES_BY_ID } from '../src/content/overrides/heroes'
 import { createGame } from '../src/engine/init'
 import { applyCommand } from '../src/engine/reducer'
 import { aiStep, AI_LEVELS, AI_NORMAL } from '../src/ai/greedy'
+import { judgeChapter } from './campaignGate'
 import { START_HP } from '../src/engine/types'
 import type { GameConfig, PlayerIdx, Winner } from '../src/engine/types'
 
-const GAMES = Number(process.env.GAMES ?? 60)
+// 【为什么默认是 240 而不是 60】
+// 这三道闸门比的是「点估计 vs 写死的阈值」,而点估计自带抽样误差。
+// 60 局/关时单关标准误 6.5pp,「章内前后半差 ≥8」这一条的差值标准误是 4.5pp ——
+// 也就是说**哪怕真实前后半差是 0,z 也只有 1.8,这道闸门永远红不了**;
+// 反过来它又会被两三个点的抖动判红(2026-08 就红过一次,原因全是噪声,
+// 见 campaign.ts 顶部那段「2 个点的差被当成结论」)。
+// 一道既会误报又抓不到真问题的闸门比没有更糟。
+// 240 局把差值标准误压到 2.3pp,判定才配得上 ±8pp 的区间。代价是四倍时间。
+// 同一类毛病的另外两道闸门早就修过:sim-ai-tiers 换成真 z 检验、
+// sim-hero-mirror 把默认局数从 100 提到 400。
+// (⚠️ 但 ci.yml 里还钉着 `GAMES: 100` 覆盖 sim-hero-mirror 的 400,
+//  那次修复在 CI 上等于没生效 —— 见 ROADMAP「现在真正红的是 sim-hero-mirror」。
+//  这里不顺手改:那道闸门当下是**真红**,先决定备选主公怎么办,再谈样本量。)
+const GAMES = Number(process.env.GAMES ?? 240)
+
+// 判定用的 z 阈值,与 sim-ai-tiers 同一条线:只有**统计上显著**地越界才算红。
+const Z = 2
 
 // Boss 侧的 AI 档位。默认 AI_NORMAL —— 它是这套曲线一路调出来的基准尺,
 // 换掉就没法和历史数字比了。
@@ -62,7 +79,7 @@ function play(bossIdx: number, playerDeckIdx: number, seed: number, first: Playe
 
 console.log(`sim-campaign: ${BOSSES.length} 关,${GAMES} 局/关(六套预组轮流上)\n`)
 const t0 = performance.now()
-const rates: number[] = []
+const props: number[] = [] // 精确比例,闸门的统计量一律用它(别拿四舍五入的显示值做数学)
 for (let b = 0; b < BOSSES.length; b++) {
   let wins = 0
   for (let g = 0; g < GAMES; g++) {
@@ -70,7 +87,7 @@ for (let b = 0; b < BOSSES.length; b++) {
     if (w === 0) wins++
   }
   const pct = Math.round((wins / GAMES) * 100)
-  rates.push(pct)
+  props.push(wins / GAMES)
   // 95% 置信半宽。
   //
   // 【它说的不是「重跑会飘」】这个模拟是**确定性的** —— 种子固定,
@@ -89,7 +106,7 @@ console.log(
   `\n(${((performance.now() - t0) / 1000).toFixed(1)}s · 每关 ${GAMES} 局,` +
     `95% 置信半宽最大 ±${Math.round(196 * Math.sqrt(0.25 / GAMES))} 个百分点。` +
     `模拟本身是确定的,这个半宽说的是「这些局只是一个样本」—— ` +
-    `两版之间小于它的差值别拿来调参,要下结论用 GAMES=240 重跑。)`,
+    `两版之间小于它的差值别拿来调参。)`,
 )
 
 // 闸门按**章**分段:每章各是一条独立曲线(第二章开章时玩家已成军,
@@ -101,33 +118,33 @@ console.log(
 //   · 收官要够难(每章末关 ≤45)
 //   · 章内整体递减(前半均 − 后半均 ≥ 8;用首末段差值而非逐关严格递减,躲开噪声)
 // 用「章内前后半差值」而不是全局,避免跨章软重置被平均值糊掉、放过某一章的塌陷曲线。
+// 判定逻辑在 campaignGate.ts —— 抽出去是为了能不跑模拟就验证它(见那个文件的文件头)。
 const chapters = [...new Set(BOSSES.map(bossChapter))].sort((a, b) => a - b)
 const problems: string[] = []
+const notes: string[] = []
 for (const ch of chapters) {
-  const idx = BOSSES.map((b, i) => [b, i] as const).filter(([b]) => bossChapter(b) === ch)
-  const chRates = idx.map(([, i]) => rates[i])
-  if (chRates.length < 2) continue
-  const openFloor = ch === chapters[0] ? 55 : 35
-  if (chRates[0] < openFloor) {
-    problems.push(`第 ${ch} 章开章胜率仅 ${chRates[0]}%(应 ≥${openFloor}%),劝退`)
-  }
-  if (chRates[chRates.length - 1] > 45) {
-    problems.push(`第 ${ch} 章末关胜率 ${chRates[chRates.length - 1]}%,关底不够关底`)
-  }
-  const half = Math.floor(chRates.length / 2)
-  const front = chRates.slice(0, half).reduce((a, b) => a + b, 0) / half
-  const back = chRates.slice(half).reduce((a, b) => a + b, 0) / (chRates.length - half)
-  if (front - back < 8) {
-    problems.push(
-      `第 ${ch} 章曲线太平:前半均 ${Math.round(front)}% vs 后半均 ${Math.round(back)}%`,
-    )
-  }
+  const chP = BOSSES.map((b, i) => [b, i] as const)
+    .filter(([b]) => bossChapter(b) === ch)
+    .map(([, i]) => props[i])
+  const v = judgeChapter(ch, chP, {
+    games: GAMES,
+    openFloor: ch === chapters[0] ? 55 : 35,
+    z: Z,
+  })
+  problems.push(...v.problems)
+  if (v.note) notes.push(v.note)
 }
 
+// 分辨力提示先打:一道「测不动」的闸门绿了也不算数,这一行是它唯一的说明。
+for (const n of notes) console.log(`ℹ ${n}`)
+if (notes.length > 0) console.log('')
+
 if (problems.length === 0) {
-  console.log('✓ 各章难度曲线合理:开章友好、收官有压力、章内递减')
+  console.log(
+    `✓ 各章难度曲线合理:开章友好、收官有压力、章内递减(判定阈 z>${Z},${GAMES} 局/关)`,
+  )
 } else {
-  console.log('⚠ 难度曲线需要调整:')
+  console.log(`⚠ 难度曲线需要调整(仅列出统计上显著越界的,z>${Z}):`)
   for (const p of problems) console.log(`  ${p}`)
   process.exit(1)
 }
