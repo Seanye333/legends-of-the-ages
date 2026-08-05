@@ -29,6 +29,33 @@ describe('斩杀谜题内容自检', () => {
     }
   })
 
+  // 谜题的敌方血量是**手写常数**,而斩杀线上每一件东西(卡牌身材、锦囊伤害、
+  // 主公技)都可能因为平衡改动而变一点 —— 变了这题就直接无解。
+  //
+  // 光报「无解」的代价很实在:2026-08-04 朱熹主公技从 2 伤降到 1 伤,
+  // lp-threeway 当场失效,而要知道该改成几,得人肉把斩杀线重算一遍
+  // (樂進 5 攻 + 圍魏救趙 3 点 + 主公技,法力 5 = 3+2 刚好用尽)。
+  // 所以失败时顺手往下搜一遍:告诉维护者**血量改成几就对了**,
+  // 顺带说清它在那个血量下还算不算「非平凡」。搜索只在失败路径上跑,不影响正常耗时。
+  const suggestHp = (p: (typeof LETHAL_PUZZLES)[number], me: 0 | 1) => {
+    const foe = (1 - me) as 0 | 1
+    const cur = p.scenario.players[foe].heroHp
+    for (let hp = cur - 1; hp >= 1; hp--) {
+      const players = p.scenario.players.map((pl, i) => (i === foe ? { ...pl, heroHp: hp } : pl))
+      const probe = { ...p, scenario: { ...p.scenario, players } } as typeof p
+      let st
+      try {
+        st = createGame(puzzleGameConfig(probe), CARDS_BY_ID)
+      } catch {
+        return null
+      }
+      if (solveLethal(st, me, CARDS_BY_ID)) {
+        return { hp, trivial: trivialFaceLethal(st, me) }
+      }
+    }
+    return null
+  }
+
   // 每题:能构造(不含未知卡/超限)→ phase 从 main → 非平凡 → 有解 → 解法回放真赢
   for (const p of LETHAL_PUZZLES) {
     it(`${p.id}「${p.title.zh}」有解且非平凡`, () => {
@@ -41,7 +68,21 @@ describe('斩杀谜题内容自检', () => {
 
       // 有解
       const res = solveLethal(s, me, CARDS_BY_ID)
-      expect(res, `${p.id} 应存在斩杀解`).not.toBeNull()
+      if (!res) {
+        const foe = (1 - me) as 0 | 1
+        const hint = suggestHp(p, me)
+        const cur = p.scenario.players[foe].heroHp
+        throw new Error(
+          `${p.id} 应存在斩杀解(敌方 heroHp=${cur})。` +
+            (hint
+              ? `\n  斩杀线现在只够打到 ${hint.hp} —— 把 heroHp 改成 ${hint.hp} 即可` +
+                (hint.trivial
+                  ? `,\n  但注意那个血量下它会变成「直接挥脸即赢」的平凡题,得另想办法(加血、减资源、换卡)。`
+                  : `(那个血量下仍然非平凡)。`) +
+                `\n  别去改卡来迁就谜题 —— 谜题跟着卡走,不是反过来。`
+              : `\n  往下搜到 1 血都无解 —— 不是血量的问题,是斩杀线本身断了(某张卡或效果变了)。`),
+        )
+      }
 
       // 解法回放:真的把对手打死
       let cur = s
