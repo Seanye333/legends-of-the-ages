@@ -18,8 +18,19 @@
 // 这条闸门守的正好是后者。代价是它会改动工作区(生成脚本就是写文件的),
 // 所以本地跑之前先 commit 或 stash —— 脚本会先检查工作区干净。
 import { execFileSync } from 'node:child_process'
+import { existsSync } from 'node:fs'
 
 const GEN = 'src/content/generated'
+// 姊妹仓库是**素材源头**,不在这个仓库里,也不是构建期依赖 ——
+// `src/` 一行都不 import 它(产物已入库)。所以在 CI 或别人的机器上
+// 它多半根本不存在,那时候这条闸门**跳过而不是红**:
+// 它守的是「源头漂了没」,源头都不在,无从谈起。
+// 红了才是信号 —— 一条在没有源头的机器上必然红的闸门,等于训练所有人忽略它。
+const SIBLING = '../ThreeKingdomMastersIOS'
+if (!existsSync(SIBLING)) {
+  console.log(`· 跳过生成层漂移自检:找不到素材源头 ${SIBLING}(这台机器上没有克隆它)。`)
+  process.exit(0)
+}
 
 function git(...args: string[]): string {
   return execFileSync('git', args, { encoding: 'utf8', maxBuffer: 1e9 })
