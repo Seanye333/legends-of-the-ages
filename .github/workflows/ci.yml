@@ -118,10 +118,13 @@ jobs:
 
       # 备选主公技闸门:sim-balance 只测基准主公,测不到备选主公技。
       # 这道补那个洞 —— 每个备选主公在自家预组镜像里 40–60%。
+      #
+      # **不要在这里写 GAMES**,用脚本自己的默认值(400)。
+      # 这里曾经钉着 GAMES: 100,把脚本刻意提到 400 的默认值原地抵消了 ——
+      # 而那个 400 正是为了修「100 局 SE 5pp 撑不起 ±10pp 判定」才提上去的。
+      # 局数还必须是 4 的倍数,座位×先手四种组合才跑得齐(见 scripts/simSeating.ts)。
       - name: 备选主公技闸门
         run: npm run sim-hero-mirror
-        env:
-          GAMES: 100
 
   content:
     # 内容生成必须幂等:cards.gen.ts 入 git,重跑一次不能有 diff。

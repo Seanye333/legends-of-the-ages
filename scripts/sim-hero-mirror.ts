@@ -23,6 +23,7 @@
 import { createGame } from '../src/engine/init'
 import { applyCommand } from '../src/engine/reducer'
 import { aiStep, AI_NORMAL, type AiConfig } from '../src/ai/greedy'
+import { seatingFor } from './simSeating'
 
 // 尺子可切换:RULER=legacy 退回 2026-08 之前的纯单帧估值。
 // 【为什么留着这个开关】这个脚本量的是主公技强弱,而主公技里有一整类是**防守向**的
@@ -47,19 +48,26 @@ import { START_HP } from '../src/engine/types'
 const GAMES = Number(process.env.GAMES ?? 400)
 
 // 一场:altSeat 用备选主公,另一边用基准主公,同一副 deck。
+//
+// **first 必须显式传入,不能从 seed 推** —— 这里踩过一次(详见 simSeating.ts):
+// 原来写的是 `first: (seed & 1)`,而 seed = i*131+7 的奇偶与 altSeat 同步翻转,
+// 于是 first 恒等于 1-altSeat,**备选主公 400 局全程后手**。
+// 这游戏的先手优势有 20 多个百分点(自我对镜实测后手只有 24–29%),
+// 所以这道闸门当年的中性点是约 26% 而不是 50%,底下那些数字全部作废。
 function play(
   deck: string[],
   baseId: string,
   altId: string,
   altSeat: PlayerIdx,
   seed: number,
+  first: PlayerIdx,
 ): Winner {
   const heroFor = (seat: PlayerIdx) => (seat === altSeat ? altId : baseId)
   const cfg: GameConfig = {
     seed,
     heroIds: [heroFor(0), heroFor(1)],
     deckIds: [deck, deck],
-    first: (seed & 1) as PlayerIdx,
+    first,
     heroPowers: [HEROES_BY_ID[heroFor(0)].power, HEROES_BY_ID[heroFor(1)].power],
     heroHps: [START_HP, START_HP],
   }
@@ -96,8 +104,9 @@ for (const alt of ALT_HEROES) {
   let altWins = 0
   let played = 0
   for (let i = 0; i < GAMES; i++) {
-    const altSeat = (i & 1) as PlayerIdx // 轮流坐先后手
-    const w = play(deck, base.id, alt.id, altSeat, i * 131 + 7)
+    // 座位与先后手**各自独立**轮换,四种组合等量(GAMES 取 4 的倍数才跑得齐)
+    const { altSeat, first } = seatingFor(i)
+    const w = play(deck, base.id, alt.id, altSeat as PlayerIdx, i * 131 + 7, first as PlayerIdx)
     if (w === 'draw') continue
     played++
     if (w === altSeat) altWins++
