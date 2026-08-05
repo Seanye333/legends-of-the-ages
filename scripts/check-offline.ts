@@ -56,15 +56,44 @@ for (const m of html.matchAll(/rel="modulepreload"[^>]+href="([^"]+)"/g)) {
   check(m[1], 'app shell 预载的模块')
 }
 
-// 2:底图
+// 2:底图 —— 只要求**构建产物真正引用到的**那几张,不是「目录里有什么」。
+//
+// 【为什么不能直接列目录】
+// public/art 里同时躺着 .jpg 和 .webp:底图做过一次 JPG → WebP 迁移,
+// CSS 与 vite.config 的 precache 规则都改成了 .webp,但 import-content
+// 仍在从素材源拷那 5 张 .jpg(见它第 722 行那张表)。
+// 列目录会把那 5 张**没有任何人引用**的 .jpg 也当成「必须离线可用」,
+// 于是这道闸门长期报 5 项假缺失 —— 而假缺失和真缺失混在一起,
+// 等于这道闸门实际上已经不能用了。
+//
+// 改成从产物 CSS 里抠 `url(/art/…)`:引用了的才是真底图,一张都不能少;
+// 没被引用的就是死资源,只提醒不判红(它们该在有素材源的机器上从
+// import-content 的拷贝表里删掉 —— 那个文件在没有素材源时不该动)。
 const artDir = join(DIST, 'art')
-const art = existsSync(artDir)
+const onDisk = existsSync(artDir)
   ? readdirSync(artDir).filter((f) => /\.(webp|jpg|jpeg|png)$/i.test(f))
   : []
-if (art.length === 0) {
-  missing.push('dist/art/ —— 一张底图都没有,构建可能没把 public/art 拷过去')
+const assetsDir = join(DIST, 'assets')
+const referencedArt = new Set<string>()
+if (existsSync(assetsDir)) {
+  for (const f of readdirSync(assetsDir).filter((x) => x.endsWith('.css'))) {
+    const css = readFileSync(join(assetsDir, f), 'utf8')
+    for (const m of css.matchAll(/url\(\s*['"]?\/(art\/[^'")\s]+)['"]?\s*\)/g)) {
+      referencedArt.add(m[1])
+    }
+  }
 }
-for (const f of art) check(`art/${f}`, '四屏底图,没有兜底')
+if (onDisk.length === 0) {
+  missing.push('dist/art/ —— 一张底图都没有,构建可能没把 public/art 拷过去')
+} else if (referencedArt.size === 0) {
+  // 引用一张都抠不到 = 正则失配或 CSS 分块规则变了。**这也要红** ——
+  // 否则这道检查会在「什么都不检查」的状态下一直绿(闸门静默失效,见铁律 11)。
+  missing.push('产物 CSS 里一个 /art/ 引用都没抠到 —— 分块或路径规则变了,这项检查已失效')
+}
+for (const f of referencedArt) check(f, '四屏底图,没有兜底')
+
+const art = [...referencedArt]
+const deadArt = onDisk.filter((f) => !referencedArt.has(`art/${f}`))
 
 // 4:图标
 for (const icon of ['favicon-192.png', 'apple-touch-icon.png']) {
@@ -75,7 +104,14 @@ for (const icon of ['favicon-192.png', 'apple-touch-icon.png']) {
 const webpRule = /qiangu-portraits/.test(swSrc)
 
 console.log(`离线自检:precache 清单 ${precached.size} 条`)
-console.log(`  app shell + 底图 ${art.length} 张 + 图标`)
+console.log(`  app shell + 底图 ${art.length} 张(产物 CSS 引用到的)+ 图标`)
+if (deadArt.length > 0) {
+  console.log(
+    `  · dist/art 里另有 ${deadArt.length} 张没人引用:${deadArt.join(' ')}\n` +
+      `    (JPG → WebP 迁移的遗留;它们白占产物体积。要清得在**有素材源的机器上**\n` +
+      `     从 scripts/import-content.ts 的拷贝表里删掉,不判红)`,
+  )
+}
 console.log(
   `  立绘:${webpRule ? '走 runtimeCaching(CacheFirst,看过的能离线看)' : '✗ 没找到立绘的缓存规则'}`,
 )

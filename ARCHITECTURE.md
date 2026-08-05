@@ -271,7 +271,9 @@ Logs/Tail 只能看 console 输出),按 `evt` 聚合:
 
 PWA(`vite-plugin-pwa`)只在 web 构建挂载:立绘 CacheFirst 运行时缓存,app shell precache,`.webp` 一律不进 precache。Tauri 构建靠 `TAURI_ENV_PLATFORM` 整体跳过插件 —— 自定义协议下 SW 注册无效。
 
-`art/*.jpg`(5 张、1.5MB)**必须进 precache**:它们是标题/牌桌/调度/结算四屏的底图,而底图没有兜底(立绘缺了还有拓印)。少了它们,离线打开的不是「少几张图的游戏」,是四块黑屏。这 1.5MB 发生在首屏之后(SW 装完才 precache),`npm run perf-budget` 量的首屏预算一个字节不受影响。
+`art/*.webp`(5 张、0.65MB)**必须进 precache**:它们是标题/牌桌/调度/结算四屏的底图,而底图没有兜底(立绘缺了还有拓印)。少了它们,离线打开的不是「少几张图的游戏」,是四块黑屏。这 0.65MB 发生在首屏之后(SW 装完才 precache),`npm run perf-budget` 量的首屏预算一个字节不受影响。
+
+> 这一行 2026-08-04 之前写的是 `art/*.jpg`(1.5MB),**已经过时**:底图做过一次 JPG → WebP 迁移,CSS 与 `vite.config` 的 `globPatterns` 都改成了 `.webp`,只有这份文档、`import-content` 的拷贝表、`check-offline` 三处还停在旧世界。后果是 `check-offline` 长期报 5 项**假缺失**(那 5 张没人引用的 `.jpg`)—— 而假缺失和真缺失混在一起,等于这道闸门已经不能用了。现在它改成从产物 CSS 里抠 `url(/art/…)`,引用了的才算数。`public/art` 里那 5 张 `.jpg` 仍会被 `import-content` 拷进来(白占产物体积),要清得在**有素材源的机器上**从它的拷贝表里删。
 
 `npm run build && npm run check-offline` 守着这一条:读 workbox 清单,逐条核对 HTML/脚本/样式/底图/图标都在里面。**离线坏掉的方式是局部的** —— app shell 还在,所以打得开、能开局,只是底图变黑;人手在有网机器上按 devtools 的 offline 是试不出来的(SW 那时早就缓存好了),真正会挂的是从没访问过那一屏的新玩家在地铁里打开。
 
