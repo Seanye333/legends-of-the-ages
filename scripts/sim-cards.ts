@@ -152,14 +152,98 @@ for (const r of rows) {
 }
 
 console.log(`\n(${((performance.now() - t0) / 1000).toFixed(1)}s)`)
+
+// ---------- 怎么读这份清单 ----------
+//
+// 【原来这里是 `Math.abs(delta) > 4`,一个和样本量、和比较次数都无关的阈值】
+// 2026-08-04 用 SAMPLE=400 扫了一遍,它报「偏离超过 ±4 的 235 张」。
+// 算一下就知道那是什么:60 局时**差值**的标准误约 9 个点(两次测量各 ±6.5,相加开方),
+// 纯噪声下 |Δ|>4 的概率就有五成多 —— 400 张里报 235 张,和随机数几乎无法区分。
+// 一份「六成的卡都上榜」的异常清单,读的人只会从头到尾挑自己本来就想改的那几张。
+//
+// 还有第二层,比噪声更容易被忽略:**这是 400 次比较**。
+// 哪怕每张卡都严格按 z>2 判定,400 次里也会有约 18 张纯属偶然上榜。
+// 所以这里按族错误率(Bonferroni)给一条更高的线:z > ~3.5 时,
+// 400 次比较里出现一个假阳性的概率才降到 5% 左右。
+//
+// 结论是这个脚本**只配当筛子,不配当判决**:它的用途是从两千多张里
+// 挑出几张值得用大样本复测的,而不是产出一份「该改这些卡」的清单。
+// 所以下面分两档报,并且把该跑的复测命令直接打出来。
+const seDelta = Math.sqrt(2 * (0.25 / GAMES)) * 100 // 两次独立测量之差的标准误
+const zOf = (d: number) => Math.abs(d) / seDelta
+const bonferroniZ = rows.length > 1 ? Math.sqrt(2) * erfInv(1 - 0.05 / rows.length) : 2
+
 console.log(
-  `噪声提醒:${GAMES} 局的标准差约 ±${(50 / Math.sqrt(GAMES)).toFixed(1)} 个点 —— ` +
-    '单张卡的单次测量不能下结论,要么加样本量,要么看一批卡的分布。',
+  `\n噪声:每次测量 ±${(50 / Math.sqrt(GAMES)).toFixed(1)} 个点,` +
+    `而榜上的 Δ 是**两次测量之差**,标准误 ±${seDelta.toFixed(1)}。\n` +
+    `本次比较了 ${rows.length} 张 —— 按族错误率校正后,` +
+    `要 |Δ| > ${(bonferroniZ * seDelta).toFixed(1)} 才算真的越界(z > ${bonferroniZ.toFixed(1)})。`,
 )
-const outliers = rows.filter((r) => Math.abs(r.delta) > 4)
-if (outliers.length > 0) {
-  console.log(`\n偏离超过 ±4 个点的 ${outliers.length} 张(**加样本量复测再动手**):`)
-  for (const r of outliers) {
-    console.log(`  ${r.card.name.zh} (${r.card.id}) ${r.delta > 0 ? '+' : ''}${r.delta.toFixed(1)}`)
+
+const strong = rows.filter((r) => zOf(r.delta) > bonferroniZ)
+const weak = rows.filter((r) => zOf(r.delta) <= bonferroniZ && Math.abs(r.delta) > 4)
+
+if (strong.length > 0) {
+  console.log(`\n✗ 越过校正线的 ${strong.length} 张(**这几张单独拎出来也站得住**):`)
+  for (const r of strong) {
+    console.log(
+      `  ${r.card.name.zh} (${r.card.id}) ${r.delta > 0 ? '+' : ''}${r.delta.toFixed(1)}` +
+        `  z=${zOf(r.delta).toFixed(1)}`,
+    )
   }
+}
+if (weak.length > 0) {
+  console.log(
+    `\n另有 ${weak.length} 张 |Δ|>4 但没越过校正线 —— ` +
+      `纯随机下就会有约 ${Math.round(rows.length * 0.54)} 张落在这里,**别照着这一档改卡**。`,
+  )
+}
+
+// 【但「没越过校正线」不等于「里面没东西」】
+//
+// 校正线回答的是「这一张单独拎出来能不能宣布异常」,而**排序本身仍然有信号**。
+// 2026-08-04 实测:400 张 / 60 局那一跑一张都没越过线(线在 |Δ|>35),
+// 可把榜首六张拿去 600 局复测,正的三张全是真的:
+//   姜維 +28.3 → +29.2 · 簡雍 +16.7 → +17.0 · 蘇飛 +20.0 → +14.0
+// 负的三张则整齐地塌回去(-16.7 → -5.7 / -16.7 → -5.8 / -18.3 → -7.7)——
+// 典型的均值回归:它们是**因为极端才被选中**的,噪声把它们吹大了。
+//
+// 所以这个脚本的正确用法是**两段式**:小样本扫全池排个序,再把榜首拿去大样本复测。
+// 无论有没有越线,都把复测命令打出来 —— 让「宣布不了」不至于被读成「没东西」。
+const CANDIDATES = 6
+const top = [...rows]
+  .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
+  .slice(0, CANDIDATES)
+if (top.length > 0) {
+  console.log(
+    `\n下一步:榜单**排序有信号,单张判决没有**。把榜首 ${top.length} 张拿去大样本复测 ——\n` +
+      `  CARDS=${top.map((r) => r.card.id).join(',')} GAMES=600 npm run sim-cards\n` +
+      `复测后仍然大的才当真;塌回去的那些是均值回归,本来就不存在。`,
+  )
+}
+
+// 逆误差函数:只为算 Bonferroni 的 z 阈值。Acklam 有理逼近,精度远超这里的需要。
+function erfInv(x: number): number {
+  const a = [-3.969683028665376e1, 2.209460984245205e2, -2.759285104469687e2, 1.38357751867269e2, -3.066479806614716e1, 2.506628277459239]
+  const b = [-5.447609879822406e1, 1.615858368580409e2, -1.556989798598866e2, 6.680131188771972e1, -1.328068155288572e1]
+  const c = [-7.784894002430293e-3, -3.223964580411365e-1, -2.400758277161838, -2.549732539343734, 4.374664141464968, 2.938163982698783]
+  const d = [7.784695709041462e-3, 3.224671290700398e-1, 2.445134137142996, 3.754408661907416]
+  const p = (x + 1) / 2
+  const pLow = 0.02425
+  let q: number
+  let r: number
+  if (p < pLow) {
+    q = Math.sqrt(-2 * Math.log(p))
+    return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+      ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1) / Math.SQRT2
+  }
+  if (p <= 1 - pLow) {
+    q = p - 0.5
+    r = q * q
+    return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q /
+      (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1) / Math.SQRT2
+  }
+  q = Math.sqrt(-2 * Math.log(1 - p))
+  return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+    ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1) / Math.SQRT2
 }
