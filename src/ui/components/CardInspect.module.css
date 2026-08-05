@@ -638,3 +638,39 @@
 .dossierFate {
   color: rgba(201, 106, 90, 0.85);
 }
+
+/* 档案分三行:出身 / 履历 / 结局,性格另起一排徽章。
+   十一个字段挤在一个 flex 里读起来是一团词,而它们本来就不是一类东西。 */
+.dossierBlock {
+  display: grid;
+  gap: 3px;
+  margin: 8px 0 4px;
+}
+
+.dossierRow {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.dossierLabel {
+  flex: none;
+  width: 30px;
+  color: rgba(216, 178, 106, 0.7);
+  letter-spacing: 0.08em;
+}
+
+.dossierCells {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 10px;
+  color: rgba(232, 220, 198, 0.62);
+}
+
+.dossierTraits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 3px;
+}

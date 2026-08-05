@@ -345,55 +345,78 @@ export function CardInspect({ def, onClose, forge = false }: CardInspectProps) {
               </div>
             </div>
           )}
-          {/* 武将档案:字 / 籍贯 / 生卒 / 性格 / 五维。
-              这些全是**事实**而不是叙述,来自姊妹仓库的名册与史料表 ——
-              此前一项都没显示,于是 2,258 名武将在图鉴里只有一张脸和一句
-              程序生成的卡面文案。先摆事实,再讲故事(下面那块)。 */}
+          {/* 武将档案。
+              【为什么要分行,不是一排小标签】
+              这一栏一路加到了十一项(字/籍/生卒/官爵/绰号/族属/镇守/归附/著作/结局/兵器)
+              加四条性格 —— 全挤在一个 flex 里,读起来是一团词,而且**它们不是一类东西**:
+                · 出身 —— 他是谁(字、籍贯、生卒、族属)
+                · 履历 —— 他做过什么(官爵、镇守、归附、著作)
+                · 收场 —— 他怎么结束的(结局)· 兵器另算(多出自演义)
+                · 性格 —— 一排徽章,视觉上本来就该独立
+              分成三行之后,同一屏的信息量没变,但**每一行回答一个问题**。 */}
           {LORE[def.id] && hasDossier(LORE[def.id]) && (
-            <div className={styles.dossier}>
-              {LORE[def.id].courtesy && (
-                <span className={styles.dossierItem}>
-                  {t('字', 'Courtesy')} {pickCompact(LORE[def.id].courtesy!)}
-                </span>
+            <div className={styles.dossierBlock}>
+              {(() => {
+                const l = LORE[def.id]
+                const rows: [string, (string | null)[]][] = [
+                  [
+                    t('出身', 'Origin'),
+                    [
+                      l.courtesy ? `${t('字', '')}${pickCompact(l.courtesy)}` : null,
+                      l.home ? pickCompact(l.home) : null,
+                      l.ethnos ? pickCompact(l.ethnos) : null,
+                      l.life ? pickCompact(l.life) : null,
+                      l.alias ? `「${pickCompact(l.alias)}」` : null,
+                    ],
+                  ],
+                  [
+                    t('履歷', 'Career'),
+                    [
+                      l.office ? pickCompact(l.office) : null,
+                      l.garrison ? `${t('鎮', 'held ')}${pickCompact(l.garrison)}` : null,
+                      l.defected ? pickCompact(l.defected) : null,
+                      l.works ? l.works.zh : null,
+                    ],
+                  ],
+                ]
+                return rows
+                  .filter(([, cells]) => cells.some(Boolean))
+                  .map(([label, cells]) => (
+                    <div key={label} className={styles.dossierRow}>
+                      <span className={styles.dossierLabel}>{label}</span>
+                      <span className={styles.dossierCells}>
+                        {cells.filter(Boolean).map((c) => (
+                          <span key={c!} className={styles.dossierItem}>
+                            {c}
+                          </span>
+                        ))}
+                      </span>
+                    </div>
+                  ))
+              })()}
+              {(LORE[def.id].fate || LORE[def.id].arms) && (
+                <div className={styles.dossierRow}>
+                  <span className={styles.dossierLabel}>{t('結局', 'End')}</span>
+                  <span className={styles.dossierCells}>
+                    {LORE[def.id].fate && (
+                      <span className={styles.dossierFate}>{pickCompact(LORE[def.id].fate!)}</span>
+                    )}
+                    {/* 兵器多数出自演义而非正史,所以单独一色 */}
+                    {LORE[def.id].arms && (
+                      <span className={styles.dossierArms}>{pickCompact(LORE[def.id].arms!)}</span>
+                    )}
+                  </span>
+                </div>
               )}
-              {LORE[def.id].home && (
-                <span className={styles.dossierItem}>
-                  {t('籍', 'From')} {pickCompact(LORE[def.id].home!)}
-                </span>
+              {(LORE[def.id].traits ?? []).length > 0 && (
+                <div className={styles.dossierTraits}>
+                  {(LORE[def.id].traits ?? []).slice(0, 4).map((tr) => (
+                    <span key={tr} className={styles.dossierTrait}>
+                      {TRAIT_NAMES[tr] ? pickCompact(TRAIT_NAMES[tr]) : tr}
+                    </span>
+                  ))}
+                </div>
               )}
-              {LORE[def.id].life && (
-                <span className={styles.dossierItem}>{pickCompact(LORE[def.id].life!)}</span>
-              )}
-              {LORE[def.id].office && (
-                <span className={styles.dossierItem}>{pickCompact(LORE[def.id].office!)}</span>
-              )}
-              {LORE[def.id].alias && (
-                <span className={styles.dossierItem}>「{pickCompact(LORE[def.id].alias!)}」</span>
-              )}
-              {LORE[def.id].ethnos && (
-                <span className={styles.dossierItem}>{pickCompact(LORE[def.id].ethnos!)}</span>
-              )}
-              {LORE[def.id].garrison && (
-                <span className={styles.dossierItem}>鎮{pickCompact(LORE[def.id].garrison!)}</span>
-              )}
-              {LORE[def.id].defected && (
-                <span className={styles.dossierItem}>{pickCompact(LORE[def.id].defected!)}</span>
-              )}
-              {LORE[def.id].works && (
-                <span className={styles.dossierItem}>{LORE[def.id].works!.zh}</span>
-              )}
-              {LORE[def.id].fate && (
-                <span className={styles.dossierFate}>{pickCompact(LORE[def.id].fate!)}</span>
-              )}
-              {/* 兵器多数出自演义而非正史,所以视觉上和上面那些史料字段分开 */}
-              {LORE[def.id].arms && (
-                <span className={styles.dossierArms}>{pickCompact(LORE[def.id].arms!)}</span>
-              )}
-              {(LORE[def.id].traits ?? []).slice(0, 4).map((tr) => (
-                <span key={tr} className={styles.dossierTrait}>
-                  {TRAIT_NAMES[tr] ? pickCompact(TRAIT_NAMES[tr]) : tr}
-                </span>
-              ))}
             </div>
           )}
           {/* 五维用雷达图 —— 和列传页同一个组件。条形回答「统率多少」,
