@@ -1,13 +1,9 @@
 // 平衡模拟:六套预组 AI 互搏,输出胜率矩阵。
 // 运行:npm run sim-balance(GAMES=每对局数,默认 40)
-import { PRECON_DECKS, type DeckList } from '../src/content/decks'
-import { CARDS_BY_ID } from '../src/content/cards'
-import { HEROES_BY_ID } from '../src/content/overrides/heroes'
-import { createGame } from '../src/engine/init'
-import { applyCommand } from '../src/engine/reducer'
-import { aiStep, AI_NORMAL } from '../src/ai/greedy'
-import type { GameConfig, PlayerIdx, Winner } from '../src/engine/types'
-import { START_HP } from '../src/engine/types'
+import { PRECON_DECKS } from '../src/content/decks'
+import { parallelMap, defaultConcurrency, progress } from './parallel'
+import { fileURLToPath } from 'node:url'
+import type { BalanceTask } from './workers/balance.worker'
 import {
   judgeBalance,
   OVERALL_MIN,
@@ -26,69 +22,41 @@ const GAMES_PER_PAIR = Number(process.env.GAMES ?? 100)
 // 曾经写成 `first: (seed & 1)`,而 seed 的奇偶恰好与座位 swap 同步翻转
 // (三个乘数都是奇数 → seed 奇偶 = (i+j+g+1)%2,swap = g%2),
 // 结果每个对位里永远是同一套牌先手 —— 整张矩阵都带着先手偏置。
-function playGame(a: DeckList, b: DeckList, seed: number, first: PlayerIdx): Winner {
-  // 主公技必须进模拟 —— 它每回合都能用,是全局触发频率最高的效果,
-  // 不带着一起跑等于在测一个和实际对局不一样的游戏。
-  const heroes = [HEROES_BY_ID[a.heroId], HEROES_BY_ID[b.heroId]]
-  const cfg: GameConfig = {
-    seed,
-    heroIds: [a.heroId, b.heroId],
-    deckIds: [[...a.cardIds], [...b.cardIds]],
-    first,
-    heroPowers: [heroes[0]?.power, heroes[1]?.power],
-    heroHps: [heroes[0]?.hp ?? START_HP, heroes[1]?.hp ?? START_HP],
-  }
-  let state = createGame(cfg, CARDS_BY_ID)
-  const rngs: [number, number] = [seed ^ 0x0a1a, seed ^ 0x0b2b]
-  let guard = 0
-  while (state.phase !== 'ended') {
-    if (++guard > 5000) throw new Error(`game did not terminate: ${a.name.zh} vs ${b.name.zh} seed ${seed}`)
-    const actor: PlayerIdx =
-      state.phase === 'mulligan'
-        ? state.players[0].mulliganDone
-          ? 1
-          : 0
-        : state.activePlayer
-    const step = aiStep(state, actor, CARDS_BY_ID, rngs[actor], AI_NORMAL)
-    rngs[actor] = step.rng
-    const r = applyCommand(state, actor, step.cmd, CARDS_BY_ID)
-    if (!r.ok) throw new Error(`AI illegal command (${r.error}): ${JSON.stringify(step.cmd)}`)
-    state = r.state
-  }
-  return state.winner ?? 'draw'
-}
-
-if (PRECON_DECKS.length < 2) {
-  console.log('PRECON_DECKS 不足 2 套,先完成内容设计再跑平衡模拟。')
-  process.exit(0)
-}
-
 const n = PRECON_DECKS.length
 const wins: number[][] = Array.from({ length: n }, () => Array(n).fill(0))
 const games: number[][] = Array.from({ length: n }, () => Array(n).fill(0))
 
 console.log(`sim-balance: ${n} decks, ${GAMES_PER_PAIR} games/pair`)
 const t0 = performance.now()
+
+// 对局本体在 workers/balance.worker.ts。切成「对位 × 局段」:
+// 15 个对位单独当任务太少太不齐(同样的教训在 sim-campaign 上先踩过),
+// 切到局段之后任务数够多、长度接近。
+// 座位与先手的独立翻转逻辑原样搬过去了 —— 那是这个脚本自己踩过并修好的坑。
+const CHUNK = 20
+const WORKER = fileURLToPath(new URL('./workers/balance.worker.ts', import.meta.url))
+const jobs: BalanceTask[] = []
 for (let i = 0; i < n; i++) {
   for (let j = i + 1; j < n; j++) {
-    for (let g = 0; g < GAMES_PER_PAIR; g++) {
-      // 座位与先手必须独立翻转,否则某一方会一直吃先手红利。
-      // g mod 4 跑满四种组合:(座位 A/B) × (先手 0/1)。
-      const swap = g % 2 === 1
-      const first = (((g >> 1) % 2) === 1 ? 1 : 0) as PlayerIdx
-      const [a, b] = swap ? [PRECON_DECKS[j], PRECON_DECKS[i]] : [PRECON_DECKS[i], PRECON_DECKS[j]]
-      const winner = playGame(a, b, i * 7919 + j * 104729 + g * 31 + 1, first)
-      games[i][j]++
-      games[j][i]++
-      if (winner !== 'draw') {
-        const winnerIdx = swap ? (winner === 0 ? j : i) : winner === 0 ? i : j
-        wins[winnerIdx][winnerIdx === i ? j : i]++
-      }
+    for (let from = 0; from < GAMES_PER_PAIR; from += CHUNK) {
+      jobs.push({ i, j, from, to: Math.min(from + CHUNK, GAMES_PER_PAIR) })
     }
-    process.stdout.write('.')
   }
 }
-console.log(` (${((performance.now() - t0) / 1000).toFixed(1)}s)`)
+const parts = await parallelMap<BalanceTask, { winsI: number; winsJ: number; played: number }>(
+  WORKER,
+  jobs,
+  progress(`${jobs.length} 段`),
+  process.env.JOBS ? Number(process.env.JOBS) : defaultConcurrency(),
+)
+jobs.forEach((job, k) => {
+  const p = parts[k]
+  games[job.i][job.j] += p.played
+  games[job.j][job.i] += p.played
+  wins[job.i][job.j] += p.winsI
+  wins[job.j][job.i] += p.winsJ
+})
+console.log(`(${((performance.now() - t0) / 1000).toFixed(1)}s)`)
 
 const names = PRECON_DECKS.map((d) => d.name.zh)
 const pad = (s: string, w: number) => s.padEnd(w, '　').slice(0, w)

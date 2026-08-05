@@ -25,11 +25,10 @@
 import { PRECON_DECKS } from '../src/content/decks'
 import { CARDS_BY_ID, COLLECTIBLE_CARDS } from '../src/content/cards'
 import { HEROES_BY_ID } from '../src/content/overrides/heroes'
-import { createGame } from '../src/engine/init'
-import { applyCommand } from '../src/engine/reducer'
-import { aiStep, AI_NORMAL } from '../src/ai/greedy'
-import { START_HP } from '../src/engine/types'
-import type { CardDef, GameConfig, PlayerIdx, Winner } from '../src/engine/types'
+import { parallelMap, defaultConcurrency, progress } from './parallel'
+import { fileURLToPath } from 'node:url'
+import type { CardTask } from './workers/cards.worker'
+import type { CardDef } from '../src/engine/types'
 
 const GAMES = Number(process.env.GAMES ?? 60)
 const SAMPLE = Number(process.env.SAMPLE ?? 12)
@@ -41,46 +40,6 @@ const ONLY = (process.env.CARDS ?? '').split(',').map((s) => s.trim()).filter(Bo
 // 否则换进去是非法卡组 —— 所以只测王道与中立。
 const BASE = PRECON_DECKS[0]
 const BASE_HERO = HEROES_BY_ID[BASE.heroId]
-
-function play(deck: string[], oppIdx: number, seed: number, first: PlayerIdx): Winner {
-  const opp = PRECON_DECKS[oppIdx]
-  const oppHero = HEROES_BY_ID[opp.heroId]
-  const cfg: GameConfig = {
-    seed,
-    heroIds: [BASE.heroId, opp.heroId],
-    deckIds: [[...deck], [...opp.cardIds]],
-    first,
-    heroPowers: [BASE_HERO?.power, oppHero?.power],
-    heroHps: [BASE_HERO?.hp ?? START_HP, oppHero?.hp ?? START_HP],
-  }
-  let state = createGame(cfg, CARDS_BY_ID)
-  const rngs: [number, number] = [seed ^ 0xa1, seed ^ 0xb2]
-  let guard = 0
-  while (state.phase !== 'ended') {
-    if (++guard > 5000) return 'draw'
-    const actor: PlayerIdx =
-      state.phase === 'mulligan' ? (state.players[0].mulliganDone ? 1 : 0) : state.activePlayer
-    const step = aiStep(state, actor, CARDS_BY_ID, rngs[actor], AI_NORMAL)
-    rngs[actor] = step.rng
-    const r = applyCommand(state, actor, step.cmd, CARDS_BY_ID)
-    if (!r.ok) throw new Error(`AI illegal command: ${r.error}`)
-    state = r.state
-  }
-  return state.winner ?? 'draw'
-}
-
-function winRate(deck: string[]): number {
-  let wins = 0
-  let played = 0
-  for (let g = 0; g < GAMES; g++) {
-    // 轮流打其余五套预组,轮流先后手
-    const oppIdx = 1 + (g % (PRECON_DECKS.length - 1))
-    const w = play(deck, oppIdx, 7919 * (g + 1), (g % 2) as PlayerIdx)
-    if (w !== 'draw') played++
-    if (w === 0) wins++
-  }
-  return (100 * wins) / Math.max(1, played)
-}
 
 // 把 COPIES 张**费用最接近**的普通牌换成待测卡。
 // 换费用最接近的那张很重要 —— 否则量到的是曲线变化,不是这张牌本身。
@@ -127,19 +86,43 @@ console.log(
   `sim-cards: 基准「${BASE.name.zh}」,每张换入 ${COPIES} 份,${GAMES} 局/张,共 ${targets.length} 张\n`,
 )
 const t0 = performance.now()
-const baseline = winRate([...BASE.cardIds])
-console.log(`基准胜率 ${baseline.toFixed(1)}%\n`)
 
-const rows: { card: CardDef; rate: number; delta: number }[] = []
+// 对局本体在 workers/cards.worker.ts。任务粒度就是「一副牌」——
+// 每张待测卡跑的局数、对手轮转、种子序列完全相同,所以任务天然等长,
+// 不必像 sim-campaign / sim-firstplayer 那样再往下切段。
+//
+// 基准也当成一个普通任务丢进去(排在第 0 位),这样它和待测卡走的是同一条路径,
+// 不会出现「基准用串行、待测用并行」这种最难查的不对称。
+const WORKER = fileURLToPath(new URL('./workers/cards.worker.ts', import.meta.url))
+const buildable: { card: CardDef; deck: string[] }[] = []
 for (const card of targets) {
   const deck = swapIn(card)
   if (!deck) {
     console.log(`  ${card.name.zh} —— 换不进去(基准里没有足够的可换牌)`)
     continue
   }
-  const rate = winRate(deck)
-  rows.push({ card, rate, delta: rate - baseline })
+  buildable.push({ card, deck })
 }
+
+const jobs: CardTask[] = [
+  { deck: [...BASE.cardIds], games: GAMES },
+  ...buildable.map((b) => ({ deck: b.deck, games: GAMES })),
+]
+const out = await parallelMap<CardTask, { wins: number; played: number }>(
+  WORKER,
+  jobs,
+  progress(`${jobs.length} 副牌`),
+  process.env.JOBS ? Number(process.env.JOBS) : defaultConcurrency(),
+)
+const pct = (r: { wins: number; played: number }) => (100 * r.wins) / Math.max(1, r.played)
+
+const baseline = pct(out[0])
+console.log(`基准胜率 ${baseline.toFixed(1)}%\n`)
+
+const rows: { card: CardDef; rate: number; delta: number }[] = buildable.map((b, i) => {
+  const rate = pct(out[i + 1])
+  return { card: b.card, rate, delta: rate - baseline }
+})
 
 rows.sort((a, b) => b.delta - a.delta)
 console.log('卡名            费用  胜率    Δ')
