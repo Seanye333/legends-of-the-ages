@@ -113,13 +113,17 @@ console.log(`
   npm run replay-diff      引擎确定性对拍              ~10s
   npm run check-offline    PWA 断网可玩                ~10s
 
-平衡(慢,先泡杯茶):
-  npm run sim-balance      六套预组互搏      GAMES=100  ~5min
-  npm run sim-campaign     冒险 24 关曲线    GAMES=240  ~12min
-  npm run sim-hero-mirror  备选主公技对镜    GAMES=400  ~10min
-  npm run sim-firstplayer  先手优势/仪器自检 GAMES=400  ~5min
+平衡(以下三道已并行,耗时是 10 线程实测):
+  npm run sim-campaign     冒险 24 关曲线    GAMES=240  ~4min   (串行 12min)
+  npm run sim-firstplayer  先手优势/仪器自检 GAMES=400  ~2.5min (串行 5min)
+  npm run sim-hero-mirror  备选主公技对镜    GAMES=400  ~1.7min (串行 8.5min)
+  npm run sim-balance      六套预组互搏      GAMES=100  ~5min   (还没并行)
+
+  · JOBS=1 退回单线程 —— 怀疑并行接错时用它对拍,走的是同一份代码
+  · JOBS=N 指定线程数;默认取 核数-2,最多 16
 
 **下结论一律用默认局数或更高。** 调小 GAMES 只配试探 —— 这个仓库
-已经两次把噪声当成结论(详见 ROADMAP「闸门的现状」)。`)
+已经两次把噪声当成结论(详见 ROADMAP「闸门的现状」)。
+并行之后加样本量便宜多了,更没有理由省。`)
 
 process.exit(bad > 0 ? 1 : 0)

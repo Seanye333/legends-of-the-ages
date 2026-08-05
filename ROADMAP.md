@@ -468,14 +468,23 @@ npm run check-generated  # 生成层漂移(没有素材源时自动跳过)
 # 环境(几秒,先跑这个)
 npm run doctor           # 这台机器上什么能跑、什么不能、为什么(附闸门耗时表)
 
-# 平衡(慢,5–12 分钟。**下结论一律用默认局数或更高**)
-npm run sim-balance      # 六套预组互搏矩阵(跑完自动与上次基线对比)
-npm run sim-campaign     # 冒险 24 关难度曲线
+# 平衡(**下结论一律用默认局数或更高**)
+#
+# 三道已并行(worker 池,见 scripts/parallel.ts),耗时为 10 线程实测:
+npm run sim-campaign     # 冒险 24 关难度曲线            ~4min   (串行 12min)
+npm run sim-firstplayer  # 先手优势 + 对镜类模拟的仪器自检 ~2.5min (串行 5min)
+                         #   AI=tiers 换尺子 · COMP=sweep 试算后手补偿
+npm run sim-hero-mirror  # 备选主公技对镜                ~1.7min (串行 8.5min)
+npm run sim-balance      # 六套预组互搏矩阵              ~5min   (还没并行)
+                         #   跑完自动与上次基线对比
 npm run tune-campaign    # 关底 deckTier 网格扫描(只打印建议,不改代码)
-npm run sim-hero-mirror  # 备选主公技对镜
-npm run sim-firstplayer  # 先手优势 + **所有对镜类模拟的仪器自检**
-                         #   COMP=sweep 试算后手补偿方案
 npm run sim-cards        # 单卡边际胜率(SAMPLE=400 可扫一大片)
+
+#   JOBS=1 退回单线程 —— 怀疑并行接错时用它对拍,走的是同一份代码
+#   JOBS=N 指定线程数;默认 核数-2,最多 16
+#
+# **并行不影响任何一个数字**:每局的种子只由索引决定、引擎是纯函数,
+# 所以按索引装回去就与串行逐位一致。三道接入时都做过并行/串行对拍。
 
 # 盘点(不卡门,只记录)
 npm run audit-generals   # 武将档案覆盖率 + 机制重复度

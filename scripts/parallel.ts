@@ -70,7 +70,10 @@ export async function parallelMap<T, R>(
       const feed = () => {
         if (next >= tasks.length) {
           void w.terminate()
-          if (--alive === 0) (failed ? reject(failed) : resolve())
+          if (--alive === 0) {
+            if (failed) reject(failed)
+            else resolve()
+          }
           return
         }
         const i = next++
