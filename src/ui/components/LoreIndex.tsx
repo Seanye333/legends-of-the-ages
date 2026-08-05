@@ -20,7 +20,7 @@ type Group = { key: string; label: string; ids: string[] }
 export function LoreIndex({ onPick }: { onPick: (id: string) => void }) {
   const t = useT()
   const pickCompact = usePickCompact()
-  const [kind, setKind] = useState<'battle' | 'home' | 'clan' | 'fate' | 'path'>('battle')
+  const [kind, setKind] = useState<'battle' | 'home' | 'clan' | 'fate' | 'office' | 'path'>('battle')
   const [open, setOpen] = useState<string | null>(null)
 
   const groups = useMemo((): Group[] => {
@@ -45,6 +45,25 @@ export function LoreIndex({ onPick }: { onPick: (id: string) => void }) {
           return Boolean(f && re.test(f))
         }).map((c) => c.id),
       })).filter((g) => g.ids.length >= 3)
+    }
+    if (kind === 'office') {
+      // 按官爵归堆。取**最后两个字**(將軍 / 太守 / 刺史 / 尚書 / 侯 / 王)——
+      // 「驃騎將軍」和「奮威將軍」是同一类官,分开列就成了两百堆各一个人。
+      const LORE = loreNow()
+      const by = new Map<string, string[]>()
+      for (const c of COLLECTIBLE_CARDS) {
+        const o = LORE[c.id]?.office?.zh
+        if (!o) continue
+        for (const part of o.split(' · ')) {
+          const kindName = /(將軍|太守|刺史|尚書|司徒|司空|太尉|丞相|都督|中郎將|校尉|王|公|侯)$/.exec(part)?.[1]
+          if (!kindName) continue
+          by.set(kindName, [...(by.get(kindName) ?? []), c.id])
+        }
+      }
+      return [...by.entries()]
+        .filter(([, ids]) => ids.length >= 3)
+        .map(([k, ids]) => ({ key: k, label: k, ids: [...new Set(ids)] }))
+        .sort((a, b) => b.ids.length - a.ids.length || a.key.localeCompare(b.key))
     }
     if (kind === 'home') {
       const LORE = loreNow()
@@ -84,6 +103,7 @@ export function LoreIndex({ onPick }: { onPick: (id: string) => void }) {
             ['home', t('郡望', 'Origins')],
             ['clan', t('家族', 'Houses')],
             ['fate', t('結局', 'Ends')],
+            ['office', t('官爵', 'Titles')],
             ['path', t('牽連', 'Six Degrees')],
           ] as const
         ).map(([k, label]) => (
@@ -109,6 +129,8 @@ export function LoreIndex({ onPick }: { onPick: (id: string) => void }) {
             ? t('同郡出身的人。籍贯取自生平原文,按郡归堆。', 'Men of the same commandery, grouped from the birthplaces named in their chronicles.')
             : kind === 'fate'
               ? t('怎么收场的。只取传的末尾两句 —— 别人的死不算他的。', 'How each life ended, read only from the closing lines of the chronicle — another man\u2019s death is not his.')
+              : kind === 'office'
+                ? t('位至何官、封何爵。只认传里明说「位至/官至/封」的那些。', 'The highest office or title each man reached — only where the chronicle says so outright.')
               : t('同族的人。族谱从生平里的亲属关系抠出来。', 'Kinsmen, read out of the family ties named in their chronicles.')}
       </p>
       )}
