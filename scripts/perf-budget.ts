@@ -1,6 +1,7 @@
 import { gzipSync } from 'node:zlib'
 import { readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
+import { judgeBudget, type ChunkCeiling } from './perfBudgetGate'
 
 // 首屏体积闸门 —— `npm run perf-budget`(要先 `npm run build`)。
 //
@@ -76,15 +77,6 @@ for (const e of entries) {
 console.log(`\n  ${kb(totalGz)}  合计 gzip(预算 ${BUDGET_KB} KB)`)
 console.log(`  ${kb(totalRaw)}  合计原始`)
 
-const overKB = totalGz / 1024 - BUDGET_KB
-if (overKB > 0) {
-  console.error(`\n✗ 首屏超预算 ${overKB.toFixed(1)} KB。`)
-  console.error('  先看上面最大的那一项:它是不是只有某一个界面才用得到?')
-  console.error('  是的话就 lazy 掉(组件用 React.lazy,纯数据用动态 import)。')
-  process.exit(1)
-}
-console.log(`\n✓ 首屏在预算内,余量 ${(-overKB).toFixed(1)} KB。`)
-
 // 单个 chunk 的基线。
 //
 // 【为什么总量之外还要按 chunk 钉】
@@ -94,24 +86,43 @@ console.log(`\n✓ 首屏在预算内,余量 ${(-overKB).toFixed(1)} KB。`)
 // 每次都只涨一点点)。按 chunk 钉基线,谁胖了当场看得见。
 //
 // 钉的是**上限不是等值**:留 15% 余量,免得改一行文案就红。
-const CHUNK_CEILING: [RegExp, number, string][] = [
-  [/\/assets\/index-.*\.js$/, 190, '首屏主包'],
-  [/\/assets\/content-.*\.js$/, 150, '内容层(卡池 + 覆盖表)'],
-  [/\/assets\/vendor-.*\.js$/, 75, '第三方'],
+const CHUNK_CEILING: ChunkCeiling[] = [
+  { re: /\/assets\/index-.*\.js$/, ceilKB: 190, label: '首屏主包' },
+  { re: /\/assets\/content-.*\.js$/, ceilKB: 150, label: '内容层(卡池 + 覆盖表)' },
+  { re: /\/assets\/vendor-.*\.js$/, ceilKB: 75, label: '第三方' },
 ]
-let over = false
-for (const [re, ceilKB, label] of CHUNK_CEILING) {
-  const hit = entries.find((e) => re.test(e.file))
-  if (!hit) {
-    console.warn(`⚠ 找不到 chunk「${label}」—— 打包分块规则可能改了,基线失效`)
+
+// 判定逻辑在 perfBudgetGate.ts —— 抽出去才验得了「该红时红、不该红时不红」。
+// 那边还修掉了一个静默失效:chunk 正则失配时**原来只 warn 不红**,
+// 也就是说打包分块一改名,那条基线就默默停止工作了(详见那个文件的文件头)。
+const verdict = judgeBudget({
+  files: entries.map((e) => ({ file: e.file, gz: e.gz })),
+  budgetKB: BUDGET_KB,
+  ceilings: CHUNK_CEILING,
+})
+
+const overKB = totalGz / 1024 - BUDGET_KB
+if (overKB > 0) {
+  console.error(`\n✗ 首屏超预算 ${overKB.toFixed(1)} KB。`)
+  console.error('  先看上面最大的那一项:它是不是只有某一个界面才用得到?')
+  console.error('  是的话就 lazy 掉(组件用 React.lazy,纯数据用动态 import)。')
+  process.exit(1)
+}
+console.log(`\n✓ 首屏在预算内,余量 ${(-overKB).toFixed(1)} KB。`)
+
+for (const c of verdict.chunks) {
+  if (c.missing) {
+    console.error(`  ✗ ${c.label.padEnd(20)} 找不到目标文件(基线失效)`)
     continue
   }
-  const kbNow = hit.gz / 1024
-  const mark = kbNow > ceilKB ? '✗' : '·'
-  console.log(`  ${mark} ${label.padEnd(20)} ${kbNow.toFixed(1)} / ${ceilKB} KB`)
-  if (kbNow > ceilKB) over = true
+  const mark = c.kb! > c.ceilKB ? '✗' : '·'
+  console.log(`  ${mark} ${c.label.padEnd(20)} ${c.kb!.toFixed(1)} / ${c.ceilKB} KB`)
 }
-if (over) {
-  console.error('\n✗ 有 chunk 超出基线 —— 要么瘦身,要么把基线连同理由一起调高。')
+
+const chunkProblems = verdict.problems.filter((p) => p.startsWith('chunk'))
+if (chunkProblems.length > 0) {
+  console.error('')
+  for (const p of chunkProblems) console.error(`✗ ${p}`)
+  console.error('\n要么瘦身,要么把基线连同理由一起调高;基线失配就改正则或删掉它。')
   process.exit(1)
 }
