@@ -7,16 +7,10 @@
 //
 // 同样的警告适用:这测的是贪心 AI 的游戏。真人玩家会比 AI 强,
 // 所以这里的胜率是**下限**,实际体感会更容易一些。
-import { BOSSES, bossDeck, bossChapter, bossPersonality, bossField } from '../src/content/campaign'
-import { PRECON_DECKS } from '../src/content/decks'
-import { CARDS_BY_ID } from '../src/content/cards'
-import { HEROES_BY_ID } from '../src/content/overrides/heroes'
-import { createGame } from '../src/engine/init'
-import { applyCommand } from '../src/engine/reducer'
-import { aiStep, AI_LEVELS, AI_NORMAL } from '../src/ai/greedy'
+import { BOSSES, bossChapter } from '../src/content/campaign'
 import { judgeChapter } from './campaignGate'
-import { START_HP } from '../src/engine/types'
-import type { GameConfig, PlayerIdx, Winner } from '../src/engine/types'
+import { parallelMap, defaultConcurrency, progress } from './parallel'
+import { fileURLToPath } from 'node:url'
 
 // 【为什么默认是 240 而不是 60】
 // 这三道闸门比的是「点估计 vs 写死的阈值」,而点估计自带抽样误差。
@@ -36,56 +30,54 @@ const GAMES = Number(process.env.GAMES ?? 240)
 // 判定用的 z 阈值,与 sim-ai-tiers 同一条线:只有**统计上显著**地越界才算红。
 const Z = 2
 
+// 并行线程数。`JOBS=1` 可退回单线程 —— 怀疑并行接错时用它对拍。
+const CONC = process.env.JOBS ? Number(process.env.JOBS) : defaultConcurrency()
+
 // Boss 侧的 AI 档位。默认 AI_NORMAL —— 它是这套曲线一路调出来的基准尺,
 // 换掉就没法和历史数字比了。
 //
 // `BOSS_AI=general` 可以量**名将档玩家实际面对的 Boss**:
 // 名将比 AI_NORMAL 多一层前瞻(foresight),对打实测 64% 胜率。
 // 这两个数字**不是一回事**,别混着看 —— campaign.ts 里记的曲线是前者。
-const BOSS_AI = process.env.BOSS_AI === 'general' ? AI_LEVELS.general : AI_NORMAL
+// 对局本体在 workers/campaign.worker.ts。
+// **这里刻意不留一份副本** —— 两处逐字相同的模拟代码是漂移的温床:
+// 改了一处忘了另一处,表现是「并行和串行量的不是同一个游戏」,而两边各自都自洽,
+// 极难查。要单线程对拍就用 `JOBS=1`,走的仍然是同一份代码。
 
-function play(bossIdx: number, playerDeckIdx: number, seed: number, first: PlayerIdx): Winner {
-  const boss = BOSSES[bossIdx]
-  const mine = PRECON_DECKS[playerDeckIdx]
-  const myHero = HEROES_BY_ID[mine.heroId]
-  const cfg: GameConfig = {
-    seed,
-    heroIds: [mine.heroId, boss.heroId],
-    deckIds: [[...mine.cardIds], bossDeck(boss.doctrine, boss.deckTier)],
-    first,
-    heroPowers: [myHero?.power, boss.power],
-    heroHps: [myHero?.hp ?? START_HP, boss.hp],
-    // 地利也要进模拟 —— 环境双方同吃,但不是中性的(烈焰惩罚铺场、平原奖励骑兵)
-    field: bossField(boss.id),
-  }
-  let state = createGame(cfg, CARDS_BY_ID)
-  const rngs: [number, number] = [seed ^ 0xa1, seed ^ 0xb2]
-  let guard = 0
-  while (state.phase !== 'ended') {
-    if (++guard > 5000) return 'draw'
-    const actor: PlayerIdx =
-      state.phase === 'mulligan' ? (state.players[0].mulliganDone ? 1 : 0) : state.activePlayer
-    // 模拟的「玩家」恒用 AI_NORMAL 当基准尺;Boss 侧可以换档(见 BOSS_AI)
-    // Boss 侧带上性格权重 —— 否则量的不是玩家真正面对的那个对手
-    const bossCfg = { ...BOSS_AI, weights: bossPersonality(boss.id) }
-    const step = aiStep(state, actor, CARDS_BY_ID, rngs[actor], actor === 1 ? bossCfg : AI_NORMAL)
-    rngs[actor] = step.rng
-    const r = applyCommand(state, actor, step.cmd, CARDS_BY_ID)
-    if (!r.ok) throw new Error(`AI illegal command (${r.error}) vs ${boss.name.zh}`)
-    state = r.state
-  }
-  return state.winner ?? 'draw'
-}
-
-console.log(`sim-campaign: ${BOSSES.length} 关,${GAMES} 局/关(六套预组轮流上)\n`)
+console.log(
+  `sim-campaign: ${BOSSES.length} 关,${GAMES} 局/关(六套预组轮流上)· ${CONC} 线程并行\n`,
+)
 const t0 = performance.now()
+
+// 按**关**切分丢给 worker 池。每一局的种子只由 (关, 局号) 决定,局与局之间没有
+// 共享状态(引擎是纯函数),所以「谁先算完」不影响任何一局 —— 只要按索引装回去
+// 就与串行逐位一致。这一点在接入时实测验过:并行前后 24 关的胜率逐格相同。
+// 切到「关 × 局段」而不是整关:关与关的耗时差很多(于謙那关局局打满,張角那关早早结束),
+// 按关切的话最后一轮只有几个线程在动。局段更短更齐,尾部空转就短。
+const CHUNK = 40
+const WORKER = fileURLToPath(new URL('./workers/campaign.worker.ts', import.meta.url))
+const jobs: Array<{ boss: number; from: number; to: number }> = []
+for (let boss = 0; boss < BOSSES.length; boss++) {
+  for (let from = 0; from < GAMES; from += CHUNK) {
+    jobs.push({ boss, from, to: Math.min(from + CHUNK, GAMES) })
+  }
+}
+const chunkWins = await parallelMap<{ boss: number; from: number; to: number }, number>(
+  WORKER,
+  jobs,
+  progress(`${jobs.length} 段`),
+  CONC,
+)
+
+// 按关汇总。加法可交换,但仍然按 jobs 的顺序累加 —— 保序是这一层的纪律,不留例外。
+const winsPerBoss = new Array<number>(BOSSES.length).fill(0)
+jobs.forEach((j, i) => {
+  winsPerBoss[j.boss] += chunkWins[i]
+})
+
 const props: number[] = [] // 精确比例,闸门的统计量一律用它(别拿四舍五入的显示值做数学)
 for (let b = 0; b < BOSSES.length; b++) {
-  let wins = 0
-  for (let g = 0; g < GAMES; g++) {
-    const w = play(b, g % PRECON_DECKS.length, b * 7919 + g * 31 + 1, ((g >> 1) % 2) as PlayerIdx)
-    if (w === 0) wins++
-  }
+  const wins = winsPerBoss[b]
   const pct = Math.round((wins / GAMES) * 100)
   props.push(wins / GAMES)
   // 95% 置信半宽。
