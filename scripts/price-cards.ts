@@ -55,6 +55,9 @@ const KEYWORD_VALUE: Record<string, number> = {
   duel: 0.5,
 }
 
+// 下面那张定价表没覆盖到的 op,跑完在末尾点名(见 opValue 的 default 分支)
+const UNPRICED = new Set<string>()
+
 // 一个 op 值多少「点」。1 点 ≈ 1 点攻击 ≈ 1.25 点生命。
 // 数值取自同类卡的实际定价(例如「造成 3 点伤害」的锦囊普遍 2 费,
 // 而 2 费的白板身材大约 5.4 点当量 → 每点伤害约 1.5)。
@@ -127,6 +130,19 @@ function opValue(op: EffectOp): number {
       return Math.abs(op.amount) * 1.3
     case 'gainSupply':
       return op.amount * 0.8
+    default:
+      // 【这里从前是「没有 default,直接走到函数末尾」】
+      // 于是没定价的 op 返回 undefined,scriptValue 里 `n + undefined` 得到 **NaN**,
+      // 而 NaN 会一路往上渗:那张卡的价值是 NaN,它所在费用档的中位数
+      // (要排序取中位)也跟着不可信,而整张报表正是拿这条曲线反推「应该几费」的。
+      // 关键是 **NaN 的比较永远是 false**,所以这种污染不会报错、不会崩、
+      // 也不会在输出里长得像个错误 —— 这正是本仓库最贵的那一类 bug(静默失效)。
+      // 实测漏了 5 个:borrow · delay · dispel · mill · shuffleIntoDeck,
+      // 全是第二十二卡包前后加的 op,加进引擎时没人回头补这张表。
+      // 现在记 0 分,但把 op 名字收集起来在末尾点名 ——
+      // 定价缺失可以接受(带它们的卡会被低估成「过弱」),悄无声息不行。
+      UNPRICED.add((op as { op: string }).op)
+      return 0
   }
 }
 
@@ -269,3 +285,11 @@ console.log(
   '这不是错误清单:传奇本来就该超模,build-around 的卡面价值本来就低(它的价值在配合里)。\n' +
     '拿它当**线索**,真正的判断仍然要跑 sim-cards / sim-balance。',
 )
+
+if (UNPRICED.size > 0) {
+  console.log(
+    `\n⚠ 有 ${UNPRICED.size} 个 op 还没进定价表,这一轮按 0 分计 —— ` +
+      `带这些 op 的卡会被系统性低估(看起来「过弱」):\n  ${[...UNPRICED].sort().join(' · ')}\n` +
+      `  补进 scripts/price-cards.ts 的 opValue 即可。`,
+  )
+}

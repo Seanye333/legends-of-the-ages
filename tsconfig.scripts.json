@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "types": ["node"]
+  },
+  "include": ["scripts"],
+  // 这两个 import 的是同级目录的素材源仓库(../ThreeKingdomMastersIOS),
+  // 那个仓库**在多数机器上不存在**(见 ROADMAP「唯一的例外:素材源头」)——
+  // 把它们纳进来,`npm run build` 会在没有素材源的机器和 CI 上一律红,
+  // 而那恰恰是「构建不依赖姊妹仓库」这条设计要避免的(铁律 3)。
+  // 它们的类型只能在有素材源的机器上验,和它们的改动必须在那里做是同一个道理。
+  "exclude": ["scripts/import-content.ts", "scripts/seed-mechanics.ts"]
+}

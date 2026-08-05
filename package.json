@@ -33,7 +33,7 @@
     "tauri": "tauri",
     "test": "vitest run",
     "tune-campaign": "node --import tsx scripts/tune-campaign.ts",
-    "typecheck": "tsc -b && tsc -p tsconfig.test.json && tsc -p tsconfig.server.json && tsc -p tsconfig.drivetest.json"
+    "typecheck": "tsc -b && tsc -p tsconfig.test.json && tsc -p tsconfig.server.json && tsc -p tsconfig.drivetest.json && tsc -p tsconfig.scripts.json"
   },
   "dependencies": {
     "react": "^19.0.0",
