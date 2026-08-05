@@ -20,14 +20,15 @@
 // 所以那张矩阵**看不见**先手优势 —— 它被平均掉了。
 // 也就是说这条偏置可以一直存在而不触发任何现有闸门,直到有人像这样单独去量。
 import { PRECON_DECKS } from '../src/content/decks'
-import { CARDS_BY_ID } from '../src/content/cards'
-import { HEROES_BY_ID } from '../src/content/overrides/heroes'
-import { createGame } from '../src/engine/init'
-import { applyCommand } from '../src/engine/reducer'
-import { aiStep, AI_NORMAL, AI_LEVELS, type AiConfig } from '../src/ai/greedy'
-import { START_HP } from '../src/engine/types'
+import { AI_NORMAL, AI_LEVELS, type AiConfig } from '../src/ai/greedy'
 import { judgeFirstPlayer } from './firstPlayerGate'
-import type { GameConfig, PlayerIdx, RunModifiers, Winner } from '../src/engine/types'
+import { parallelMap, defaultConcurrency, progress } from './parallel'
+import { fileURLToPath } from 'node:url'
+import type { MirrorTask } from './workers/mirror.worker'
+import type { RunModifiers } from '../src/engine/types'
+
+// 并行线程数。`JOBS=1` 可退回单线程 —— 怀疑并行接错时用它对拍。
+const CONC = process.env.JOBS ? Number(process.env.JOBS) : defaultConcurrency()
 
 // 4 的倍数:座位 × 先手四种组合才跑得齐(见 simSeating.ts)
 const GAMES = Number(process.env.GAMES ?? 400)
@@ -69,75 +70,58 @@ const COMPENSATIONS: Record<string, RunModifiers> = {
 }
 const COMP = process.env.COMP ?? 'none'
 
-// 同一套预组自己打自己 —— 双方卡组、主公、AI 全同,唯一的不对称是先后手
-// (以及 comp:给后手方的补偿)。返回「先手方是否获胜」。
-function playMirror(
-  deckIdx: number,
-  seed: number,
-  first: PlayerIdx,
-  comp: RunModifiers,
-  ai: AiConfig = AI_NORMAL,
-): Winner {
-  const d = PRECON_DECKS[deckIdx]
-  const hero = HEROES_BY_ID[d.heroId]
-  const second = (1 - first) as PlayerIdx
-  const mods: [RunModifiers | undefined, RunModifiers | undefined] = [undefined, undefined]
-  if (Object.keys(comp).length > 0) mods[second] = comp
-  const cfg: GameConfig = {
-    seed,
-    heroIds: [d.heroId, d.heroId],
-    deckIds: [[...d.cardIds], [...d.cardIds]],
-    first,
-    heroPowers: [hero?.power, hero?.power],
-    heroHps: [hero?.hp ?? START_HP, hero?.hp ?? START_HP],
-    modifiers: mods,
-  }
-  let state = createGame(cfg, CARDS_BY_ID)
-  const rngs: [number, number] = [seed ^ 0x51, seed ^ 0x8f]
-  let guard = 0
-  while (state.phase !== 'ended') {
-    if (++guard > 6000) return 'draw'
-    const actor: PlayerIdx = state.pendingChoice
-      ? state.pendingChoice.player
-      : state.phase === 'mulligan'
-        ? state.players[0].mulliganDone
-          ? 1
-          : 0
-        : state.activePlayer
-    const step = aiStep(state, actor, CARDS_BY_ID, rngs[actor], ai)
-    rngs[actor] = step.rng
-    const r = applyCommand(state, actor, step.cmd, CARDS_BY_ID)
-    if (!r.ok) throw new Error(`AI illegal (${r.error})`)
-    state = r.state
-  }
-  return state.winner ?? 'draw'
-}
+// 跑一整轮(六套预组),返回每套的先手胜率百分数。
+//
+// 对局本体在 workers/mirror.worker.ts,与 sim-hero-mirror 共用一个 worker ——
+// 那两个脚本的对局结构本来就是同一个(同一副牌两边都用,只有主公技或先后手不同),
+// 各自写一遍正是当年 sim-hero-mirror 把座位和先后手绑死的土壤。
+// **种子与先后手公式逐字保留**:换掉的话此前记下的 73.8%、档位扫描、
+// 补偿扫描全部作废,而那些数字已经写进 ROADMAP 了。
+// 段要切得够碎,否则尾部有一堆线程在等最慢的那一段。
+// 实测:GAMES=240 时 CHUNK=60(24 个任务)只快 1.9 倍,CHUNK=20(72 个任务)才拉开。
+// 同一个教训在 sim-campaign 上先踩过一次(按关切 2.0x → 按局段切 2.9x)。
+const CHUNK = 20
+const WORKER = fileURLToPath(new URL('./workers/mirror.worker.ts', import.meta.url))
 
-// 跑一整轮(六套预组),返回每套的先手胜率百分数
-function runAll(comp: RunModifiers, verbose: boolean, ai: AiConfig = AI_NORMAL): number[] {
-  const out: number[] = []
+async function runAll(comp: RunModifiers, verbose: boolean, ai: AiConfig = AI_NORMAL): Promise<number[]> {
+  const jobs: MirrorTask[] = []
   for (let d = 0; d < PRECON_DECKS.length; d++) {
-    let firstWins = 0
-    let played = 0
-    for (let g = 0; g < GAMES; g++) {
-      // 先手方轮流坐两个座位 —— 座位本身不该有影响,轮换它可以把座位效应也平均掉
-      const first = (g & 1) as PlayerIdx
-      const w = playMirror(d, d * 7919 + g * 31 + 1, first, comp, ai)
-      if (w === 'draw') continue
-      played++
-      if (w === first) firstWins++
+    for (let from = 0; from < GAMES; from += CHUNK) {
+      jobs.push({
+        deckIdx: d,
+        baseId: PRECON_DECKS[d].heroId,
+        from,
+        to: Math.min(from + CHUNK, GAMES),
+        comp,
+        ai,
+        score: 'first',
+      })
     }
-    const rate = (firstWins / Math.max(1, played)) * 100
-    out.push(rate)
+  }
+  const parts = await parallelMap<MirrorTask, { wins: number; played: number }>(
+    WORKER,
+    jobs,
+    progress(`${jobs.length} 段`),
+    CONC,
+  )
+
+  const agg = PRECON_DECKS.map(() => ({ wins: 0, played: 0 }))
+  jobs.forEach((j, i) => {
+    agg[j.deckIdx].wins += parts[i].wins
+    agg[j.deckIdx].played += parts[i].played
+  })
+
+  return agg.map((a, d) => {
+    const rate = (a.wins / Math.max(1, a.played)) * 100
     if (verbose) {
-      const se = Math.sqrt(0.25 / Math.max(1, played)) * 100
+      const se = Math.sqrt(0.25 / Math.max(1, a.played)) * 100
       const bar = '█'.repeat(Math.max(0, Math.round(rate / 4)))
       console.log(
         `  ${PRECON_DECKS[d].name.zh.padEnd(6, '　')} 先手胜率 ${rate.toFixed(1)}% ±${se.toFixed(1)}  ${bar}`,
       )
     }
-  }
-  return out
+    return rate
+  })
 }
 
 // ---- AI 档位全扫:73.8% 里有多少是游戏、有多少是尺子 ----
@@ -160,7 +144,7 @@ if (AI === 'tiers') {
       console.log(`${name.padEnd(11)} (未知档位,跳过)`)
       continue
     }
-    const rs = runAll({}, false, cfg)
+    const rs = await runAll({}, false, cfg)
     const avg = rs.reduce((a, b) => a + b, 0) / rs.length
     console.log(
       `${name.padEnd(11)} ${avg.toFixed(1)}% ±${seT.toFixed(1)}   ${avg >= 50 ? '+' : ''}${(avg - 50).toFixed(1)}`,
@@ -186,7 +170,7 @@ if (COMP === 'sweep') {
   const seSweep = Math.sqrt(0.25 / (GAMES * PRECON_DECKS.length)) * 100
   console.log(`方案              先手胜率   评价`)
   for (const [name, comp] of Object.entries(COMPENSATIONS)) {
-    const rs = runAll(comp, false)
+    const rs = await runAll(comp, false)
     const avg = rs.reduce((a, b) => a + b, 0) / rs.length
     const verdict =
       avg > 55 ? '仍然不够' : avg < 45 ? '补过头了(后手反而占优)' : '✓ 落在 45–55'
@@ -218,7 +202,7 @@ if (COMP !== 'none') console.log(`后手方补偿:${COMP}`)
 console.log('\n每一格量的都是同一套牌打自己 —— 唯一的不对称是谁先手,理论值 50%。\n')
 const t0 = performance.now()
 
-const rates = runAll(comp, true, aiCfg)
+const rates = await runAll(comp, true, aiCfg)
 
 const overall = rates.reduce((a, b) => a + b, 0) / rates.length
 const n = GAMES * PRECON_DECKS.length

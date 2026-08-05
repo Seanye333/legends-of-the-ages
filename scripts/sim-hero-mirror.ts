@@ -20,10 +20,7 @@
 // 要真正修,得动预组构成或分别给每个主义定各自的基准线,而不是继续调技能。
 //
 // 这一条记在这里,是因为一个 32% 看上去太像「这技能弱」了。
-import { createGame } from '../src/engine/init'
-import { applyCommand } from '../src/engine/reducer'
-import { aiStep, AI_NORMAL, type AiConfig } from '../src/ai/greedy'
-import { seatingFor } from './simSeating'
+import { AI_NORMAL, type AiConfig } from '../src/ai/greedy'
 
 // 尺子可切换:RULER=legacy 退回 2026-08 之前的纯单帧估值。
 // 【为什么留着这个开关】这个脚本量的是主公技强弱,而主公技里有一整类是**防守向**的
@@ -33,11 +30,11 @@ import { seatingFor } from './simSeating'
 // 对比着看才判得出来 —— 这一轮正是靠对比才发现莊周根本没弱(38% → 50%)。
 const RULER: AiConfig =
   process.env.RULER === 'legacy' ? { ...AI_NORMAL, weights: { persist: 0 } } : AI_NORMAL
-import { CARDS_BY_ID } from '../src/content/cards'
 import { PRECON_DECKS } from '../src/content/decks'
-import { HEROES, ALT_HEROES, HEROES_BY_ID } from '../src/content/overrides/heroes'
-import type { GameConfig, PlayerIdx, Winner } from '../src/engine/types'
-import { START_HP } from '../src/engine/types'
+import { HEROES, ALT_HEROES } from '../src/content/overrides/heroes'
+import { parallelMap, defaultConcurrency, progress } from './parallel'
+import { fileURLToPath } from 'node:url'
+import type { MirrorTask } from './workers/mirror.worker'
 
 // 【为什么从 100 提到 400】
 // 100 局的标准误是 5pp,而判定区间是 40–60 —— 也就是说一个真正 50% 的主公技
@@ -47,78 +44,70 @@ import { START_HP } from '../src/engine/types'
 // 400 局把标准误压到 2.5pp,判定才配得上 ±10pp 的区间。代价是四倍时间。
 const GAMES = Number(process.env.GAMES ?? 400)
 
-// 一场:altSeat 用备选主公,另一边用基准主公,同一副 deck。
-//
-// **first 必须显式传入,不能从 seed 推** —— 这里踩过一次(详见 simSeating.ts):
-// 原来写的是 `first: (seed & 1)`,而 seed = i*131+7 的奇偶与 altSeat 同步翻转,
-// 于是 first 恒等于 1-altSeat,**备选主公 400 局全程后手**。
-// 这游戏的先手优势有 20 多个百分点(自我对镜实测后手只有 24–29%),
-// 所以这道闸门当年的中性点是约 26% 而不是 50%,底下那些数字全部作废。
-function play(
-  deck: string[],
-  baseId: string,
-  altId: string,
-  altSeat: PlayerIdx,
-  seed: number,
-  first: PlayerIdx,
-): Winner {
-  const heroFor = (seat: PlayerIdx) => (seat === altSeat ? altId : baseId)
-  const cfg: GameConfig = {
-    seed,
-    heroIds: [heroFor(0), heroFor(1)],
-    deckIds: [deck, deck],
-    first,
-    heroPowers: [HEROES_BY_ID[heroFor(0)].power, HEROES_BY_ID[heroFor(1)].power],
-    heroHps: [START_HP, START_HP],
-  }
-  let state = createGame(cfg, CARDS_BY_ID)
-  const rngs: [number, number] = [seed ^ 0x51, seed ^ 0x8f]
-  let guard = 0
-  while (state.phase !== 'ended') {
-    if (++guard > 6000) return 'draw'
-    const actor: PlayerIdx = state.pendingChoice
-      ? state.pendingChoice.player
-      : state.phase === 'mulligan'
-        ? state.players[0].mulliganDone
-          ? 1
-          : 0
-        : state.activePlayer
-    const step = aiStep(state, actor, CARDS_BY_ID, rngs[actor], RULER)
-    rngs[actor] = step.rng
-    const r = applyCommand(state, actor, step.cmd, CARDS_BY_ID)
-    if (!r.ok) throw new Error(`AI illegal (${r.error})`)
-    state = r.state
-  }
-  return state.winner ?? 'draw'
-}
-
 console.log(`sim-hero-mirror: 每个备选主公 ${GAMES} 局镜像(同预组,基准 vs 备选)\n`)
-let bad = 0
+
+// 对局本体在 workers/mirror.worker.ts,与 sim-firstplayer 共用 ——
+// 两者的对局结构本来就是同一个,而**各自写一遍座位编排正是这个脚本
+// 当年把先后手和座位绑死的土壤**(见 simSeating.ts)。现在只有一份。
+// 种子与座位公式逐字保留:换掉的话 heroes.ts 里记的那组数字就对不上了。
+const CHUNK = 20
+const WORKER = fileURLToPath(new URL('./workers/mirror.worker.ts', import.meta.url))
+
+interface Row {
+  alt: (typeof ALT_HEROES)[number]
+  baseName: string
+  deckIdx: number
+}
+const rows: Row[] = []
 for (const alt of ALT_HEROES) {
   const base = HEROES.find((h) => h.doctrine === alt.doctrine)!
-  const deck = PRECON_DECKS.find((d) => d.heroId === base.id)?.cardIds
-  if (!deck) {
+  const deckIdx = PRECON_DECKS.findIndex((d) => d.heroId === base.id)
+  if (deckIdx < 0) {
     console.log(`  ${alt.name.zh}: 找不到 ${base.name.zh} 的预组,跳过`)
     continue
   }
-  let altWins = 0
-  let played = 0
-  for (let i = 0; i < GAMES; i++) {
-    // 座位与先后手**各自独立**轮换,四种组合等量(GAMES 取 4 的倍数才跑得齐)
-    const { altSeat, first } = seatingFor(i)
-    const w = play(deck, base.id, alt.id, altSeat as PlayerIdx, i * 131 + 7, first as PlayerIdx)
-    if (w === 'draw') continue
-    played++
-    if (w === altSeat) altWins++
+  rows.push({ alt, baseName: base.name.zh, deckIdx })
+}
+
+const jobs: MirrorTask[] = []
+for (const r of rows) {
+  for (let from = 0; from < GAMES; from += CHUNK) {
+    jobs.push({
+      deckIdx: r.deckIdx,
+      baseId: PRECON_DECKS[r.deckIdx].heroId,
+      altId: r.alt.id,
+      from,
+      to: Math.min(from + CHUNK, GAMES),
+      ai: RULER,
+      score: 'alt',
+    })
   }
-  const rate = played > 0 ? (altWins / played) * 100 : 50
+}
+const parts = await parallelMap<MirrorTask, { wins: number; played: number }>(
+  WORKER,
+  jobs,
+  progress(`${jobs.length} 段`),
+  process.env.JOBS ? Number(process.env.JOBS) : defaultConcurrency(),
+)
+
+const agg = rows.map(() => ({ wins: 0, played: 0 }))
+jobs.forEach((j, i) => {
+  const k = rows.findIndex((r) => r.deckIdx === j.deckIdx && r.alt.id === j.altId)
+  agg[k].wins += parts[i].wins
+  agg[k].played += parts[i].played
+})
+
+let bad = 0
+rows.forEach((r, k) => {
+  const { wins, played } = agg[k]
+  const rate = played > 0 ? (wins / played) * 100 : 50
   const se = played > 0 ? Math.sqrt(0.25 / played) * 100 : 0
   const ok = rate >= 40 && rate <= 60
   if (!ok) bad++
   console.log(
-    `  ${alt.name.zh}(${alt.power.name.zh}) vs 基准 ${base.name.zh}: 备选胜率 ${rate.toFixed(1)}% ±${se.toFixed(1)}  ${ok ? '✓' : '⚠ 超出 40–60'}`,
+    `  ${r.alt.name.zh}(${r.alt.power.name.zh}) vs 基准 ${r.baseName}: 备选胜率 ${rate.toFixed(1)}% ±${se.toFixed(1)}  ${ok ? '✓' : '⚠ 超出 40–60'}`,
   )
-}
+})
 
 console.log('')
 if (bad === 0) {
