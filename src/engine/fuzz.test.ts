@@ -378,18 +378,31 @@ describe('fuzz: random legal games', () => {
         runFuzzGame(seed)
       }
     },
-    // 60s 而不是 20s:给主公技之后单跑要 9-12s、全量并行跑要 17-19s ——
-    // 20s 的余量太薄,实测在负载高的时候会随机超时红。
-    // 这是**唯一**一个长测试,宁可给足余量也不要一道随机翻红的闸门。
-    60_000,
+    // 180s 而不是 60s。2026-08-04 又顶穿了一次:全量并行跑 60s 超时,
+    // 单跑同一份代码 59.3s 通过 —— 也就是说**它红的时候不是引擎错了,是机器忙**。
+    // 那一刻 load average 是 133(另一个会话在跑平衡模拟),
+    // 同一份代码在不同负载下测出 24.8s / 59.3s / 79s 三个数,
+    // 这种条件下任何「谁让它变慢了」的归因都不成立。
+    //
+    // 所以不去追那个 2.4 倍,而是把余量给够:这是**唯一**一个长测试,
+    // 它的价值在于不变量(百局全跑完、状态始终自洽),不在于跑得快。
+    // 一道会随机翻红的闸门等于没有闸门 —— 而且比没有更糟,因为红了没人当真。
+    180_000,
   )
 
-  it('replays reproduce the exact final state', () => {
-    for (let seed = 1; seed <= 10; seed++) {
-      const { state, record } = runFuzzGame(seed)
-      const replayed = replayMatch(record, LIB)
-      expect(replayed.ok).toBe(true)
-      if (replayed.ok) expect(replayed.state).toEqual(state)
-    }
-  })
+  it(
+    'replays reproduce the exact final state',
+    () => {
+      for (let seed = 1; seed <= 10; seed++) {
+        const { state, record } = runFuzzGame(seed)
+        const replayed = replayMatch(record, LIB)
+        expect(replayed.ok).toBe(true)
+        if (replayed.ok) expect(replayed.state).toEqual(state)
+      }
+    },
+    // 同上:它跑十局并各重放一次,和上面那条是同一类长测试,
+    // 却一直吃着默认的 5s —— 上面那条放宽之后,超时就轮到它了。
+    // (这就是「一道闸门放宽、下一道接着红」的典型:两条本该一起给余量。)
+    60_000,
+  )
 })
