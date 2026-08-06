@@ -116,19 +116,20 @@ describe('覆盖层没清干净的指纹', () => {
     secret: ['伏兵'],
   }
 
-  // 已知待补的文案(`卡id:机制`)。**只减不增。**
+  // 【2026-08-06:25 → 0,名单清空了】
+  // 这里曾经是一份「已知待补」的白名单。补完的路子有三种,值得记下来,
+  // 因为**三分之二的缺口根本不用写文案**:
   //
-  // 2026-08-06 起 25 → 18:杜預 · 羊祜 · 陸抗 · 太史慈 · 李廣 · 勾踐 六张补完了。
-  // 其中太史慈与李廣的修法是**删掉 pack12 里的 text**而不是补写 ——
-  // 正确的那一份一直在 signature-skills 里,只是 pack12 合并得更晚、把它盖掉了。
-  const KNOWN_TEXT_GAPS = new Set([
-    'budugen:battlecry', 'gou-fu:battlecry', 'hist-cao-can:battlecry',
-    'hist-cao-xueqin:deathrattle', 'hist-jin-wen-gong:battlecry', 'hist-lanlingwang:battlecry',
-    'hist-lanlingwang:combo', 'hist-mu-guiying:aura', 'hist-murong-ke:battlecry',
-    'hist-qin-mugong:battlecry', 'hist-wang-meng:battlecry', 'hist-xin-qiji:battlecry',
-    'hist-zhang-xun:battlecry', 'hist-zheng-banqiao:battlecry', 'li-ru:battlecry',
-    'ling-tong:battlecry', 'tian-kai:deathrattle', 'wu-anguo:deathrattle',
-  ])
+  //   删掉多余的 text —— 太史慈 / 李廣。正确的文案一直在 signature-skills 里,
+  //     只是 pack12 想加个「碾壓」却顺手整段重写了 text,而它合并得更晚。
+  //   改合并方式   —— 曹參 / 晉文公 / 秦穆公 / 王猛。`FLAVOR_OVERRIDES` 只有 text
+  //     一个字段,走普通 spread 就等于「补一句风味 = 删掉规则说明」。
+  //     改成追加(见 cards.ts 的 withFlavorText),四张一起好了。
+  //   真的补写     —— 其余 13 张,照卡池里同机制卡的写法补一句。
+  //
+  // 空集合留着不删:它是这条断言的「预期值」,也是下一个人加卡时的落点。
+  // **新写的卡再犯同一个错会当场红。**
+  const KNOWN_TEXT_GAPS = new Set<string>([])
 
   it('卡面上有的机制,文案里必须提到(名单只减不增)', () => {
     const found: string[] = []

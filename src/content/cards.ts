@@ -87,6 +87,28 @@ export const KEYWORD_LABEL: Record<Keyword, { zh: string; en: string }> = {
   siege: { zh: '攻城', en: 'Siege' },
 }
 
+/**
+ * 风味文案**追加**在规则说明后面,而不是替换掉它。
+ *
+ * 见 MERGED_CARDS 里那段注释:`FLAVOR_OVERRIDES` 只有 `text` 一个字段,
+ * 走普通 spread 的话「补一句风味」= 「删掉规则说明」。
+ *
+ * 幂等:已经含有那句风味就不再追加(卡池在测试里会被反复构造)。
+ */
+function withFlavorText(card: CardDef, flavor: Pick<CardDef, 'text'> | undefined): CardDef {
+  if (!flavor?.text) return card
+  const zh = card.text?.zh ?? ''
+  const en = card.text?.en ?? ''
+  if (zh.includes(flavor.text.zh)) return card
+  return {
+    ...card,
+    text: {
+      zh: `${zh}${flavor.text.zh}`,
+      en: [en, flavor.text.en].filter(Boolean).join(' '),
+    },
+  }
+}
+
 function withKeywordText(card: CardDef): CardDef {
   if (card.keywords.length === 0) return card
   const zh = card.text?.zh ?? ''
@@ -188,8 +210,22 @@ const MERGED_CARDS: CardDef[] = [
     const ti = TITLE_OVERRIDES[card.id]
     if (!fl && !sig && !sk && !p3 && !p4 && !p5 && !p6d && !p6c && !p6l && !p7 && !p8 && !p9 && !p10 && !p11 && !p13 && !p12 && !bd && !rv && !ti)
       return card
-    const ov = { ...fl, ...sig, ...sk, ...p3, ...p4, ...p5, ...p6d, ...p6c, ...p6l, ...p7, ...p8, ...p9, ...p10, ...p11, ...p12, ...p13, ...bd, ...rv, ...ti }
-    return reconcileExclusive({ ...card, ...ov }, ov)
+    // 【风味层单独处理,不进这个 spread】(2026-08-06)
+    // `FLAVOR_OVERRIDES` 是 `Pick<CardDef, 'text'>` —— 它**只有 text**,
+    // 而 text 是整段替换的。于是「给这个传奇补一句风味」会顺手把
+    // **生成层写好的规则说明整段删掉**:
+    //
+    //   生成层  「戰吼:發現一張武將牌。」        ← 规则
+    //   风味层  「蕭規曹隨,清靜而治。」          ← 只剩风味,规则没了
+    //
+    // 而 `CardFace` 渲染的只有 `def.text`(没有从脚本生成描述那一层),
+    // 于是曹參 打出去凭空发现一张牌,卡面上一个字都没写。
+    // 晉文公 / 秦穆公 / 王猛 同样中招 —— 四张都是这么来的。
+    //
+    // 改成**追加**而不是替换,和 withBondRivalText 一个路子(那段注释里
+    // 写的正是这条:补在合并处,别让后写的人抹掉先写的)。
+    const ov = { ...sig, ...sk, ...p3, ...p4, ...p5, ...p6d, ...p6c, ...p6l, ...p7, ...p8, ...p9, ...p10, ...p11, ...p12, ...p13, ...bd, ...rv, ...ti }
+    return withFlavorText(reconcileExclusive({ ...card, ...ov }, ov), fl)
   }),
   ...STRATAGEMS,
   ...PACK2_CARDS,

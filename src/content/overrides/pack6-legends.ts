@@ -22,16 +22,16 @@ export const PACK6_LEGEND_OVERRIDES: Record<string, Partial<CardDef>> = {
   'hist-murong-ke': {
     keywords: ['guard', 'lifesteal'],
     text: {
-      zh: '守護、吸血。十六國第一名將,一生未嘗一敗。',
-      en: 'Guard, Lifesteal. The finest general of the Sixteen Kingdoms — never once defeated.',
+      zh: '守護、吸血。戰吼:對隨機一名敵方武將造成 2 點傷害。十六國第一名將,一生未嘗一敗。',
+      en: 'Guard, Lifesteal. Battlecry: deal 2 damage to a random enemy general. The finest general of the Sixteen Kingdoms — never once defeated.',
     },
   },
   // 穆桂英(9 费 11/7 · 宋):穆桂英挂帅,一往无前 —— 冲锋
   'hist-mu-guiying': {
     keywords: ['charge'],
     text: {
-      zh: '衝鋒。穆桂英掛帥,大破天門陣。',
-      en: 'Charge. Mu Guiying takes command and shatters the enemy line.',
+      zh: '衝鋒。光環:其他友方武將+1/+1。穆桂英掛帥,大破天門陣。',
+      en: 'Charge. Aura: your other generals have +1/+1. Mu Guiying takes command and shatters the enemy line.',
     },
   },
   // 孙膑(10 费 6/11 · 战国):兵法大家,围魏救赵 —— 战吼发现一张锦囊
@@ -54,16 +54,16 @@ export const PACK6_LEGEND_OVERRIDES: Record<string, Partial<CardDef>> = {
   'hist-zhang-xun': {
     deathrattle: { ops: [{ op: 'aoeDamage', amount: 4 }] },
     text: {
-      zh: '守護。亡語:對所有敵方武將造成 4 點傷害。睢陽死守,雖死猶生。',
-      en: 'Guard. Deathrattle: deal 4 damage to all enemy generals.',
+      zh: '守護。戰吼:使一名友方武將恢復 3 點生命。亡語:對所有敵方武將造成 4 點傷害。睢陽死守,雖死猶生。',
+      en: 'Guard. Battlecry: restore 3 Health to a friendly general. Deathrattle: deal 4 damage to all enemy generals.',
     },
   },
   // 兰陵王(9 费 8/8 · 南北朝):戴面具的美男猛将,入阵曲 —— 冲锋 + 单挑
   'hist-lanlingwang': {
     keywords: ['charge', 'duel'],
     text: {
-      zh: '衝鋒、單挑。面具之下,邙山破陣。',
-      en: 'Charge, Duel. Behind the mask, he breaks the line at Mangshan.',
+      zh: '衝鋒、單挑。戰吼:對一名敵方武將造成 1 點傷害。連擊:改為造成 4 點傷害。面具之下,邙山破陣。',
+      en: 'Charge, Duel. Battlecry: deal 1 damage to an enemy general. Combo: deal 4 instead. Behind the mask, he breaks the line at Mangshan.',
     },
   },
   // 刘伯温(9 费 5/11 · 明):神机妙算,前知五百年 —— 战吼抽三张
@@ -78,8 +78,8 @@ export const PACK6_LEGEND_OVERRIDES: Record<string, Partial<CardDef>> = {
   'hist-xin-qiji': {
     keywords: ['charge'],
     text: {
-      zh: '衝鋒。醉裡挑燈看劍,夢回吹角連營。',
-      en: 'Charge. Drunk, he trims the lamp to study his blade.',
+      zh: '衝鋒。戰吼:消滅一名敵方武將。醉裡挑燈看劍,夢回吹角連營。',
+      en: 'Charge. Battlecry: destroy an enemy general. Drunk, he trims the lamp to study his blade.',
     },
   },
   // 岳飞不在此列(已另有安排);此处专收非三国、原本无效果的大身材传奇。

@@ -28,7 +28,7 @@ export const PACK11_CARDS: CardDef[] = [
     onAttack: { ops: [{ op: 'draw', count: 1 }] },
     text: {
       zh: '突襲。攻擊後:抽一張牌。陷陣者先登,亦先取賞。',
-      en: 'Rush. After this attacks, draw a card.',
+      en: 'Rush. Battlecry: deal 1 damage to an enemy general. After this attacks, draw a card.',
     },
   },
   {
@@ -62,7 +62,7 @@ export const PACK11_OVERRIDES: Record<string, Partial<CardDef>> = {
   budugen: {
     onAttack: { ops: [{ op: 'draw', count: 1 }] },
     text: {
-      zh: '突襲。攻擊後:抽一張牌。鮮卑輕騎,來去如風。',
+      zh: '突襲。戰吼:對一名敵方武將造成 1 點傷害。攻擊後:抽一張牌。鮮卑輕騎,來去如風。',
       en: 'Rush. After this attacks, draw a card.',
     },
   },
@@ -71,8 +71,8 @@ export const PACK11_OVERRIDES: Record<string, Partial<CardDef>> = {
   'ling-tong': {
     onAttack: { ops: [{ op: 'buffStats', attack: 1, health: 1, target: 'self' }] },
     text: {
-      zh: '突襲。攻擊後:獲得 +1/+1。江表虎臣,愈戰愈勇。',
-      en: 'Rush. After this attacks, gain +1/+1.',
+      zh: '突襲。戰吼:此將 +2/+0,每有一個同赴戰役的友軍。攻擊後:獲得 +1/+1。江表虎臣,愈戰愈勇。',
+      en: 'Rush. Battlecry: gain +2/+0 for each friendly general who shared a campaign with him. After this attacks, gain +1/+1.',
     },
   },
   // 割据 · 句扶(3 费 3/3 突袭):蜀中宿将,裹挟乡勇滚雪球。
@@ -80,8 +80,8 @@ export const PACK11_OVERRIDES: Record<string, Partial<CardDef>> = {
   'gou-fu': {
     onAttack: { ops: [{ op: 'summon', defId: 'token-xiangyong', count: 1 }] },
     text: {
-      zh: '突襲。攻擊後:召喚一個 1/1 的鄉勇。裹挾流民,愈眾愈盛。',
-      en: 'Rush. After this attacks, summon a 1/1 Village Levy.',
+      zh: '突襲。戰吼:使一名友方武將獲得潛行。攻擊後:召喚一個 1/1 的鄉勇。裹挾流民,愈眾愈盛。',
+      en: 'Rush. Battlecry: give a friendly general Stealth. After this attacks, summon a 1/1 Village Levy.',
     },
   },
   // 中立 · 李儒(3 费 2/5):毒士缠斗,放血不止。
@@ -89,8 +89,8 @@ export const PACK11_OVERRIDES: Record<string, Partial<CardDef>> = {
   'li-ru': {
     onAttack: { ops: [{ op: 'damage', amount: 1, target: 'randomEnemyGeneral' }] },
     text: {
-      zh: '攻击后:對隨機一名敵方武將造成 1 點傷害。毒士當道,纏鬥放血。',
-      en: 'After this attacks, deal 1 damage to a random enemy general.',
+      zh: '戰吼:從牌庫抽一張錦囊。攻擊後:對隨機一名敵方武將造成 1 點傷害。毒士當道,纏鬥放血。',
+      en: 'Battlecry: draw a stratagem from your deck. After this attacks, deal 1 damage to a random enemy general.',
     },
   },
 }

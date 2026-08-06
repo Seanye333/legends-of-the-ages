@@ -80,7 +80,7 @@ export const PACK9_OVERRIDES: Record<string, Partial<CardDef>> = {
     attack: 2,
     health: 4,
     keywords: ['guard'],
-    text: { zh: '守護。單臂鏖戰呂布,力盡而還。', en: 'Guard. He fought Lü Bu one-armed until his strength gave out.' },
+    text: { zh: '守護。亡語:你的主公獲得 2 點護甲。單臂鏖戰呂布,力盡而還。', en: 'Guard. Deathrattle: your hero gains 2 Armor. He fought Lü Bu one-armed until his strength gave out.' },
   },
   // 袁譚:3 费 3/3,战吼抽一张 —— 中立续航身体
   'yuan-tan': {
@@ -96,7 +96,7 @@ export const PACK9_OVERRIDES: Record<string, Partial<CardDef>> = {
     attack: 4,
     health: 3,
     keywords: ['charge'],
-    text: { zh: '衝鋒。公孫麾下,青州拒袁。', en: 'Charge. Under Gongsun Zan, he held Qingzhou against Yuan.' },
+    text: { zh: '衝鋒。亡語:我方士氣 +1。公孫麾下,青州拒袁。', en: 'Charge. Deathrattle: your side gains 1 Morale. Under Gongsun Zan, he held Qingzhou against Yuan.' },
   },
 }
 

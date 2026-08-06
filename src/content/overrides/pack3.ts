@@ -322,8 +322,8 @@ export const PACK3_OVERRIDES: Record<string, Partial<CardDef>> = {
     keywords: [],
     spellDamage: 1,
     text: {
-      zh: '法術傷害+1。咬定青山不放鬆,立根原在破巖中。',
-      en: 'Spell Damage +1.',
+      zh: '法術傷害+1。戰吼:其他友方武將各+1/+1。咬定青山不放鬆,立根原在破巖中。',
+      en: 'Spell Damage +1. Battlecry: your other generals gain +1/+1.',
     },
   },
   'hist-pu-songling': {
@@ -350,8 +350,8 @@ export const PACK3_OVERRIDES: Record<string, Partial<CardDef>> = {
       ops: [{ op: 'buffStats', attack: 1, health: 1, target: 'randomFriendlyGeneral' }],
     },
     text: {
-      zh: '回合結束時:隨機一名友方武將+1/+1。十年辛苦不尋常。',
-      en: 'At the end of your turn, give a random friendly general +1/+1.',
+      zh: '回合結束時:隨機一名友方武將+1/+1。亡語:其他友方武將各+1/+1。十年辛苦不尋常。',
+      en: 'At the end of your turn, give a random friendly general +1/+1. Deathrattle: your other generals gain +1/+1.',
     },
   },
 
