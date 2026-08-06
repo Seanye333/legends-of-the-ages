@@ -308,6 +308,30 @@ export function cardValue(
   return v
 }
 
+/**
+ * 卡池里**没有任何一张卡**在使用的权重。
+ *
+ * 这是 UNPRICED 的镜像:UNPRICED 抓的是「卡里有、表里没有」(那些卡被系统性低估),
+ * 这里抓的是「表里有、卡里没有」—— 一个没有任何卡行使的数字。
+ * 它不会让报表出错,但它是**在假装被校准过**:price-cards 的曲线量不到它,
+ * fit-price 的回归也解不出它(那一列全是 0)。写下来比藏着好。
+ *
+ * `lint-content` 的 thin-mechanic 抓不到这一类,因为它按 op 名字数卡,
+ * 而这里的粒度更细:`mill` 有卡在用,但 `side='friendly'` 那一支一张都没有。
+ */
+export function unusedWeights(cards: CardDef[]): (keyof Weights)[] {
+  const out: (keyof Weights)[] = []
+  for (const k of Object.keys(DEFAULT_WEIGHTS) as (keyof Weights)[]) {
+    // 把这个权重挪开一大截:有卡在用的话,它的卡面价值一定跟着动。
+    const probe: Weights = { ...DEFAULT_WEIGHTS, [k]: DEFAULT_WEIGHTS[k] * 100 + 7 }
+    const used = cards.some(
+      (c) => Math.abs(cardValue(c, undefined, probe) - cardValue(c, undefined, DEFAULT_WEIGHTS)) > 1e-9,
+    )
+    if (!used) out.push(k)
+  }
+  return out
+}
+
 export function median(xs: number[]): number {
   if (xs.length === 0) return 0
   const a = [...xs].sort((x, y) => x - y)

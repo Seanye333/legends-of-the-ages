@@ -27,7 +27,7 @@
 // 它是一张**给人看的**清单。
 import { COLLECTIBLE_CARDS } from '../src/content/cards'
 import type { CardDef } from '../src/engine/types'
-import { buildCurve, cardValue, impliedCost } from './pricing'
+import { buildCurve, cardValue, impliedCost, unusedWeights } from './pricing'
 
 const TOP = Number(process.env.TOP ?? 20)
 
@@ -98,5 +98,17 @@ if (UNPRICED.size > 0) {
     `\n⚠ 有 ${UNPRICED.size} 个 op 还没进定价表,这一轮按 0 分计 —— ` +
       `带这些 op 的卡会被系统性低估(看起来「过弱」):\n  ${[...UNPRICED].sort().join(' · ')}\n` +
       `  补进 scripts/pricing.ts 的 opValue 即可。`,
+  )
+}
+
+// 反过来的那一半:表里有、卡里没有。
+// 不是错误,但它是个**在假装被校准过**的数字 —— 曲线量不到它,回归也解不出它。
+const unused = unusedWeights(cards)
+if (unused.length > 0) {
+  console.log(
+    `\n· 有 ${unused.length} 个权重卡池里没有卡在行使,因此**没有任何证据**支持它的数值:\n` +
+      `  ${unused.join(' · ')}\n` +
+      `  (lint-content 的 thin-mechanic 抓不到这一类:它按 op 名字数卡,而这里的粒度更细 ——\n` +
+      `   比如 mill 有卡在用,但 side='friendly' 那一支一张都没有。)`,
   )
 }

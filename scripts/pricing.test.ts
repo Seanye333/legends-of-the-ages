@@ -8,6 +8,7 @@ import {
   excessValue,
   impliedCost,
   median,
+  unusedWeights,
   opValue,
   scriptValue,
 } from './pricing'
@@ -93,21 +94,24 @@ describe('权重表', () => {
   })
 
   it('每个权重都被 opValue 用到 —— 没有写死的字面量遗留', () => {
-    // 把每个权重单独放大 100 倍,全池卡面价值总和必须动。
-    // 不动就说明那个键是死的(要么 opValue 里还写着字面量,要么这个 op 卡池里没有)。
-    // 后者也值得知道:一个没有任何卡使用的权重是在假装被校准过。
-    const dead: string[] = []
-    for (const k of Object.keys(DEFAULT_WEIGHTS) as (keyof typeof DEFAULT_WEIGHTS)[]) {
-      const probe = { ...DEFAULT_WEIGHTS, [k]: DEFAULT_WEIGHTS[k] * 100 + 7 }
-      const moved = SAMPLE_CARDS.some(
-        (c) => Math.abs(cardValue(c, undefined, probe) - cardValue(c)) > 1e-9,
-      )
-      if (!moved) dead.push(k)
-    }
-    // millSelf:卡池里**一张自磨的卡都没有**(mill 全部 side='enemy')。
-    // 这个权重因此永远量不到 —— 它不是错的,是没有证据的。留着是为了将来有自磨流时
-    // 不必重新想一遍,但别把它当成「校准过的数值」。其余 38 个都真的在用。
-    expect(dead).toEqual(['millSelf'])
+    // 这条同时管两件事:
+    //   1. opValue 里还写着字面量的话,那个键是死的 —— 拟合会安静地不动,
+    //      看起来像「这个 op 改了没用」,而不是「改根本没生效」;
+    //   2. 卡池里没有卡在行使某个权重,那它是个没有证据的数字。
+    // millSelf 属于第 2 种:卡池里一张自磨的卡都没有(mill 全部 side='enemy')。
+    // 留着是为了将来有自磨流时不必重新想一遍,但别把它当成「校准过的数值」。
+    // 其余 38 个都真的在用。price-cards 跑完会把这份名单打出来。
+    expect(unusedWeights(SAMPLE_CARDS)).toEqual(['millSelf'])
+  })
+
+  it('unusedWeights 抓得住新加进表却没人用的权重', () => {
+    // 反向验证:造一张只带 returnToHand 的卡当全部卡池,
+    // 那么除了 returnToHand,别的权重都该被判成「没有证据」。
+    const only = [card({ attack: 0, health: 0, spell: { ops: [{ op: 'returnToHand' }] } } as never)]
+    const unused = unusedWeights(only)
+    expect(unused).not.toContain('returnToHand')
+    expect(unused).toContain('damage')
+    expect(unused).toContain('draw')
   })
 })
 
