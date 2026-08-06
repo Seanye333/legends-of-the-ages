@@ -188,8 +188,10 @@ export const PACK6_DOCTRINE_OVERRIDES: Record<string, Partial<CardDef>> = {
       ops: [{ op: 'buffPer', per: { kind: 'friendlyKeyword', keyword: 'lifesteal' }, attack: 1, health: 1, target: 'self' }],
     },
     text: {
-      zh: '吸血。戰吼:此將 +1/+1,每有一個吸血友軍。懷柔之政,以德服人。',
-      en: 'Lifesteal. Battlecry: gain +1/+1 for each friendly Lifesteal general.',
+      // 光環与法術傷害是 pack3 / 生成层留下的,这一层只换了关键词和战吼 ——
+      // 但 text 整段替换,那两样就从卡面上消失了(实测 Δ +3.2,数值没问题,是文案漏了)。
+      zh: '吸血。法術傷害+1。光環:其他友方武將+0/+1。戰吼:此將 +1/+1,每有一個吸血友軍。懷柔之政,以德服人。',
+      en: 'Lifesteal. Spell Damage +1. Aura: Your other generals have +0/+1. Battlecry: gain +1/+1 for each friendly Lifesteal general.',
     },
   },
   // 霸道 · 張郃(6 费 5/6 epic):冲锋流的顶点 —— 获得冲锋,每有一个冲锋友军对敌方主公 1 点

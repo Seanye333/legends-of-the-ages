@@ -57,22 +57,30 @@ export const PACK12_CARDS: CardDef[] = [
   },
 ]
 
+// 【2026-08-06:这两条原本各自还写了一份 text,已删掉】
+// 它们只是要给这两位加「碾壓」,但**顺手把 text 整段重写了**,而重写的那一版
+// 把 signature-skills 里的战吼说明弄丢了:
+//
+//   signature-skills  「碾壓。戰吼:對一名敵方武將造成 3 點傷害。飛將軍在…」  ← 完整
+//   pack12(更晚合并) 「碾壓。飛將軍在,溢出之勢無人可擋。」                ← 战吼没了
+//
+// 而战吼本身还在(它来自 signature-skills,pack12 没动过它)。于是这两张卡
+// **打出去凭空多三点伤害,卡面上一个字都没写**。`CardFace` 渲染的只有 `def.text`,
+// 没有「从脚本生成描述」那一层,所以玩家就是看不到。
+//
+// 修法是**把 text 删掉**而不是补写:正确的那一份已经在 signature-skills 里了,
+// 这一层本来就只该管 keywords。碾壓 二字也不必自己写 —— `withKeywordText`
+// 会把文案里缺的关键词自动补在最前面(见 content/cards.ts)。
+//
+// (原注释里写的「李廣 9 费 11/7」「太史慈 7 费 9/6」也早就不成立了 ——
+//  signature-skills 把两位都改成了 5/4。一并去掉,免得下一个人照着它推理。)
 export const PACK12_OVERRIDES: Record<string, Partial<CardDef>> = {
-  // 霸道 · 李廣(9 费 11/7):飛將軍。11 攻碾压是这套里最狠的终结器 ——
-  // 一记撞穿守护,剩下的全上脸。
+  // 霸道 · 李廣:飛將軍。碾压是这套里最狠的终结器 —— 一记撞穿守护,剩下的全上脸。
   'hist-li-guang': {
     keywords: ['trample'],
-    text: {
-      zh: '碾壓。飛將軍在,溢出之勢無人可擋。',
-      en: 'Trample. Where the Flying General strikes, the overflow cannot be held.',
-    },
   },
-  // 霸道 · 太史慈(7 费 9/6):中费的碾压载体,把「垫刀」这条路直接堵死。
+  // 霸道 · 太史慈:碾压载体,把「垫刀」这条路直接堵死。
   'taishi-ci': {
     keywords: ['trample'],
-    text: {
-      zh: '碾壓。神射之勇,一往無前。',
-      en: 'Trample. The peerless marksman charges through.',
-    },
   },
 }

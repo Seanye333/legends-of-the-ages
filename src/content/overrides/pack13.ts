@@ -65,7 +65,8 @@ export const PACK13_OVERRIDES: Record<string, Partial<CardDef>> = {
     keywords: ['guard'],
     enrage: 3,
     text: {
-      zh: '守護。激怒:受伤时 +3 攻。臥薪嘗膽,越挫越勇。',
+      // 战吼是生成层留下的,这一层只写了激怒 —— 顺带把「受伤时」的简体改回繁體。
+      zh: '守護。戰吼:此將+2/+2。激怒:受傷時 +3 攻。臥薪嘗膽,越挫越勇。',
       en: 'Guard. Enrage: +3 Attack while damaged. He who sleeps on brushwood only grows fiercer.',
     },
   },

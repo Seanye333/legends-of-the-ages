@@ -156,8 +156,9 @@ export const PACK7_OVERRIDES: Record<string, Partial<CardDef>> = {
       ops: [{ op: 'buffPer', per: { kind: 'friendlyGenerals' }, attack: 1, health: 1, target: 'self' }],
     },
     text: {
-      zh: '戰吼:此將 +1/+1,每有一個友軍武將。西陵一戰,國之藩籬。',
-      en: 'Battlecry: gain +1/+1 for each friendly general.',
+      // 受傷後与亡語是 pack3 / 生成层留下的,这一层只加了战吼 —— text 整段替换把它们抹掉了。
+      zh: '戰吼:此將 +1/+1,每有一個友軍武將。受傷後,你的主公獲得 1 點護甲。亡語:你的主公獲得 3 點護甲。西陵一戰,國之藩籬。',
+      en: 'Battlecry: gain +1/+1 for each friendly general. After this general takes damage, your hero gains 1 Armor. Deathrattle: your hero gains 3 Armor.',
     },
   },
 }

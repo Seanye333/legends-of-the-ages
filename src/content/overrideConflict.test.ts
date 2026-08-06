@@ -117,15 +117,17 @@ describe('覆盖层没清干净的指纹', () => {
   }
 
   // 已知待补的文案(`卡id:机制`)。**只减不增。**
+  //
+  // 2026-08-06 起 25 → 18:杜預 · 羊祜 · 陸抗 · 太史慈 · 李廣 · 勾踐 六张补完了。
+  // 其中太史慈与李廣的修法是**删掉 pack12 里的 text**而不是补写 ——
+  // 正确的那一份一直在 signature-skills 里,只是 pack12 合并得更晚、把它盖掉了。
   const KNOWN_TEXT_GAPS = new Set([
-    'budugen:battlecry', 'du-yu:aura', 'du-yu:battlecry', 'gou-fu:battlecry',
-    'hist-cao-can:battlecry', 'hist-cao-xueqin:deathrattle', 'hist-goujian:battlecry',
-    'hist-jin-wen-gong:battlecry', 'hist-lanlingwang:battlecry', 'hist-lanlingwang:combo',
-    'hist-li-guang:battlecry', 'hist-mu-guiying:aura', 'hist-murong-ke:battlecry',
+    'budugen:battlecry', 'gou-fu:battlecry', 'hist-cao-can:battlecry',
+    'hist-cao-xueqin:deathrattle', 'hist-jin-wen-gong:battlecry', 'hist-lanlingwang:battlecry',
+    'hist-lanlingwang:combo', 'hist-mu-guiying:aura', 'hist-murong-ke:battlecry',
     'hist-qin-mugong:battlecry', 'hist-wang-meng:battlecry', 'hist-xin-qiji:battlecry',
     'hist-zhang-xun:battlecry', 'hist-zheng-banqiao:battlecry', 'li-ru:battlecry',
-    'ling-tong:battlecry', 'lu-kang:deathrattle', 'taishi-ci:battlecry',
-    'tian-kai:deathrattle', 'wu-anguo:deathrattle', 'yang-hu:aura',
+    'ling-tong:battlecry', 'tian-kai:deathrattle', 'wu-anguo:deathrattle',
   ])
 
   it('卡面上有的机制,文案里必须提到(名单只减不增)', () => {

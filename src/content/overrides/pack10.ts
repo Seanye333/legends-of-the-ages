@@ -56,8 +56,11 @@ export const PACK10_OVERRIDES: Record<string, Partial<CardDef>> = {
   'du-yu': {
     deathrattle: { ops: [{ op: 'summon', defId: 'token-xiangyong', count: 2 }] },
     text: {
-      zh: '亡語:召喚兩個 1/1 的鄉勇。杜武庫身後,猶有遺澤。',
-      en: 'Deathrattle: summon two 1/1 Village Levies.',
+      // 光環与战吼都是 pack3 / 生成层留下来的,**这一层只加了亡语**。
+      // 但 text 是整段替换的,原来这一版只写了亡语,于是那两样在卡面上消失了 ——
+      // 实测这张卡 Δ +2.0(600 局),数值上没问题,**问题是玩家看不见它做的事**。
+      zh: '光環:其他友方武將+0/+1並獲得守護。戰吼:從牌庫抽一張錦囊。亡語:召喚兩個 1/1 的鄉勇。杜武庫身後,猶有遺澤。',
+      en: 'Aura: Your other generals have +0/+1 and Guard. Battlecry: draw a stratagem from your deck. Deathrattle: summon two 1/1 Village Levies.',
     },
   },
   // 割据 · 洪秀全(6 费 4/7 epic):人海爆发的锚 —— 战吼对敌方主公造成伤害 = 你的武将数。
