@@ -157,6 +157,52 @@ describe('覆盖层没清干净的指纹', () => {
     expect(fixed, fixed.length ? `这几条已经补好了,请从 KNOWN_TEXT_GAPS 里删掉:\n  ${fixed.join('\n  ')}` : undefined).toEqual([])
   })
 
+  // ---------- 第三类指纹:文案承诺了一个关键词,而卡上没有 ----------
+  //
+  // 和上面那条正好相反,而且更坑:上面是「做了没说」,这条是**「说了没做」**。
+  // 玩家照卡面预期它能马上出手,实际不能 —— 那是会导致误判的错。
+  //
+  // 2026-08-06 抓到三张,病根都一样:作者把关键词写进了 text(有两张连上面那行
+  // 注释都写着「突袭」),却忘了写 `keywords` 字段。全都补上了,而且实测
+  // 补完之后三张反而更健康(凌統 −3.3 → +0.7,孫臏 −6.8 → −0.8)。
+  //
+  // 【只看开头那一串,不扫全文】
+  // `withKeywordText` 把卡面关键词写成开头的「X。」或「X、Y。」,所以只有那一串
+  // 才代表「卡面自带」。扫全文会撞上一堆假阳性:
+  //   「召喚一個 0/4 的水寨(守護)」—— 守护是那个衍生物的
+  //   「使一名友方武將獲得潛行」    —— 效果给别人的
+  //   「朔風怒號,大河上下頓失滔滔」 —— 「風怒」只是撞进了诗句里
+  // 第一版扫全文报了 24 条,其中 21 条是上面这三类。收窄到开头之后正好剩 3 条真的。
+  const KEYWORD_ZH: Record<string, string> = {
+    衝鋒: 'charge', 突襲: 'rush', 守護: 'guard', 風怒: 'windfury', 單挑: 'duel',
+    吸血: 'lifesteal', 劇毒: 'poison', 鐵壁: 'divineShield', 潛行: 'stealth',
+    碾壓: 'trample', 繳械: 'disarm', 攻城: 'siege',
+  }
+
+  it('文案开头点名的关键词,卡上必须真的有', () => {
+    const bad: string[] = []
+    for (const c of COLLECTIBLE_CARDS) {
+      if (c.token) continue
+      const head = (c.text?.zh ?? '').split('。')[0] ?? ''
+      const parts = head.split(/[、,]/).map((s) => s.trim())
+      // 开头那一句必须**整句都是关键词**才算「卡面关键词栏」
+      if (parts.length === 0 || !parts.every((p) => KEYWORD_ZH[p])) continue
+      for (const p of parts) {
+        if (!c.keywords.includes(KEYWORD_ZH[p] as never)) {
+          bad.push(`${c.id}(${c.name.zh}) 开头写着「${p}」但 keywords=[${c.keywords}]`)
+        }
+      }
+    }
+    expect(
+      bad,
+      bad.length
+        ? `这些卡承诺了一个它没有的关键词 —— 玩家会照卡面误判:\n  ${bad.join('\n  ')}\n\n` +
+          `多半是写了 text 忘了写 keywords。补字段之前先跑一遍 sim-cards:` +
+          `补关键词是**加强**,得确认这张卡吃得下。`
+        : undefined,
+    ).toEqual([])
+  })
+
   it('给别人加关键词不算矛盾', () => {
     const fine = {
       id: 'y',

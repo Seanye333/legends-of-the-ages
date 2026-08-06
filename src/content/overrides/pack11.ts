@@ -69,6 +69,10 @@ export const PACK11_OVERRIDES: Record<string, Partial<CardDef>> = {
   // 霸道 · 凌統(5 费 5/5 突袭):江表虎臣,越战越勇。
   // 每出一次手 +1/+1——只要压得住场,雪球越滚越大。
   'ling-tong': {
+    // 【2026-08-06 补上 keywords】卡面文字开头写着「突襲」,而 keywords 一直是空的 ——
+    // 上面那行注释也写着「突襲」,也就是说这个字段是**漏了**,不是有意不给。
+    // 玩家照卡面预期它能马上出手,实际不能。实测这张卡 Δ 并不高,补得起。
+    keywords: ['rush'],
     onAttack: { ops: [{ op: 'buffStats', attack: 1, health: 1, target: 'self' }] },
     text: {
       zh: '突襲。戰吼:此將 +2/+0,每有一個同赴戰役的友軍。攻擊後:獲得 +1/+1。江表虎臣,愈戰愈勇。',
@@ -78,6 +82,10 @@ export const PACK11_OVERRIDES: Record<string, Partial<CardDef>> = {
   // 割据 · 句扶(3 费 3/3 突袭):蜀中宿将,裹挟乡勇滚雪球。
   // 每次出手拉一个 1/1 垫场,越打人越多。
   'gou-fu': {
+    // 【2026-08-06 补上 keywords】卡面文字开头写着「突襲」,而 keywords 一直是空的 ——
+    // 上面那行注释也写着「突襲」,也就是说这个字段是**漏了**,不是有意不给。
+    // 玩家照卡面预期它能马上出手,实际不能。实测这张卡 Δ 并不高,补得起。
+    keywords: ['rush'],
     onAttack: { ops: [{ op: 'summon', defId: 'token-xiangyong', count: 1 }] },
     text: {
       zh: '突襲。戰吼:使一名友方武將獲得潛行。攻擊後:召喚一個 1/1 的鄉勇。裹挾流民,愈眾愈盛。',

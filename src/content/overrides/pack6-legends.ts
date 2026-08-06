@@ -36,6 +36,9 @@ export const PACK6_LEGEND_OVERRIDES: Record<string, Partial<CardDef>> = {
   },
   // 孙膑(10 费 6/11 · 战国):兵法大家,围魏救赵 —— 战吼发现一张锦囊
   'hist-sun-bin': {
+    // 【2026-08-06 补上 keywords】下面的 text 开头写着「守護」,而 keywords 一直是空的。
+    // 十费传奇,实测 Δ −6.8(600 局)—— 比它换掉的那张普通牌还差,补得起也该补。
+    keywords: ['guard'],
     battlecry: { ops: [{ op: 'discover', pool: 'myStratagem' }] },
     text: {
       zh: '守護。戰吼:發現一張錦囊。圍魏救趙,減灶誘敵。',
