@@ -31,6 +31,7 @@
     "seed-mechanics": "node --import tsx scripts/seed-mechanics.ts",
     "sim-ai-tiers": "node --import tsx scripts/sim-ai-tiers.ts",
     "sim-balance": "node --import tsx scripts/sim-balance.ts",
+    "sim-body": "node --import tsx scripts/sim-body.ts",
     "sim-campaign": "node --import tsx scripts/sim-campaign.ts",
     "sim-cards": "node --import tsx scripts/sim-cards.ts",
     "sim-firstplayer": "node --import tsx scripts/sim-firstplayer.ts",
