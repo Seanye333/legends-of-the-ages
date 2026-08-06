@@ -3,6 +3,8 @@ import type { CardDef, EffectOp } from '../src/engine/types'
 import { COLLECTIBLE_CARDS } from '../src/content/cards'
 import {
   DEFAULT_WEIGHTS,
+  LEGACY_BODY,
+  bodyValue,
   buildCurve,
   cardValue,
   excessValue,
@@ -112,6 +114,46 @@ describe('权重表', () => {
     expect(unused).not.toContain('returnToHand')
     expect(unused).toContain('damage')
     expect(unused).toContain('draw')
+  })
+})
+
+describe('bodyValue', () => {
+  it('均衡的身材比极端的值钱 —— 同样的总点数', () => {
+    // 2026-08-06 实测:6 费同样 15 点身材,8/7 的 Δ 是 −1.4,而 14/1 是 −18.9。
+    // 相差 17.5 个百分点。旧的线性式(攻×1 + 血×0.8)对这两张给的分几乎一样,
+    // 也就是说它**表达不了这件事**,因此系统性高估极端身材的卡。
+    const balanced = card({ attack: 8, health: 7 })
+    const lopsided = card({ attack: 14, health: 1 })
+    const lopsided2 = card({ attack: 1, health: 14 })
+    expect(cardValue(balanced)).toBeGreaterThan(cardValue(lopsided))
+    expect(cardValue(balanced)).toBeGreaterThan(cardValue(lopsided2))
+    // 旧式给不出这个区分(1 血那张甚至更高,因为攻的系数更大)
+    const old = (c: CardDef) => bodyValue(c, LEGACY_BODY)
+    expect(old(balanced)).toBeLessThan(old(lopsided))
+  })
+
+  it('血比攻值钱 —— 同样极端的两头', () => {
+    // 实测 1/14(−12.1)确实好于 14/1(−18.9)
+    expect(bodyValue(card({ attack: 1, health: 14 }))).toBeGreaterThan(
+      bodyValue(card({ attack: 14, health: 1 })),
+    )
+  })
+
+  it('全池均值与旧式对齐 —— 这次只改形状,不改「身材 vs 效果」的比例', () => {
+    // 归一系数 0.6334 就是为这件事算的。差 3% 以内即可(它是按武将算的,
+    // 而这里连锦囊装备一起算)。
+    const gens = SAMPLE_CARDS.filter((c) => c.type === 'general')
+    const mean = (f: (c: CardDef) => number) =>
+      gens.reduce((a, c) => a + f(c), 0) / Math.max(1, gens.length)
+    const now = mean((c) => bodyValue(c))
+    const old = mean((c) => bodyValue(c, LEGACY_BODY))
+    expect(Math.abs(now - old) / old).toBeLessThan(0.03)
+  })
+
+  it('身材系数是数据,换一组要真的传得到', () => {
+    const c = card({ attack: 3, health: 3 })
+    expect(bodyValue(c, { attack: 0, health: 0, balance: 1 })).toBeCloseTo(3, 6)
+    expect(bodyValue(c, { attack: 1, health: 0, balance: 0 })).toBeCloseTo(3, 6)
   })
 })
 

@@ -32,6 +32,10 @@ import {
   buildCurve,
   cardValue,
   excessValue,
+  impliedCost,
+  DEFAULT_BODY,
+  LEGACY_BODY,
+  type BodyWeights,
   opsOf,
 } from './pricing'
 import { diffZ, pearson, spearman } from './correlation'
@@ -59,8 +63,8 @@ const pool = COLLECTIBLE_CARDS.filter((c) => !c.token)
  * 拿一组权重给全池定价,返回「每张卡比它那个费用档的正常水平高出多少点」。
  * 曲线也跟着这组权重重算 —— 换了权重,「正常水平」本来就该跟着变。
  */
-function excessFor(w: Weights): Map<string, number> {
-  const valueOf = new Map(pool.map((c) => [c.id, cardValue(c, undefined, w)]))
+function excessFor(w: Weights, body: BodyWeights = DEFAULT_BODY): Map<string, number> {
+  const valueOf = new Map(pool.map((c) => [c.id, cardValue(c, undefined, w, body)]))
   const curve = buildCurve(pool.map((c) => ({ cost: c.cost, value: valueOf.get(c.id)! })))
   return new Map(pool.map((c) => [c.id, excessValue(curve, c.cost, valueOf.get(c.id)!)]))
 }
@@ -94,18 +98,63 @@ const xsOf = (w: Weights, idx: number[]): number[] => {
 
 const ALL = measured.map((_, i) => i)
 
-function report(label: string, xs: number[], y: number[]): void {
+/**
+ * 这张表让 `price-cards` 报出多少张「偏离 2 费及以上」。
+ *
+ * 【为什么这也是个指标】
+ * 2026-08-06 吃过一次亏:照实测改完效果权重,留出集 ρ 明显变好,
+ * 但 `price-cards` 的可疑名单从 200 张涨到 574 张(8.3% → 23.8%),榜首整页
+ * 都是低费伤害锦囊 —— **一份四分之一卡池都上榜的「线索清单」不是线索清单**。
+ * ρ 量的是「排序对不对」,这一列量的是「这份报表还能不能用」。
+ * 两个都要看:只看 ρ 会把工具优化成没人读得下去的样子。
+ */
+function offCount(w: Weights, body: BodyWeights = DEFAULT_BODY): string {
+  const valueOf = new Map(pool.map((c) => [c.id, cardValue(c, undefined, w, body)]))
+  const curve = buildCurve(pool.map((c) => ({ cost: c.cost, value: valueOf.get(c.id)! })))
+  const off = pool.filter((c) => Math.abs(impliedCost(curve, valueOf.get(c.id)!) - c.cost) >= 2).length
+  return `${String(off).padStart(4)} 张 ${((off / pool.length) * 100).toFixed(1)}%`
+}
+
+function report(label: string, xs: number[], y: number[], w?: Weights, body?: BodyWeights): void {
   const sp = spearman(xs, y)
   const pe = pearson(xs, y)
   console.log(
     `${label.padEnd(10)} ρ(秩) ${sp.r >= 0 ? '+' : ''}${sp.r.toFixed(3)}  z ${sp.z.toFixed(1).padStart(5)}` +
-      `   r(线性) ${pe.r >= 0 ? '+' : ''}${pe.r.toFixed(3)}  z ${pe.z.toFixed(1).padStart(5)}`,
+      `   r(线性) ${pe.r >= 0 ? '+' : ''}${pe.r.toFixed(3)}  z ${pe.z.toFixed(1).padStart(5)}` +
+      (w ? `   报表可疑 ${offCount(w, body)}` : ''),
   )
 }
 
 console.log('\n---- 当前表的拟合优度(全样本)----')
 console.log('「卡面价值超出本费用档多少」 vs 「实测胜率 Δ」。正相关 = 尺子指对了方向。\n')
 report('当前表', xsOf(DEFAULT_WEIGHTS, ALL), ys)
+
+// ---- 身材那三个系数换回旧式,看差多少 ----
+//
+// 2026-08-06 把 bodyValue 从「攻×1 + 血×0.8」换成带 min(攻,血) 的形式,
+// 依据是 26 张对照卡的独立实验(z(均衡) = 8.7,见 npm run sim-body)。
+// 那是**另一份数据**;这里再拿卡池这一份验一遍 —— 两份独立数据都指向同一个方向,
+// 才算真的站得住。注意旧式已经归一过均值,所以差的只是形状。
+{
+  const legacyAll = (() => {
+    const ex = excessFor(DEFAULT_WEIGHTS, LEGACY_BODY)
+    return ALL.map((i) => ex.get(measured[i].card.id)!)
+  })()
+  report('旧身材', legacyAll, ys)
+  const a = spearman(legacyAll, ys).r
+  const b = spearman(xsOf(DEFAULT_WEIGHTS, ALL), ys).r
+  const z = diffZ(b, a, spearman(legacyAll, xsOf(DEFAULT_WEIGHTS, ALL)).r, measured.length)
+  console.log(
+    `\n身材换成带均衡项之后:Δρ ${(b - a >= 0 ? '+' : '') + (b - a).toFixed(3)}  z ${z.toFixed(2)}` +
+      `(相依检验)\n  ${
+        Math.abs(z) < 2
+          ? '→ 在卡池这份数据上分不出高下(但对照卡那份数据上 z = 8.7)。'
+          : z > 0
+            ? '→ **卡池这份数据也说新式更准** —— 两份独立数据同向。'
+            : '→ 卡池这份数据说新式更差,和对照卡冲突,要查。'
+      }`,
+  )
+}
 
 // ---- 回归:从实测里解出权重,而不是照着「平均 Δ」手改 ----
 //
@@ -132,10 +181,11 @@ report('当前表', xsOf(DEFAULT_WEIGHTS, ALL), ys)
 // **它没救回来** —— ±9pp 下砍到 8 个、4 个,甚至用「神谕」直接指定真正被植入
 // 信号的那 4 个,样本外照样不涨。留着这个开关是为了让下一个人不必重试一遍。
 //
-// 更根本的一层:用**真值那张表**(没有表能更准)去量同一份数据,天花板 ρ 只有 0.095,
-// 而当前表已经 0.092 —— 留出集 1272 张时 ρ 的标准误约 0.028。
-// 也就是说一张完美的表和现在这张之间的全部差距只有十分之一个标准误。
-// **不是拟合失败,是这个问题在这个预算下不可判定。** 详见 ROADMAP 第 3 节。
+// **但「回归喂不动」不等于「这件事做不成」。** 我一度据此在 ROADMAP 里写下
+// 「这个预算下不可判定」,依据是合成数据算出的天花板 ρ = 0.095。那个天花板是假的 ——
+// 假数据的信号强度是我随手设的,比真实低一半(真实数据当前表就有 ρ ≈ 0.25)。
+// 换成**按效果归组**就做成了(留出集 z ≈ 3~4,见下面的「归组版」)。
+// 教训写进了铁律 11:**排练能证伪一个方法,不能证明一件事不可能。**
 const TOPOPS = Number(process.env.TOPOPS ?? 8)
 const ALL_FITTABLE: (keyof Weights)[] = (Object.keys(DEFAULT_WEIGHTS) as (keyof Weights)[]).filter(
   // delayDecay 是个衰减率不是分值,对它做线性回归没有意义 —— 固定在默认值。
@@ -261,10 +311,19 @@ if (beta[BODY_COL] <= 0) {
 //      拿它把 pp 换算成点(这一步以前是拍脑袋拍出来的 3pp/点);
 //   3. |z| > 2 的 op 才动,改动量 = (该 op 均值 − 全池均值) / 斜率。
 // 然后拿留出集裁决。留出集全程没参与:没参与拟合,也没参与**选哪几个 op**。
+// 「点 → 百分点胜率」的实测汇率。bodyValue 归一时用的 0.6334 就是「pp → 点」,
+// 所以反过来 1 点 = 1/0.6334 pp。来自 sim-body 那份独立实验,不依赖任何人对效果的看法。
+const BODY_PP_PER_POINT = 1 / 0.6334
+
 const excessDefault = excessFor(DEFAULT_WEIGHTS)
 
 /** 在给定的卡集合上跑一遍归组规则,返回新权重表和一份改动清单。 */
-function groupedFrom(idx: number[]): { weights: Weights; lines: string[]; slope: number } {
+function groupedFrom(idx: number[]): {
+  weights: Weights
+  lines: string[]
+  slope: number
+  regressionSlope: number
+} {
   const rows = idx.map((i) => ({
     ops: opsOf(measured[i].card),
     delta: ys[i],
@@ -274,9 +333,21 @@ function groupedFrom(idx: number[]): { weights: Weights; lines: string[]; slope:
   const gSpread = Math.sqrt(
     rows.reduce((a, r) => a + (r.delta - gPoolMean) ** 2, 0) / Math.max(1, rows.length),
   )
-  // 每「点」卡面价值换多少个百分点胜率 —— 单变量最小二乘。
-  // 这一步以前是拍脑袋拍出来的(「大约 3pp 一点」),现在从数据里读。
-  const slope = (() => {
+  // 每「点」卡面价值换多少个百分点胜率 —— 拿它把 pp 换算成点。
+  //
+  // 【为什么用实测的身材汇率,不用这里回归出来的斜率】
+  // 回归斜率是拿**当前这张表**算出的「超出本档多少点」对 Δ 回归得到的,
+  // 它是身材与效果的**混合汇率**,而当前表的效果那一半正是我们怀疑错了的东西 ——
+  // 用它去校正它自己,又是一个闭环。
+  //
+  // 身材那边有独立实测(`npm run sim-body`,26 张对照卡 × 800 局):
+  // `bodyValue` 归一时用的 0.6334 就是「点 → pp」的系数,所以 1 点 = 1/0.6334 = 1.579 pp。
+  // 那份数据完全不依赖任何人对效果的看法。
+  //
+  // 差别是实打实的:混合斜率约 1.0,而实测身材汇率 1.579 —— 用前者会把每个 op 的
+  // 改动量**放大约六成**。2026-08-06 实测:用 1.0 时 price-cards 的可疑名单
+  // 涨到 481 张(19.9%),用 1.579 时明显收敛(见输出里的「报表可疑」一列)。
+  const regressionSlope = (() => {
     const mx = rows.reduce((a, r) => a + r.excess, 0) / Math.max(1, rows.length)
     let sxy = 0
     let sxx = 0
@@ -286,6 +357,7 @@ function groupedFrom(idx: number[]): { weights: Weights; lines: string[]; slope:
     }
     return sxx === 0 ? 0 : sxy / sxx
   })()
+  const slope = BODY_PP_PER_POINT
 
   const GROUPED: Weights = { ...DEFAULT_WEIGHTS }
   const groupedLines: string[] = []
@@ -327,7 +399,22 @@ function groupedFrom(idx: number[]): { weights: Weights; lines: string[]; slope:
     const mean = ds.reduce((a, b) => a + b, 0) / ds.length
     const z = (mean - gPoolMean) / (gSpread / Math.sqrt(ds.length))
     if (Math.abs(z) <= 2) continue
-    const deltaPoints = (mean - gPoolMean) / slope
+    // 【单位:归组的均值是「每张卡」,而权重有的是「每点 / 每张」】
+    // 这里踩过一个真错。归组说「带 aoeDamage 的卡整体强 8.6pp」——那是**一张卡**的效应。
+    // 但 `aoeDamage` 这个权重是**乘在伤害点数上**的(3 点群伤 = 3 × 权重),
+    // 直接把每卡的改动量加到权重上,等于又乘了一遍平均点数(群伤普遍 2~3 点),
+    // 于是 aoeDamage 被顶到 7.2/点,一张 2 费的群伤锦囊卡面价值 24.5,
+    // 直接判成 10 费 —— 榜单前十全是低费伤害锦囊。
+    //
+    // 正确做法是先除掉那个倍数:`loadOf` 给的正是 ∂卡面价值/∂权重,
+    // 也就是「这张卡带了几份」。取带此 op 的卡的平均份数即可。
+    // 对 destroy / seize / returnToHand 这种一张卡就是一份的 op,倍数是 1,不受影响。
+    const loads = idx
+      .filter((i) => opsOf(measured[i].card).includes(op))
+      .map((i) => Math.abs(loadOf(measured[i].card, keys[0])))
+      .filter((v) => v > 1e-9)
+    const meanLoad = loads.length ? loads.reduce((a, b) => a + b, 0) / loads.length : 1
+    const deltaPoints = (mean - gPoolMean) / slope / meanLoad
     // 夹一下:一个 op 一次最多动 4 点。归组带混杂,极端值多半是同卡别的 op 的功劳。
     const adj = Math.max(-4, Math.min(4, deltaPoints))
     for (const key of keys) {
@@ -347,7 +434,7 @@ function groupedFrom(idx: number[]): { weights: Weights; lines: string[]; slope:
       }
     }
   }
-  return { weights: GROUPED, lines: groupedLines, slope }
+  return { weights: GROUPED, lines: groupedLines, slope, regressionSlope }
 }
 
 const gTrain = groupedFrom(trainIdx)
@@ -382,10 +469,10 @@ const HAND: Weights = {
 console.log(`\n---- 裁决:留出集 ${holdIdx.length} 张(全程没参与拟合)----`)
 const holdY = holdIdx.map((i) => ys[i])
 const holdBase = xsOf(DEFAULT_WEIGHTS, holdIdx)
-report('当前表', holdBase, holdY)
-report('归组版', xsOf(GROUPED, holdIdx), holdY)
-report('手改版', xsOf(HAND, holdIdx), holdY)
-if (FITTED) report('回归版', xsOf(FITTED, holdIdx), holdY)
+report('当前表', holdBase, holdY, DEFAULT_WEIGHTS)
+report('归组版', xsOf(GROUPED, holdIdx), holdY, GROUPED)
+report('手改版', xsOf(HAND, holdIdx), holdY, HAND)
+if (FITTED) report('回归版', xsOf(FITTED, holdIdx), holdY, FITTED)
 
 const verdict = (label: string, xs: number[]) => {
   const a = spearman(holdBase, holdY).r
@@ -428,7 +515,7 @@ console.log(
   const final = groupedFrom(ALL)
   console.log(
     `\n---- 最终表(同一条规则,全部 ${measured.length} 张)----\n` +
-      `每点卡面价值 ≈ ${final.slope.toFixed(3)} 个百分点胜率。可以照抄进 scripts/pricing.ts:`,
+      `每点卡面价值 = ${final.slope.toFixed(3)} pp(实测身材汇率)。可以照抄进 scripts/pricing.ts:`,
   )
   console.log(final.lines.length ? final.lines.join('\n') : '  (无)')
   const holdFinal = xsOf(final.weights, holdIdx)
