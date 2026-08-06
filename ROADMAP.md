@@ -359,7 +359,17 @@ sim-hero-mirror  每个备选 ±2.5(400 局)
     在别人的机器和 CI 上一律跳过。摘要**只认影响对局的字段** —— 改名字、补风味句不红。
     故意的改动:`UPDATE_POOL_SNAPSHOT=1 npx vitest run src/content/poolSnapshot.test.ts`,
     **把快照的 diff 一起提交**,那份 diff 就是改动清单。
-36. 🟢 CSS 死样式检测(这一轮手工删过两批)
+36. 🟢 ~~CSS 死样式检测~~ —— **2026-08-05 做完**。`npm run dead-css`,判定层
+    `scripts/deadCss.ts` 带 25 条测试。全站 1201 个类名里报出 8 个。
+    **动态取用(`styles[\`x${n}\`]`)的 11 份模块一律跳过 —— 那是盲区不是「干净」**,
+    清单里单独列出来。是清单不是闸门(理由同 `price-cards`)。
+41. 🟢 **`uiKit` 的按钮合并写完了但一个都没接上** —— dead-css 第一次跑就撞见的。
+    `src/ui/uiKit.module.css` 的文件头写着「全站数出来 36 个不同的 `*Btn` 类名……
+    三个变体就够」,`btnPrimary` / `btnGhost` / `btnChip` 三个变体也都写好了,
+    **但没有任何一个屏 composes 它们**,而 `*Btn` 类名现在是 **41 个**(比写下那句话时还多 5 个)。
+    同一份文件里的 `head` / `backBtn` / `title` 倒是十六个屏都接上了 —— 所以路子是通的,
+    只是按钮那一半停在了半路。又一次坑 7(把教训写进注释 ≠ 修好了)。
+    做的时候一屏一屏来,**每屏截图对比**再下一屏。
 37. 🟢 ~~闸门自检推广~~ —— **2026-08-04 做完了大半**。现在五份纯函数判定层各带自检:
     `campaignGate`(该红时红)· `simSeating`(先后手不许和座位绑死,含反向验证)·
     `firstPlayerGate`· `balanceGate`(含「猜拳局面」)· `baseline`(分得清噪声)。
@@ -632,6 +642,9 @@ npm run price-cards      # 全池卡面价值 vs 费用曲线 —— 唯一扫�
 npm run synth-deltas     # 造真值已知的假数据,排练下面那道拟合
 npm run fit-price        # 拿实测 Δ 量定价表准不准(DELTAS= 指向 sim-cards 的 DUMP)
                          #   ⚠ 60 局/张的预算下这道判决**没有分辨力**,见第 3 节
+
+# 界面(不卡门,只记录)
+npm run dead-css          # 死样式清单(动态取用的模块会跳过,那是盲区)
 
 # 盘点(不卡门,只记录)
 npm run audit-generals   # 武将档案覆盖率 + 机制重复度
