@@ -18,19 +18,24 @@ import { START_HP } from '../../src/engine/types'
 import { serveTasks } from '../parallel'
 import type { GameConfig, PlayerIdx, Winner } from '../../src/engine/types'
 
-const BASE = PRECON_DECKS[0]
-const BASE_HERO = HEROES_BY_ID[BASE.heroId]
-
-function play(deck: string[], oppIdx: number, seed: number, first: PlayerIdx): Winner {
+function play(
+  deck: string[],
+  baseIdx: number,
+  oppIdx: number,
+  seed: number,
+  first: PlayerIdx,
+): Winner {
+  const base = PRECON_DECKS[baseIdx]
+  const baseHero = HEROES_BY_ID[base.heroId]
   const opp = PRECON_DECKS[oppIdx]
   const oppHero = HEROES_BY_ID[opp.heroId]
   const cfg: GameConfig = {
     seed,
-    heroIds: [BASE.heroId, opp.heroId],
+    heroIds: [base.heroId, opp.heroId],
     deckIds: [[...deck], [...opp.cardIds]],
     first,
-    heroPowers: [BASE_HERO?.power, oppHero?.power],
-    heroHps: [BASE_HERO?.hp ?? START_HP, oppHero?.hp ?? START_HP],
+    heroPowers: [baseHero?.power, oppHero?.power],
+    heroHps: [baseHero?.hp ?? START_HP, oppHero?.hp ?? START_HP],
   }
   let state = createGame(cfg, CARDS_BY_ID)
   const rngs: [number, number] = [seed ^ 0xa1, seed ^ 0xb2]
@@ -50,16 +55,23 @@ function play(deck: string[], oppIdx: number, seed: number, first: PlayerIdx): W
 
 export interface CardTask {
   deck: string[]
+  /** 拿哪套预组当基准(待测卡的主义必须与它兼容,否则是非法卡组) */
+  baseIdx: number
   games: number
 }
 
-serveTasks<CardTask, { wins: number; played: number }>(({ deck, games }) => {
+serveTasks<CardTask, { wins: number; played: number }>(({ deck, baseIdx, games }) => {
+  // 对手是**除基准之外**的其余五套,按 g 轮转。
+  // baseIdx=0 时 others = [1,2,3,4,5],`others[g % 5]` 与老代码的
+  // `1 + (g % 5)` 逐字等价 —— 王道/中立卡的历史数字因此原样成立。
+  const others: number[] = []
+  for (let k = 0; k < PRECON_DECKS.length; k++) if (k !== baseIdx) others.push(k)
+
   let wins = 0
   let played = 0
   for (let g = 0; g < games; g++) {
-    // 轮流打其余五套预组、轮流先后手 —— 与串行版逐字相同
-    const oppIdx = 1 + (g % (PRECON_DECKS.length - 1))
-    const w = play(deck, oppIdx, 7919 * (g + 1), (g % 2) as PlayerIdx)
+    const oppIdx = others[g % others.length]
+    const w = play(deck, baseIdx, oppIdx, 7919 * (g + 1), (g % 2) as PlayerIdx)
     if (w !== 'draw') played++
     if (w === 0) wins++
   }

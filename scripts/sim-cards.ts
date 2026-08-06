@@ -36,15 +36,30 @@ const COPIES = Number(process.env.COPIES ?? 2)
 const COST_FILTER = process.env.COST ? Number(process.env.COST) : null
 const ONLY = (process.env.CARDS ?? '').split(',').map((s) => s.trim()).filter(Boolean)
 
-// 基准:桃園仁德(曲线最标准的一套)。待测卡的主义必须与它兼容,
-// 否则换进去是非法卡组 —— 所以只测王道与中立。
-const BASE = PRECON_DECKS[0]
-const BASE_HERO = HEROES_BY_ID[BASE.heroId]
+// 【基准卡组按主义选,而不是永远用桃園仁德】
+//
+// 从前基准写死 `PRECON_DECKS[0]`(桃園仁德,王道),而待测卡的主义必须与基准兼容,
+// 否则换进去是非法卡组 —— 于是这个脚本**只测得了王道与中立**,
+// 霸道/礼教/名利/割据/隐逸的专属卡一张都没量过,那是六分之五的卡池。
+//
+// 现在按卡的主义挑对应主义的预组当基准,每套预组各算一份自己的基准胜率,
+// Δ 相对**它自己那套**的基准算。
+//
+// **中立卡仍然固定用桃園仁德**:一是保持与历史数字可比(姜維 +29.2、簡雍 +17.0、
+// 蘇飛 +14.0 都是在这套里量的),二是中立卡进哪套都合法,不固定的话
+// 同一张卡换个心情就换个数,没法跨版本对比。
+const DECK_OF_DOCTRINE = new Map<string, number>()
+PRECON_DECKS.forEach((d, i) => {
+  const doc = HEROES_BY_ID[d.heroId]?.doctrine
+  if (doc && !DECK_OF_DOCTRINE.has(doc)) DECK_OF_DOCTRINE.set(doc, i)
+})
+const baseIdxFor = (card: CardDef): number =>
+  card.doctrine === 'neutral' ? 0 : (DECK_OF_DOCTRINE.get(card.doctrine) ?? -1)
 
 // 把 COPIES 张**费用最接近**的普通牌换成待测卡。
 // 换费用最接近的那张很重要 —— 否则量到的是曲线变化,不是这张牌本身。
-function swapIn(card: CardDef): string[] | null {
-  const deck = [...BASE.cardIds]
+function swapIn(card: CardDef, baseIdx: number): string[] | null {
+  const deck = [...PRECON_DECKS[baseIdx].cardIds]
   const counts = new Map<string, number>()
   for (const id of deck) counts.set(id, (counts.get(id) ?? 0) + 1)
   // 候选被换者:与待测卡同费差最小、且不是待测卡本身
@@ -68,9 +83,8 @@ function swapIn(card: CardDef): string[] | null {
   return need === 0 ? deck : null
 }
 
-const pool = COLLECTIBLE_CARDS.filter(
-  (c) => !c.token && (c.doctrine === 'neutral' || c.doctrine === BASE_HERO?.doctrine),
-)
+// 全池都能测了 —— 只要它的主义有对应的预组(六个主义各有一套,所以实际是全部)
+const pool = COLLECTIBLE_CARDS.filter((c) => !c.token && baseIdxFor(c) >= 0)
 
 let targets: CardDef[]
 if (ONLY.length > 0) {
@@ -83,7 +97,8 @@ if (ONLY.length > 0) {
 }
 
 console.log(
-  `sim-cards: 基准「${BASE.name.zh}」,每张换入 ${COPIES} 份,${GAMES} 局/张,共 ${targets.length} 张\n`,
+  `sim-cards: 每张换入 ${COPIES} 份,${GAMES} 局/张,共 ${targets.length} 张` +
+    `(基准按主义选,中立卡固定用「${PRECON_DECKS[0].name.zh}」)\n`,
 )
 const t0 = performance.now()
 
@@ -94,19 +109,22 @@ const t0 = performance.now()
 // 基准也当成一个普通任务丢进去(排在第 0 位),这样它和待测卡走的是同一条路径,
 // 不会出现「基准用串行、待测用并行」这种最难查的不对称。
 const WORKER = fileURLToPath(new URL('./workers/cards.worker.ts', import.meta.url))
-const buildable: { card: CardDef; deck: string[] }[] = []
+const buildable: { card: CardDef; deck: string[]; baseIdx: number }[] = []
 for (const card of targets) {
-  const deck = swapIn(card)
+  const baseIdx = baseIdxFor(card)
+  const deck = swapIn(card, baseIdx)
   if (!deck) {
     console.log(`  ${card.name.zh} —— 换不进去(基准里没有足够的可换牌)`)
     continue
   }
-  buildable.push({ card, deck })
+  buildable.push({ card, deck, baseIdx })
 }
 
+// 用到哪几套基准就只算哪几套的基准胜率 —— 只测王道卡时不必把六套都跑一遍
+const usedBases = [...new Set(buildable.map((b) => b.baseIdx))].sort((a, b) => a - b)
 const jobs: CardTask[] = [
-  { deck: [...BASE.cardIds], games: GAMES },
-  ...buildable.map((b) => ({ deck: b.deck, games: GAMES })),
+  ...usedBases.map((i) => ({ deck: [...PRECON_DECKS[i].cardIds] as string[], baseIdx: i, games: GAMES })),
+  ...buildable.map((b) => ({ deck: b.deck, baseIdx: b.baseIdx, games: GAMES })),
 ]
 const out = await parallelMap<CardTask, { wins: number; played: number }>(
   WORKER,
@@ -116,21 +134,29 @@ const out = await parallelMap<CardTask, { wins: number; played: number }>(
 )
 const pct = (r: { wins: number; played: number }) => (100 * r.wins) / Math.max(1, r.played)
 
-const baseline = pct(out[0])
-console.log(`基准胜率 ${baseline.toFixed(1)}%\n`)
+const baselineOf = new Map<number, number>()
+usedBases.forEach((i, k) => baselineOf.set(i, pct(out[k])))
+for (const i of usedBases) {
+  console.log(`基准胜率 ${PRECON_DECKS[i].name.zh}: ${baselineOf.get(i)!.toFixed(1)}%`)
+}
+console.log('')
 
-const rows: { card: CardDef; rate: number; delta: number }[] = buildable.map((b, i) => {
-  const rate = pct(out[i + 1])
-  return { card: b.card, rate, delta: rate - baseline }
-})
+const rows: { card: CardDef; rate: number; delta: number; baseIdx: number }[] = buildable.map(
+  (b, i) => {
+    const rate = pct(out[usedBases.length + i])
+    // Δ 相对**这张卡自己那套基准** —— 跨主义比较的是 Δ,不是绝对胜率
+    return { card: b.card, rate, delta: rate - baselineOf.get(b.baseIdx)!, baseIdx: b.baseIdx }
+  },
+)
 
 rows.sort((a, b) => b.delta - a.delta)
-console.log('卡名            费用  胜率    Δ')
+console.log('卡名            费用  胜率    Δ      基准')
 for (const r of rows) {
   const sign = r.delta >= 0 ? '+' : ''
   console.log(
     `${r.card.name.zh.padEnd(12, '　')} ${String(r.card.cost).padStart(3)}  ` +
-      `${r.rate.toFixed(1)}%  ${sign}${r.delta.toFixed(1)}`,
+      `${r.rate.toFixed(1)}%  ${(sign + r.delta.toFixed(1)).padStart(5)}  ` +
+      `${PRECON_DECKS[r.baseIdx].name.zh}`,
   )
 }
 
