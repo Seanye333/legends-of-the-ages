@@ -334,11 +334,29 @@ for (const r of rows) {
     byOp.set(op, arr)
   }
 }
+
+// 【和「全池均值」比,不是和 0 比】
+// 基准胜率**只测了一次**,是所有 Δ 共用的一个常数项。跟 0 比就把基准那一次测量的
+// 误差也算进了每个 op 头上;跟全池均值比,这个共同项直接抵消。
+// 实测(1200 张):全池均值 +0.58,接近 0 —— 也就是说「有效果的卡整体强于白板」
+// 这个可能的混淆**不存在**,但代码不能依赖它恰好为零。
+const poolMean = rows.reduce((a, r) => a + r.delta, 0) / Math.max(1, rows.length)
+
+// 【用实测的卡间标准差,不是理论噪声】
+// seDelta(=√2·√(0.25/GAMES))是把两次测量都当 p=0.5、且互相独立算出来的上界。
+// 实测 1200 张的标准差只有 7.6(理论 9.1)—— 因为基准是共用的、不贡献离散度。
+// 用实测值更准;样本太少时退回理论值,免得被几张卡的偶然一致骗成"极显著"。
+const spread = (() => {
+  if (rows.length < 30) return seDelta
+  const v = rows.reduce((a, r) => a + (r.delta - poolMean) ** 2, 0) / rows.length
+  return Math.sqrt(v)
+})()
+
 const opStats = [...byOp.entries()]
   .filter(([, ds]) => ds.length >= MIN_N)
   .map(([op, ds]) => {
     const mean = ds.reduce((a, b) => a + b, 0) / ds.length
-    return { op, n: ds.length, mean, se: seDelta / Math.sqrt(ds.length) }
+    return { op, n: ds.length, mean, se: spread / Math.sqrt(ds.length) }
   })
   .sort((a, b) => b.mean - a.mean)
 
@@ -346,11 +364,13 @@ if (opStats.length > 0) {
   console.log(
     `\n---- 按效果归组(≥${MIN_N} 张才列)----\n` +
       `单张卡的 Δ 噪声太大,但同一种效果的卡放在一起平均,噪声按 √n 缩小。\n` +
-      `**均值显著为正 = 定价表给这个 op 的分数偏低**,带它的卡因此偏便宜。\n`,
+      `**均值显著高于全池 = 定价表给这个 op 的分数偏低**,带它的卡因此偏便宜。\n` +
+      `全池均值 ${poolMean >= 0 ? '+' : ''}${poolMean.toFixed(1)}(${rows.length} 张),` +
+      `卡间标准差 ±${spread.toFixed(1)} —— z 是相对全池均值算的。\n`,
   )
   console.log('效果               张数   平均 Δ    z')
   for (const s of opStats) {
-    const z = s.mean / s.se
+    const z = (s.mean - poolMean) / s.se
     const flag = Math.abs(z) > 2 ? (z > 0 ? '  ← 偏低' : '  ← 偏高') : ''
     console.log(
       `${s.op.padEnd(18)} ${String(s.n).padStart(4)}  ` +
@@ -360,7 +380,10 @@ if (opStats.length > 0) {
   }
   console.log(
     `\n拿它去校准 scripts/price-cards.ts 的 opValue —— 那张表至今是拍出来的\n` +
-      `(它的注释说「数值取自同类卡的实际定价」,也就是从现状反推现状,从没被实测校准过)。`,
+      `(它的注释说「数值取自同类卡的实际定价」,也就是从现状反推现状,从没被实测校准过)。\n` +
+      `⚠️ 但**别直接把这一列当成新分值**:这里量的是「带这个 op 的卡整体偏强多少」,\n` +
+      `   不是「这个 op 本身值多少分」。一张卡常常带好几个 op,归组时它在每一组里都算一次。\n` +
+      `   正确用法是拿它定**方向与量级**,改完再跑一遍看排序有没有更贴近实测。`,
   )
 }
 
