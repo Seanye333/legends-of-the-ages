@@ -68,6 +68,25 @@ const COMPENSATIONS: Record<string, RunModifiers> = {
   'armor+3': { startArmor: 3 },
   'armor+6': { startArmor: 6 },
   'hand+1,armor+3': { bonusHandSize: 1, startArmor: 3 },
+  // ---- 2026-08-06 补:第一轮扫完只有两个方案落到 50% 附近,而它们各有大毛病 ----
+  // `hand+3` 正好 50.0%,但那是起手 3 / 7 —— 后手比先手多**四张**,
+  // 调度、手牌上限、爆牌全都要跟着重想,是结构性改动。
+  // `cost-1` 只动一个旋钮,但停在 54.4%,还差 4.4 个点。
+  // 下面这批是去补那 4.4 个点的,外加两个**从来没量过的杠杆**。
+  'cost-1,armor+3': { handCostDelta: -1, startArmor: 3 },
+  'cost-1,armor+6': { handCostDelta: -1, startArmor: 6 },
+  'hand+1,cost-1': { bonusHandSize: 1, handCostDelta: -1 },
+  'hand+2,armor+6': { bonusHandSize: 2, startArmor: 6 },
+  // 主公技便宜 1 —— **整局有效**,而上面那些补偿全是一次性的。
+  // 先手的优势来自「每一回合都早一步」,那么一个每回合都在起作用的补偿
+  // 在机理上更对得上。从来没量过,值得知道。
+  'hp-1': { heroPowerCostDelta: -1 },
+  'hp-1,hand+1': { heroPowerCostDelta: -1, bonusHandSize: 1 },
+  // 资源线:士气与屯粮是另外两条独立的轴,同样没量过。
+  // 预期不高(护甲那一档已经说明「不直接换成场面的东西很难买到胜率」),
+  // 但量一次就永远不用再猜。
+  'supply+2': { startSupply: 2 },
+  'morale+2': { startMorale: 2 },
 }
 const COMP = process.env.COMP ?? 'none'
 
