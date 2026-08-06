@@ -352,7 +352,13 @@ sim-hero-mirror  每个备选 ±2.5(400 局)
 
 ### E. 工程
 
-35. 🟢 卡池快照测试(防无意改动)
+35. 🟢 ~~卡池快照测试(防无意改动)~~ —— **2026-08-05 做完**。
+    `src/content/pool-snapshot.json` 存每张卡的可读字段串(费用/攻/血 稀有度 主义 类型
+    [关键词] fx:哈希),`poolSnapshot.test.ts` 逐张比对。守的是 `check-generated`
+    覆盖不到的那一段:覆盖层是手写的、生成脚本不碰,而 check-generated 还需要姊妹仓库,
+    在别人的机器和 CI 上一律跳过。摘要**只认影响对局的字段** —— 改名字、补风味句不红。
+    故意的改动:`UPDATE_POOL_SNAPSHOT=1 npx vitest run src/content/poolSnapshot.test.ts`,
+    **把快照的 diff 一起提交**,那份 diff 就是改动清单。
 36. 🟢 CSS 死样式检测(这一轮手工删过两批)
 37. 🟢 ~~闸门自检推广~~ —— **2026-08-04 做完了大半**。现在五份纯函数判定层各带自检:
     `campaignGate`(该红时红)· `simSeating`(先后手不许和座位绑死,含反向验证)·
