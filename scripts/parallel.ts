@@ -20,9 +20,21 @@
 import { Worker, isMainThread, parentPort } from 'node:worker_threads'
 import { cpus } from 'node:os'
 
-/** 留两个核给系统与主线程,免得整机卡住 */
+/**
+ * 默认并发数。
+ *
+ * 【为什么不是简单的「核数 − 2」】
+ * 留两个核给系统与主线程,在开发机上是对的(跑十分钟模拟时机器还能用)。
+ * 但 CI runner 普遍只有 2–4 核 —— `2 - 2 = 0` → 夹到 1,**整个并行化在 CI 上等于没有**,
+ * 而 CI 恰恰是这些闸门唯一每次都跑的地方。
+ *
+ * 所以分档:小机器(≤4 核)全用上,主线程本来就只是在等 worker 回消息、几乎不占 CPU;
+ * 大机器才留两个核。上限 16 —— 再多的话 worker 启动开销(每个都要 import 一遍卡池)
+ * 会吃掉收益。
+ */
 export function defaultConcurrency(): number {
-  return Math.max(1, Math.min(16, cpus().length - 2))
+  const cores = cpus().length
+  return Math.max(1, Math.min(16, cores <= 4 ? cores : cores - 2))
 }
 
 interface Envelope {

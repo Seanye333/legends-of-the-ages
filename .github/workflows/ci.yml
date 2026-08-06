@@ -81,11 +81,15 @@ jobs:
 
   balance:
     # 平衡模拟慢,与主检查并行跑,不拖慢反馈。
-    # 关底闸门从 60 局提到 240 局(见下面那一步的说明)之后,这个 job 的大头是它:
-    # 本机 ~12 分钟,CI 的单线程更慢,所以余量给到 45 —— 闸门因超时而红
-    # 和闸门因噪声而红是同一类毛病,都是「红了但不说明任何事」。
+    #
+    # 三道模拟都已并行(worker 池,见 scripts/parallel.ts),本机 10 线程下
+    # 全套 39 分钟 → 11 分钟。**但别按本机的数字定超时**:
+    # GitHub 标准 runner 只有 2–4 核,并行收益远小于开发机
+    # (并发数按核数分档,2 核就是 2 个 worker,不是 10 个)。
+    # 所以余量仍然给得宽 —— 闸门因超时而红和因噪声而红是同一类毛病:
+    # 红了但不说明任何事。
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
