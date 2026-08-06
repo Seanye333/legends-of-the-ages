@@ -231,6 +231,80 @@ if (top.length > 0) {
   )
 }
 
+// ---------- 按效果归组:把这个脚本变成 price-cards 的校准器 ----------
+//
+// 【为什么要这一段】
+// 单张卡的 Δ 噪声太大(60 局时标准误 ±9.1),所以上面那份榜单只能当筛子。
+// 但**把同一种效果的卡放在一起平均**,噪声就按 √n 缩小:20 张卡的均值标准误
+// 只有 2.0pp —— 足够看出「这个 op 被系统性低估了几个点」。
+//
+// 这正是 price-cards 一直缺的东西。它的 `opValue` 是一张**拍出来的点数表**
+// (注释里写着「数值取自同类卡的实际定价」,也就是从现状反推现状),
+// 从来没有被实测校准过。而 2026-08-05 的证据表明它至少在一类效果上是错的:
+//   弹回一名敌将  簡雍 +17.0 · 鄭厲公 +15.5
+//   全体敌将 2 点  蘇飛 +14.0 · 項伯  +16.7
+// 两组独立的同形状效果各自落在同一区间,而定价表把其中大部分评为「正好在曲线上」。
+//
+// 【怎么读】
+// 这里的均值**不是「这个 op 值多少分」**,而是「带这个 op 的卡整体偏强/偏弱多少」。
+// 一个 op 的均值显著为正,意味着定价表给它的分数偏低(卡因此定价偏便宜)。
+// 样本少的不列 —— 三五张卡的均值还是噪声。
+const opsOf = (c: CardDef): string[] => {
+  const found = new Set<string>()
+  const scan = (s?: { ops?: Array<{ op: string }> }) => {
+    for (const o of s?.ops ?? []) found.add(o.op)
+  }
+  const anyC = c as unknown as Record<string, { ops?: Array<{ op: string }> } | undefined>
+  for (const k of [
+    'battlecry', 'spell', 'deathrattle', 'endOfTurn', 'startOfTurn',
+    'onAttack', 'onDamaged', 'onSpellCast', 'combo',
+  ]) {
+    scan(anyC[k])
+  }
+  if (c.choose) for (const m of c.choose.modes) scan(m.script)
+  if (c.secret) scan(c.secret.script)
+  return [...found]
+}
+
+const MIN_N = 5
+const byOp = new Map<string, number[]>()
+for (const r of rows) {
+  for (const op of opsOf(r.card)) {
+    const arr = byOp.get(op) ?? []
+    arr.push(r.delta)
+    byOp.set(op, arr)
+  }
+}
+const opStats = [...byOp.entries()]
+  .filter(([, ds]) => ds.length >= MIN_N)
+  .map(([op, ds]) => {
+    const mean = ds.reduce((a, b) => a + b, 0) / ds.length
+    return { op, n: ds.length, mean, se: seDelta / Math.sqrt(ds.length) }
+  })
+  .sort((a, b) => b.mean - a.mean)
+
+if (opStats.length > 0) {
+  console.log(
+    `\n---- 按效果归组(≥${MIN_N} 张才列)----\n` +
+      `单张卡的 Δ 噪声太大,但同一种效果的卡放在一起平均,噪声按 √n 缩小。\n` +
+      `**均值显著为正 = 定价表给这个 op 的分数偏低**,带它的卡因此偏便宜。\n`,
+  )
+  console.log('效果               张数   平均 Δ    z')
+  for (const s of opStats) {
+    const z = s.mean / s.se
+    const flag = Math.abs(z) > 2 ? (z > 0 ? '  ← 偏低' : '  ← 偏高') : ''
+    console.log(
+      `${s.op.padEnd(18)} ${String(s.n).padStart(4)}  ` +
+        `${(s.mean >= 0 ? '+' : '') + s.mean.toFixed(1)}`.padStart(7) +
+        `  ${z.toFixed(1).padStart(5)}${flag}`,
+    )
+  }
+  console.log(
+    `\n拿它去校准 scripts/price-cards.ts 的 opValue —— 那张表至今是拍出来的\n` +
+      `(它的注释说「数值取自同类卡的实际定价」,也就是从现状反推现状,从没被实测校准过)。`,
+  )
+}
+
 // 逆误差函数:只为算 Bonferroni 的 z 阈值。Acklam 有理逼近,精度远超这里的需要。
 function erfInv(x: number): number {
   const a = [-3.969683028665376e1, 2.209460984245205e2, -2.759285104469687e2, 1.38357751867269e2, -3.066479806614716e1, 2.506628277459239]
