@@ -4,7 +4,7 @@
 > 动手前请先完整读 [ARCHITECTURE.md](ARCHITECTURE.md) —— 那里是工程约定与架构铁律,
 > 本文只写「接下来做什么、以及为什么不做某些事」。
 >
-> 最后更新:2026-08-04
+> 最后更新:2026-08-05
 
 ---
 
@@ -625,7 +625,8 @@ npm run doctor           # 这台机器上什么能跑、什么不能、为什�
 npm run sim-campaign     # 冒险 24 关难度曲线            ~4min   (串行 12min)
 npm run sim-firstplayer  # 先手优势 + 对镜类模拟的仪器自检 ~2.5min (串行 5min)
                          #   AI=tiers 换尺子 · COMP=sweep 试算后手补偿
-npm run sim-cards        # 单卡边际胜率(SAMPLE=400 可扫一大片)
+npm run sim-cards        # 单卡边际胜率(SAMPLE=3000 扫全池 ≈1.5h)
+                         #   VERIFY=<局数> 榜首自动复测 · DUMP=<路径> 落盘给 fit-price
 npm run sim-hero-mirror  # 备选主公技对镜                ~1.7min (串行 8.5min)
 npm run sim-balance      # 六套预组互搏矩阵              ~1min   (串行 5min)
                          #   跑完自动与上次基线对比
