@@ -1,3 +1,7 @@
+/* 标题栏三件套统一到 ui/uiKit.module.css ——
+   全站数出来 36 个 *Btn 类名、16 种圆角、每屏各写一遍的标题栏,
+   后果是同一个东西在不同屏上长得不一样,而且每次改都得改十几个地方。
+   .head 各屏保留自己的(max-width 是各屏的版式,不该统一)。 */
 .screen {
   min-height: 100vh;
   min-height: 100dvh;
@@ -21,22 +25,11 @@
 }
 
 .backBtn {
-  border: 1px solid rgba(122, 100, 58, 0.6);
-  background: rgba(20, 16, 10, 0.72);
-  color: var(--parchment-dim);
-  border-radius: 6px;
-  padding: 6px 12px;
-  cursor: pointer;
-  font-size: 13px;
-  white-space: nowrap;
+  composes: backBtn from '../uiKit.module.css';
 }
 
 .title {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: clamp(18px, 4.6vw, 26px);
-  letter-spacing: calc(0.22em * var(--ls-wide));
-  color: var(--gold-bright);
+  composes: title from '../uiKit.module.css';
 }
 
 /* —— 选主公 —— */

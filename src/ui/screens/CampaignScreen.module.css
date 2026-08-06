@@ -1,3 +1,7 @@
+/* 标题栏三件套统一到 ui/uiKit.module.css ——
+   全站数出来 36 个 *Btn 类名、16 种圆角、每屏各写一遍的标题栏,
+   后果是同一个东西在不同屏上长得不一样,而且每次改都得改十几个地方。
+   .head 各屏保留自己的(max-width 是各屏的版式,不该统一)。 */
 /* 冒险页原来是一张**平铺在纯黑上的列表** —— 二十四关排下去将近两千像素,
    全程没有任何氛围,读起来像一份后台任务清单,而它讲的是从汉末到明清的一条路。
 
@@ -43,23 +47,11 @@
 }
 
 .backBtn {
-  padding: 8px 14px;
-  border-radius: 9px;
-  border: 1px solid rgba(212, 168, 74, 0.35);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--parchment);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
+  composes: backBtn from '../uiKit.module.css';
 }
 
 .title {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: clamp(18px, 3.2vh, 24px);
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  color: var(--gold-bright);
+  composes: title from '../uiKit.module.css';
 }
 
 .progress {

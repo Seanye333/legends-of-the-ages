@@ -1,3 +1,7 @@
+/* 标题栏三件套统一到 ui/uiKit.module.css ——
+   全站数出来 36 个 *Btn 类名、16 种圆角、每屏各写一遍的标题栏,
+   后果是同一个东西在不同屏上长得不一样,而且每次改都得改十几个地方。
+   .head 各屏保留自己的(max-width 是各屏的版式,不该统一)。 */
 .screen {
   min-height: 100vh;
   min-height: 100dvh;
@@ -9,11 +13,11 @@
 }
 .head { display: flex; align-items: center; gap: 14px; width: 100%; max-width: 680px; margin-bottom: 18px; }
 .backBtn {
-  padding: 7px 14px; border-radius: 8px; border: 1px solid var(--gold-deep);
-  background: rgba(30, 24, 14, 0.8); color: var(--gold); cursor: pointer; font-size: 13px;
+  composes: backBtn from '../uiKit.module.css';
 }
-.backBtn:hover { border-color: var(--gold); color: var(--gold-bright); }
-.title { margin: 0; flex: 1; font-family: var(--font-display); font-size: 22px; letter-spacing: calc(0.22em * var(--ls-wide)); color: var(--gold-bright); }
+.title {
+  composes: title from '../uiKit.module.css';
+}
 .progress { color: var(--parchment-faint); font-variant-numeric: tabular-nums; font-size: 14px; }
 
 .kind {

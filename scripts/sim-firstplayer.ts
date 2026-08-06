@@ -189,12 +189,35 @@ if (COMP === 'sweep') {
   const t = performance.now()
   const seSweep = Math.sqrt(0.25 / (GAMES * PRECON_DECKS.length)) * 100
   console.log(`方案              先手胜率   评价`)
+  let baseRs: number[] = []
+  const inert: string[] = []
   for (const [name, comp] of Object.entries(COMPENSATIONS)) {
     const rs = await runAll(comp, false)
+    if (name === 'none') baseRs = rs
     const avg = rs.reduce((a, b) => a + b, 0) / rs.length
-    const verdict =
-      avg > 55 ? '仍然不够' : avg < 45 ? '补过头了(后手反而占优)' : '✓ 落在 45–55'
+    // 【和「无补偿」逐格相同 = 这个补偿在这套预组里根本没有载体】
+    //
+    // 2026-08-06 踩到:`supply+2` 与 `morale+2` 都报出 73.9%,和 none **一模一样**。
+    // 看起来像「这两条资源轴买不到胜率」,而真相是**六套预组里一张军需卡都没有、
+    // 一张吃士气的卡也没有** —— 加两点屯粮给谁都花不出去,引擎照样跑,结果当然逐位相同。
+    // 修饰符本身是接好的(engine/init 的 startSupply / startMorale)。
+    //
+    // 差别很要命:前者会被写进文档当成「结论」,后者说明**这个实验测不了它**。
+    // 一个「完全没有效果」的数字要么是重大发现,要么是没接上,不能靠肉眼分辨 —— 所以钉在这里。
+    const same = baseRs.length === rs.length && rs.every((v, i) => v === baseRs[i])
+    if (name !== 'none' && same) inert.push(name)
+    const verdict = same && name !== 'none'
+      ? '⚠ 与无补偿**逐格相同** —— 没有载体,测不了'
+      : avg > 55 ? '仍然不够' : avg < 45 ? '补过头了(后手反而占优)' : '✓ 落在 45–55'
     console.log(`${name.padEnd(16)} ${avg.toFixed(1)}% ±${seSweep.toFixed(1)}   ${verdict}`)
+  }
+  if (inert.length > 0) {
+    console.log(
+      `\n⚠ 这 ${inert.length} 个方案与「无补偿」**逐格相同**:${inert.join(' · ')}\n` +
+        `  这不是「没效果」,是**这套预组里没有能接住它的卡**(实测:六套预组军需卡 0 张、\n` +
+        `  吃士气的卡 0 张)。修饰符本身接在 engine/init 上,没坏。\n` +
+        `  想量它们得先有载体 —— 见 ROADMAP 的「粮尽惩罚」与「同袍上桌」两条。`,
+    )
   }
   console.log(`\n(${((performance.now() - t) / 1000).toFixed(1)}s)`)
   console.log(

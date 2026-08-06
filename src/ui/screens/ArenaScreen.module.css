@@ -1,3 +1,7 @@
+/* 标题栏三件套统一到 ui/uiKit.module.css ——
+   全站数出来 36 个 *Btn 类名、16 种圆角、每屏各写一遍的标题栏,
+   后果是同一个东西在不同屏上长得不一样,而且每次改都得改十几个地方。
+   .head 各屏保留自己的(max-width 是各屏的版式,不该统一)。 */
 .screen {
   min-height: 100dvh;
   padding: max(20px, env(safe-area-inset-top) + 8px) 16px max(28px, env(safe-area-inset-bottom));
@@ -15,23 +19,11 @@
 }
 
 .backBtn {
-  padding: 8px 14px;
-  border-radius: 9px;
-  border: 1px solid rgba(212, 168, 74, 0.35);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--parchment);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
+  composes: backBtn from '../uiKit.module.css';
 }
 
 .title {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: clamp(18px, 3.2vh, 24px);
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  color: var(--gold-bright);
+  composes: title from '../uiKit.module.css';
 }
 
 .meritBadge {
