@@ -69,7 +69,16 @@ export const PACK8_CARDS: CardDef[] = [
 
 export const PACK8_OVERRIDES: Record<string, Partial<CardDef>> = {
   // 礼教 · 陳群(4 费 2/5):九品中正,品评人物 —— 战吼把一个敌将「评」为 1/1 羔羊。
+  //
+  // 【2026-08-06 补上 aura: undefined】
+  // pack3 那版是「光環:其他友方武將 +1/+0」,这一条要**换掉**它(下面的 text 也照新设计
+  // 重写了,只写战吼)—— 但当时没清 `aura`,而覆盖层是逐字段合并的。
+  // 于是合出来的是「4 费 2/5 + 变形战吼 + 一个全场光环」,**而卡面文字里没有光环**。
+  // 玩家看不见它,sim-cards 却量得到:Δ **+23.0**(600 局,z=8.0),全池第二。
+  // 同一类事故的第三例(姜維见 pack5、嵇康见 pack6-doctrine),闸门在
+  // src/content/overrideConflict.test.ts。
   'chen-qun': {
+    aura: undefined,
     battlecry: { ops: [{ op: 'transform', target: 'chosenEnemyGeneral', into: 'token-gaoyang' }] },
     text: {
       zh: '戰吼:將一名敵將變為 1/1 的羔羊。九品中正,人物臧否在我。',

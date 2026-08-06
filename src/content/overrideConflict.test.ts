@@ -90,6 +90,70 @@ describe('覆盖层没清干净的指纹', () => {
     expect(new Set(fake.keywords).has('charge')).toBe(true)
   })
 
+  // ---------- 第二类指纹:卡面有这个机制,而文案一个字都没提 ----------
+  //
+  // 【为什么这是玩家能直接看见的错,不只是数据卫生】
+  // `CardFace` 渲染的**只有 `def.text`** —— 这个仓库没有「从脚本生成描述」那一层。
+  // 所以 text 就是玩家看到的全部。太史慈的战吼是「对随机一名敌将造成 3 点伤害」,
+  // 而它的卡面只写着「碾壓。神射之勇,一往無前。」—— 打出去凭空多三点伤害。
+  //
+  // 这一类和上面那条同源:后一层覆盖重写了 `text`(或手写风味文案盖掉了生成文案),
+  // 而**前一层留下的机制字段还在**。陳群 就是这么来的:pack8 重写了 text 只写战吼,
+  // 没清 pack3 的 `aura`,于是它带着一个玩家看不见的全场光环 —— Δ +23.0,全池第二。
+  //
+  // 【为什么是名单而不是直接判红】
+  // 现存 25 条。它们要一张一张补文案(照卡池里另外 1327 张战吼卡的写法),
+  // 那是内容活,不是这次能顺手做完的。名单钉在这里的作用是**只减不增**:
+  // 新写的卡再犯同一个错会当场红。补完一条就从名单里删一条,归零那天把名单删掉。
+  const MECHANIC_WORDS: Record<string, string[]> = {
+    // 光环有三种写法:直接叫「光環」、白话「你的其他武將…」、以及阵型卡的「陣型」
+    aura: ['光環', '光环', '你的其他武將', '你的其他武将', '其他友方武將', '其他友方武将', '陣型', '阵型'],
+    battlecry: ['戰吼', '战吼'],
+    // 亡语有个风味别名「遺計」(郭嘉/陶謙/于吉),是有意为之,不算漏写
+    deathrattle: ['亡語', '亡语', '遺計', '遗计'],
+    combo: ['連擊', '连击'],
+    choose: ['抉擇', '抉择'],
+    secret: ['伏兵'],
+  }
+
+  // 已知待补的文案(`卡id:机制`)。**只减不增。**
+  const KNOWN_TEXT_GAPS = new Set([
+    'budugen:battlecry', 'du-yu:aura', 'du-yu:battlecry', 'gou-fu:battlecry',
+    'hist-cao-can:battlecry', 'hist-cao-xueqin:deathrattle', 'hist-goujian:battlecry',
+    'hist-jin-wen-gong:battlecry', 'hist-lanlingwang:battlecry', 'hist-lanlingwang:combo',
+    'hist-li-guang:battlecry', 'hist-mu-guiying:aura', 'hist-murong-ke:battlecry',
+    'hist-qin-mugong:battlecry', 'hist-wang-meng:battlecry', 'hist-xin-qiji:battlecry',
+    'hist-zhang-xun:battlecry', 'hist-zheng-banqiao:battlecry', 'li-ru:battlecry',
+    'ling-tong:battlecry', 'lu-kang:deathrattle', 'taishi-ci:battlecry',
+    'tian-kai:deathrattle', 'wu-anguo:deathrattle', 'yang-hu:aura',
+  ])
+
+  it('卡面上有的机制,文案里必须提到(名单只减不增)', () => {
+    const found: string[] = []
+    for (const c of COLLECTIBLE_CARDS) {
+      if (c.token) continue
+      const t = c.text?.zh ?? ''
+      const anyC = c as unknown as Record<string, unknown>
+      for (const [field, words] of Object.entries(MECHANIC_WORDS)) {
+        if (!anyC[field]) continue
+        if (!words.some((w) => t.includes(w))) found.push(`${c.id}:${field}`)
+      }
+    }
+    const added = found.filter((k) => !KNOWN_TEXT_GAPS.has(k)).sort()
+    const fixed = [...KNOWN_TEXT_GAPS].filter((k) => !found.includes(k)).sort()
+    expect(
+      added,
+      added.length
+        ? `这些卡会做一件卡面上没写的事(CardFace 只渲染 def.text,没有从脚本生成描述那一层):\n` +
+          `  ${added.join('\n  ')}\n\n` +
+          `补一句文案,照卡池里其它同机制卡的写法。如果是覆盖层没清干净,` +
+          `就去清掉那个字段(姜維/嵇康/陳群 都是那么来的)。`
+        : undefined,
+    ).toEqual([])
+    // 补好了就把名单收窄 —— 否则这份名单会永远停在今天的样子
+    expect(fixed, fixed.length ? `这几条已经补好了,请从 KNOWN_TEXT_GAPS 里删掉:\n  ${fixed.join('\n  ')}` : undefined).toEqual([])
+  })
+
   it('给别人加关键词不算矛盾', () => {
     const fine = {
       id: 'y',
