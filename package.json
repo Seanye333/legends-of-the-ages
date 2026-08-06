@@ -16,6 +16,8 @@
     "dev": "vite --port 5174",
     "e2e": "playwright test",
     "export-portraits": "node --import tsx scripts/export-portraits.ts",
+    "fit-price": "node --import tsx scripts/fit-price.ts",
+    "synth-deltas": "node --import tsx scripts/synth-deltas.ts",
     "import-content": "node --import tsx scripts/import-content.ts",
     "lint": "eslint .",
     "lint-content": "node --import tsx scripts/lint-content.ts",

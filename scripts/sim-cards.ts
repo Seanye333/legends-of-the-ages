@@ -27,6 +27,7 @@ import { CARDS_BY_ID, COLLECTIBLE_CARDS } from '../src/content/cards'
 import { HEROES_BY_ID } from '../src/content/overrides/heroes'
 import { parallelMap, defaultConcurrency, progress } from './parallel'
 import { fileURLToPath } from 'node:url'
+import { writeFileSync } from 'node:fs'
 import type { CardTask } from './workers/cards.worker'
 import type { CardDef } from '../src/engine/types'
 
@@ -161,6 +162,35 @@ for (const r of rows) {
 }
 
 console.log(`\n(${((performance.now() - t0) / 1000).toFixed(1)}s)`)
+
+// 【DUMP=<路径>:把每张卡的实测 Δ 落盘】
+// 这份数据是 price-cards **唯一可能的外部真值**。那张定价表现在是从卡池反推卡池的
+// (注释自己承认「数值取自同类卡的实际定价」),所以卡池里一整类效果定价偏低时,
+// 它会忠实地把这个偏差学过来,再拿去给新卡定价 —— 一个闭环。
+// 这里的 Δ 来自对局结果,不在那个环里。scripts/fit-price.ts 拿它当拟合目标。
+if (process.env.DUMP) {
+  const path = process.env.DUMP
+  writeFileSync(
+    path,
+    JSON.stringify(
+      {
+        games: GAMES,
+        copies: COPIES,
+        cards: rows.map((r) => ({
+          id: r.card.id,
+          name: r.card.name.zh,
+          cost: r.card.cost,
+          rate: r.rate,
+          delta: r.delta,
+          base: PRECON_DECKS[r.baseIdx].name.zh,
+        })),
+      },
+      null,
+      1,
+    ),
+  )
+  console.log(`已写出 ${rows.length} 张的实测 Δ → ${path}`)
+}
 
 // ---------- 怎么读这份清单 ----------
 //
