@@ -225,7 +225,16 @@ export const PACK6_DOCTRINE_OVERRIDES: Record<string, Partial<CardDef>> = {
     },
   },
   // 隐逸 · 嵇康(4 费 4/3 epic):潜行连招 —— 获得潜行;连击则改为潜行且额外抽一张
+  //
+  // 【2026-08-06 补上 keywords: []】
+  // pack3 那版是「**卡面潛行** + 战吼抽一张」;这一条要换成「战吼获得潜行」,
+  // 下面的 text 也照这个写了 —— 但当时没清 `keywords`,而覆盖层是逐字段合并的,
+  // 于是卡面潜行留了下来:**卡面文字说「戰吼:獲得潛行」,可它一上场就已经潜行了**。
+  // 文案与实际不符是玩家能直接看见的错。
+  // (同一类事故让姜維成了全卡池最超模的一张,见 pack5 里那段注释。
+  //  现在有 src/content/overrideConflict.test.ts 盯着这个指纹。)
   'hist-ji-kang': {
+    keywords: [],
     combo: {
       ops: [
         { op: 'grantKeyword', keyword: 'stealth', target: 'self' },
