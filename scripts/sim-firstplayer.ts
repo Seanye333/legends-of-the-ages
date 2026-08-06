@@ -23,6 +23,7 @@ import { PRECON_DECKS } from '../src/content/decks'
 import { AI_NORMAL, AI_LEVELS, type AiConfig } from '../src/ai/greedy'
 import { judgeFirstPlayer } from './firstPlayerGate'
 import { parallelMap, defaultConcurrency, progress } from './parallel'
+import { loadBaseline, reportDiff, saveBaseline } from './baseline'
 import { fileURLToPath } from 'node:url'
 import type { MirrorTask } from './workers/mirror.worker'
 import type { RunModifiers } from '../src/engine/types'
@@ -214,6 +215,19 @@ console.log(
 console.log(
   `当前后手补偿:起手牌 先手 3 张 / 后手 4 张(engine/init 的 OPENING_HAND)。`,
 )
+
+// 与上一次跑对比(只在默认配置下记基线 —— 换了尺子或加了补偿的那些跑
+// 量的是另一个东西,混进同一条基线里对比毫无意义)。
+if (AI === 'normal' && COMP === 'none') {
+  const snap = {
+    sim: 'sim-firstplayer',
+    games: GAMES,
+    values: Object.fromEntries(PRECON_DECKS.map((d, i) => [d.name.zh, rates[i]])),
+    stampedAt: new Date().toISOString().slice(0, 10),
+  }
+  for (const line of reportDiff(loadBaseline()['sim-firstplayer'], snap)) console.log(line)
+  saveBaseline(snap)
+}
 
 const v = judgeFirstPlayer(rates, GAMES)
 for (const line of v.report) console.log(line)

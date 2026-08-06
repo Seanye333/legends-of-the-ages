@@ -33,6 +33,7 @@ const RULER: AiConfig =
 import { PRECON_DECKS } from '../src/content/decks'
 import { HEROES, ALT_HEROES } from '../src/content/overrides/heroes'
 import { parallelMap, defaultConcurrency, progress } from './parallel'
+import { loadBaseline, reportDiff, saveBaseline } from './baseline'
 import { fileURLToPath } from 'node:url'
 import type { MirrorTask } from './workers/mirror.worker'
 
@@ -108,6 +109,23 @@ rows.forEach((r, k) => {
     `  ${r.alt.name.zh}(${r.alt.power.name.zh}) vs 基准 ${r.baseName}: 备选胜率 ${rate.toFixed(1)}% ±${se.toFixed(1)}  ${ok ? '✓' : '⚠ 超出 40–60'}`,
   )
 })
+
+// 与上一次跑对比:闸门管「越没越线」,这一段管「动没动」。
+// 这道闸门尤其需要 —— 它的历史数字被一把歪尺子污染过一整轮(见 simSeating.ts),
+// 而当时**没有任何东西**会告诉你「这一跑和上一跑不一样了」。
+const snap = {
+  sim: 'sim-hero-mirror',
+  games: GAMES,
+  values: Object.fromEntries(
+    rows.map((r, k) => [
+      r.alt.name.zh,
+      agg[k].played > 0 ? (agg[k].wins / agg[k].played) * 100 : 50,
+    ]),
+  ),
+  stampedAt: new Date().toISOString().slice(0, 10),
+}
+for (const line of reportDiff(loadBaseline()['sim-hero-mirror'], snap)) console.log(line)
+saveBaseline(snap)
 
 console.log('')
 if (bad === 0) {

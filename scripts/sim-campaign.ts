@@ -10,6 +10,7 @@
 import { BOSSES, bossChapter } from '../src/content/campaign'
 import { judgeChapter } from './campaignGate'
 import { parallelMap, defaultConcurrency, progress } from './parallel'
+import { loadBaseline, reportDiff, saveBaseline } from './baseline'
 import { fileURLToPath } from 'node:url'
 
 // 【为什么默认是 240 而不是 60】
@@ -110,6 +111,20 @@ console.log(
 //   · 收官要够难(每章末关 ≤45)
 //   · 章内整体递减(前半均 − 后半均 ≥ 8;用首末段差值而非逐关严格递减,躲开噪声)
 // 用「章内前后半差值」而不是全局,避免跨章软重置被平均值糊掉、放过某一章的塌陷曲线。
+// ---------- 与上一次跑对比 ----------
+// 闸门管「越没越线」,这一段管「动没动」。对这道闸门尤其有用:
+// 24 关里某一关挪了 10 个点、但还没越线,是**完全看不出来的** ——
+// 而那往往正是「刚才那一改到底影响了什么」的答案。
+// 只报超过 2 个标准误的变化(见 baseline.ts)。
+const snap = {
+  sim: 'sim-campaign',
+  games: GAMES,
+  values: Object.fromEntries(BOSSES.map((b, i) => [b.name.zh, props[i] * 100])),
+  stampedAt: new Date().toISOString().slice(0, 10),
+}
+for (const line of reportDiff(loadBaseline()['sim-campaign'], snap)) console.log(line)
+saveBaseline(snap)
+
 // 判定逻辑在 campaignGate.ts —— 抽出去是为了能不跑模拟就验证它(见那个文件的文件头)。
 const chapters = [...new Set(BOSSES.map(bossChapter))].sort((a, b) => a - b)
 const problems: string[] = []
