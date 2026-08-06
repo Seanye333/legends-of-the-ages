@@ -19,64 +19,26 @@
 // 效果脚本太长,压成 8 位哈希:它变了会点名到卡,再去看那张卡即可。
 //
 // 【改动了怎么办】
-// 这**不是**「不许改卡池」。故意的改动就更新快照:
-//   UPDATE_POOL_SNAPSHOT=1 npx vitest run src/content/poolSnapshot.test.ts
+// 这**不是**「不许改卡池」。故意的改动就 `npm run pool-snapshot` 重生成,
 // 然后**把快照的 diff 一起提交** —— 那份 diff 就是这次改了什么的证据。
+// 摘要逻辑在 src/content/poolSnapshot.ts,写快照的脚本和这里用的是同一份
+// (两边各写一遍的话,有一天它们会悄悄分叉,而那正好是这道闸门要防的事)。
 import { describe, expect, it } from 'vitest'
-import { readFileSync, writeFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 import { COLLECTIBLE_CARDS } from './cards'
+import { digest, poolDigests } from './poolSnapshot'
 import type { CardDef } from '../engine/types'
 
 // Windows 下 `new URL('./x', import.meta.url).pathname` 会给出 `/C:/…`,fs 读不了。
 // 走 fileURLToPath + join —— 这个坑这一轮已经踩过三次(browserSafe / errorCoverage / achievement)。
-const HERE = dirname(fileURLToPath(import.meta.url))
-const SNAPSHOT = join(HERE, 'pool-snapshot.json')
+const SNAPSHOT = join(dirname(fileURLToPath(import.meta.url)), 'pool-snapshot.json')
 
-/** 效果那一坨压成 8 位十六进制。FNV-1a,够散,而且不引依赖。 */
-function fxHash(c: CardDef): string {
-  const anyC = c as unknown as Record<string, unknown>
-  // 只取**影响对局**的字段。名字、风味句、画师、collectorNo 改了不该让闸门红 ——
-  // 那会让所有人习惯性地无脑更新快照,闸门就废了。
-  const payload = JSON.stringify([
-    anyC.battlecry, anyC.spell, anyC.deathrattle, anyC.endOfTurn, anyC.startOfTurn,
-    anyC.onAttack, anyC.onDamaged, anyC.onSpellCast, anyC.combo, anyC.choose,
-    anyC.secret, anyC.aura, anyC.bond, anyC.rival, anyC.formation,
-    anyC.enrage, anyC.spellDamage, anyC.overload, anyC.supplyCost, anyC.heirloom,
-  ])
-  let h = 0x811c9dc5
-  for (let i = 0; i < payload.length; i++) {
-    h ^= payload.charCodeAt(i)
-    h = Math.imul(h, 0x01000193) >>> 0
-  }
-  return h.toString(16).padStart(8, '0')
-}
-
-function digest(c: CardDef): string {
-  // 关键词排序:它的顺序不影响对局,不排的话换个书写顺序就假红一次。
-  const kw = [...c.keywords].sort().join(',')
-  return (
-    `${c.cost}/${c.attack ?? '-'}/${c.health ?? '-'} ` +
-    `${c.rarity} ${c.doctrine} ${c.type} [${kw}] fx:${fxHash(c)}`
-  )
-}
-
-const current: Record<string, string> = {}
-for (const c of COLLECTIBLE_CARDS) {
-  if (c.token) continue
-  current[c.id] = digest(c)
-}
+const current = poolDigests()
 
 describe('卡池快照', () => {
-  it('和已提交的快照一致(故意改了就更新快照,并把 diff 一起提交)', () => {
-    if (process.env.UPDATE_POOL_SNAPSHOT) {
-      const sorted = Object.fromEntries(Object.entries(current).sort(([a], [b]) => a.localeCompare(b)))
-      writeFileSync(SNAPSHOT, JSON.stringify(sorted, null, 1) + '\n')
-      console.log(`已更新卡池快照:${Object.keys(sorted).length} 张`)
-      return
-    }
-
+  it('和已提交的快照一致(故意改了就 npm run pool-snapshot,并把 diff 一起提交)', () => {
     const saved: Record<string, string> = JSON.parse(readFileSync(SNAPSHOT, 'utf8'))
 
     // 分三类报,而不是丢一个巨大的对象 diff ——
@@ -93,21 +55,19 @@ describe('卡池快照', () => {
         : `\n${label}(${list.length}):\n  ${list.slice(0, 25).join('\n  ')}` +
           (list.length > 25 ? `\n  …另外 ${list.length - 25} 条` : '')
 
-    const report =
-      show('新增', added) + show('删除', removed) + show('改动', changed)
+    const report = show('新增', added) + show('删除', removed) + show('改动', changed)
 
     expect(
       report,
       report
         ? `卡池和已提交的快照对不上。${report}\n\n` +
-          `故意的改动:UPDATE_POOL_SNAPSHOT=1 npx vitest run src/content/poolSnapshot.test.ts\n` +
-          `然后把 pool-snapshot.json 的 diff 一起提交 —— 那份 diff 就是改动清单。`
+          `故意的改动:npm run pool-snapshot,然后把 pool-snapshot.json 的 diff 一起提交 ——\n` +
+          `那份 diff 就是改动清单。悄悄更新快照等于把这道闸门关掉。`
         : undefined,
     ).toBe('')
   })
 
-  it('快照里的卡和卡池一一对应,数量对得上', () => {
-    if (process.env.UPDATE_POOL_SNAPSHOT) return
+  it('快照里的卡和卡池数量对得上', () => {
     const saved: Record<string, string> = JSON.parse(readFileSync(SNAPSHOT, 'utf8'))
     expect(Object.keys(saved).length).toBe(Object.keys(current).length)
   })
@@ -133,5 +93,10 @@ describe('卡池快照', () => {
   it('关键词换个书写顺序不算改动', () => {
     const c = COLLECTIBLE_CARDS.find((x) => !x.token && x.keywords.length >= 2)!
     expect(digest({ ...c, keywords: [...c.keywords].reverse() } as CardDef)).toBe(digest(c))
+  })
+
+  it('快照是按 id 排序的 —— 否则 diff 会因为遍历顺序变化而炸开', () => {
+    const ids = Object.keys(current)
+    expect(ids).toEqual([...ids].sort((a, b) => a.localeCompare(b)))
   })
 })

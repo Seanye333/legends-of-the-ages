@@ -21,6 +21,10 @@
 - `npm run doctor` — 环境自检:这台机器上什么能跑、什么不能、为什么(附闸门实测耗时)
 - `npm run sim-ai-tiers` — AI 档位对打(默认 军神 vs 名将)。加一档 AI 很容易变成「更慢但不更强」,这是那道验收线:55% 以下报警。实测军神 71.7%(120 局)
 - `npm run tune-campaign` — 对每关**网格扫描**难度参数,只打印建议值,不改代码。`ONLY=boss-id,...` 只搜指定几关
+- `npm run price-cards` — 全池卡面价值 vs 费用曲线。模型本体在 `scripts/pricing.ts`(点数表是**数据**,不是散在 switch 里的字面量)。跑完会点名两类问题:卡里有表里没有的 op(那些卡被低估),和表里有卡里没有的权重(**没有证据的数字**)
+- `npm run fit-price` — 拿实测胜率量定价表准不准(`DELTAS=` 指向 `sim-cards` 的 `DUMP`)。⚠ **60 局/张的预算下这道判决没有分辨力**,先读 `npm run synth-deltas` 那一段
+- `npm run dead-css` — 死样式清单。CSS Modules 的类名是静态可对号的,所以判得准;但**动态取用的模块一律跳过 —— 那是盲区不是「干净」**
+- `npm run pool-snapshot` — 卡池快照(`src/content/pool-snapshot.json`)。守 `check-generated` 覆盖不到的覆盖层;故意的改动用 `UPDATE_POOL_SNAPSHOT=1` 重生成,**把 diff 一起提交**
 - `node --import tsx server/drive-test.ts` — 联机端到端(需先在 `server/` 起 `npx wrangler dev`)
 
 CI 在 `.github/workflows/ci.yml`:lint / 构建 / 单测 / e2e 一个 job,**平衡闸门独立一个 job**(sim-balance 会 exit 1),外加一个 job 断言 `src/content/generated` 没被手改。
@@ -95,13 +99,14 @@ CI 在 `.github/workflows/ci.yml`:lint / 构建 / 单测 / e2e 一个 job,**平�
 
 11. **闸门自己也要能被验证。**(2026-08-04 加,起因是一天之内发现两道闸门在说谎)
 
-    判定逻辑一律从「跑模拟的脚本」里抽成**纯函数**单放一个模块,再配一份喂合成数据的自检 —— 两个方向都验:**该红时红、不该红时不红**。样板见 `scripts/campaignGate.ts` + `campaignGate.test.ts`,几毫秒跑完,不必等十分钟的模拟。目前六份:`campaignGate` / `simSeating` / `firstPlayerGate` / `balanceGate` / `baseline` / `perfBudgetGate`。
+    判定逻辑一律从「跑模拟的脚本」里抽成**纯函数**单放一个模块,再配一份喂合成数据的自检 —— 两个方向都验:**该红时红、不该红时不红**。样板见 `scripts/campaignGate.ts` + `campaignGate.test.ts`,几毫秒跑完,不必等十分钟的模拟。目前六份:`campaignGate` / `simSeating` / `firstPlayerGate` / `balanceGate` / `baseline` / `perfBudgetGate`。同一套做法也用在不卡门的清单上,因为**一把会误报的尺子比没有尺子更危险**(`pricing` / `correlation` / `fitWeights` / `deadCss` 各带自检 —— `deadCss` 的第一版就把全站共用的 `uiKit.module.css` 报成了「整个文件都是死的」)。
 
     三条具体的教训:
 
     - **判定要配得上样本量。** `sim-campaign` 的「章内落差 ≥8」在 60 局下即使真实落差为 0 也只有 z=1.8 —— 它既会被两三个点的抖动判红,又**在真出问题时红不了**。反过来 `sim-balance` 的阈值算下来有 4–4.5 个标准误,**就不该**改成 z 检验(那只会让平衡闸门更难红)。该不该上显著性检验取决于阈值与标准误的比值,不取决于「别处也这么做了」。
     - **先验证尺子,再读数。** 对称的模拟有个免费且极强的自检:两边放同一个东西必须是 50%。`sim-hero-mirror` 从来没做过这一步,带着 26% 的中性点跑了很久 —— 六个备选主公里四个被误判「过弱」,而唯一「合格」的那个才是真正出界的,还据此劝退过两轮设计。
     - **闸门可以默默停止工作。** `perf-budget` 按 chunk 钉的基线靠正则找文件,失配时原来只 `console.warn` —— 打包分块一改名,那条基线就不再守任何东西而 CI 照样绿。**失效的是门本身,你以为有人看门,其实门早没了。**
+    - **先问分辨力,再问结论。**(2026-08-05 加)一道判定可以完全诚实、完全正确,而**分辨力是零** —— 那时候「没问题」和「测不出来」在输出里长得一模一样。量分辨力的办法是**造一份真值已知的假数据**跑一遍:植入的信号捞不回来,说明这道判定此刻读出的任何东西都不能信。`scripts/synth-deltas.ts` 就是干这个的,它当场判了「用实测校准定价表」死刑 —— 60 局/张的预算下,一张**完美**的定价表和现在这张之间的全部差距只有十分之一个标准误,而且把表故意改错八倍仍然过不了线。**没有这一步,那次拟合会输出一整页看起来很有道理的新权重。**
 
     推论:**把教训写进注释 ≠ 修好了。** 上面前两条的结论当时都工工整整写在注释里(一条在 `campaign.ts`,一条在 `sim-balance.ts`),而代码照旧,于是各自又咬了一次。修法一律是可执行的断言。
 

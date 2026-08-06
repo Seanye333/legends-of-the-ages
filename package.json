@@ -24,6 +24,7 @@
     "lint-content": "node --import tsx scripts/lint-content.ts",
     "mine-puzzles": "node --import tsx scripts/mine-puzzles.ts",
     "perf-budget": "node --import tsx scripts/perf-budget.ts",
+    "pool-snapshot": "node --import tsx scripts/pool-snapshot.ts",
     "preview": "vite preview",
     "price-cards": "node --import tsx scripts/price-cards.ts",
     "replay-diff": "node --import tsx scripts/replay-diff.ts",
