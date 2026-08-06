@@ -219,15 +219,74 @@ if (weak.length > 0) {
 //
 // 所以这个脚本的正确用法是**两段式**:小样本扫全池排个序,再把榜首拿去大样本复测。
 // 无论有没有越线,都把复测命令打出来 —— 让「宣布不了」不至于被读成「没东西」。
-const CANDIDATES = 6
+const CANDIDATES = Number(process.env.CANDIDATES ?? 6)
 const top = [...rows]
   .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
   .slice(0, CANDIDATES)
-if (top.length > 0) {
+
+// `VERIFY=<局数>` 直接把第二段接上跑,不用人手复制命令。
+//
+// 【为什么值得固化成一条命令】
+// 这个两段式协议我手工走过两遍,两次的教训都一样:**第一段的结论不能信**。
+//   · 王道那一跑榜首六张,复测后三张塌回去(-16.7 → -5.7 这种)
+//   · 全池那一跑榜首六张,复测后一张没塌
+// 两次都得复测才知道是哪种。靠人记得去跑第二段,迟早会有一次忘了 ——
+// 而忘了的那次,读到的就是一份掺着均值回归的「异常清单」。
+const VERIFY = process.env.VERIFY ? Number(process.env.VERIFY) : 0
+if (top.length > 0 && !VERIFY) {
   console.log(
     `\n下一步:榜单**排序有信号,单张判决没有**。把榜首 ${top.length} 张拿去大样本复测 ——\n` +
-      `  CARDS=${top.map((r) => r.card.id).join(',')} GAMES=600 npm run sim-cards\n` +
+      `  VERIFY=600 npm run sim-cards        # 接着这一跑自动复测\n` +
+      `  CARDS=${top.map((r) => r.card.id).join(',')} GAMES=600 npm run sim-cards   # 或手动\n` +
       `复测后仍然大的才当真;塌回去的那些是均值回归,本来就不存在。`,
+  )
+} else if (top.length > 0) {
+  console.log(`\n---- 第二段:榜首 ${top.length} 张按 ${VERIFY} 局复测 ----`)
+  const vJobs: CardTask[] = [
+    ...usedBases.map((i) => ({
+      deck: [...PRECON_DECKS[i].cardIds] as string[],
+      baseIdx: i,
+      games: VERIFY,
+    })),
+    ...top.map((r) => {
+      const b = buildable.find((x) => x.card.id === r.card.id)!
+      return { deck: b.deck, baseIdx: b.baseIdx, games: VERIFY }
+    }),
+  ]
+  const vOut = await parallelMap<CardTask, { wins: number; played: number }>(
+    WORKER,
+    vJobs,
+    progress(`${vJobs.length} 副牌`),
+    process.env.JOBS ? Number(process.env.JOBS) : defaultConcurrency(),
+  )
+  const vBase = new Map<number, number>()
+  usedBases.forEach((i, k) => vBase.set(i, pct(vOut[k])))
+  const vSe = Math.sqrt(2 * (0.25 / VERIFY)) * 100
+
+  console.log(`\n卡名            筛选 Δ   复测 Δ    z     判定`)
+  for (let k = 0; k < top.length; k++) {
+    const r = top[k]
+    const b = buildable.find((x) => x.card.id === r.card.id)!
+    const vDelta = pct(vOut[usedBases.length + k]) - vBase.get(b.baseIdx)!
+    const z = Math.abs(vDelta) / vSe
+    // 复测样本大得多,这里不必再做多重比较校正:候选是**上一段选出来的**,
+    // 不是从两千张里现挑的,比较次数就是这几张。
+    const verdict =
+      z > 2
+        ? Math.sign(vDelta) === Math.sign(r.delta)
+          ? '✓ 站得住'
+          : '⚠ 方向反了'
+        : '× 塌回噪声里(均值回归)'
+    console.log(
+      `${r.card.name.zh.padEnd(12, '　')} ` +
+        `${((r.delta >= 0 ? '+' : '') + r.delta.toFixed(1)).padStart(6)}  ` +
+        `${((vDelta >= 0 ? '+' : '') + vDelta.toFixed(1)).padStart(6)}  ` +
+        `${z.toFixed(1).padStart(5)}   ${verdict}`,
+    )
+  }
+  console.log(
+    `\n复测标准误 ±${vSe.toFixed(1)}(筛选那一段是 ±${seDelta.toFixed(1)})。\n` +
+      `**只有「站得住」那几张值得动**;塌回去的是均值回归 —— 它们是因为极端才被选中的。`,
   )
 }
 
