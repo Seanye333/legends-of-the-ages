@@ -135,7 +135,9 @@ describe('cardValue', () => {
         ],
       },
     } as unknown as Partial<CardDef>)
-    expect(cardValue(c)).toBeCloseTo(5 * 1.5, 6)
+    // 拿 DEFAULT_WEIGHTS.damage 算,不写死数值 —— 这条测的是「抉择取最大值」,
+    // 不是「伤害每点值 1.5」。写死的话每次校准定价表都会假红一次。
+    expect(cardValue(c)).toBeCloseTo(5 * DEFAULT_WEIGHTS.damage, 6)
   })
 
   it('过载与军需是减分', () => {

@@ -101,47 +101,86 @@ export interface Weights {
   delayDecay: number
 }
 
+/**
+ * 【2026-08-05:第一次拿实测量过这张表,但**数值没有落地** —— 读完这一段再动它】
+ *
+ * `sim-cards` 扫了全池 2416 张 × 60 局(101 分钟),每张的 Δ 是「把它换进对应主义的
+ * 预组之后,胜率相对没换的同一套牌动了多少」。拿它当真值,这张表**确实偏了**,
+ * 而且偏得有规律(下面每个 op 后面括号里的 n 和 z 就是那次实测):
+ *
+ *   抢节奏 / 解场 / 过牌被**低估** —— returnToHand +10.0(z=8.9)· aoeDamage +8.6 ·
+ *   damage +4.0(n=247, z=7.0)· tutor +3.4 · reduceCost +3.7 · recruit +7.4
+ *   加身材 / 回血 / 护甲 / 铺场被**高估** —— gainSupply −1.4 · gainArmor −0.8 ·
+ *   summon −1.0 · heal −1.1 · discover −1.5 · borrow −4.8 · swapStats −4.6
+ *   而 draw(209 张)· buffStats(182 张)· freeze · silence · stealCard 落在噪声里,
+ *   **这几个原来就定得准**。
+ *
+ * `npm run fit-price` 把「照这份实测改一版」做成了可证伪的流程,并且它过了关:
+ * 选 op、定尺度、定改动量三步全部只用一半的卡,另一半从头到尾没参与,
+ * 在那一半上秩相关 ρ 0.220 → 0.278(Δ +0.058,Steiger 相依检验 z = 2.95)。
+ *
+ * **那为什么还没改?** 因为改完之后 `price-cards` 这份报表**变难用了**:
+ * 偏离 2 费及以上的从 200 张涨到 574 张(8.3% → 23.8%),榜首整页都是低费伤害锦囊。
+ * 根子在于这次校准**只量了效果,没量身材** —— 身材那把尺(1 攻 = 1 点、1 血 = 0.8)
+ * 不在这张表里,回归给身材估出来的系数是负的(纯噪声,已被守卫拦下)。
+ * 于是效果整体涨了三倍而费用曲线(由以身材为主的中位卡决定)几乎没动,
+ * 每张带效果的牌就都显得超模。
+ *
+ * 也就是说:**op 之间的相对次序是有证据的,效果与身材之间的总体比例没有。**
+ * 而后者恰恰是改完变化最大的东西。要落地得先回答「一点攻击到底值多少胜率」,
+ * 那需要一批只改身材的对照卡,现在没有。
+ *
+ * 在那之前,把这份实测当**线索**用(哪几类效果被系统性看错了),
+ * 而不是当新数值。跑 `npm run fit-price` 可以看到完整的建议表。
+ *
+ * ⚠️ 还有一层:**这把尺子是贪心 AI**,它对两类东西系统性低估(铁律 8)——
+ * 防守向(治疗 / 护甲 / 屯粮;先手补偿那一轮实测 6 点护甲只值 4.2pp,不到一张牌的一半),
+ * 以及靠**选择**产生价值的(发现 / 借将 —— AI 选得差,就量不出那份价值)。
+ * 上面那串负号里有一大半正好落在这两类上,别照单全收。
+ */
 export const DEFAULT_WEIGHTS: Weights = {
-  damage: 1.5,
+  damage: 1.5, //            (n=247, z=+7.0 实测偏低,未落地 —— 见上)
   damageFace: 1.1,
-  aoeDamage: 3.2,
+  aoeDamage: 3.2, //         (n=30,  z=+5.8 实测偏低)
   damagePer: 3,
-  heal: 0.7,
-  draw: 2.2,
-  buffStats: 1.1,
+  heal: 0.7, //              (n=119, z=−2.5 实测偏高,但正是 AI 的盲区)
+  draw: 2.2, //              (n=209, z=+1.8 落在噪声里 —— 原来就定得准)
+  buffStats: 1.1, //         (n=182, z=+0.8 落在噪声里)
   buffStatsTemp: 0.45,
-  buffPer: 2.2,
-  destroy: 5,
-  banish: 5.5,
-  silence: 2,
-  freeze: 1.6,
-  seize: 6,
-  transform: 4.5,
-  resurrect: 4,
-  recruit: 3.5,
-  summon: 2.5,
+  buffPer: 2.2, //           (n=21,  z=+2.7 实测偏低)
+  destroy: 5, //             (n=8,   z=+3.4 实测偏低,样本小)
+  banish: 5.5, //            全池只有 1 张卡在用,量不出来
+  silence: 2, //             (n=43,  z=−1.3 落在噪声里)
+  freeze: 1.6, //            (n=38,  z=−0.7 落在噪声里)
+  seize: 6, //               (n=6,   z=+5.1 实测偏低,只有六张)
+  transform: 4.5, //         全池只有 2 张卡在用
+  resurrect: 4, //           (n=6,   z=+2.0 刚好没过线)
+  recruit: 3.5, //           (n=11,  z=+3.0 实测偏低)
+  summon: 2.5, //            (n=152, z=−2.7 实测偏高)
   copyGeneral: 4,
-  tutor: 2.8,
-  addToHand: 1.8,
-  discover: 2.6,
-  stealCard: 2.6,
-  discardRandom: 1.8,
-  returnToHand: 2.4,
-  grantKeywordTemp: 0.5,
-  gainArmor: 0.7,
-  gainMana: 2.4,
+  tutor: 2.8, //             (n=102, z=+3.7 实测偏低)
+  addToHand: 1.8, //         全池只有 1 张卡在用,量不出来
+  discover: 2.6, //          (n=53,  z=−2.1 实测偏高,但价值在「选」上,AI 选得差)
+  stealCard: 2.6, //         (n=38,  z=+0.5 落在噪声里)
+  discardRandom: 1.8, //     (n=19,  z=+2.6 实测偏低)
+  returnToHand: 2.4, //      (n=51,  z=+8.9 **全表最强的单条信号**,实测偏低)
+  grantKeywordTemp: 0.5, //  grantKeyword 的主体是 KEYWORD_VALUE(不在这张表里),
+  //                         只动这一支等于把结论全按到「短效」上,所以 fit-price 整个跳过它
+  gainArmor: 0.7, //         (n=193, z=−2.7 实测偏高,但正是 AI 的盲区)
+  gainMana: 2.4, //          (n=33,  z=−2.2 实测偏高)
   gainManaTemp: 1.0,
-  swapStats: 1.5,
-  reduceCost: 1.6,
+  swapStats: 1.5, //         (n=23,  z=−3.3 实测偏高)
+  reduceCost: 1.6, //        (n=41,  z=+2.6 实测偏低)
   setField: 3,
   // ---- 第二十一卡包 ----
   // 士气过线才产生效果(全场 ±1 攻),所以一点士气的期望价值低于一点身材
-  gainMorale: 1.3,
-  gainSupply: 0.8,
+  gainMorale: 1.3, //        (n=109, z=+1.8 刚好没过线)
+  gainSupply: 0.8, //        (n=145, z=−3.2 实测偏高,和护甲同一类盲区)
   // ---- 第二十二卡包:牌库、驱散、借将 ----
   // 下面六条 2026-08-04 补,此前全部落进 default 拿 0 分(见 opValue 的 default 分支)。
-  // 定价一律对标表里已有的锚:伤害 1 点 = 1.5 · 抽 1 张 = 2.2 · 沉默 = 2 ·
-  // 弃 1 张手牌 = 1.8 · 永久夺取 = 6。
+  // 定价一律对标表里已有的锚(伤害 1 点 = 1.5 · 抽 1 张 = 2.2 · 沉默 = 2 ·
+  // 弃 1 张手牌 = 1.8 · 永久夺取 = 6)—— 而 2026-08-05 的实测说其中几个锚本身就偏低,
+  // 所以这几条多半跟着一起偏低(只有 borrow 有自己的实测)。
   //
   // 磨牌**不补疲劳伤害**(见 types 的说明),所以它不是伤害,是「拨快对方的疲劳计时器」。
   // 比弃手牌(1.8)轻:弃掉的是他现在就想用的东西,磨掉的是他若干回合后才会摸到的。
@@ -158,6 +197,8 @@ export const DEFAULT_WEIGHTS: Weights = {
   dispel: 1.2,
   // 永久夺取 seize = 6;借将只借一个回合(回合结束归还)。
   // 拿到的是「这一次冲锋 + 对方这一回合少一个挡刀的」,约等于夺取的一半不到。
+  // (n=15, z=−2.8 实测说远不止「不到一半」—— 带借将的卡整体弱于全池 4.8pp。
+  //  但它和发现同一类:价值在**怎么用那一个回合**,而贪心 AI 用不出来。)
   borrow: 2.8,
   // 伏笔的价值 = 载荷的价值,按约期打折。
   // 延迟既是代价(对手看得见、有时间准备)也偶尔是收益(过牌节奏),这里只算代价。
@@ -330,6 +371,30 @@ export function unusedWeights(cards: CardDef[]): (keyof Weights)[] {
     if (!used) out.push(k)
   }
   return out
+}
+
+/**
+ * 一张卡用到了哪些 op(去重)。
+ *
+ * sim-cards 的按效果归组和 fit-price 的归组版必须用**同一份**定义 ——
+ * 两边各写一遍的话,有一天一边加了新触发时机、另一边没加,
+ * 于是两份报表对同一张卡的归属悄悄分叉,而且谁都不会红。
+ */
+export function opsOf(c: CardDef): string[] {
+  const found = new Set<string>()
+  const scan = (s?: { ops?: Array<{ op: string }> }) => {
+    for (const o of s?.ops ?? []) found.add(o.op)
+  }
+  const anyC = c as unknown as Record<string, { ops?: Array<{ op: string }> } | undefined>
+  for (const k of [
+    'battlecry', 'spell', 'deathrattle', 'endOfTurn', 'startOfTurn',
+    'onAttack', 'onDamaged', 'onSpellCast', 'combo',
+  ]) {
+    scan(anyC[k])
+  }
+  if (c.choose) for (const m of c.choose.modes) scan(m.script)
+  if (c.secret) scan(c.secret.script)
+  return [...found]
 }
 
 export function median(xs: number[]): number {

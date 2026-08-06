@@ -30,6 +30,7 @@ import { fileURLToPath } from 'node:url'
 import { writeFileSync } from 'node:fs'
 import type { CardTask } from './workers/cards.worker'
 import type { CardDef } from '../src/engine/types'
+import { opsOf } from './pricing'
 
 const GAMES = Number(process.env.GAMES ?? 60)
 const SAMPLE = Number(process.env.SAMPLE ?? 12)
@@ -338,22 +339,9 @@ if (top.length > 0 && !VERIFY) {
 // 这里的均值**不是「这个 op 值多少分」**,而是「带这个 op 的卡整体偏强/偏弱多少」。
 // 一个 op 的均值显著为正,意味着定价表给它的分数偏低(卡因此定价偏便宜)。
 // 样本少的不列 —— 三五张卡的均值还是噪声。
-const opsOf = (c: CardDef): string[] => {
-  const found = new Set<string>()
-  const scan = (s?: { ops?: Array<{ op: string }> }) => {
-    for (const o of s?.ops ?? []) found.add(o.op)
-  }
-  const anyC = c as unknown as Record<string, { ops?: Array<{ op: string }> } | undefined>
-  for (const k of [
-    'battlecry', 'spell', 'deathrattle', 'endOfTurn', 'startOfTurn',
-    'onAttack', 'onDamaged', 'onSpellCast', 'combo',
-  ]) {
-    scan(anyC[k])
-  }
-  if (c.choose) for (const m of c.choose.modes) scan(m.script)
-  if (c.secret) scan(c.secret.script)
-  return [...found]
-}
+// opsOf 在 scripts/pricing.ts —— fit-price 的归组版要用**同一份**定义。
+// 两边各写一遍的话,有一天一边加了新触发时机、另一边没加,
+// 两份报表对同一张卡的归属就悄悄分叉了,而且谁都不会红。
 
 const MIN_N = 5
 const byOp = new Map<string, number[]>()

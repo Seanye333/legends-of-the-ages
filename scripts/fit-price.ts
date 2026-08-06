@@ -32,6 +32,7 @@ import {
   buildCurve,
   cardValue,
   excessValue,
+  opsOf,
 } from './pricing'
 import { diffZ, pearson, spearman } from './correlation'
 import { cvLambda, demeanByGroup, hashFold, ridge } from './fitWeights'
@@ -245,7 +246,120 @@ if (beta[BODY_COL] <= 0) {
   console.log(lines.length ? lines.join('\n') : '  (无)')
 }
 
-// ---- 候选:照着 sim-cards 的按效果归组手改的那一版 ----
+// ---- 候选二:按效果归组,**只看训练集**,规则化地改 ----
+//
+// 【为什么这条路走得通而回归走不通】
+// 回归要同时解 40 个未知数,每个的方差都吃满 ±9pp 的噪声。
+// 归组只问一件事:「带这个 op 的卡整体偏强多少」—— 那是 n 张卡的均值,
+// 噪声按 √n 缩小(returnToHand 有 51 张,均值标准误只有 ±1.0pp)。
+// 代价是它**分不开同卡的多个 op**(混杂),但混杂只让估计有偏,不让它爆炸。
+// 在这个信噪比下,有偏但稳,胜过无偏但方差无穷。
+//
+// 【三步,每一步只用训练集】
+//   1. 每个 op 的平均 Δ,和全池均值比,算 z;
+//   2. 单变量回归 Δ ~ 当前表的「超出本档多少点」,斜率就是**每点值多少个百分点**,
+//      拿它把 pp 换算成点(这一步以前是拍脑袋拍出来的 3pp/点);
+//   3. |z| > 2 的 op 才动,改动量 = (该 op 均值 − 全池均值) / 斜率。
+// 然后拿留出集裁决。留出集全程没参与:没参与拟合,也没参与**选哪几个 op**。
+const excessDefault = excessFor(DEFAULT_WEIGHTS)
+
+/** 在给定的卡集合上跑一遍归组规则,返回新权重表和一份改动清单。 */
+function groupedFrom(idx: number[]): { weights: Weights; lines: string[]; slope: number } {
+  const rows = idx.map((i) => ({
+    ops: opsOf(measured[i].card),
+    delta: ys[i],
+    excess: excessDefault.get(measured[i].card.id)!,
+  }))
+  const gPoolMean = rows.reduce((a, r) => a + r.delta, 0) / Math.max(1, rows.length)
+  const gSpread = Math.sqrt(
+    rows.reduce((a, r) => a + (r.delta - gPoolMean) ** 2, 0) / Math.max(1, rows.length),
+  )
+  // 每「点」卡面价值换多少个百分点胜率 —— 单变量最小二乘。
+  // 这一步以前是拍脑袋拍出来的(「大约 3pp 一点」),现在从数据里读。
+  const slope = (() => {
+    const mx = rows.reduce((a, r) => a + r.excess, 0) / Math.max(1, rows.length)
+    let sxy = 0
+    let sxx = 0
+    for (const r of rows) {
+      sxy += (r.excess - mx) * (r.delta - gPoolMean)
+      sxx += (r.excess - mx) ** 2
+    }
+    return sxx === 0 ? 0 : sxy / sxx
+  })()
+
+  const GROUPED: Weights = { ...DEFAULT_WEIGHTS }
+  const groupedLines: string[] = []
+  if (slope > 0) {
+    const byOpTrain = new Map<string, number[]>()
+    for (const r of rows) {
+      for (const op of r.ops) {
+        const arr = byOpTrain.get(op) ?? []
+        arr.push(r.delta)
+        byOpTrain.set(op, arr)
+      }
+    }
+  // op 名字 → 受它影响的权重键。
+  //
+  // 【为什么一个 op 可能要动好几个键】
+  // 归组只知道「带 damage 的卡整体偏强 X」,它**分不开**打脸和打随从
+  // (卡池里两者都记成 `damage`)。只把 `damage` 从 1.5 提到 4.0 而 `damageFace`
+  // 留在 1.1,等于宣布「3 点打脸只值打随从的四分之一」—— 那不是数据说的,
+  // 那是归组分不开的东西被我随手赋给了其中一边。
+  // 同一个 op 的几个分支按**同样的绝对量**一起动:效应是「这个 op 每份多值 X 点」,
+  // 它对每个分支都成立。
+  const KEYS_OF: Record<string, (keyof Weights)[]> = {
+    damage: ['damage', 'damageFace'],
+    damageAll: ['aoeDamage'],
+    buffStats: ['buffStats', 'buffStatsTemp'],
+    gainMana: ['gainMana', 'gainManaTemp'],
+    mill: ['millEnemy', 'millSelf'],
+    summonForEnemy: ['summon'],
+  }
+  // 这两个 op 的价值不由**单个权重**决定,归组的结论没法落到表上:
+  //   grantKeyword —— 主体是 KEYWORD_VALUE(不在 Weights 里),
+  //                   只动 grantKeywordTemp 等于把结论全按到「短效」那一支上;
+  //   delay        —— delayDecay 是个衰减率不是分值,加减「点」没有意义。
+  const SKIP = new Set(['grantKeyword', 'delay'])
+  for (const [op, ds] of byOpTrain) {
+    if (ds.length < 5 || SKIP.has(op)) continue
+    const keys = KEYS_OF[op] ?? [op as keyof Weights]
+    if (keys.some((k) => !(k in DEFAULT_WEIGHTS))) continue
+    const mean = ds.reduce((a, b) => a + b, 0) / ds.length
+    const z = (mean - gPoolMean) / (gSpread / Math.sqrt(ds.length))
+    if (Math.abs(z) <= 2) continue
+    const deltaPoints = (mean - gPoolMean) / slope
+    // 夹一下:一个 op 一次最多动 4 点。归组带混杂,极端值多半是同卡别的 op 的功劳。
+    const adj = Math.max(-4, Math.min(4, deltaPoints))
+    for (const key of keys) {
+      // 【下限:原值的两成,不许归零】
+      // 归零是一句**断言**:「这个效果一分不值」。这类测量给不出这种结论 ——
+      // 单个 op 的均值标准误约 ±1pp,而 ±4 的夹子会把任何一个小权重(护甲 0.7、
+      // 治疗 0.7)直接压穿到 0,那是夹子的产物不是数据的结论。
+      // 更要紧的是铁律 8:**贪心 AI 对治疗和护甲的评分近乎为零**,这把尺子
+      // 对防守向的东西系统性低估(先手补偿那一轮实测:6 点护甲只值 4.2pp,
+      // 不到一张牌的一半)。把它测出来的 0 原样刻进定价表,等于把 AI 的盲区
+      // 变成卡池的官方口径,而这份报表是给**人**看的。
+      GROUPED[key] = Math.max(0.2 * DEFAULT_WEIGHTS[key], DEFAULT_WEIGHTS[key] + adj)
+      groupedLines.push(
+        `  ${String(key).padEnd(18)} ${DEFAULT_WEIGHTS[key].toFixed(2).padStart(6)} → ` +
+          `${GROUPED[key].toFixed(2).padStart(6)}  (${op}, n=${ds.length}, z=${z.toFixed(1)})`,
+      )
+      }
+    }
+  }
+  return { weights: GROUPED, lines: groupedLines, slope }
+}
+
+const gTrain = groupedFrom(trainIdx)
+const GROUPED = gTrain.weights
+console.log(
+  `\n---- 归组版(只用训练集,${trainIdx.length} 张)----\n` +
+    `每点卡面价值 ≈ ${gTrain.slope.toFixed(3)} 个百分点胜率(单变量回归,训练集)。\n` +
+    `|z|>2 的 op 才动,改动量 = (该 op 均值 − 全池均值) / 斜率,单次最多 ±4 点:`,
+)
+console.log(gTrain.lines.length ? gTrain.lines.join('\n') : '  (无)')
+
+// ---- 候选一:照着 sim-cards 的按效果归组手改的那一版 ----
 //
 // 留着它是为了和回归对照。它正是「看一眼榜单就动手」的那种改法,
 // 换算尺度(平均 Δ 每 3 个百分点 ≈ 1 点)也是拍的 —— 拿它当对照组:
@@ -269,6 +383,7 @@ console.log(`\n---- 裁决:留出集 ${holdIdx.length} 张(全程没参与拟合
 const holdY = holdIdx.map((i) => ys[i])
 const holdBase = xsOf(DEFAULT_WEIGHTS, holdIdx)
 report('当前表', holdBase, holdY)
+report('归组版', xsOf(GROUPED, holdIdx), holdY)
 report('手改版', xsOf(HAND, holdIdx), holdY)
 if (FITTED) report('回归版', xsOf(FITTED, holdIdx), holdY)
 
@@ -290,8 +405,40 @@ const verdict = (label: string, xs: number[]) => {
         : '  → 显著**更差**,别改。',
   )
 }
+verdict('归组版', xsOf(GROUPED, holdIdx))
 verdict('手改版', xsOf(HAND, holdIdx))
 if (FITTED) verdict('回归版', xsOf(FITTED, holdIdx))
+
+// 手改版是**有泄漏的**,别拿它当证据:那六个数值是照着 1200 张那一轮的归组结果
+// 拍出来的,而那 1200 张是这 2416 张的子集 —— 也就是说留出集里有一半的卡
+// 参与过「该改哪几个 op、改多少」的决定。它留在这里只是当参照物,
+// **能当证据的只有归组版**(选 op、定尺度、定改动量三步全部只用训练集)。
+console.log(
+  '\n⚠ 「手改版」的六个数值是照着更早一轮归组结果拍的,而那一轮的卡是本轮的子集 ——\n' +
+    '  留出集里有一半参与过「改哪几个 op」的决定,**它的 z 偏高,不算干净的证据**。\n' +
+    '  干净的那个是「归组版」:选 op、定尺度、定改动量三步全部只用训练集。',
+)
+
+// ---- 最终表:同一条规则,用**全部样本**再算一遍 ----
+//
+// 留出集裁的是**这条规则**行不行,不是这一组具体数值。规则过关之后,
+// 拿全部样本重算才是最好的估计(训练集只有一半的卡,估计噪声大一倍)。
+// 这是标准做法,而且不构成泄漏:规则本身没有因为留出集的结果被改过。
+{
+  const final = groupedFrom(ALL)
+  console.log(
+    `\n---- 最终表(同一条规则,全部 ${measured.length} 张)----\n` +
+      `每点卡面价值 ≈ ${final.slope.toFixed(3)} 个百分点胜率。可以照抄进 scripts/pricing.ts:`,
+  )
+  console.log(final.lines.length ? final.lines.join('\n') : '  (无)')
+  const holdFinal = xsOf(final.weights, holdIdx)
+  const a = spearman(holdBase, holdY).r
+  const b = spearman(holdFinal, holdY).r
+  console.log(
+    `\n(参考:最终表在留出集上 ρ = ${b.toFixed(3)},当前表 ${a.toFixed(3)} —— ` +
+      `但它见过留出集,**这个数字不是证据**,证据是上面那条「归组版」。)`,
+  )
+}
 
 // ---- 分档看:尺子在哪个费用段最不准 ----
 // 全池一个 ρ 会把「低费段很准、高费段全错」和「哪都一般」混成同一个数。
