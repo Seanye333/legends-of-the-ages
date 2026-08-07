@@ -432,6 +432,32 @@ export function unusedWeights(cards: CardDef[]): (keyof Weights)[] {
 }
 
 /**
+ * 这一步是不是**恒等于什么都不做**(量为 0)。
+ *
+ * `lint-content` 的 `no-op` 规则报的是同一件事,那边负责让它可见,
+ * 这里负责让它**不进统计**。两处都在,是因为它们服务于不同的问题:
+ * 一个是「卡池里有没有脏数据」,一个是「校准的分母对不对」。
+ */
+const ZERO_FIELDS: Record<string, string[]> = {
+  damage: ['amount'], heal: ['amount'], aoeDamage: ['amount'], damageAll: ['amount'],
+  damagePer: ['amount'], gainArmor: ['amount'], gainMana: ['amount'], gainMorale: ['amount'],
+  gainSupply: ['amount'], reduceCost: ['amount'],
+  draw: ['count'], summon: ['count'], summonForEnemy: ['count'], tutor: ['count'],
+  recruit: ['count'], discardRandom: ['count'], stealCard: ['count'], resurrect: ['count'],
+  addToHand: ['count'], mill: ['count'], shuffleIntoDeck: ['count'],
+  // 增益两项都为 0 才算废;+1/+0 是有意义的
+  buffStats: ['attack', 'health'], buffPer: ['attack', 'health'],
+}
+
+export function isNoOp(op: { op: string }): boolean {
+  const fields = ZERO_FIELDS[op.op]
+  if (!fields) return false
+  const rec = op as unknown as Record<string, unknown>
+  const vals = fields.map((f) => rec[f]).filter((v): v is number => typeof v === 'number')
+  return vals.length > 0 && vals.every((v) => v === 0)
+}
+
+/**
  * 一张卡用到了哪些 op(去重)。
  *
  * sim-cards 的按效果归组和 fit-price 的归组版必须用**同一份**定义 ——
@@ -441,7 +467,14 @@ export function unusedWeights(cards: CardDef[]): (keyof Weights)[] {
 export function opsOf(c: CardDef): string[] {
   const found = new Set<string>()
   const scan = (s?: { ops?: Array<{ op: string }> }) => {
-    for (const o of s?.ops ?? []) found.add(o.op)
+    for (const o of s?.ops ?? []) {
+      // 【量为 0 的 op 不算数】
+      // 卡池里有 6 张卡带着 `draw count=0`(生成器留下的痕迹,见 lint-content 的
+      // no-op 规则)。它在对局里什么都不做,却会被按名字数进 `draw` 组 ——
+      // 给定价校准掺沙子:那一组的均值里混着六张根本没抽过牌的卡。
+      if (isNoOp(o)) continue
+      found.add(o.op)
+    }
   }
   const anyC = c as unknown as Record<string, { ops?: Array<{ op: string }> } | undefined>
   for (const k of [

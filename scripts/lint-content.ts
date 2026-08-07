@@ -16,6 +16,7 @@
 import { CARDS, CARDS_BY_ID, COLLECTIBLE_CARDS } from '../src/content/cards'
 import type { CardDef, EffectOp, EffectScript } from '../src/engine/types'
 import { requiresChosenTarget } from '../src/engine/resolve'
+import { isNoOp } from './pricing'
 
 const STRICT = process.argv.includes('--strict')
 
@@ -179,6 +180,27 @@ for (const c of COLLECTIBLE_CARDS) {
 }
 for (const [op, n] of [...opCount].sort((a, b) => a[1] - b[1])) {
   if (n <= 2) add('info', 'thin-mechanic', `op ${op} 全池只有 ${n} 张卡在用`)
+}
+
+// ---- warn:量为 0 的 op —— 它**恒等于什么都不做** ----
+//
+// 这类 op 不崩不红,引擎照跑,玩家也看不出来(`drawCards(state, p, 0, ev)` 的
+// 循环体一次都不执行,不掉血不发事件)。但它不是无害的:
+//   · 它会被**算进机制统计** —— `sim-cards` 的按效果归组按 op 名字数卡,
+//     一张「抽 0 张」的卡照样进 `draw` 组,给定价校准掺沙子;
+//   · 它是**生成器出过错的痕迹**,而痕迹不该悄悄留在卡池里。
+//
+// 实测(2026-08-06)全池 1724 个带数量的 op 里有 6 个:
+// 王允 / 孫匡 / 張英 / 陶應 / 劉範 / 楊復恭,全都是 `draw count=0`,
+// 全都来自**生成层**(卡面写的是「戰吼:屯糧 +1」,那一半是对的)。
+//
+// **根因在 `scripts/import-content.ts`,而那个文件没有素材源就不能改**
+// (见 ROADMAP 第 0 节)。所以这里只报 warn:让它可见、不让它变多。
+// 有素材源的机器上修好生成器,这几条会自己消失。
+for (const c of COLLECTIBLE_CARDS) {
+  for (const op of allOps(c)) {
+    if (isNoOp(op)) add('warn', 'no-op', `${op.op} 的量是 0 —— 这一步恒等于什么都不做`, c.id)
+  }
 }
 
 // ---- 输出 ----

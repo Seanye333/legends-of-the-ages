@@ -9,6 +9,8 @@ import {
   cardValue,
   excessValue,
   impliedCost,
+  isNoOp,
+  opsOf,
   median,
   unusedWeights,
   opValue,
@@ -196,6 +198,42 @@ describe('cardValue', () => {
       spell: { ops: [{ op: 'draw', count: 2 }], condition: { kind: 'boardCount', min: 2 } },
     } as never)
     expect(cardValue(cond)).toBeCloseTo(cardValue(uncond) * 0.75, 6)
+  })
+})
+
+describe('isNoOp / opsOf', () => {
+  it('量为 0 的 op 恒等于什么都不做', () => {
+    expect(isNoOp({ op: 'draw', count: 0 } as never)).toBe(true)
+    expect(isNoOp({ op: 'damage', amount: 0 } as never)).toBe(true)
+    expect(isNoOp({ op: 'draw', count: 1 } as never)).toBe(false)
+  })
+
+  it('增益只有两项都是 0 才算废 —— +1/+0 是有意义的', () => {
+    expect(isNoOp({ op: 'buffStats', attack: 0, health: 0 } as never)).toBe(true)
+    expect(isNoOp({ op: 'buffStats', attack: 1, health: 0 } as never)).toBe(false)
+  })
+
+  it('没有「量」的 op 一律不算废', () => {
+    // destroy / silence / seize 这些没有数量字段,不该被误判
+    expect(isNoOp({ op: 'destroy' } as never)).toBe(false)
+    expect(isNoOp({ op: 'silence' } as never)).toBe(false)
+  })
+
+  it('归组时跳过废掉的那一步', () => {
+    // 卡池里有 6 张带 `draw count=0`(生成器的痕迹)。按名字数卡的话,
+    // 它们会混进 `draw` 组,给定价校准掺沙子 —— 那一组的均值里
+    // 会有六张根本没抽过牌的卡。
+    const c = card({
+      battlecry: { ops: [{ op: 'gainSupply', amount: 1 }, { op: 'draw', count: 0 }] },
+    } as never)
+    expect(opsOf(c)).toEqual(['gainSupply'])
+  })
+
+  it('真的会抽牌就照常算', () => {
+    const c = card({
+      battlecry: { ops: [{ op: 'gainSupply', amount: 1 }, { op: 'draw', count: 2 }] },
+    } as never)
+    expect(opsOf(c).sort()).toEqual(['draw', 'gainSupply'])
   })
 })
 
