@@ -82,6 +82,12 @@ export interface OrderVerdict {
   checked: number
   /** 含有至少一条被检查关系的 chunk 数 */
   chunksWithLinks: number
+  /**
+   * 顺序确实反了、但两边没设同一个属性 —— **今天没有后果,明天会有**。
+   * 不当错误报(会红成噪声),但也不能让它完全看不见:
+   * 这几处一旦有人加一条与基件同属性的覆盖,就会静默失效。
+   */
+  inverted: Array<{ chunk: string; localClass: string; kitClass: string }>
 }
 
 /**
@@ -149,26 +155,79 @@ export interface ScopedSpan {
   first: number
   /** 最后一次 —— 比顺序要用「公共块整个在前」,所以看它的末位 */
   last: number
+  /** 这个类在**裸类规则**里设过的属性名 */
+  props: Set<string>
+}
+
+/** 拆声明块,`;` 在括号或引号里不算分隔符(`background:url(data:...;base64,...)`)。 */
+function propsOf(body: string): string[] {
+  const out: string[] = []
+  let depth = 0
+  let quote = ''
+  let cur = ''
+  const flush = () => {
+    const i = cur.indexOf(':')
+    if (i > 0) out.push(cur.slice(0, i).trim())
+    cur = ''
+  }
+  for (const c of body) {
+    if (quote) {
+      cur += c
+      if (c === quote) quote = ''
+      continue
+    }
+    if (c === '"' || c === "'") quote = c
+    else if (c === '(') depth++
+    else if (c === ')') depth--
+    else if (c === ';' && depth === 0) {
+      flush()
+      continue
+    }
+    cur += c
+  }
+  flush()
+  return out.filter(Boolean)
 }
 
 /**
  * 把产物 CSS 里的作用域类名 `_<local>_<hash>_<n>` 归堆。
- * 返回 hash → (名字 → 出现区间)。
+ * 返回 hash → (名字 → 出现区间 + 设过的属性)。
  *
  * hash 恒为 5 位字母数字,`n` 恒为数字,所以非贪婪的 local 不会把
  * hash 吃进去(`_backBtn_zedng_17` 只有 local=`backBtn` 一种切法)。
  * 前提是本地名里不含下划线 —— 这个仓库全是 camelCase,成立。
+ *
+ * 【只收**裸类**规则,带伪类的一概不算】
+ * 顺序只在特异度打平时才决定胜负。`.btnChip:hover` 是 (0,2,0),
+ * 本地的 `.kindBtn` 是 (0,1,0) —— 前者**永远**赢,和谁写在后面无关。
+ * 把伪类规则也算进来,只会报出一堆根本不会发生的「危险」。
  */
 export function scopedSpans(css: string): Map<string, Map<string, ScopedSpan>> {
   const out = new Map<string, Map<string, ScopedSpan>>()
-  for (const m of css.matchAll(/\._(.+?)_([a-z0-9]{5})_(\d+)\b/g)) {
-    const [local, hash] = [m[1], m[2]]
-    const at = m.index ?? 0
-    let byName = out.get(hash)
-    if (!byName) out.set(hash, (byName = new Map()))
-    const cur = byName.get(local)
-    if (cur) cur.last = at
-    else byName.set(local, { first: at, last: at })
+  // 本地名限死成标识符:不许含 `.`、空格、冒号。
+  // 用 `.+?` 会被后代选择器骗到 —— `._brawlCard_x_64:hover ._seal_x_95` 里
+  // 非贪婪的 `.+?` 会把 `brawlCard_x_64:hover ._seal` 整段当成本地名,
+  // 于是这个 hash 名下多出一个源文件里根本没有的「类名」,
+  // 连锁反应是**整个模块认不出来、静默跳过**(实测 BrawlScreen 就是这么丢的)。
+  const BARE = /^\._([A-Za-z][\w-]*)_([a-z0-9]{5})_(\d+)$/
+  for (const rule of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const at = rule.index ?? 0
+    const props = propsOf(rule[2])
+    if (props.length === 0) continue
+    for (const part of rule[1].split(',')) {
+      const m = BARE.exec(part.trim())
+      if (!m) continue
+      const [, local, hash] = m
+      let byName = out.get(hash)
+      if (!byName) out.set(hash, (byName = new Map()))
+      const cur = byName.get(local)
+      if (cur) {
+        cur.last = at
+        for (const p of props) cur.props.add(p)
+      } else {
+        byName.set(local, { first: at, last: at, props: new Set(props) })
+      }
+    }
   }
   return out
 }
@@ -176,21 +235,44 @@ export function scopedSpans(css: string): Map<string, Map<string, ScopedSpan>> {
 /**
  * 在一个 chunk 里认出某个源模块对应的 hash。
  *
- * 判据:该 hash 名下的名字**全部**出自这份源文件。
- * 认不出返回 null;同时像两个文件返回 'ambiguous' —— 交给上层报出来,不猜。
+ * 判据两层:
+ *   1. 该 hash 名下的名字**全部**出自这份源文件;
+ *   2. 满足 1 的可能有好几个,取**覆盖最多**的那一个。
+ *
+ * 【第二层是补上去的,起因是一次真的误判】
+ * `ScreenFallback.module.css` 只声明两个类(`screen` / `seal`),
+ * 而 `TitleScreen.module.css` 声明了 64 个、正好把这两个都包含 ——
+ * 于是「找 TitleScreen 的 hash」时,ScreenFallback 那一个也通过了第一层。
+ * 这个歧义一直潜伏着,只是 TitleScreen 那天才第一次有了 composes、
+ * 第一次被解析到,闸门当场报了 ambiguous(它拒绝猜,这一点是对的)。
+ *
+ * 覆盖最多这一条是**可证的**,不是启发式:CSS Modules 会把一份文件声明的类
+ * 原样吐出来,所以真正属于 F 的那个 hash 覆盖着 F 的绝大部分名字。
+ * 反过来,若 A 的名字集合真包含于 B,则 B 的 hash 名字数多于 |C(A)|,
+ * 不可能是 C(A) 的子集 —— 也就是说小文件那一侧不会被大文件抢走。
+ *
+ * 认不出返回 null;最大覆盖数上并列返回 'ambiguous' —— 交给上层报出来,不猜。
  */
 export function hashFor(
   spans: Map<string, Map<string, ScopedSpan>>,
   names: Set<string>,
 ): string | null | 'ambiguous' {
-  const hits: string[] = []
+  let best: string | null = null
+  let bestN = 0
+  let tie = false
   for (const [hash, byName] of spans) {
     if (byName.size === 0) continue
-    if ([...byName.keys()].every((n) => names.has(n))) hits.push(hash)
+    if (![...byName.keys()].every((n) => names.has(n))) continue
+    if (byName.size > bestN) {
+      best = hash
+      bestN = byName.size
+      tie = false
+    } else if (byName.size === bestN) {
+      tie = true
+    }
   }
-  if (hits.length === 0) return null
-  if (hits.length > 1) return 'ambiguous'
-  return hits[0]
+  if (best === null) return null
+  return tie ? 'ambiguous' : best
 }
 
 /** composes 里写的相对路径 → 仓库内路径的尾巴(只比文件名就够,基件全站唯一)。 */
@@ -204,6 +286,7 @@ function baseName(p: string): string {
  */
 export function checkChunkOrder(chunks: Chunk[], modules: SourceModule[]): OrderVerdict {
   const issues: OrderIssue[] = []
+  const inverted: OrderVerdict['inverted'] = []
   let checked = 0
   let chunksWithLinks = 0
 
@@ -276,22 +359,31 @@ export function checkChunkOrder(chunks: Chunk[], modules: SourceModule[]): Order
 
         any = true
         checked++
-        if (kit.last > local.first) {
-          issues.push({
-            kind: 'order',
-            chunk: chunk.file,
-            localClass: link.localClass,
-            kitClass: link.kitClass,
-            msg:
-              `.${link.kitClass} 的规则排在 .${link.localClass} 之后` +
-              `(公共 @${kit.last} > 本地 @${local.first})—— ` +
-              `两者特异度相同,本地的覆盖会全部失效`,
-          })
+        if (kit.last <= local.first) continue
+
+        // 顺序反了 —— 但只有**两边设了同一个属性**时才真的有后果。
+        // 各屏 composes 基件之后往往只加基件没管的那几条(尺寸、字号),
+        // 那种情况下谁先谁后都不影响任何一个像素,报出来只是噪声。
+        // 而一份会报无害情况的清单读两次就没人读了。
+        const clash = [...local.props].filter((p) => kit.props.has(p))
+        if (clash.length === 0) {
+          inverted.push({ chunk: chunk.file, localClass: link.localClass, kitClass: link.kitClass })
+          continue
         }
+        issues.push({
+          kind: 'order',
+          chunk: chunk.file,
+          localClass: link.localClass,
+          kitClass: link.kitClass,
+          msg:
+            `.${link.kitClass} 的规则排在 .${link.localClass} 之后` +
+            `(公共 @${kit.last} > 本地 @${local.first}),而两边都设了 ` +
+            `${clash.join(' / ')} —— 特异度相同,本地这几条会被压掉`,
+        })
       }
     }
     if (any) chunksWithLinks++
   }
 
-  return { issues, checked, chunksWithLinks }
+  return { issues, checked, chunksWithLinks, inverted }
 }

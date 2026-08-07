@@ -271,25 +271,15 @@
 
 .lang,
 .langActive {
-  border: 1px solid rgba(122, 100, 58, 0.6);
-  background: rgba(20, 16, 10, 0.72);
-  color: var(--parchment-faint);
-  border-radius: 999px;
+  composes: btnChip from '../uiKit.module.css';
+  /* 「中/EN/双」三个字宽不一样,不给下限会长短不齐 */
   min-width: 34px;
   padding: 4px 10px;
-  cursor: pointer;
   font-size: 12px;
-  transition: color 0.15s ease;
-}
-
-.lang:hover {
-  color: var(--parchment-dim);
 }
 
 .langActive {
-  background: linear-gradient(180deg, #4c3d20, #2c2210);
-  color: var(--gold-bright);
-  border-color: var(--gold-deep);
+  composes: btnChipOn from '../uiKit.module.css';
 }
 
 /* —— 图鉴题头 —— */

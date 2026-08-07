@@ -47,17 +47,16 @@
 
 .tab,
 .tabActive {
+  composes: btnChip from '../uiKit.module.css';
   font-family: var(--font-display);
   font-size: 13px;
   letter-spacing: 0.12em;
   padding: 6px 13px;
-  border-radius: 999px;
-  border: 1px solid rgba(122, 100, 58, 0.55);
-  background: rgba(20, 16, 10, 0.72);
-  color: var(--parchment-faint);
-  cursor: pointer;
 }
 
+/* **这一处的选中态不收进基件,是有意的**:主义色不是装饰,是信息 ——
+ * 这一排页签的颜色就是「你正在筛哪一个主义」。其余四种选中态写法之间
+ * 找不出功能上的分野(那是口味),只有这一种在传达内容。 */
 .tabActive {
   border-color: var(--doctrine, var(--gold-deep));
   color: var(--parchment);

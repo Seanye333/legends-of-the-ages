@@ -76,8 +76,25 @@ if (v.checked === 0) {
   process.exit(1)
 }
 
+// 顺序确实反了、但两边没设同一个属性 —— 今天没有后果,明天会有。
+// 不当错误报(会红成噪声),但也不能让它完全看不见:
+// 这几处一旦有人加一条与基件同属性的覆盖,就会**静默**失效。
+if (v.inverted.length > 0) {
+  const by = new Map<string, string[]>()
+  for (const i of v.inverted) {
+    const arr = by.get(i.chunk) ?? []
+    arr.push(`.${i.localClass}`)
+    by.set(i.chunk, arr)
+  }
+  console.log(
+    `\n! ${v.inverted.length} 处顺序是反的,但两边没设同一个属性 —— 今天无害,` +
+      `\n  在这几处**不要**去覆盖基件已经设过的属性,那会静默失效:`,
+  )
+  for (const [chunk, names] of by) console.log(`    [${chunk}] ${[...new Set(names)].join(' ')}`)
+}
+
 if (v.issues.length === 0) {
-  console.log('✓ 每一块里公共基件都排在使用方前面 —— 各屏的覆盖都生效。')
+  console.log('\n✓ 每一块里公共基件都排在使用方前面 —— 各屏的覆盖都生效。')
   process.exit(0)
 }
 

@@ -12,25 +12,16 @@
 
 .kindBtn,
 .kindActive {
+  composes: btnChip from '../uiKit.module.css';
   padding: 4px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(122, 100, 58, 0.5);
-  background: rgba(26, 20, 11, 0.7);
-  color: var(--parchment-dim);
   font-size: 12px;
-  cursor: pointer;
 }
 
-.kindBtn:hover {
-  border-color: var(--gold-deep);
-  color: var(--parchment);
-}
-
+/* 原来的选中态是「实心金 + 深字」,全站九处胶囊里只有两处这么写
+ * (这里和列传筛选)。四种选中态写法之间找不出任何功能上的分野 ——
+ * 单选多选都有,单纯是四个人的口味。按数出来的多数收(见 uiKit)。 */
 .kindActive {
-  background: rgba(216, 178, 106, 0.9);
-  border-color: var(--gold);
-  color: #1b150c;
-  font-weight: 600;
+  composes: btnChipOn from '../uiKit.module.css';
 }
 
 .lede {
