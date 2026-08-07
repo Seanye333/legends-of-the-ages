@@ -491,8 +491,10 @@ export const BOSSES: BossDef[] = [
       en: 'One night at Chenqiao, the yellow robe was thrown over him. With a single cudgel he won four hundred prefectures — he wants not a battle but the whole board.',
     },
     doctrine: 'royal',
-    hp: 64,
-    deckTier: 0.45,
+    hp: 65,
+    // 第 2 章后半原本比前半还软(67% / 68%),曲线是平的。
+    // tune-campaign 网格(120 局/档)显示 tier→强度**非单调**,最硬的一档是 0.90。
+    deckTier: 0.9,
     power: power(
       'bp-huangpao',
       { zh: '黃袍加身', en: 'The Yellow Robe' },
@@ -514,8 +516,8 @@ export const BOSSES: BossDef[] = [
       en: 'Easier to move a mountain than the Yue army. Frozen, they tear down no home; starving, they loot nothing — you cannot break a host with no weakness.',
     },
     doctrine: 'royal',
-    hp: 66,
-    deckTier: 0.45,
+    hp: 68,
+    deckTier: 0.9,
     power: power(
       'bp-yuejiajun',
       { zh: '岳家軍', en: 'The Yue Family Army' },

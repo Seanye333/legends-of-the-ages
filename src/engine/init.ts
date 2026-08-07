@@ -8,7 +8,7 @@ import type {
   PlayerState,
   PuzzleScenario,
 } from './types'
-import { BOARD_LIMIT, DECK_SIZE, HAND_LIMIT, OPENING_HAND, SECRET_LIMIT, START_HP } from './types'
+import { BOARD_LIMIT, DECK_SIZE, HAND_LIMIT, OPENING_HAND, SECOND_PLAYER_COMP, SECRET_LIMIT, START_HP } from './types'
 import { rngShuffle, seedRng } from './rng'
 import { refreshInstance } from './resolve'
 
@@ -79,14 +79,16 @@ export function createGame(cfg: GameConfig, lib: CardLibrary): GameState {
     const hand = deck.splice(deck.length - handSize, handSize)
     const maxHp = cfg.heroHps?.[side] ?? START_HP
     const mod = cfg.modifiers?.[side]
+    const isSecond = side !== cfg.first
     // 远征宝物:起手多抽
     if (mod?.bonusHandSize) {
       const extra = deck.splice(deck.length - mod.bonusHandSize, mod.bonusHandSize)
       hand.push(...extra)
     }
-    // 起手全部手牌减费
-    if (mod?.handCostDelta) {
-      for (const c of hand) c.costDelta += mod.handCostDelta
+    // 起手全部手牌减费 —— 后手补偿(见 SECOND_PLAYER_COMP)叠加在 RunModifiers 之上
+    const costDelta = (mod?.handCostDelta ?? 0) + (isSecond ? SECOND_PLAYER_COMP.handCostDelta : 0)
+    if (costDelta) {
+      for (const c of hand) c.costDelta += costDelta
     }
     // 开局场上衍生物
     const board: CardInstance[] = []
@@ -98,7 +100,7 @@ export function createGame(cfg: GameConfig, lib: CardLibrary): GameState {
       heroId: cfg.heroIds[side],
       heroHp: maxHp,
       heroMaxHp: maxHp,
-      armor: mod?.startArmor ?? 0,
+      armor: (mod?.startArmor ?? 0) + (isSecond ? SECOND_PLAYER_COMP.startArmor : 0),
       fatigue: 0,
       mana: { current: 0, max: 0 },
       deck,

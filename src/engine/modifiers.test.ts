@@ -4,7 +4,7 @@ import { createGame } from './init'
 import { applyCommand } from './reducer'
 import { effectiveCost } from './resolve'
 import type { CardDef, CardLibrary, GameConfig } from './types'
-import { START_HP } from './types'
+import { SECOND_PLAYER_COMP, START_HP } from './types'
 
 const power = { id: 'p', name: { zh: 'p', en: 'p' }, text: { zh: 'p', en: 'p' }, cost: 2, script: { ops: [{ op: 'draw' as const, count: 1 }] } }
 
@@ -29,11 +29,43 @@ function make(mod: NonNullable<GameConfig['modifiers']>[0]): GameConfig {
   }
 }
 
+// 后手补偿是**默认规则**,不是修饰符 —— 见 types.ts 的 SECOND_PLAYER_COMP。
+// 下面几条断言里 1 号座位是后手(make 里 first: 0),所以它带着这份补偿。
+describe('后手补偿(默认规则)', () => {
+  it('后手起手全部手牌便宜 1 费,先手不便宜', () => {
+    const s = createGame(make(undefined), LIB)
+    for (const c of s.players[1].hand) expect(c.costDelta).toBe(SECOND_PLAYER_COMP.handCostDelta)
+    for (const c of s.players[0].hand) expect(c.costDelta).toBe(0)
+  })
+
+  it('后手开局带护甲,先手不带', () => {
+    const s = createGame(make(undefined), LIB)
+    expect(s.players[1].armor).toBe(SECOND_PLAYER_COMP.startArmor)
+    expect(s.players[0].armor).toBe(0)
+  })
+
+  it('**跟着先后手走,不跟着座位号走**', () => {
+    // 这一条是整个补偿最容易写错的地方:座位 0 不一定先手。
+    const s = createGame({ ...make(undefined), first: 1 }, LIB)
+    expect(s.players[0].armor).toBe(SECOND_PLAYER_COMP.startArmor)
+    expect(s.players[1].armor).toBe(0)
+  })
+
+  it('远征宝物**叠加**在补偿之上,不是替代', () => {
+    // 后手同时拿到宝物时,两份护甲要相加 —— 早期写成 `mod?.startArmor ?? COMP` 的话
+    // 宝物会把补偿悄悄吃掉,而那是一条不会报错的规则丢失。
+    const cfg = { ...make(undefined), modifiers: [undefined, { startArmor: 5 }] as GameConfig['modifiers'] }
+    const s = createGame(cfg, LIB)
+    expect(s.players[1].armor).toBe(5 + SECOND_PLAYER_COMP.startArmor)
+  })
+})
+
 describe('远征宝物修正', () => {
   it('开局护甲', () => {
     const s = createGame(make({ startArmor: 5 }), LIB)
     expect(s.players[0].armor).toBe(5)
-    expect(s.players[1].armor).toBe(0)
+    // 1 号是后手,所以它带着默认补偿的那 3 点 —— 这里验的是「宝物只给了 0 号」
+    expect(s.players[1].armor).toBe(SECOND_PLAYER_COMP.startArmor)
   })
 
   it('起手多抽', () => {

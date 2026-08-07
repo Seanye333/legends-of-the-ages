@@ -96,6 +96,8 @@ describe('greedy AI', () => {
     state.turn = 5
     state.players[0].mana = { current: 10, max: 10 }
     state.players[1].heroHp = 2
+    // 后手默认带 3 点护甲(SECOND_PLAYER_COMP)—— 这条用例要的是「2 血可斩」这个局面本身
+    state.players[1].armor = 0
     state.players[0].hand = [createInstance('a-charge', 555, LIB)]
     // 两步内(出牌→冲脸)AI 应终结比赛
     const rngs: [number, number] = [1, 1]

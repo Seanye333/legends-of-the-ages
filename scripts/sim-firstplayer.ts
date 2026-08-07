@@ -188,13 +188,34 @@ if (COMP === 'sweep') {
   console.log('每一格都是同一套牌打自己,补偿给**后手方**。目标:把先手胜率压回 50–55%。\n')
   const t = performance.now()
   const seSweep = Math.sqrt(0.25 / (GAMES * PRECON_DECKS.length)) * 100
-  console.log(`方案              先手胜率   评价`)
+  // 【离散度这一列是补出来的,起因是一次真的翻车】
+  //
+  // 2026-08-06 把 `hp-1,hand+1`(平均 50.8%,当时表里最好的一格)落了地,
+  // 先手优势确实压到 51.7% —— 然后 **sim-balance 红了**:
+  // 魏武揮鞭 62.2%、坐斷東南 35.0%,两套双双出界。
+  //
+  // 病根只有落地才看得见:**补偿是均匀给的,而先手优势不是均匀分布的**。
+  //   鷹視狼顧 −30.5   魏武揮鞭 −29.2   桃園仁德 −24.5
+  //   克己復禮 −21.5   大隱於市 −21.3   坐斷東南 **−5.8**
+  // 六套的离散度从 7.5 个百分点涨到 24.0。坐斷東南 吃不到这份补偿,
+  // 而它本来就是六套里最弱的一套 —— 同一个改动把它又往下踩了一脚。
+  //
+  // 也就是说**光看平均值选方案是不够的**:一个平均落在 50% 但把六套拉开的方案,
+  // 一定会在 sim-balance 上炸。所以这里把离散度也印出来,
+  // 让「够不够」和「匀不匀」在同一张表上一起读。
+  const spread = (xs: number[]) => Math.max(...xs) - Math.min(...xs)
+  console.log(`方案              先手胜率   离散    评价`)
   let baseRs: number[] = []
+  let baseSpread = 0
   const inert: string[] = []
   for (const [name, comp] of Object.entries(COMPENSATIONS)) {
     const rs = await runAll(comp, false)
-    if (name === 'none') baseRs = rs
+    if (name === 'none') {
+      baseRs = rs
+      baseSpread = spread(rs)
+    }
     const avg = rs.reduce((a, b) => a + b, 0) / rs.length
+    const sp = spread(rs)
     // 【和「无补偿」逐格相同 = 这个补偿在这套预组里根本没有载体】
     //
     // 2026-08-06 踩到:`supply+2` 与 `morale+2` 都报出 73.9%,和 none **一模一样**。
@@ -206,10 +227,18 @@ if (COMP === 'sweep') {
     // 一个「完全没有效果」的数字要么是重大发现,要么是没接上,不能靠肉眼分辨 —— 所以钉在这里。
     const same = baseRs.length === rs.length && rs.every((v, i) => v === baseRs[i])
     if (name !== 'none' && same) inert.push(name)
+    // 「够」与「匀」要一起看:平均落在带内、但把六套拉开的方案,落地必炸 sim-balance。
+    const centred = avg >= 45 && avg <= 55
     const verdict = same && name !== 'none'
       ? '⚠ 与无补偿**逐格相同** —— 没有载体,测不了'
-      : avg > 55 ? '仍然不够' : avg < 45 ? '补过头了(后手反而占优)' : '✓ 落在 45–55'
-    console.log(`${name.padEnd(16)} ${avg.toFixed(1)}% ±${seSweep.toFixed(1)}   ${verdict}`)
+      : !centred
+        ? avg > 55 ? '仍然不够' : '补过头了(后手反而占优)'
+        : sp > baseSpread * 2
+          ? `⚠ 够了但**不匀**(离散 ${(sp / baseSpread).toFixed(1)}× 于无补偿)—— 落地会炸 sim-balance`
+          : '✓ 够且匀'
+    console.log(
+      `${name.padEnd(16)} ${avg.toFixed(1)}% ±${seSweep.toFixed(1)}  ${sp.toFixed(1)}pp  ${verdict}`,
+    )
   }
   if (inert.length > 0) {
     console.log(

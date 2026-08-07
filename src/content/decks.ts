@@ -109,8 +109,15 @@ export const PRECON_DECKS: DeckList[] = [
       // (3/4 潜行+冻结战吼):总胜率反而从 38% 掉到 36%。光环与控场的价值抵不过
       // 直接掉的 3 点身材 —— 割据这套是靠站场磨死对手的,身材就是它的答案本身。
       ...copies(2, 'man-chong', 'lu-fan'), ...copies(1, 'hist-li-yu'),
-      ...copies(2, 'wang-ping', 'shi-xie'), ...copies(1, 'sun-quan', 'hist-wang-shichong'),
-      ...copies(2, 'ma-teng', 'zhou-tai', 'cheng-pu'), ...copies(1, 'sun-ce', 'zhu-ran'),
+      // 陸抗(5 费 3/6 守护)是 2026-08-07 量出来的:`CARDS=lu-kang GAMES=400 npm run sim-cards`
+      // 在**这套牌自己**做基准时 Δ **+21.5**,候选里第二名才 +12.0。
+      // 那不是「这张卡超模」——它 5 费 3/6 在费用曲线上还偏低 ——
+      // 而是**这套牌缺守护缺到这个地步**:Δ 是相对所在卡组量的,它量的是「缺口」。
+      // 同时把六费从八张压到六张:原来的曲线顶太重(6费×8),
+      // 而后手补偿(SECOND_PLAYER_COMP)让开局更快,顶重的一头吃亏最大。
+      ...copies(2, 'wang-ping', 'shi-xie'),
+      ...copies(1, 'lu-kang', 'sun-quan', 'hist-wang-shichong'),
+      ...copies(2, 'ma-teng', 'zhou-tai'), ...copies(1, 'cheng-pu', 'sun-ce', 'zhu-ran'),
     ],
   },
   {
