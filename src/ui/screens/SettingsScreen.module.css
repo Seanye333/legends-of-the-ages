@@ -206,20 +206,15 @@
 
 .chip,
 .chipActive {
+  composes: btnChip from '../uiKit.module.css';
+  /* 全站最大的一档 —— 它是拇指要点的分区页签,不是筛选片 */
   padding: 8px 14px;
-  border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
-  cursor: pointer;
-  border: 1px solid rgba(212, 168, 74, 0.28);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--parchment-faint);
 }
 
 .chipActive {
-  background: rgba(212, 168, 74, 0.2);
-  border-color: rgba(212, 168, 74, 0.75);
-  color: var(--gold-bright);
+  composes: btnChipOn from '../uiKit.module.css';
 }
 
 .hint {

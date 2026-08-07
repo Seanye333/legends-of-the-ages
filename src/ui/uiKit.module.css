@@ -187,19 +187,53 @@
   cursor: default;
 }
 
-/* 片:胶囊,用于筛选/切换。选中态由各屏自己叠(主义色不一样)。 */
+/* 片:胶囊,用于筛选 / 切换 / 分段选择。
+ *
+ * 【这一版的数值是量出来的,不是拍的】
+ * 上一版这里的底色描边是我照着截图**估**的,而且从来没有一个屏 composes 它。
+ * 真去数了一遍全站九处可点胶囊:padding 九处九种写法,border 四种、
+ * background 四种、font-size 四种 —— 但其中**四处是逐字节相同的**
+ * (乱斗规则钮 / 关底选卡组 / 构筑筛选 / 设置分区),连选中态都一模一样。
+ * 那是全站唯一一处「真的达成过一致」的胶囊,所以基件按那一版收,
+ * 而不是按我原来估的那版。凡是量得到的,就不该用估的。
+ *
+ * 【顺手查出来的两件事】
+ * · `-webkit-tap-highlight-color` 九处里只有这里写了 —— 也就是说手机上
+ *   点那九排胶囊,每一下都会闪一个系统蓝框。
+ * · transition 九处里只有两处有。
+ *
+ * 【padding 和字号刻意留在各屏】
+ * 九种 padding 里有几种是有理由的:设置页那排是 8px 14px,因为它是拇指要点的
+ * 分区页签;关底那排是 5px 11px,挤在地图上方。强行统一会改版式 ——
+ * 这一轮只统一「长相」,不动尺寸。
+ */
 .btnChip {
-  padding: 5px 13px;
   border-radius: var(--r-pill);
-  border: 1px solid rgba(122, 100, 58, 0.55);
-  background: rgba(20, 16, 10, 0.6);
+  border: 1px solid rgba(212, 168, 74, 0.28);
+  background: rgba(255, 255, 255, 0.04);
   color: var(--parchment-faint);
-  font-size: var(--fs-small);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: color 0.15s ease;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .btnChip:hover {
   color: var(--parchment-dim);
+}
+
+/* 选中态。原来这里写着「选中态由各屏自己叠(主义色不一样)」——
+ * 数完之后发现只有图鉴那一排真的用主义色,另有四处是同一套金填充。
+ * 那一套收进来,用主义色的那一处自己叠就好。 */
+.btnChipOn {
+  background: rgba(212, 168, 74, 0.2);
+  border-color: rgba(212, 168, 74, 0.75);
+  color: var(--gold-bright);
+}
+
+/* `.btnChip:hover` 是 (0,2,0),比 `.btnChipOn` 的 (0,1,0) 高 ——
+ * 不写这一条,鼠标扫过选中的那一片时金色会被压回灰色。 */
+.btnChipOn:hover {
+  color: var(--gold-bright);
 }

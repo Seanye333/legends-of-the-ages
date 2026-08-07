@@ -542,21 +542,15 @@
 
 .chip,
 .chipActive {
+  composes: btnChip from '../uiKit.module.css';
   padding: 6px 10px;
-  border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
-  cursor: pointer;
-  border: 1px solid rgba(212, 168, 74, 0.28);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--parchment-faint);
   white-space: nowrap;
 }
 
 .chipActive {
-  background: rgba(212, 168, 74, 0.2);
-  border-color: rgba(212, 168, 74, 0.75);
-  color: var(--gold-bright);
+  composes: btnChipOn from '../uiKit.module.css';
 }
 
 .chip:focus-visible,
