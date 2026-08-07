@@ -13,15 +13,31 @@
 //   · 轮流先后手;
 //   · 被换掉的是**费用最接近**的那张 —— 否则量到的是曲线变化,不是这张牌。
 //
-// 【怎么读结果】
-// 一张牌的合理区间大约是 **±4 个百分点**:低于 −4 说明它比同费的普通牌还差
-// (定价虚高),高于 +4 说明它单卡超模。注意噪声:60 局的标准差约 ±6 个点,
-// 所以**单张卡的单次测量不能下结论** —— 要么加样本量,要么看一批卡的分布。
+// 【怎么读结果 —— 零点是量出来的,不是 ±4】
+// 这里以前写着「合理区间大约是 ±4 个百分点」。那个 ±4 是**估的**,没有依据。
+// 2026-08-07 真去量了对照组(五张白板武将,纯身材,各 600 局):
+//
+//   張布 +6.5 · 薛珝 +3.5 · 朱然 −1.0 · 陳餘 −1.2 · 辛毗 −4.8   中位 −1.0
+//
+// 也就是说正常卡的跨度是 **−4.8 ~ +6.5**,比 ±4 宽。
+// 拿 ±4 当线会把一批正常卡判成超模,照着改就是在削平卡池。
+// (后手补偿落地之后重量:−3.2 ~ +6.7,中位 −1.3 —— **零点几乎没动**。
+//  补偿推动了单张卡,没有推动尺子本身。)
+//
+//   CONTROL=1 GAMES=600 npm run sim-cards    # 重新量一次零点
+//
+// **每次全局规则改动之后都要重量** —— 挪没挪只能量,不能推。
+// 后手补偿把十一张已经调平的卡整体推了一遍(姜維 +7.8 → +13.5),
+// 「零点跟着动」是完全合理的猜测,而实测**它没动**。这就是量一次的价值。
+//
+// 噪声:60 局的标准差约 ±6 个点(600 局 ±2.0,而 Δ 是两次测量之差,再 ×√2)。
+// **单张卡的单次测量不能下结论** —— 要么加样本量,要么看一批卡的分布。
 //
 // 运行:
 //   npm run sim-cards                       # 抽样 12 张
 //   CARDS=guan-yu,zhang-fei npm run sim-cards
 //   COST=5 SAMPLE=20 GAMES=80 npm run sim-cards
+//   CONTROL=1 GAMES=600 npm run sim-cards   # 对照组:量这把尺子的零点
 import { PRECON_DECKS } from '../src/content/decks'
 import { CARDS_BY_ID, COLLECTIBLE_CARDS } from '../src/content/cards'
 import { HEROES_BY_ID } from '../src/content/overrides/heroes'
@@ -31,6 +47,7 @@ import { writeFileSync } from 'node:fs'
 import type { CardTask } from './workers/cards.worker'
 import type { CardDef } from '../src/engine/types'
 import { opsOf } from './pricing'
+import { band, pickControls } from './controlGroup'
 
 const GAMES = Number(process.env.GAMES ?? 60)
 const SAMPLE = Number(process.env.SAMPLE ?? 12)
@@ -88,8 +105,26 @@ function swapIn(card: CardDef, baseIdx: number): string[] | null {
 // 全池都能测了 —— 只要它的主义有对应的预组(六个主义各有一套,所以实际是全部)
 const pool = COLLECTIBLE_CARDS.filter((c) => !c.token && baseIdxFor(c) >= 0)
 
+// 【CONTROL=1:量对照组,也就是量这把尺子的零点】
+//
+// 这个脚本的注释长期写着「一张牌的合理区间大约是 ±4 个百分点」——
+// 那个 ±4 是**估的**,从来没有东西支撑它。它错了会导致两类相反的错误:
+// 估窄了 → 一堆正常卡被判成超模,照着改就是把卡池削平;估宽了 → 真超模的混过去。
+//
+// 零点只能量:拿一批**白板武将**(纯身材,见 controlGroup.isVanilla)
+// 换进同一套预组,它们的 Δ 分布就是「正常卡长什么样」。
+// 2026-08-07 实测是 `−4.8 ~ +6.5,中位 −1.0`,不是 ±4。
+//
+// **每次全局规则改动之后都要重量一次** —— 同一天落地的后手补偿把十一张
+// 已经调平的卡整体推了一遍(姜維 +7.8 → +13.5),零点当然也跟着动了。
+// 做成一条命令就是为了让「重量一次」便宜到没有理由跳过。
+const CONTROL = process.env.CONTROL === '1'
+const CONTROL_COSTS = [2, 3, 4, 5, 6]
+
 let targets: CardDef[]
-if (ONLY.length > 0) {
+if (CONTROL) {
+  targets = pickControls(pool, CONTROL_COSTS)
+} else if (ONLY.length > 0) {
   targets = ONLY.map((id) => CARDS_BY_ID[id]).filter(Boolean)
 } else {
   const filtered = COST_FILTER === null ? pool : pool.filter((c) => c.cost === COST_FILTER)
@@ -163,6 +198,20 @@ for (const r of rows) {
 }
 
 console.log(`\n(${((performance.now() - t0) / 1000).toFixed(1)}s)`)
+
+// 对照组模式:把跨度打出来 —— 那就是「正常卡长什么样」
+if (CONTROL) {
+  const b = band(rows.map((r) => r.delta))
+  console.log(
+    `\n对照组(白板武将,纯身材):${b.n} 张,` +
+      `Δ 跨度 ${b.lo.toFixed(1)} ~ ${b.hi.toFixed(1)},中位 ${b.median.toFixed(1)}`,
+  )
+  console.log(
+    '  **这就是这把尺子的零点。** 判一张卡超不超模,拿它和这个跨度比,' +
+      '\n  而不是和一个拍出来的 ±4 比。全局规则一改就重量一次:' +
+      '\n  CONTROL=1 GAMES=600 npm run sim-cards',
+  )
+}
 
 // 【DUMP=<路径>:把每张卡的实测 Δ 落盘】
 // 这份数据是 price-cards **唯一可能的外部真值**。那张定价表现在是从卡池反推卡池的

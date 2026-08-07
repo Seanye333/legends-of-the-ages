@@ -100,7 +100,7 @@ CI 在 `.github/workflows/ci.yml`:lint / 构建 / 单测 / e2e 一个 job,**平�
 
 11. **闸门自己也要能被验证。**(2026-08-04 加,起因是一天之内发现两道闸门在说谎)
 
-    判定逻辑一律从「跑模拟的脚本」里抽成**纯函数**单放一个模块,再配一份喂合成数据的自检 —— 两个方向都验:**该红时红、不该红时不红**。样板见 `scripts/campaignGate.ts` + `campaignGate.test.ts`,几毫秒跑完,不必等十分钟的模拟。目前九份:`campaignGate` / `simSeating` / `firstPlayerGate` / `balanceGate` / `baseline` / `perfBudgetGate` / `contentRules` / `cssOrder` / `replayDiff`。同一套做法也用在不卡门的清单上,因为**一把会误报的尺子比没有尺子更危险**(`pricing` / `correlation` / `fitWeights` / `deadCss` / `cssDupes` 各带自检 —— `deadCss` 的第一版就把全站共用的 `uiKit.module.css` 报成了「整个文件都是死的」)。
+    判定逻辑一律从「跑模拟的脚本」里抽成**纯函数**单放一个模块,再配一份喂合成数据的自检 —— 两个方向都验:**该红时红、不该红时不红**。样板见 `scripts/campaignGate.ts` + `campaignGate.test.ts`,几毫秒跑完,不必等十分钟的模拟。目前九份:`campaignGate` / `simSeating` / `firstPlayerGate` / `balanceGate` / `baseline` / `perfBudgetGate` / `contentRules` / `cssOrder` / `replayDiff`。同一套做法也用在不卡门的清单上,因为**一把会误报的尺子比没有尺子更危险**(`pricing` / `correlation` / `fitWeights` / `deadCss` / `cssDupes` / `controlGroup` 各带自检 —— `deadCss` 的第一版就把全站共用的 `uiKit.module.css` 报成了「整个文件都是死的」)。
 
     三条具体的教训:
 
