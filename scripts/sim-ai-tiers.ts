@@ -12,13 +12,13 @@ import { CARDS_BY_ID } from '../src/content/cards'
 import { HEROES_BY_ID } from '../src/content/overrides/heroes'
 import { createGame } from '../src/engine/init'
 import { applyCommand } from '../src/engine/reducer'
-import { aiStep, AI_LEVELS, type AiConfig } from '../src/ai/greedy'
+import { aiStep, AI_LEVELS, AI_NORMAL, type AiConfig } from '../src/ai/greedy'
 import { START_HP } from '../src/engine/types'
 import type { GameConfig, PlayerIdx, Winner } from '../src/engine/types'
 
 const GAMES = Number(process.env.GAMES ?? 24)
-const A = (process.env.A ?? 'marshal') as keyof typeof AI_LEVELS
-const B = (process.env.B ?? 'general') as keyof typeof AI_LEVELS
+const A = process.env.A ?? 'marshal'
+const B = process.env.B ?? 'general'
 
 function play(
   deckIdx: number,
@@ -54,8 +54,43 @@ function play(
   return state.winner ?? 'draw'
 }
 
-const cfgA = AI_LEVELS[A]
-const cfgB = AI_LEVELS[B]
+/**
+ * 档位名,可选地跟一串权重覆盖:`normal` / `general` / `normal:balance=1`。
+ *
+ * 【为什么要有这个】
+ * 「改评分权重之后 AI 有没有变强」是这个仓库最常问的一类问题(persist 那次就是
+ * 这么定的:新尺子对旧尺子 54.6%,864 局,z = 2.7),但此前 A/B 只认档位名 ——
+ * 想比「同一档、只差一个权重」就得改脚本。
+ *
+ * 而 `greedy.ts` 里**不能**放一个读环境变量的开关:它会打包进浏览器,
+ * 那里没有 `process`(那次事故让标题页整个打不开,见 AI_NORMAL 上方的注释)。
+ * 所以对照必须在**脚本侧**构造 —— 这个解析器就是那句话的落地。
+ */
+function parseCfg(spec: string): { label: string; cfg: AiConfig } {
+  const [name, overrides] = spec.split(':')
+  const base: AiConfig =
+    name === 'normal' ? AI_NORMAL : AI_LEVELS[name as keyof typeof AI_LEVELS]
+  if (!base) {
+    console.error(`未知档位 ${name};可选:normal · ${Object.keys(AI_LEVELS).join(' · ')}`)
+    process.exit(1)
+  }
+  if (!overrides) return { label: name, cfg: base }
+  const weights: Record<string, number> = { ...(base.weights as Record<string, number>) }
+  for (const pair of overrides.split(',')) {
+    const [k, v] = pair.split('=')
+    if (!k || v === undefined || Number.isNaN(Number(v))) {
+      console.error(`权重覆盖写法应为 key=数字,收到「${pair}」`)
+      process.exit(1)
+    }
+    weights[k] = Number(v)
+  }
+  return { label: spec, cfg: { ...base, weights: weights as AiConfig['weights'] } }
+}
+
+const parsedA = parseCfg(A)
+const parsedB = parseCfg(B)
+const cfgA = parsedA.cfg
+const cfgB = parsedB.cfg
 console.log(`sim-ai-tiers: ${A} vs ${B},${GAMES} 局/卡组,共 ${GAMES * PRECON_DECKS.length} 局\n`)
 const t0 = performance.now()
 

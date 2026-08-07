@@ -175,9 +175,24 @@ function keywordValue(inst: CardInstance): number {
   return v
 }
 
-function unitValue(inst: CardInstance, lib: CardLibrary): number {
+// 新式身材当量的三个系数。**不是拍的** —— 26 张对照卡 × 800 局回归出来的,
+// 并按全池均值归一到与旧式(攻×1 + 血×0.8)同一个量级(见 EvalWeights.balance
+// 与 scripts/pricing.ts 的 DEFAULT_BODY)。
+//
+// 这里**照抄一份而不是 import**:`scripts/` 不进浏览器包,而这个文件进
+// (见 AI_NORMAL 上方那段 `process is not defined` 的事故)。两处数值若要改,
+// 改一处就得改另一处 —— 所以两边的注释都写着对方在哪。
+const BODY_A = 0.1102
+const BODY_H = 0.349
+const BODY_MIN = 1.5836
+
+function unitValue(inst: CardInstance, lib: CardLibrary, balance = 0): number {
   const def = lib[inst.defId]
-  let v = inst.attack * 1 + inst.health * 0.8 + keywordValue(inst)
+  const linear = inst.attack * 1 + inst.health * 0.8
+  const balanced =
+    BODY_A * inst.attack + BODY_H * inst.health + BODY_MIN * Math.min(inst.attack, inst.health)
+  // balance = 0 时**逐位**等于旧式 —— 所有历史数字因此原样成立(铁律 9)
+  let v = (balance === 0 ? linear : linear * (1 - balance) + balanced * balance) + keywordValue(inst)
   if (def && !inst.silenced) {
     if (def.deathrattle) v += 0.6
     if (def.aura) {
@@ -191,9 +206,9 @@ function unitValue(inst: CardInstance, lib: CardLibrary): number {
   return v
 }
 
-function sideValue(p: PlayerState, lib: CardLibrary): number {
+function sideValue(p: PlayerState, lib: CardLibrary, balance = 0): number {
   let v = 0
-  for (const c of p.board) v += unitValue(c, lib)
+  for (const c of p.board) v += unitValue(c, lib, balance)
   return v
 }
 
@@ -311,6 +326,53 @@ export interface EvalWeights {
   // 威胁存续(2026-08):活到下回合还能挥出来的攻击力。0 = 退回纯单帧估值。
   // 见 evaluate 上方那段长注释 —— 实测数字与被砍掉的第二项都记在那里。
   persist: number
+  /**
+   * 身材均衡(2026-08-06):`unitValue` 从纯线性混向「带 min(攻,血) 的形式」的比例。
+   * **0 = 一字不差退回旧式**,1 = 完全用新式。
+   *
+   * 【为什么线性是错的 —— 这不是调参,是修尺子】
+   * 造了 26 张只差身材的白板对照卡各打 800 局(`npm run sim-body`)。
+   * 6 费、同样 15 点身材总量:
+   *
+   *     14/1 → Δ −18.9      8/7 → Δ −1.4      1/14 → Δ −12.1
+   *
+   * 相差 17.5 个百分点,而「攻×1 + 血×0.8」对这三张给出的预测**几乎相同** ——
+   * 它把这一整块结构丢进了残差(残差 ±4.74pp,而测量噪声只有 ±2.50pp),
+   * 两个斜率的 z 都掉到 1.0 附近。加一项 `min(攻,血)` 之后 z = 8.7、
+   * 残差 ±2.17pp —— **落到测量噪声以下**。
+   *
+   * 道理在牌桌上更直白:1 血的怪碰谁死谁,1 攻的怪换不掉任何东西,两头都是废的,
+   * 而它们的 `min` 都是 1。而且 `unitValue` 读的是**当前**攻血 ——
+   * 一个被打成 8/1 的单位,`min` 会自己掉下来,这正是「它快死了」该有的估值。
+   *
+   * 【为什么是混合比例而不是直接换公式】
+   * 两端的**平均值刻意对齐**(新式那三个系数是按全池均值归一过的,
+   * 见 scripts/pricing.ts 的 DEFAULT_BODY)。所以调这个旋钮只改**形状**,
+   * 不会顺带把 board 项整体放大 —— 否则量到的就分不清是「均衡有用」
+   * 还是「AI 更看重场面了」。
+   *
+   * ⚠️ **实测结论:别开它。** 对旧尺子各 900 局
+   * (`A=normal:balance=1 B=normal npm run sim-ai-tiers`):
+   *
+   *     balance = 1     41.1%   z = −5.33   ← 明显**更弱**
+   *     balance = 0.5   49.9%   z = −0.07   ← 没差别
+   *
+   * 一个在卡池上**可证明更准**的身材模型(z = 8.7),当成场面估值却让 AI 变弱。
+   * 这不是矛盾,是两个问题不一样:
+   *
+   *   `bodyValue` 回答的是「**把这张卡放进卡组**值多少」——14/1 差,
+   *     因为它碰谁死谁、根本指望不上;
+   *   `unitValue` 回答的是「这个单位**此刻站在场上**值多少」——一个还活着的
+   *     14/1 是实打实的威胁,它这回合就能换掉对面最大的那个。
+   *
+   * 而且 `min(攻,血)` 会把**受伤的单位**一起打折:一个被打成 8/1 的单位
+   * 这回合照样挥出 8 点,估值却掉到谷底 —— AI 于是不肯为它挡刀、
+   * 也不肯用它去换,而那两件事恰恰是它此刻最该做的。
+   *
+   * 留着这个旋钮和这段结论,是为了下一个人不必再跑一遍 900 局。
+   * 默认 0。开关权在 AI_NORMAL 与 AI_LEVELS,不在这里(与 persist 同一条规矩)。
+   */
+  balance: number
 }
 
 // 数值与抽出来之前**逐字相同**(greedy 的 EndTurn 分支与 planner 的 stopScore
@@ -324,6 +386,8 @@ export const DEFAULT_WEIGHTS: EvalWeights = {
   // 默认 0:不传权重的调用点(测试夹具、旧脚本)行为一字不变。
   // 开关权在 AI_NORMAL 与 AI_LEVELS,不在这里 —— 谁在用新尺子一目了然。
   persist: 0,
+  // 同上:0 = unitValue 逐位退回旧的线性式。见 EvalWeights.balance。
+  balance: 0,
 }
 
 export function evaluate(
@@ -342,7 +406,7 @@ export function evaluate(
   const me = state.players[player]
   const foe = state.players[player === 0 ? 1 : 0]
 
-  let score = (sideValue(me, lib) - sideValue(foe, lib)) * w.board
+  let score = (sideValue(me, lib, w.balance) - sideValue(foe, lib, w.balance)) * w.board
 
   const myHp = me.heroHp + me.armor
   const foeHp = foe.heroHp + foe.armor
