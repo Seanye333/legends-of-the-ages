@@ -1115,11 +1115,14 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
       {/* 致命一击:全屏白金闪光 */}
       {anim.lethalFlash && <div className={styles.lethalFlash} />}
 
+      {/* 调度阶段 activePlayer 仍是先手方(reducer 要等双方都确认才翻面),
+          所以「我不是 activePlayer」就等于「我是后手」—— 后手补偿要写给玩家看 */}
       {state.phase === 'mulligan' && (
         <MulliganOverlay
           heroIds={[me.heroId, foe.heroId]}
           hand={me.hand}
           waiting={me.mulliganDone}
+          second={state.activePlayer !== viewer}
           onConfirm={(keepIids) => {
             playSfx('buttonTap')
             send({ type: 'Mulligan', keepIids })

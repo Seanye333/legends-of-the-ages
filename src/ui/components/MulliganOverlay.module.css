@@ -169,3 +169,20 @@
   text-align: center;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
 }
+
+/* 后手补偿的说明条。
+ * 做成一枚淡金色的胶囊而不是又一行提示文字 —— 它说的是**这一局的规则**,
+ * 和「点击要换掉的卡牌」那种操作提示不是一回事,读者要分得出来。 */
+.comp {
+  margin: 4px 0 0;
+  padding: 4px 12px;
+  border-radius: var(--r-pill);
+  border: 1px solid rgba(212, 168, 74, 0.28);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--gold-bright);
+  font-family: var(--font-display);
+  font-size: clamp(11px, 1.5vh, 13px);
+  letter-spacing: 0.06em;
+  text-align: center;
+  max-width: min(90vw, 560px);
+}
