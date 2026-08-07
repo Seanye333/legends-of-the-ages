@@ -186,6 +186,18 @@ body {
 
 button {
   font-family: inherit;
+  /* 【为什么放在全局而不是各屏】
+   * 手机浏览器点下去会画一层系统高亮(iOS/安卓都有,默认是半透明蓝或灰)。
+   * 这一层压在自绘的金框深底上非常脏,而且它出现在**手指底下**,
+   * 玩家看不见自己点的是什么。
+   *
+   * `npm run css-dupes` 数出来:76 个方角按钮里**71 个没写这一条**,
+   * 七处胶囊里**一处都没写**。也就是说这不是某一屏漏了,
+   * 是没有一个人知道要写 —— 那种事只能在全局解决一次。
+   * 各屏写各屏的版本会永远追不上新加的按钮。
+   *
+   * 键盘焦点圈不受影响(那是 :focus-visible 的 outline,另一回事)。 */
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* —— 战斗动效(全局类,由 useEventAnimations 驱动;只用 transform/opacity)—— */

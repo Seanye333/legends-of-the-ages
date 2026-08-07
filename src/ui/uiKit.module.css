@@ -40,7 +40,6 @@
   min-height: 34px;
   cursor: pointer;
   font-size: 13px;
-  -webkit-tap-highlight-color: transparent;
 }
 
 .backBtn:hover {
@@ -102,7 +101,6 @@
   color: var(--parchment);
   cursor: pointer;
   font-size: 13px;
-  -webkit-tap-highlight-color: transparent;
 }
 
 .panelClose:hover {
@@ -112,6 +110,27 @@
 .panelClose:focus-visible {
   outline: 2px solid var(--gold-bright);
   outline-offset: 2px;
+}
+
+/* 左右翻页的圆箭头(乱斗选规则 / 远征选路线 / 校场选难度)。
+ * 三处写了三遍,其中两处逐字节相同,第三处小 2px —— `npm run css-dupes`
+ * 报出来的唯一一组「跨文件完全相同」。那 2px 看不出来是不是有意的,
+ * 按多数收成 40px(它同时也是触摸目标的下限)。 */
+.navArrow {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(212, 168, 74, 0.5);
+  background: rgba(20, 15, 9, 0.8);
+  color: var(--gold-bright);
+  font-size: 22px;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+
+.navArrow:hover:not(:disabled) {
+  filter: brightness(1.15);
 }
 
 /* ---- 按钮 ----
@@ -135,7 +154,6 @@
   font-size: var(--fs-body);
   letter-spacing: 0.14em;
   cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
   transition:
     filter 0.15s ease,
     transform 0.12s ease;
@@ -173,7 +191,6 @@
   color: var(--parchment-dim);
   font-size: var(--fs-body);
   cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
   transition: color 0.15s ease, border-color 0.15s ease;
 }
 
@@ -198,8 +215,10 @@
  * 而不是按我原来估的那版。凡是量得到的,就不该用估的。
  *
  * 【顺手查出来的两件事】
- * · `-webkit-tap-highlight-color` 九处里只有这里写了 —— 也就是说手机上
- *   点那九排胶囊,每一下都会闪一个系统蓝框。
+ * · `-webkit-tap-highlight-color` 九处里一处都没写 —— 手机上点每一下都会
+ *   闪一个系统蓝框。后来数出来这不是胶囊的毛病:全站 76 个方角按钮里
+ *   71 个也没写。那种「没有一个人知道要写」的事只能在全局解决一次,
+ *   所以它现在在 `src/index.css` 的 `button {}` 里,这份文件不再各写一遍。
  * · transition 九处里只有两处有。
  *
  * 【padding 和字号刻意留在各屏】
@@ -213,7 +232,6 @@
   background: rgba(255, 255, 255, 0.04);
   color: var(--parchment-faint);
   cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
   transition:
     color 0.15s ease,
     border-color 0.15s ease;

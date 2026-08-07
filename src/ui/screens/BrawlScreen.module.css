@@ -36,13 +36,7 @@
 .deckPick { display: flex; align-items: center; gap: 16px; }
 
 .arrow {
-  border: 1px solid rgba(212, 168, 74, 0.5);
-  background: rgba(20, 15, 9, 0.8);
-  color: var(--gold-bright);
-  border-radius: 50%;
-  width: 40px; height: 40px;
-  font-size: 22px;
-  cursor: pointer;
+  composes: navArrow from '../uiKit.module.css';
 }
 
 .deckCard {
