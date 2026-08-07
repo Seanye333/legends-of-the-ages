@@ -46,6 +46,13 @@ jobs:
       - name: 首屏体积预算
         run: npm run perf-budget
 
+      # `composes` 在产物里是**两个平级的类**,谁赢只看谁写在后面 ——
+      # 也就是说「各屏引公共基件、再覆盖自己那两条」全靠打包器的排序。
+      # 顺序一翻,覆盖静默失效:不报错、不崩,只是按钮悄悄变回基件的尺寸。
+      # 源码里看不出这件事,只能量产物,所以接在 build 后面。
+      - name: composes 层叠顺序
+        run: npm run css-order
+
       - name: 引擎确定性对拍(同一 seed 必须重演出同一局)
         run: npm run replay-diff
 
