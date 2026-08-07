@@ -51,15 +51,7 @@
 }
 
 .closeBtn {
-  margin-left: auto;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  border: 1px solid rgba(212, 168, 74, 0.32);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--parchment);
-  cursor: pointer;
-  font-size: 13px;
+  composes: panelClose from '../uiKit.module.css';
 }
 
 .list {
@@ -168,7 +160,7 @@
   color: var(--parchment-faint);
 }
 
-.closeBtn:focus-visible,
+/* closeBtn 的焦点圈跟着 uiKit 的 panelClose 走,这里只剩领取键 */
 .claimBtn:focus-visible {
   outline: 2px solid var(--gold-bright);
   outline-offset: 2px;

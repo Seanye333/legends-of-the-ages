@@ -173,19 +173,12 @@
   font-size: 12.5px;
   color: var(--parchment-faint);
 }
+/* 典籍详情里唯一的动作 —— 主按钮,长相走基件 */
 .closeBtn {
+  composes: btnPrimary from '../uiKit.module.css';
   margin-top: 8px;
   align-self: stretch;
-  padding: 10px;
-  border-radius: 9px;
-  border: 1px solid var(--gold-deep);
-  background: linear-gradient(180deg, #2c2415, #1b150c);
-  color: var(--gold-bright);
-  font-family: var(--font-display);
-  letter-spacing: 0.16em;
-  cursor: pointer;
 }
-.closeBtn:hover { border-color: var(--gold); color: #fff; }
 
 /* ---- 关系图谱 ---- */
 .relationList {

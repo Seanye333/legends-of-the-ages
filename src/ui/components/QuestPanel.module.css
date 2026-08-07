@@ -152,18 +152,18 @@
   letter-spacing: 0.1em;
 }
 
+/* 这一屏的主动作是「领取」,关闭是次要的 —— 所以是次按钮,不是主按钮。
+ * 这条差别原本是**偶然**的(六个 closeBtn 长成三样),现在写明白了。
+ * 本地保留整宽居中那几条:文字要撑满、字距要跟军令面板的其它标题对齐。 */
 .closeBtn {
+  composes: btnGhost from '../uiKit.module.css';
   margin-top: 4px;
   font-family: var(--font-display);
   font-size: 14px;
   letter-spacing: 0.16em;
+  /* 字距会在最后一个字后面多出一份空白,居中就偏左 —— 用等量缩进补回来 */
   text-indent: 0.16em;
   padding: 10px 0;
-  border-radius: 6px;
-  border: 1px solid rgba(122, 100, 58, 0.6);
-  background: rgba(20, 16, 10, 0.72);
-  color: var(--parchment-dim);
-  cursor: pointer;
 }
 
 :root[data-reduced-motion='true'] .overlay,

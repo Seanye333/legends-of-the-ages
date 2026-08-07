@@ -40,15 +40,10 @@
   color: var(--gold-bright);
 }
 
+/* 原来这里的底色和字色和另外两个面板的 × 不一样(rgba(20,15,9,.8) /
+ * --parchment-dim),而且只有它没有键盘焦点圈 —— 是抄漏了不是设计,一起收掉 */
 .closeBtn {
-  margin-left: auto;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  border: 1px solid rgba(212, 168, 74, 0.32);
-  background: rgba(20, 15, 9, 0.8);
-  color: var(--parchment-dim);
-  cursor: pointer;
+  composes: panelClose from '../uiKit.module.css';
 }
 
 .body {

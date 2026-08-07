@@ -103,26 +103,12 @@
   font-style: normal;
 }
 
+/* 这一屏唯一能做的事就是关掉它 —— 所以它是主按钮。
+ * 长相全走基件,本地只剩「怎么摆」。 */
 .closeBtn {
+  composes: btnPrimary from '../uiKit.module.css';
   margin-top: 10px;
   align-self: stretch;
-  padding: 10px;
-  border-radius: 9px;
-  border: 1px solid var(--gold-deep);
-  background: linear-gradient(180deg, #2c2415, #1b150c);
-  color: var(--gold-bright);
-  font-family: var(--font-display);
-  letter-spacing: 0.16em;
-  font-size: 14px;
-  cursor: pointer;
-}
-.closeBtn:hover {
-  border-color: var(--gold);
-  color: #fff;
-}
-.closeBtn:focus-visible {
-  outline: 2px solid var(--gold-bright);
-  outline-offset: 2px;
 }
 
 /* ---- 今日战事 ---- */

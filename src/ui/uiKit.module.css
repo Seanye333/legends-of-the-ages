@@ -73,6 +73,47 @@
   color: var(--parchment-dim);
 }
 
+/* 面板右上角的关闭 ×。
+ *
+ * 【这不是下面说的「第四个变体」】
+ * 那句「三个变体就够,刻意不做第四个」说的是**文字按钮的档次**。
+ * 这一个不是档次而是形制:定尺方块、只放一个符号、恒在面板右上角 ——
+ * 和 `.head` / `.headRight` 一样是面板的结构件,所以放在结构这一段。
+ *
+ * 【为什么要收】
+ * 六个文件里都写着 `.closeBtn`,但它其实是**三样不同的东西**:
+ *   · 28px 方块 ×      —— 功名簿 / 墓园 / 战绩簿
+ *   · 整宽的金色主按钮  —— 每日一将 / 典籍
+ *   · 整宽的描边次按钮  —— 每日军令
+ * 同一个名字指三样东西,是这份文件想解决的那个问题最纯粹的形态。
+ *
+ * 三个方块里有两个一模一样,战绩簿那个的底色和字色**莫名其妙地不一样**
+ * (rgba(20,15,9,.8) / --parchment-dim),而且只有它没有键盘焦点圈。
+ * 那不是设计,是抄漏了 —— 按多数那版收,顺手把焦点圈补齐。
+ */
+.panelClose {
+  flex: none;
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid rgba(212, 168, 74, 0.32);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--parchment);
+  cursor: pointer;
+  font-size: 13px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.panelClose:hover {
+  border-color: var(--gold-dark);
+}
+
+.panelClose:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
+}
+
 /* ---- 按钮 ----
  *
  * 全站数出来 **36 个不同的 `*Btn` 类名**。它们里绝大多数只是同一件事写了很多遍:
@@ -111,6 +152,16 @@
 .btnPrimary:disabled {
   opacity: 0.45;
   cursor: default;
+}
+
+/* 键盘焦点圈进基件,而不是各屏各写一遍。
+ * 原来六个「关闭」按钮里只有三个有焦点圈 —— 少的那三个不是有意的,是抄漏。
+ * 收进来之后新按钮**默认就是可键盘用的**,这比事后审一遍靠谱。 */
+.btnPrimary:focus-visible,
+.btnGhost:focus-visible,
+.btnChip:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
 }
 
 /* 次:描边、透底。「还有别的可以做」的那些。 */
