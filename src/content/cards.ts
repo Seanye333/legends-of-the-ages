@@ -23,6 +23,7 @@ import { PACK10_CARDS, PACK10_OVERRIDES } from './overrides/pack10'
 import { PACK11_CARDS, PACK11_OVERRIDES } from './overrides/pack11'
 import { PACK12_CARDS, PACK12_OVERRIDES } from './overrides/pack12'
 import { PACK13_CARDS, PACK13_OVERRIDES } from './overrides/pack13'
+import { TUNING1_OVERRIDES } from './overrides/tuning1'
 import { PACK14_CARDS } from './overrides/pack14'
 import { PACK15_CARDS } from './overrides/pack15'
 import { PACK16_CARDS } from './overrides/pack16'
@@ -184,6 +185,24 @@ function withBondRivalText(card: CardDef, nameOf: Record<string, LocalizedText>)
   }
 }
 
+/**
+ * 调平层 —— 数值,不是内容(见 overrides/tuning1.ts)。
+ *
+ * 【为什么挂在**全池**这一层,而不是上面那个合并循环里】
+ * 那个循环只跑 `GENERATED_CARDS`。`packN` 里**直接定义**的卡
+ * (`PACK21_CARDS` 之类)是后面整段拼进来的,**根本不经过它** ——
+ * 调平层写在循环里的话,对这些卡完全无效,而且无声无息:
+ * 类型是对的、lint 是绿的、快照也不会红(因为它压根没变)。
+ * 实测踩到:十一张里有两张(神機營 / 候時而動)就是这样,一开始只生效了九张。
+ *
+ * 挂在这里之后它对**每一张**卡都说了算,不管那张卡是怎么进池的。
+ */
+function applyTuning(card: CardDef): CardDef {
+  const tn = TUNING1_OVERRIDES[card.id]
+  if (!tn) return card
+  return reconcileExclusive({ ...card, ...tn }, tn)
+}
+
 // 全卡池 = (生成默认值 ⊕ 各卡包覆盖) + 手工锦囊 + 第二~六卡包
 // 覆盖顺序:后者赢。各覆盖表刻意不与签名集重叠(只挑签名之外的花名册)。
 const MERGED_CARDS: CardDef[] = [
@@ -256,7 +275,7 @@ const MERGED_CARDS: CardDef[] = [
   ...PACK23_CARDS,
   ...CAMPAIGN_TOKENS,
   ...HISTORY_TOKENS,
-].map(withKeywordText)
+].map(applyTuning).map(withKeywordText)
 
 const NAME_BY_ID: Record<string, LocalizedText> = Object.fromEntries(
   MERGED_CARDS.map((c) => [c.id, c.name]),
