@@ -77,6 +77,15 @@ const baseIdxFor = (card: CardDef): number =>
 
 // 把 COPIES 张**费用最接近**的普通牌换成待测卡。
 // 换费用最接近的那张很重要 —— 否则量到的是曲线变化,不是这张牌本身。
+//
+// 【但要记住 Δ 是个**差值**:被换掉的那张同样决定结果】
+// 2026-08-07 逐套量对照组时撞到:同一张白板 4/7(陳餘)在 坐斷東南 里是 **−15.8**,
+// 在 桃園仁德 里只有 −1.2。差别不在陳餘,在**它换掉了谁** ——
+// 坐斷東南 的 5 费档正好是 王世充 和 陸抗,而 陸抗 单独量是 +21.5。
+// 所以那个 −15.8 量的是陆抗的价值,不是陈馀的。
+//
+// 实践上:**深负的 Δ 要先看它换掉了什么再下结论**;
+// 判一张卡强不强,看对照组的**中位**那条线(六套一致),别看跨度(逐套差三倍)。
 function swapIn(card: CardDef, baseIdx: number): string[] | null {
   const deck = [...PRECON_DECKS[baseIdx].cardIds]
   const counts = new Map<string, number>()
@@ -121,6 +130,20 @@ const pool = COLLECTIBLE_CARDS.filter((c) => !c.token && baseIdxFor(c) >= 0)
 const CONTROL = process.env.CONTROL === '1'
 const CONTROL_COSTS = [2, 3, 4, 5, 6]
 
+// 【BASE=<0..5>:把基准钉在指定那套预组上】
+//
+// Δ 是**相对所在卡组**量的 —— 同一张卡换进不同的预组,数字可以差很远。
+// 2026-08-07 撞到一个例子:陸抗(5 费 3/6 守护)换进 坐斷東南 是 **+21.5**,
+// 而它在费用曲线上还偏低。那不是「这张卡超模」,是那套牌缺守护缺到这个地步。
+//
+// 于是有个问题必须回答:**每套预组的零点是不是同一个?**
+// 如果 坐斷東南(六套里最弱的一套)随便换张能打的进去都 +10,
+// 那么「在 坐斷東南 里量到 +21.5」和「在 桃園仁德 里量到 +21.5」根本不是一件事。
+//
+// 中立白板卡在**每套预组里都合法**,所以拿同一批控制卡逐套量一遍就能答 ——
+// 那正是 BASE 存在的理由。只在 CONTROL 模式下生效(别的卡有主义限制)。
+const BASE = process.env.BASE ? Number(process.env.BASE) : null
+
 let targets: CardDef[]
 if (CONTROL) {
   targets = pickControls(pool, CONTROL_COSTS)
@@ -148,7 +171,8 @@ const t0 = performance.now()
 const WORKER = fileURLToPath(new URL('./workers/cards.worker.ts', import.meta.url))
 const buildable: { card: CardDef; deck: string[]; baseIdx: number }[] = []
 for (const card of targets) {
-  const baseIdx = baseIdxFor(card)
+  // CONTROL+BASE:把基准钉死在指定预组(中立白板卡进哪套都合法)
+  const baseIdx = CONTROL && BASE !== null ? BASE : baseIdxFor(card)
   const deck = swapIn(card, baseIdx)
   if (!deck) {
     console.log(`  ${card.name.zh} —— 换不进去(基准里没有足够的可换牌)`)
@@ -203,7 +227,7 @@ console.log(`\n(${((performance.now() - t0) / 1000).toFixed(1)}s)`)
 if (CONTROL) {
   const b = band(rows.map((r) => r.delta))
   console.log(
-    `\n对照组(白板武将,纯身材):${b.n} 张,` +
+    `\n对照组(白板武将,纯身材)@${PRECON_DECKS[usedBases[0]].name.zh}:${b.n} 张,` +
       `Δ 跨度 ${b.lo.toFixed(1)} ~ ${b.hi.toFixed(1)},中位 ${b.median.toFixed(1)}`,
   )
   console.log(

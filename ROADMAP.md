@@ -1126,7 +1126,8 @@ npm run sim-campaign     # 冒险 24 关难度曲线            ~4min   (串行 
 npm run sim-firstplayer  # 先手优势 + 对镜类模拟的仪器自检 ~2.5min (串行 5min)
                          #   AI=tiers 换尺子 · COMP=sweep 试算后手补偿
 npm run sim-cards        # 单卡边际胜率(SAMPLE=3000 扫全池 ≈3h,实测 47s/张·单线程)
-                         #   CONTROL=1 量对照组 —— 白板武将的 Δ 跨度就是这把尺子的零点
+                         #   CONTROL=1 量对照组 —— 白板武将的 Δ 分布就是这把尺子的零点
+                         #   CONTROL=1 BASE=<0..5> 逐套量零点(六套中位一致,跨度差三倍)
                          #   VERIFY=<局数> 榜首自动复测 · DUMP=<路径> 落盘给 fit-price
 npm run sim-hero-mirror  # 备选主公技对镜                ~1.7min (串行 8.5min)
 npm run sim-balance      # 六套预组互搏矩阵              ~1min   (串行 5min)
