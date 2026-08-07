@@ -28,33 +28,12 @@ import { replayMatch, type MatchRecord } from '../src/engine/replay'
 import { migrateState } from '../src/engine/migrate'
 import { aiStep, AI_NORMAL } from '../src/ai/greedy'
 import { START_HP } from '../src/engine/types'
+import { fingerprint, firstDiff, judgeRecord, tally, type Fail } from './replayDiff'
 import type { GameConfig, GameState, PlayerIdx } from '../src/engine/types'
 
 const GAMES = Number(process.env.GAMES ?? 40)
 const SEED0 = Number(process.env.SEED ?? 1)
 
-// 规范化的状态指纹。**必须包含 rng** —— 它是后续一切随机的来源,
-// 两个局面别处全同但 rng 不同,下一步就会分叉。
-// JSON.stringify 对同一个对象结构会产出同样的键顺序(引擎里所有状态都由
-// 同一批工厂函数造出来),所以直接拿它当指纹是安全的;真出问题时
-// 我们要的也正是「哪个字段不一样」,而字符串 diff 最容易读。
-function fingerprint(s: GameState): string {
-  return JSON.stringify(s)
-}
-
-function firstDiff(a: string, b: string): string {
-  const n = Math.min(a.length, b.length)
-  let i = 0
-  while (i < n && a[i] === b[i]) i++
-  const from = Math.max(0, i - 60)
-  return `偏移 ${i}\n  录制: …${a.slice(from, i + 80)}\n  重放: …${b.slice(from, i + 80)}`
-}
-
-interface Fail {
-  seed: number
-  kind: 'replay' | 'frame' | 'json' | 'record' | 'events'
-  detail: string
-}
 const fails: Fail[] = []
 let totalCommands = 0
 let totalTurns = 0
@@ -121,14 +100,10 @@ for (let g = 0; g < GAMES; g++) {
     fails.push({ seed, kind: 'record', detail: abortReason })
     continue
   }
-  // 录到的命令太少 = 这一局其实没测到什么。一局对局怎么也该有几十条命令,
-  // 低于 10 条说明开局就断了 —— 同样算失败,别让它混进「通过」里。
-  if (record.commands.length < 10) {
-    fails.push({
-      seed,
-      kind: 'record',
-      detail: `只录到 ${record.commands.length} 条命令就结束了 —— 这一局没有真正被对拍`,
-    })
+  // 够不够格当样本 —— 判据在 replayDiff.judgeRecord(不合格算失败,不算通过)
+  const tooShort = judgeRecord(record.commands.length)
+  if (tooShort) {
+    fails.push({ seed, kind: 'record', detail: tooShort })
     continue
   }
   totalCommands += record.commands.length
@@ -197,6 +172,9 @@ if (fails.length === 0) {
 }
 
 console.log(`\n✗ ${fails.length} 局对不上:`)
+// 先给一行按类别的总览 —— 四道对拍抓的是不同的毛病,只看第一条容易看岔:
+// 「重放终态不同」和「某一帧 JSON 往返后不同」根因完全不是一回事。
+console.log(`  分类:${JSON.stringify(tally(fails))}`)
 for (const f of fails.slice(0, 5)) {
   console.log(`\n  [seed ${f.seed}] ${f.kind}\n  ${f.detail}`)
 }
