@@ -172,6 +172,12 @@ export function refreshInstance(inst: CardInstance, lib: CardLibrary): void {
   if (inst.shieldUsed && shieldIdx >= 0) keywords.splice(shieldIdx, 1)
   const stealthIdx = keywords.indexOf('stealth')
   if (inst.stealthBroken && stealthIdx >= 0) keywords.splice(stealthIdx, 1)
+  // 溃散:士气触底的那一方失去守護。和上面两条走同一条路 —— 压制必须在这里,
+  // 因为这个函数每次受伤/治疗都会重新从卡面算一遍关键词。
+  // 溃散:士气触底的那一方失去守護。和上面两条走同一条路 —— 压制必须在这里,
+  // 因为这个函数每次受伤/治疗都会重新从卡面算一遍关键词。
+  const guardIdx = keywords.indexOf('guard')
+  if (inst.routed && guardIdx >= 0) keywords.splice(guardIdx, 1)
 
   inst.maxHealth = Math.max(1, maxHealth)
   inst.damage = Math.max(0, inst.damage)
@@ -364,6 +370,16 @@ export function refreshAuras(state: GameState, lib: CardLibrary): void {
   // 而开头那轮「撤掉所有 auraFrom 附魔」照样清得干净。
   for (const player of [0, 1] as const) {
     const morale = state.players[player].morale ?? 0
+    // 溃散(第二十六卡包):士气**触底**才有,过线只是 ±1 攻。
+    // 每次都写(而不是只在触底时写)—— 这是整轮重算,漏掉复位那一半
+    // 就变成「溃散过一次就永远散着」,而士气每回合会自己向 0 收敛。
+    const routed = morale === -MORALE_CAP
+    for (const inst of state.players[player].board) {
+      if (!!inst.routed !== routed) {
+        inst.routed = routed || undefined
+        refreshInstance(inst, lib)
+      }
+    }
     if (Math.abs(morale) < MORALE_THRESHOLD) continue
     const delta = morale > 0 ? 1 : -1
     for (const inst of state.players[player].board) {

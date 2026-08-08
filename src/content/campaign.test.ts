@@ -47,6 +47,20 @@ describe('campaign bosses', () => {
     }
   })
 
+  // Boss 卡组是从**全池**确定性挑出来的,所以每加一张卡都可能顶掉一张老卡。
+  // 2026-08-08 第二十六卡包就是这么把闸门弄红的:輜重營(4 费 3/6 守護)
+  // 在打分函数眼里是 4 费档最划算的一张 —— 而那个函数**不认识 `supplyCost`**,
+  // 在它看来那是白送的身材。选进去之后付不出粮,一直躺在手里,
+  // 岳飛那一关的玩家胜率 47.5% → 63.7%(z=3.6),第 2 章曲线被抹平。
+  //
+  // 这条断言比「重跑一次 sim-campaign」快四个数量级,而且它说得出**为什么**红。
+  it('boss decks 里一张军需卡都没有 —— 纯贪心 AI 不会为「攒粮」规划', () => {
+    for (const b of BOSSES) {
+      const bad = bossDeck(b.doctrine, b.deckTier).filter((id) => CARDS_BY_ID[id].supplyCost)
+      expect(bad, `${b.id} 的卡组里有军需卡:${[...new Set(bad)].join(', ')}`).toEqual([])
+    }
+  })
+
   it('bossDeck is deterministic — same boss always gets the same deck', () => {
     for (const b of BOSSES) {
       expect(bossDeck(b.doctrine, b.deckTier)).toEqual(bossDeck(b.doctrine, b.deckTier))

@@ -815,8 +815,20 @@ export function bossDeck(doctrine: Doctrine, tier = 0): string[] {
     (c.keywords.length > 0 ? 1 : 0) +
     (c.battlecry || c.deathrattle ? 1 : 0) +
     (c.aura ? 1.5 : 0)
+  // **军需卡一张都不要。**
+  //
+  // 这道过滤是 2026-08-08 被 sim-campaign 抓出来的:第二十六卡包加了三张军需卡,
+  // 其中 輜重營(4 费 3/6 守護)在上面那个打分函数眼里是 4 费档最划算的一张 ——
+  // 因为**打分函数根本不认识 `supplyCost`**,在它看来那是白送的身材。
+  // 于是它被选进 Boss 卡组,再因为付不出粮一直躺在手里,岳飛那一关的玩家胜率
+  // 从 47.5% 跳到 63.7%(z=3.6),第 2 章的难度曲线当场被抹平(闸门 exit 1)。
+  //
+  // 修在这里而不是修那三张卡:问题不在卡,在**自动组牌不会规划资源**。
+  // 军需要求「攒到 N 点粮再打」,而 Boss 走的是纯贪心 AI(铁律 8:它对
+  // 跨回合价值的估值近乎为零),这类牌交给它就是纯粹的减法。
+  // 预组是手写的,该不该带军需由人来判断,不受这条影响。
   const pool = COLLECTIBLE_CARDS.filter(
-    (c) => c.doctrine === doctrine || c.doctrine === 'neutral',
+    (c) => !c.supplyCost && (c.doctrine === doctrine || c.doctrine === 'neutral'),
   ).sort((a, b) => a.cost - b.cost || score(b) - score(a) || a.collectorNo - b.collectorNo)
 
   const deck: string[] = []

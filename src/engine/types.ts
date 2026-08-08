@@ -504,6 +504,16 @@ export interface CardInstance {
   // (见 reducer.returnBorrowed)。可选字段 → 老存档/老战报没有它就是「没人是借来的」,
   // 迁移零风险(铁律 6)。
   borrowedFrom?: PlayerIdx
+  // ---- 第二十六卡包:士气崩溃 ----
+  // 溃散。所属一方士气**触底**(= -MORALE_CAP)时为 true,由 refreshAuras 全权管理
+  // (和 auraFrom 一样:每次场面变动整轮重算,不需要任何反向登记)。
+  // refreshInstance 读它来压掉「守護」—— 阵线散了就没人挡在前面。
+  // 为什么要一个字段而不是在 refreshAuras 里直接改 keywords:
+  // `refreshInstance` 在受伤/治疗/加附魔时都会被调,它会**从卡面重新算一遍关键词**,
+  // 于是在外面摘掉的守護下一次挨打就长回来了。压制必须和 shieldUsed / stealthBroken
+  // 走同一条路 —— 在实例上留一个标记,由 refreshInstance 自己认。
+  // 可选字段 → 老存档/老战报没有它就是「没人溃散」,迁移零风险(铁律 6)。
+  routed?: boolean
 }
 
 export interface PlayerState {
