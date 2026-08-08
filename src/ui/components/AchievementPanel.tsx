@@ -83,14 +83,25 @@ export function AchievementPanel({ onClose }: AchievementPanelProps) {
             const complete = progress >= a.goal
             const claimed = claimedIds.includes(a.id)
             const pct = Math.min(100, (progress / a.goal) * 100)
+            // 隐藏档:**没开始做**之前连名字都不给。
+            // 判据是 progress === 0 而不是「未达成」—— 一旦你做到过一次,
+            // 说明这件事你已经在做了,再藏着就变成刁难而不是惊喜。
+            // 进度条与 x/y 照常显示,不然它看起来像坏了。
+            const veiled = a.hidden === true && progress === 0
             return (
               <div
                 key={a.id}
                 className={`${styles.row} ${claimed ? styles.claimed : ''} ${complete && !claimed ? styles.ready : ''} ${pulseId === a.id ? 'claim-pulse' : ''}`}
               >
                 <div className={styles.rowMain}>
-                  <div className={styles.name}>{pick(a.name)}</div>
-                  <div className={styles.desc}>{pick(a.desc)}</div>
+                  <div className={`${styles.name} ${veiled ? styles.veiled : ''}`}>
+                    {veiled ? t('？？？', '???') : pick(a.name)}
+                  </div>
+                  <div className={`${styles.desc} ${veiled ? styles.veiled : ''}`}>
+                    {veiled
+                      ? t('尚未显形 —— 做到了它自己会出来', 'Not yet revealed — it will find you')
+                      : pick(a.desc)}
+                  </div>
                   <div className={styles.bar}>
                     <div className={styles.barFill} style={{ width: `${pct}%` }} />
                   </div>

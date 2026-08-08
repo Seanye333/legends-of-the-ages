@@ -39,6 +39,11 @@ const SAMPLE_EVENTS: GameEvent[] = [
   { type: 'EquipmentBroken', player: 0, iid: 1, defId: 'eq-long-quan-jian' },
   // 驱散没有专属事件,从打出的卡面上认(见 tallyStats 里的注释)
   { type: 'CardPlayed', player: 0, iid: 21, defId: 'strat-po-jia', cost: 1 },
+  // ---- 第二十六 / 三十一卡包的三条隐藏档(2026-08-08)----
+  // 三条都只数**敌方身上**发生的那一次,所以样本一律 player: 1。
+  { type: 'SupplyChanged', player: 1, supply: 0, delta: -3 },
+  { type: 'MoraleChanged', player: 1, morale: -3, delta: -1 },
+  { type: 'LegendFell', player: 1, iid: 22, defId: 'guan-yu' },
 ]
 
 describe('achievement stats', () => {
@@ -55,6 +60,33 @@ describe('achievement stats', () => {
     const s = tallyStats([{ type: 'GameEnded', winner: 1 }], HERO)
     expect(s.matchesPlayed).toBe(1)
     expect(s.matchesWon).toBeUndefined()
+  })
+
+  // 三条隐藏档的口径。**方向搞反是这一类统计最常见的错**:
+  // 「我方粮尽」和「敌方粮尽」是同一个事件类型,只差一个 player。
+  it('隐藏档三条只数敌方那一侧 —— 自己粮尽/溃散/掉传奇都不算', () => {
+    const mine: GameEvent[] = [
+      { type: 'SupplyChanged', player: 0, supply: 0, delta: -2 },
+      { type: 'MoraleChanged', player: 0, morale: -3, delta: -1 },
+      { type: 'LegendFell', player: 0, iid: 1, defId: 'guan-yu' },
+    ]
+    const s = tallyStats(mine, HERO)
+    expect(s.enemiesStarved).toBeUndefined()
+    expect(s.enemiesRouted).toBeUndefined()
+    expect(s.legendsFelled).toBeUndefined()
+  })
+
+  it('粮尽只算掉到 0 的那一次,溃散只算触底的那一次', () => {
+    const evs: GameEvent[] = [
+      { type: 'SupplyChanged', player: 1, supply: 2, delta: -3 }, // 掉了但没掉光
+      { type: 'SupplyChanged', player: 1, supply: 0, delta: -2 }, // 粮尽
+      { type: 'SupplyChanged', player: 1, supply: 1, delta: 1 }, // 涨回来,不算
+      { type: 'MoraleChanged', player: 1, morale: -2, delta: -1 }, // 过线但没触底
+      { type: 'MoraleChanged', player: 1, morale: -3, delta: -1 }, // 溃散
+    ]
+    const s = tallyStats(evs, HERO)
+    expect(s.enemiesStarved).toBe(1)
+    expect(s.enemiesRouted).toBe(1)
   })
 
   it('only counts effects the player inflicted on the opponent', () => {

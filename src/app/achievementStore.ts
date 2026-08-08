@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Doctrine, GameEvent, LocalizedText } from '../engine/types'
+import { MORALE_CAP } from '../engine/types'
 import { CARDS_BY_ID } from '../content/cards'
 import { DOCTRINE_NAME } from '../content/names'
 import { HEROES_BY_ID } from '../content/overrides/heroes'
@@ -70,6 +71,12 @@ export type StatKey =
   | 'weaponsBroken'
   | 'collectionSize' // 收藏里程碑:拥有的**不同**卡牌数(取历史最大)
   | 'legendariesOwned' // 拥有的不同传说卡数(取历史最大)
+  // ---- 第二十六 / 三十一卡包的三条新机制(2026-08-08)----
+  // 同样是**零新事件**:粮尽是 SupplyChanged 掉到 0、溃散是 MoraleChanged 触底、
+  // 将星陨落有自己的 LegendFell。三条都只数**发生在敌方身上**的那一侧。
+  | 'enemiesStarved' // 把对手的粮道打到 0(粮尽)
+  | 'enemiesRouted' // 把对手的士气压到触底(溃散)
+  | 'legendsFelled' // 斩掉的传奇武将数
   | `won_${Doctrine}`
 
 export type Stats = Partial<Record<StatKey, number>>
@@ -82,6 +89,19 @@ export interface AchievementDef {
   goal: number
   merit: number
   packs?: number
+  // 隐藏档:达成之前在功名簿里只显示一行「未知」,达成之后才亮出名字与说明。
+  //
+  // 【为什么要有这一档,以及它和别的成就是相反的】
+  // 普通成就的作用是**指路**(见下面那段注释:「功名簿里摆着『伏兵触发 25 次』,
+  // 至少他知道有这么个东西」)。隐藏档正相反 —— 它的作用是**惊喜**:
+  // 你在做一件自己想做的事,游戏忽然告诉你「这件事有名字」。
+  // 所以隐藏的必须是**你不冲着它也会做到**的事,不能是「必须查攻略才做得到」的事;
+  // 后者不是隐藏成就,是没写说明的任务。这一批三条都挂在这一轮新做的机制上,
+  // 而那三条机制本来就会在对局里自然发生。
+  //
+  // **总数里仍然算它**(功名簿右上角那个 done/total)—— 藏起来的是名字,
+  // 不是「还有多少没拿」。藏总数会让人以为自己已经满了。
+  hidden?: boolean
 }
 
 const ROMAN = ['Ⅰ', 'Ⅱ', 'Ⅲ', 'Ⅳ']
@@ -230,6 +250,37 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     goal: 20,
     merit: 150,
     packs: 1,
+  },
+  // ---- 隐藏档(2026-08-08)。三条都挂在这一轮新做的机制上 ----
+  // 挑这三条的标准写在 AchievementDef.hidden 上面:**你不冲着它也会做到**。
+  // 断粮、压士气、斩传奇都是对局里自然会发生的事,不需要查攻略。
+  {
+    id: 'ach-starve',
+    name: { zh: '軍無輜重則亡', en: 'An Army Without Its Baggage' },
+    desc: { zh: '让对手粮尽 10 次', en: 'Starve your opponent out 10 times' },
+    stat: 'enemiesStarved',
+    goal: 10,
+    merit: 140,
+    hidden: true,
+  },
+  {
+    id: 'ach-rout',
+    name: { zh: '一鼓作氣,再而衰,三而竭', en: 'Then the Drums Fell Silent' },
+    desc: { zh: '让对手溃散 5 次(士气触底)', en: 'Rout your opponent 5 times (morale bottomed out)' },
+    stat: 'enemiesRouted',
+    goal: 5,
+    merit: 180,
+    hidden: true,
+  },
+  {
+    id: 'ach-legends',
+    name: { zh: '将星陨落', en: 'A Star Falls' },
+    desc: { zh: '斩掉 25 名传奇武将', en: 'Fell 25 legendary generals' },
+    stat: 'legendsFelled',
+    goal: 25,
+    merit: 200,
+    packs: 1,
+    hidden: true,
   },
   {
     id: 'ach-arena-6',
@@ -539,8 +590,27 @@ export function tallyStats(events: GameEvent[], myHeroId: string): Stats {
       // 断粮:CardDiscarded 同时也是「对手弃牌」的载体,所以只数**敌方**那一侧。
       // 这会把离间/弃牌类效果也算进去 —— 从玩家角度它们都是「让对面少一张牌」,
       // 归成一个成就反而更好读。
+      // 断粮:CardDiscarded 同时也是「对手弃牌」的载体,所以只数**敌方**那一侧。
+      // 这会把离间/弃牌类效果也算进去 —— 从玩家角度它们都是「让对面少一张牌」,
+      // 归成一个成就反而更好读。
       case 'CardDiscarded':
         if (ev.player === 1) add('cardsMilled', 1)
+        break
+      // ---- 第二十六 / 三十一卡包(2026-08-08)----
+      // 三条都只数**敌方身上**发生的那一次,理由和上面沉默/冻结那三条一样:
+      // 这些成就问的是「我干了什么」,不是「场上发生过什么」。
+      //
+      // 粮尽没有专属事件 —— 它就是 SupplyChanged 掉到 0 的那一刻
+      // (判据本身在 resolve.changeSupply,是个边沿)。这里跟着读电平也没问题:
+      // `supply === 0 && delta < 0` 与那个边沿等价,因为夹在 0 的那一步不发事件。
+      case 'SupplyChanged':
+        if (ev.player === 1 && ev.supply === 0 && ev.delta < 0) add('enemiesStarved', 1)
+        break
+      case 'MoraleChanged':
+        if (ev.player === 1 && ev.morale === -MORALE_CAP && ev.delta < 0) add('enemiesRouted', 1)
+        break
+      case 'LegendFell':
+        if (ev.player === 1) add('legendsFelled', 1)
         break
       default:
         break
