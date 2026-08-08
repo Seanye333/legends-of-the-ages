@@ -327,7 +327,12 @@ function playCard(
 
   // ---- 执行 ----
   p.mana.current -= cost
-  if (supplyCost > 0) changeSupply(state, player, -supplyCost, events)
+  // 军需扣粮可能把自己扣到粮尽(= 士气 -1),而这张牌本身未必带脚本
+  // (密计就没有立即结算的那一段),不能指望 runScript 末尾那次刷光环兜底。
+  if (supplyCost > 0) {
+    changeSupply(state, player, -supplyCost, events)
+    refreshAuras(state, lib)
+  }
   p.hand.splice(handIndex, 1)
   events.push({ type: 'CardPlayed', player, iid, defId: inst.defId, cost })
   if (def.choose) {

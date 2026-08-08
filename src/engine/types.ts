@@ -224,8 +224,11 @@ export type EffectOp =
   // ---- 第二十一卡包:士气 / 粮道 ----
   // 鼓舞 / 挫敌:改变某一方的士气(正数给自己涨,负数写成 target:'enemy' 更直白)。
   | { op: 'gainMorale'; amount: number; side?: 'friendly' | 'enemy' }
-  // 屯粮:我方粮道 +N(上限 SUPPLY_CAP)。
-  | { op: 'gainSupply'; amount: number }
+  // 屯粮 / 断粮:某一方粮道 ±N(夹在 [0, SUPPLY_CAP])。
+  // `side` 是**后加的**(默认 friendly,老卡一张都不用改),为的是让「断粮」
+  // 有一条真的出口 —— 在此之前全池 145 张产粮、3 张耗粮、**0 张能减别人的粮**,
+  // 于是粮道永远只涨不跌,「粮尽」这件事在对局里根本不可能发生。
+  | { op: 'gainSupply'; amount: number; side?: 'friendly' | 'enemy' }
   // ---- 第二十二卡包:牌库、驱散、借将 ----
   // 断粮道(磨牌):把某一方牌库**顶上**的 N 张直接送进墓地。
   // 全游戏第一条能碰「牌库」的效果 —— 此前牌库只能被抽(draw)、被搜(tutor/recruit),
@@ -543,7 +546,9 @@ export interface PlayerState {
   // 每逢自己的回合开始向 0 收敛一格 —— 没有这条收敛它就是滚雪球,
   // 有了它就是**一段时间窗**:赢下一波交换,你的优势只维持到下一个回合。
   morale?: number
-  // 粮道 [0, SUPPLY_CAP]。每逢自己的回合结束 +1,由带 supplyCost 的军需卡花掉。
+  // 粮道 [0, SUPPLY_CAP]。每逢自己的回合结束 +1,由带 supplyCost 的军需卡花掉,
+  // 也可能被敌方的断粮卡削掉。**从有粮掉到 0 的那一刻**扣 1 士气(粮尽),
+  // 判据与理由见 resolve.changeSupply —— 是边沿不是电平,开局的 0 不算粮尽。
   supply?: number
   // 计谋链:本回合已结算的锦囊数。**回合开始清零** ——
   // 「连环」讲的是一口气使出来的一串,跨回合攒够四张不叫连环计,叫存牌。

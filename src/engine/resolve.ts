@@ -74,6 +74,24 @@ export function changeMorale(
   events.push({ type: 'MoraleChanged', player, morale: after, delta: after - before })
 }
 
+// 粮道变化的唯一入口。夹到 [0, SUPPLY_CAP]。
+//
+// 【粮尽 —— 边沿,不是电平】
+// 「粮尽惩罚」写成「回合开始时粮道为 0 就扣」是错的:开局粮道**本来就是 0**,
+// 那样先手第一个回合当场挨罚,而那跟「断粮」没有任何关系。
+// 所以判据是**掉到 0 的那一刻**(before > 0 && after === 0),不是「此刻为 0」:
+//   · 开局 0 → 从来没有从上面掉下来过,不触发
+//   · 花光军需 → 触发一次(这是这条轴一直缺的「代价」那一侧)
+//   · 被敌方断粮打到 0 → 触发(断粮卡的全部意义)
+// 判据放在这里而不是各调用点,是因为调用点会增加而这条规则不会:
+// 铁律 7 那三处同步点就是这么裂开的。
+//
+// 惩罚取**士气 -1** 而不是掉血:
+//   · 士气全池 111 张写、**只有 2 张读** —— 和粮道一样是只写不读的轴,
+//     让粮尽去喂它,一处改动同时给两条轴接上了另一头
+//   · 士气自己每回合向 0 收敛一格,所以断一次粮是一段时间窗不是永久债
+//   · 连断两次才过 MORALE_THRESHOLD(全场 -1 攻)—— 门槛在规则里,不用另外拍
+// **不在这里 refreshAuras**:同 changeMorale,由调用点改完统一刷一次。
 export function changeSupply(
   state: GameState,
   player: PlayerIdx,
@@ -86,6 +104,11 @@ export function changeSupply(
   if (after === before) return
   p.supply = after
   events.push({ type: 'SupplyChanged', player, supply: after, delta: after - before })
+  // `before > 0` 与上面那句提前返回**重复**(after≠before 且 after=0 ⇒ before>0),
+  // 留着是为了让判据自己写清楚它是边沿。真正挡住「0 上再减又扣一次」的是提前返回,
+  // 所以别把它当成一层独立的防线 —— 两个方向的变异都验过,红的分别是
+  // 「开局那条」(判据滑成电平)和「不重复扣那条」(提前返回被删掉)。
+  if (before > 0 && after === 0) changeMorale(state, player, -1, events)
 }
 
 // 阵形判定:返回该锚点此刻实际吃到增益的友军下标。
@@ -1526,7 +1549,10 @@ export function runScript(
         break
       }
       case 'gainSupply': {
-        changeSupply(state, player, op.amount, events)
+        // 断粮可能把对手打到粮尽(=士气 -1),所以和 gainMorale 一样当场刷光环:
+        // 过线/掉线要立刻反映在身材上,不能等下一次不相干的场面变动。
+        changeSupply(state, op.side === 'enemy' ? other(player) : player, op.amount, events)
+        refreshAuras(state, lib)
         break
       }
       // ---- 第二十二卡包 ----
