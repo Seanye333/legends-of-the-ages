@@ -89,3 +89,63 @@ export const ERA_NAME: Record<Era, LocalizedText> = {
   'song-yuan': { zh: '宋元', en: 'Song and Yuan' },
   'ming-qing': { zh: '明清', en: 'Ming and Qing' },
 }
+
+// ---------- 每个时代打过哪几仗 ----------
+//
+// 【素材从哪来:卡面上的 `battles`,不是懒加载的那份 lore】
+// 142 张卡带 `battles`(生平原文里点到的那几场),而那是 `CardDef` 上的普通字段 ——
+// 也就是说这件事**不用碰 `lore.gen`**(144KB,懒加载)。
+// 时代长卷是名将列传的一部分,拖那 144KB 进来 `perf-budget` 会红。
+//
+// 【一场仗归到哪个时代:按参战者的众数,平票取最早】
+// 一场仗的参战者可能跨时代(合肥·逍遙津 的名单里混进了包拯与李鴻章 ——
+// 生成层认的是「生平原文点到这四个字」,而「合肥」是个地名)。
+// 取众数就把这类噪声压掉了;平票取 `ERA_ORDER` 里最早的那个,
+// 是为了**确定** —— 平票时随便挑一个,同一份数据两次渲染会给出不同的时代。
+export interface EraBattle {
+  name: string
+  size: number // 名单上有几个人 —— 长卷上按它排序,大仗排前面
+}
+
+export function battlesByEra(
+  cards: { battles?: string[]; dynasty: DynastyTag }[],
+): Record<Era, EraBattle[]> {
+  const tally = new Map<string, Map<Era, number>>()
+  for (const c of cards) {
+    for (const b of c.battles ?? []) {
+      const era = ERA_OF[c.dynasty]
+      const row = tally.get(b) ?? new Map<Era, number>()
+      row.set(era, (row.get(era) ?? 0) + 1)
+      tally.set(b, row)
+    }
+  }
+  const order: Era[] = [
+    'pre-qin',
+    'qin-han',
+    'three-kingdoms',
+    'sui-tang',
+    'song-yuan',
+    'ming-qing',
+  ]
+  const out = Object.fromEntries(order.map((e) => [e, [] as EraBattle[]])) as Record<
+    Era,
+    EraBattle[]
+  >
+  for (const [name, row] of tally) {
+    let best: Era = order[0]
+    let bestN = -1
+    for (const era of order) {
+      const n = row.get(era) ?? 0
+      if (n > bestN) {
+        best = era
+        bestN = n
+      }
+    }
+    out[best].push({ name, size: [...row.values()].reduce((a, b) => a + b, 0) })
+  }
+  for (const era of order) {
+    // 人多的排前面,同人数按名字排 —— 排序必须全序,否则每次渲染顺序都可能不同
+    out[era].sort((a, b) => b.size - a.size || a.name.localeCompare(b.name, 'zh'))
+  }
+  return out
+}

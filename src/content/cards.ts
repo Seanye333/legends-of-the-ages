@@ -42,6 +42,7 @@ import { PACK24_CARDS, PACK24_OVERRIDES } from './overrides/pack24'
 import { PACK25_CARDS, PACK25_TOKENS } from './overrides/pack25'
 import { PACK26_CARDS } from './overrides/pack26'
 import { applyDefector } from './overrides/defectors'
+import { applyBattleFixes } from './overrides/battle-fixes'
 import { PACK27_CARDS } from './overrides/pack27'
 import { PACK28_CARDS } from './overrides/pack28'
 import { PACK29_CARDS } from './overrides/pack29'
@@ -304,7 +305,7 @@ const MERGED_CARDS: CardDef[] = [
   ...PACK31_CARDS,
   ...CAMPAIGN_TOKENS,
   ...HISTORY_TOKENS,
-].map(applyPack24).map(applyTuning).map(applyDefector).map(withKeywordText)
+].map(applyPack24).map(applyTuning).map(applyDefector).map(applyBattleFixes).map(withKeywordText)
 
 const NAME_BY_ID: Record<string, LocalizedText> = Object.fromEntries(
   MERGED_CARDS.map((c) => [c.id, c.name]),

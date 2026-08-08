@@ -20,3 +20,17 @@ test('名将列传:时代长卷横向铺开六个时代,选中的那一块决定
   const heading = page.getByRole('heading', { name: '先秦' })
   await expect(heading).toBeVisible()
 })
+
+// 战役木牌。长卷原来只回答「这一段里站着谁」,而一个时代真正被记住的往往
+// 不是人名,是仗的名字。这条同时守着一件更要紧的事:**明清那一块曾经是空的** ——
+// 那七张明清卡挂的战役全是假匹配(鄭和 在昆陽、李鴻章 在合肥),
+// 修表在 overrides/battle-fixes.ts。
+test('时代长卷标出战役', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: /名将列传|Chronicles/ }).click()
+  await page.getByRole('button', { name: /時代長卷|The Scroll/ }).click()
+  await expect(page.getByText('馬陵之戰')).toBeVisible()
+  await expect(page.getByText('赤壁之戰')).toBeAttached()
+  // 明清那一块也得有 —— 它曾经一场都没有
+  await expect(page.getByText('土木堡之變')).toBeAttached()
+})

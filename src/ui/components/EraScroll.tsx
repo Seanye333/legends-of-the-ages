@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
-import { CARDS_BY_ID, SIGNATURE_IDS } from '../../content/cards'
-import { ERA_BLURB, ERA_NAME, ERA_OF, ERA_SPAN, type Era } from '../../content/eras'
+import { CARDS_BY_ID, COLLECTIBLE_CARDS, SIGNATURE_IDS } from '../../content/cards'
+import { battlesByEra, ERA_BLURB, ERA_NAME, ERA_OF, ERA_SPAN, type Era } from '../../content/eras'
 import { ERA_ORDER } from '../../content/collectionGoals'
 import { useCollection } from '../../app/collectionStore'
 import { usePickCompact, usePickText, useT } from '../i18n'
@@ -72,6 +72,9 @@ export function EraScroll({ onPickCard, selected, onSelectEra }: EraScrollProps)
     return out
   }, [owned])
 
+  // 战役按时代归组。只和卡池有关,和收藏无关 —— 空依赖数组,整个进程只算一次。
+  const battles = useMemo(() => battlesByEra(COLLECTIBLE_CARDS), [])
+
   return (
     <div className={styles.scroll}>
       {ERA_ORDER.map((era, i) => {
@@ -111,6 +114,20 @@ export function EraScroll({ onPickCard, selected, onSelectEra }: EraScrollProps)
                 )
               })}
             </div>
+            {/* 这一块打过哪几仗。长卷原来只回答「这一段里站着谁」,
+                而一个时代真正被记住的往往不是人名,是**仗的名字** ——
+                马陵、长平、赤壁、淝水。素材是卡面上现成的 `battles`,
+                不用碰那份 144KB 的懒加载列传。
+                只列前四场(按名单人数),多了会把这一块压成一张名单。 */}
+            {(battles[era] ?? []).length > 0 && (
+              <div className={styles.battles}>
+                {battles[era].slice(0, 4).map((b) => (
+                  <span key={b.name} className={styles.battle}>
+                    {b.name}
+                  </span>
+                ))}
+              </div>
+            )}
             <div className={styles.count}>
               {c.have} / {c.total}
             </div>

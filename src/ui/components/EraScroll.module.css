@@ -120,6 +120,28 @@
   cursor: default;
 }
 
+/* 这一块打过的仗。做成一行小木牌而不是逗号分隔的句子:
+   仗的名字是**专名**,连排成句会读成一句话,而它们该像挂在墙上的一排铭牌。 */
+.battles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.battle {
+  padding: 2px 7px;
+  border: 1px solid rgba(180, 150, 90, 0.35);
+  border-radius: 2px;
+  background: rgba(60, 45, 20, 0.35);
+  font-size: 11px;
+  line-height: 1.5;
+  letter-spacing: 0.06em;
+  color: var(--parchment-dim);
+  white-space: nowrap;
+}
+
 .count {
   margin-top: 4px;
   font-family: var(--font-display);
