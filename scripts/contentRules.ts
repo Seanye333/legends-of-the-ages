@@ -11,7 +11,7 @@
 //
 // 抽出来之后每条规则都能喂合成数据**两个方向**各验一遍:该报的必须报,
 // 不该报的必须不报。几毫秒跑完,不必扫两千多张真卡。
-import type { CardDef, EffectOp, EffectScript } from '../src/engine/types'
+import type { CardDef, EffectCondition, EffectOp, EffectScript } from '../src/engine/types'
 import { requiresChosenTarget } from '../src/engine/resolve'
 import { isNoOp } from './pricing'
 
@@ -55,6 +55,54 @@ export function flattenOps(ops: EffectOp[]): EffectOp[] {
 export function allOps(c: CardDef): EffectOp[] {
   return flattenOps(allScripts(c).flatMap((s) => s.ops))
 }
+
+/**
+ * 一张卡上所有脚本的**条件**(含伏笔里嵌的那一层)。
+ *
+ * `thin-mechanic` 只数 op,而条件不是 op —— 于是「引擎支持这个条件、
+ * DSL 里有它、卡池里一张都没有」这件事**从来没有任何东西看得见**。
+ * 实测出来的结果相当难看,见 checkContent 里 unused-condition 那一段。
+ */
+export function allConditions(c: CardDef): EffectCondition[] {
+  const out: EffectCondition[] = []
+  for (const s of allScripts(c)) {
+    if (s.condition) out.push(s.condition)
+    // 伏笔把一整段脚本包在 op 里,那一段自己也可以带条件
+    for (const op of flattenOps(s.ops)) {
+      if (op.op === 'delay' && op.script.condition) out.push(op.script.condition)
+    }
+  }
+  return out
+}
+
+/**
+ * `EffectCondition` 的全部键。
+ *
+ * **下面那行编译期断言保证这份清单不会漏。** 手写清单的通病是加了新条件没人来更新它,
+ * 而这里漏一个的后果正好是「那个新条件永远不会被报成没人用」——
+ * 也就是这条规则默默失效。所以让 tsc 来守:漏一个键就编译不过。
+ */
+export const CONDITION_KEYS = [
+  'ifDynastyCount',
+  'ifBoardCount',
+  'ifHeroHpBelow',
+  'ifHandCount',
+  'ifKeywordCount',
+  'ifMorale',
+  'ifSupply',
+  'ifSky',
+  'ifChain',
+  'ifTroopCount',
+  'ifField',
+  'ifTurnAtLeast',
+  'ifGraveyardCount',
+  'ifEnemyHeroHpBelow',
+] as const
+
+// 漏一个键这里就红 —— 不是注释里的约定,是编译器守的
+type MissingConditionKey = Exclude<keyof EffectCondition, (typeof CONDITION_KEYS)[number]>
+const _conditionKeysAreComplete: MissingConditionKey extends never ? true : never = true
+void _conditionKeysAreComplete
 
 /** op 指向的那张卡的 id(summon / transform / addToHand 三种)。 */
 export function referencedId(op: EffectOp): string | undefined {
@@ -192,6 +240,37 @@ export function checkContent({ all, collectible }: RuleInput): Issue[] {
   }
   for (const [op, n] of [...opCount].sort((a, b) => a[1] - b[1])) {
     if (n <= 2) add('info', 'thin-mechanic', `op ${op} 全池只有 ${n} 张卡在用`)
+  }
+
+  // ---- 引擎支持、卡池不用的**条件** ----
+  //
+  // 【为什么单独有这一条,而不是靠 thin-mechanic】
+  // thin-mechanic 数的是 op,而条件不是 op —— 于是「DSL 里有 `ifSupply`、
+  // 引擎认得它、而全池一张卡都不用它」这件事**从来没有任何东西看得见**。
+  //
+  // 2026-08-07 第一次跑出来的结果:`ifSupply` / `ifMorale` / `ifChain` /
+  // `ifGraveyardCount` / `ifField` **各 0 张**,而同时有 **145 张卡产屯粮、
+  // 111 张卡涨士气**。也就是说这两条资源轴是**只写不读**的:
+  // 玩家攒了一局的粮,没有任何一张牌会因此变强。
+  //
+  // 这和 `pricing.unusedWeights` 抓的是同一类东西(「表里有、卡里没有」),
+  // 只是那边是定价权重,这边是引擎能力 —— 都是**在假装被用过**的功能。
+  const condCount = new Map<string, number>()
+  for (const k of CONDITION_KEYS) condCount.set(k, 0)
+  for (const c of collectible) {
+    const keys = new Set(allConditions(c).flatMap((cond) => Object.keys(cond)))
+    for (const k of keys) condCount.set(k, (condCount.get(k) ?? 0) + 1)
+  }
+  for (const [k, n] of [...condCount].sort((a, b) => a[1] - b[1])) {
+    if (n === 0) {
+      add(
+        'warn',
+        'unused-condition',
+        `条件 ${k} 引擎支持、DSL 里有,而**全池一张卡都不用它** —— 它在假装被用过`,
+      )
+    } else if (n <= 2) {
+      add('info', 'thin-condition', `条件 ${k} 全池只有 ${n} 张卡在用`)
+    }
   }
 
   // ---- warn:量为 0 的 op —— 它**恒等于什么都不做** ----

@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import type { CardDef } from '../src/engine/types'
-import { allOps, allScripts, checkContent, flattenOps, referencedId } from './contentRules'
+import {
+  allConditions,
+  allOps,
+  allScripts,
+  checkContent,
+  CONDITION_KEYS,
+  flattenOps,
+  referencedId,
+} from './contentRules'
 
 // 造一张最小可用的卡。规则测试**刻意不碰真卡池** ——
 // 真卡池今天恰好没有某个错,不代表这条规则还活着(那正是 perf-budget
@@ -31,9 +39,13 @@ const rules = (cards: CardDef[]): string[] =>
 const CLEAN = card()
 
 describe('干净的卡不该报任何 error/warn', () => {
-  it('基线:合成的干净卡零命中', () => {
+  it('基线:合成的干净卡零命中(只看**针对这张卡**的那些规则)', () => {
+    // 有两类 issue:**针对某张卡的**(带 card)和**针对整个卡池的**(不带 card,
+    // 比如 thin-mechanic / unused-condition —— 它们说的是「全池只有 N 张在用」)。
+    // 池级规则在一个只有一张卡的合成卡池上**必然**命中,那不是误报,
+    // 是这条基线断言的范围不对。所以这里只看卡级的。
     const issues = checkContent({ all: [CLEAN], collectible: [CLEAN] })
-    expect(issues.filter((i) => i.level !== 'info')).toEqual([])
+    expect(issues.filter((i) => i.level !== 'info' && i.card !== undefined)).toEqual([])
   })
 })
 
@@ -317,5 +329,94 @@ describe('辅助函数', () => {
       },
     } as never)
     expect(allOps(c).map((o) => o.op)).toContain('draw')
+  })
+})
+
+describe('unused-condition —— 引擎支持、卡池不用的条件', () => {
+  // 这条规则抓的东西 thin-mechanic 抓不到:**条件不是 op**。
+  // 2026-08-07 第一次跑出来,十四种条件里九种一张卡都没有 ——
+  // 同时有 145 张卡产屯粮、111 张卡涨士气,而 ifSupply / ifMorale 各 0 张。
+  // 也就是说那两条资源轴是**只写不读**的。
+  const one = (cond: object) =>
+    card({ battlecry: { ops: [{ op: 'draw', count: 1 }], condition: cond } } as never)
+
+  it('一张卡都不用的条件会被点名', () => {
+    expect(rules([card()])).toContain('unused-condition')
+  })
+
+  it('**有卡在用就不该点它** —— 这是这条规则最容易写反的一半', () => {
+    const issues = checkContent({ all: [one({ ifSupply: { atLeast: 2 } })], collectible: [one({ ifSupply: { atLeast: 2 } })] })
+    expect(issues.filter((i) => i.rule === 'unused-condition' && i.msg.includes('ifSupply'))).toEqual([])
+  })
+
+  it('用了一张的落进 thin-condition,不落进 unused-condition', () => {
+    const c = one({ ifChain: { atLeast: 2 } })
+    const issues = checkContent({ all: [c], collectible: [c] })
+    expect(issues.some((i) => i.rule === 'thin-condition' && i.msg.includes('ifChain'))).toBe(true)
+    expect(issues.some((i) => i.rule === 'unused-condition' && i.msg.includes('ifChain'))).toBe(false)
+  })
+
+  it('三张以上两条都不点名', () => {
+    const mk = (i: number) =>
+      card({ id: `c${i}`, battlecry: { ops: [{ op: 'draw', count: 1 }], condition: { ifField: {} } } } as never)
+    const cards = [mk(1), mk(2), mk(3)]
+    const issues = checkContent({ all: cards, collectible: cards })
+    expect(issues.filter((i) => i.msg.includes('ifField'))).toEqual([])
+  })
+
+  it('同一张卡上同一个条件写两遍只算一张', () => {
+    const c = card({
+      battlecry: { ops: [{ op: 'draw', count: 1 }], condition: { ifSupply: { atLeast: 1 } } },
+      deathrattle: { ops: [{ op: 'draw', count: 1 }], condition: { ifSupply: { atLeast: 2 } } },
+    } as never)
+    const issues = checkContent({ all: [c], collectible: [c] })
+    // 一张卡 → 落在 thin-condition(≤2),而不是被数成两张
+    expect(issues.some((i) => i.rule === 'thin-condition' && i.msg.includes('ifSupply 全池只有 1 张'))).toBe(true)
+  })
+})
+
+describe('allConditions', () => {
+  it('取到脚本自己的条件', () => {
+    const c = card({ battlecry: { ops: [], condition: { ifSupply: { atLeast: 1 } } } } as never)
+    expect(allConditions(c)).toEqual([{ ifSupply: { atLeast: 1 } }])
+  })
+
+  it('取到抉择每个模式的条件', () => {
+    const c = card({
+      choose: {
+        modes: [
+          { label: { zh: 'a', en: 'a' }, script: { ops: [], condition: { ifSky: 'noon' } } },
+          { label: { zh: 'b', en: 'b' }, script: { ops: [] } },
+        ],
+      },
+    } as never)
+    expect(allConditions(c)).toEqual([{ ifSky: 'noon' }])
+  })
+
+  it('取到**伏笔里那一层**的条件 —— 漏了它就等于那一层的条件永远没人用', () => {
+    const c = card({
+      battlecry: {
+        ops: [
+          { op: 'delay', turns: 2, script: { ops: [{ op: 'draw', count: 1 }], condition: { ifChain: { atLeast: 2 } } } },
+        ],
+      },
+    } as never)
+    expect(allConditions(c)).toEqual([{ ifChain: { atLeast: 2 } }])
+  })
+
+  it('没有条件时是空的', () => {
+    expect(allConditions(card())).toEqual([])
+  })
+})
+
+describe('CONDITION_KEYS', () => {
+  // 完整性由 tsc 守(contentRules.ts 里那条编译期断言:漏一个键就编译不过)。
+  // 这里只验它自己没写重、也不是空的 —— 两者都会让上面那条规则悄悄失效。
+  it('没有重复', () => {
+    expect(new Set(CONDITION_KEYS).size).toBe(CONDITION_KEYS.length)
+  })
+
+  it('不是空的', () => {
+    expect(CONDITION_KEYS.length).toBeGreaterThan(5)
   })
 })
