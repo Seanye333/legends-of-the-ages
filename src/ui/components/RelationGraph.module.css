@@ -60,6 +60,14 @@
   fill: var(--gold-bright, #f7e1a8);
 }
 
+/* 筛选之后没有任何一条边的人。**淡出但不移除** ——
+   布局是按全集算的,少画几个点会在圆周上留一串空隙,
+   那反而会让人以为「这些位置本来就没有人」。而且他仍然可点、仍然可聚焦。 */
+.nodeOff {
+  fill: var(--parchment-faint, #8b8272);
+  opacity: 0.28;
+}
+
 .nodeOn {
   fill: var(--gold-bright, #f7e1a8);
   filter: drop-shadow(0 0 6px rgba(232, 200, 120, 0.9));
@@ -80,6 +88,26 @@
   stroke-width: 4;
   stroke-linejoin: round;
   pointer-events: none;
+}
+
+/* 筛选胶囊。接的是 uiKit 的基件 —— 这一栏和「乱斗规则钮 / 关底选卡组 /
+   构筑筛选 / 设置分区」是同一样东西,不该再写第十处自己的 padding。
+   `composes` 在产物里是两个平级的类,顺序由打包器排(见 npm run css-order)。 */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.chip {
+  composes: btnChip from '../uiKit.module.css';
+}
+
+.chipOn {
+  composes: btnChip from '../uiKit.module.css';
+  composes: btnChipOn from '../uiKit.module.css';
 }
 
 .legend {

@@ -25,10 +25,24 @@ interface RelationGraphProps {
 // 【为什么不给每个点都写名字】
 // 98 个名字在 400px 的圆上必然叠字。名字只在悬停/聚焦时出现一个 ——
 // 图给的是**结构**,名字由下面那两段列表负责(它同时是读屏器的通路)。
+type EdgeKind = 'bond' | 'rival'
+type Filter = 'all' | EdgeKind
+
 export function RelationGraph({ onPick }: RelationGraphProps) {
   const t = useT()
   const pickCompact = usePickCompact()
   const [active, setActive] = useState<string | null>(null)
+  // 按关系种类筛选。
+  //
+  // 【为什么现在才需要】2026-08-08 这一轮把羁绊 31 → 52、宿敌 41 → 60,
+  // 边数几乎翻倍。弦图的好处是「谁的线多一眼可见」,而线一多这个好处就先消失了 ——
+  // 尤其是同一对人既有羁绊又是宿敌的那几对(鬼谷门下的孙膑庞涓就是),
+  // 两条弦叠在一起根本分不出来。
+  //
+  // **筛的是边,不是点。** 被筛掉那一侧的人仍然画在圆周上(位置由全集算,
+  // 不随筛选变)—— 布局一变,这张图就没法用来对比两种关系的疏密了,
+  // 而那正是它唯一比列表强的地方。没有任何一条边的人淡出,但仍可点。
+  const [filter, setFilter] = useState<Filter>('all')
 
   const { nodes, pos, edges } = useMemo(() => {
     // 节点集合:出现在任意一条羁绊或宿敌里的人。排序保证布局确定。
@@ -67,9 +81,44 @@ export function RelationGraph({ onPick }: RelationGraphProps) {
   }
 
   const activePos = active ? pos.get(active) : null
+  const shown = useMemo(
+    () => (filter === 'all' ? edges : edges.filter((e) => e.kind === filter)),
+    [edges, filter],
+  )
+  // 筛完之后还连着线的人。**位置照旧由全集算**,这里只决定谁淡出。
+  const linked = useMemo(() => {
+    const s = new Set<string>()
+    for (const e of shown) {
+      s.add(e.a)
+      s.add(e.b)
+    }
+    return s
+  }, [shown])
+
+  const CHIPS: { key: Filter; zh: string; en: string }[] = [
+    { key: 'all', zh: '全部', en: 'All' },
+    { key: 'bond', zh: `羈絆 ${ALL_BONDS.length}`, en: `Bonds ${ALL_BONDS.length}` },
+    { key: 'rival', zh: `宿敵 ${ALL_RIVALS.length}`, en: `Rivals ${ALL_RIVALS.length}` },
+  ]
 
   return (
     <div className={styles.wrap}>
+      <div className={styles.filters} role="group" aria-label={t('按关系种类筛选', 'Filter by relation kind')}>
+        {CHIPS.map((c) => (
+          <button
+            key={c.key}
+            type="button"
+            className={filter === c.key ? styles.chipOn : styles.chip}
+            aria-pressed={filter === c.key}
+            onClick={() => {
+              playSfx('buttonTap')
+              setFilter(c.key)
+            }}
+          >
+            {t(c.zh, c.en)}
+          </button>
+        ))}
+      </div>
       <svg
         className={styles.svg}
         viewBox="0 0 400 400"
@@ -81,7 +130,7 @@ export function RelationGraph({ onPick }: RelationGraphProps) {
       >
         {/* 边先画,点压在上面 */}
         <g className={styles.edges}>
-          {edges.map((e, i) => {
+          {shown.map((e, i) => {
             const lit = active !== null && (e.a === active || e.b === active)
             return (
               <path
@@ -104,7 +153,9 @@ export function RelationGraph({ onPick }: RelationGraphProps) {
                 cx={p.x}
                 cy={p.y}
                 r={on ? 5.5 : 3.2}
-                className={`${styles.node} ${on ? styles.nodeOn : ''}`}
+                className={`${styles.node} ${on ? styles.nodeOn : ''} ${
+                  linked.has(id) ? '' : styles.nodeOff
+                }`}
                 tabIndex={0}
                 role="button"
                 aria-label={pickCompact(cardName(id))}
@@ -141,12 +192,16 @@ export function RelationGraph({ onPick }: RelationGraphProps) {
         )}
       </svg>
       <div className={styles.legend}>
-        <span className={styles.legendBond}>
-          {t(`羈絆 ${ALL_BONDS.length}`, `Bonds ${ALL_BONDS.length}`)}
-        </span>
-        <span className={styles.legendRival}>
-          {t(`宿敵 ${ALL_RIVALS.length}`, `Rivals ${ALL_RIVALS.length}`)}
-        </span>
+        {filter !== 'rival' && (
+          <span className={styles.legendBond}>
+            {t(`羈絆 ${ALL_BONDS.length}`, `Bonds ${ALL_BONDS.length}`)}
+          </span>
+        )}
+        {filter !== 'bond' && (
+          <span className={styles.legendRival}>
+            {t(`宿敵 ${ALL_RIVALS.length}`, `Rivals ${ALL_RIVALS.length}`)}
+          </span>
+        )}
         <span className={styles.legendHint}>
           {t('点一个人看他的列传', 'Tap anyone to open their chronicle')}
         </span>
