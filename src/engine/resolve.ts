@@ -134,6 +134,32 @@ export function formationBeneficiaries(
     }
     case 'serpent':
       return n >= BOARD_LIMIT ? board.map((_, i) => i) : []
+    // ---- 第二十九卡包 ----
+    // 四种都只看**人数与位置**,不看兵种,而且**门槛统一是 3**:
+    // 第一版 偃月/方圓/衡軛 用的是 4,实测 -7.3 / -3.0 / -10.5 —— 站满四个人
+    // 这件事本身就是这把尺子(贪心 AI)最不擅长的,门槛写在 4 等于这条阵形不存在。
+    // 原有的 长蛇(满员)与 鱼鳞(三个同兵种)正是栽在同一件事上。 —— 鱼鳞那种「要三个同兵种」的门槛
+    // 在实战里几乎摆不出来,而阵形这条轴的乐趣本该是「我把谁放在哪一格」。
+    case 'crescent':
+      // 偶数人时取靠左的那个中 —— 必须定死,不然回放会分叉。
+      return n >= 3 ? [Math.floor((n - 1) / 2)] : []
+    case 'square':
+      // 锚点抱团。锚点在边上时自然只有两个人吃,这是形状本身的性质,不特判。
+      return n >= 3
+        ? [anchorIndex - 1, anchorIndex, anchorIndex + 1].filter((i) => i >= 0 && i < n)
+        : []
+    case 'goose': {
+      // 雁行是**斜**的:锚点在最右时一个人都吃不到,所以摆位真的有讲究。
+      const out: number[] = []
+      for (let i = anchorIndex + 1; i < n; i++) out.push(i)
+      return n >= 3 ? out : []
+    }
+    case 'yoke': {
+      // 鹤翼的补集:那个给两翼,这个给中军。两张一起上场就是全场。
+      const out: number[] = []
+      for (let i = 1; i < n - 1; i++) out.push(i)
+      return n >= 3 ? out : []
+    }
   }
 }
 
