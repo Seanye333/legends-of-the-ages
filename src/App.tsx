@@ -271,6 +271,10 @@ export default function App() {
                 setAfterMatch('lethal')
                 setScreen('match')
               }}
+              // 每日名局只是个**入口**,不在这一屏开打:名局要带你自己的卡组,
+              // 而这一屏一张牌都不需要选(残局是给定的)。把选卡组那一步搬过来
+              // 就等于把名局屏抄一遍。
+              onGoHistory={() => setScreen('history')}
             />
           </Suspense>
         )

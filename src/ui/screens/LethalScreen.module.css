@@ -350,3 +350,53 @@
   font-size: 11px;
   color: var(--parchment-faint);
 }
+
+/* 每日名局。做成**一整条可点的横幅**而不是一个小按钮:
+   它是这一屏上唯一一件「不是残局」的东西,长得像别的按钮就等于藏起来了。
+   左边一道金线,和战役结局那一段同一个手法 —— 这里的意思是「另一种东西」。 */
+.dailyBattle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+  width: min(94vw, 720px);
+  margin: 0 auto 10px;
+  padding: 10px 14px;
+  border: 1px solid rgba(180, 150, 90, 0.32);
+  border-left: 3px solid var(--gold-mid, #c8a45c);
+  border-radius: 3px;
+  background: linear-gradient(90deg, rgba(70, 52, 22, 0.5), rgba(40, 30, 14, 0.28));
+  color: var(--parchment);
+  text-align: left;
+  cursor: pointer;
+}
+
+.dailyBattle:hover {
+  border-color: var(--gold-mid, #c8a45c);
+}
+
+.dailyBattleLabel {
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--gold-mid);
+}
+
+.dailyBattleName {
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: 0.06em;
+  color: var(--gold-bright, #f7e1a8);
+}
+
+.dailyBattleEra {
+  font-size: 11px;
+  color: var(--parchment-faint);
+}
+
+.dailyBattleGo {
+  margin-left: auto;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--parchment-dim);
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { DECK_SIZE } from '../engine/types'
-import { HISTORY_BATTLES, battleDeck, battleModifiers } from './historyBattles'
+import { HISTORY_BATTLES, battleDeck, battleModifiers, dailyBattleFor } from './historyBattles'
 import { CARDS_BY_ID } from './cards'
 import { createGame } from '../engine/init'
 import { HEROES_BY_ID } from './overrides/heroes'
@@ -105,6 +105,32 @@ describe('历史名战', () => {
   it('battleDeck 确定性 —— 同一场每次都是同一套牌', () => {
     for (const b of HISTORY_BATTLES) {
       expect(battleDeck(b)).toEqual(battleDeck(b))
+    }
+  })
+})
+
+// 每日名局。判据是「确定性 + 会轮换」——
+// 只钉确定性会漏掉一种烂法:哈希写死成常数,每天都是同一场,而它照样是确定的。
+describe('每日名局', () => {
+  it('同一天永远同一场', () => {
+    for (const d of ['2026-08-08', '2026-12-31', '2027-01-01']) {
+      expect(dailyBattleFor(d)!.id).toBe(dailyBattleFor(d)!.id)
+      expect(dailyBattleFor(d)).toBeDefined()
+    }
+  })
+
+  it('**三十天里换过好几场** —— 每天同一场也是「确定的」,但那不叫每日', () => {
+    const ids = new Set<string>()
+    for (let i = 1; i <= 30; i++) {
+      ids.add(dailyBattleFor(`2026-09-${String(i).padStart(2, '0')}`)!.id)
+    }
+    expect(ids.size).toBeGreaterThan(5)
+  })
+
+  it('选出来的一定是真的那张表里的一场', () => {
+    const all = new Set(HISTORY_BATTLES.map((b) => b.id))
+    for (let i = 1; i <= 28; i++) {
+      expect(all).toContain(dailyBattleFor(`2026-02-${String(i).padStart(2, '0')}`)!.id)
     }
   })
 })

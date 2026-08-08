@@ -1,3 +1,5 @@
+import { dayHash } from './dayKey'
+
 import type {
   BattleObjective,
   Doctrine,
@@ -786,3 +788,19 @@ export const DIVERGENCES: Divergence[] = [
 export const DIVERGENCE_BY_BATTLE: Record<string, Divergence> = Object.fromEntries(
   DIVERGENCES.map((d) => [d.battleId, d]),
 )
+
+// ---------- 每日名局 ----------
+//
+// 【为什么每日挑战需要第二种东西】
+// 每日那一屏此前只有斩杀谜题:三道残局,做法一样、思路一样 ——
+// 「这一手怎么打死他」。它是好题,但连着做三十天就只剩计算,没有别的味道。
+// 名局问的是完全不同的问题(带自己的牌去接一个历史处境),而它**本来就在库里**,
+// 只是藏在另一个入口后面,大多数人一个月也点不进去一次。
+//
+// 【为什么不发额外奖励】
+// 名局自己有首通奖励。再叠一层「每日名局奖励」就是在动经济曲线,
+// 而这一条要解决的是**可见性**,不是产出 —— 加个入口,不加个货币。
+export function dailyBattleFor(dateStr: string): HistoryBattle | undefined {
+  if (HISTORY_BATTLES.length === 0) return undefined
+  return HISTORY_BATTLES[dayHash(`qiangu-daily-battle:${dateStr}`) % HISTORY_BATTLES.length]
+}

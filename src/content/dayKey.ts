@@ -28,3 +28,16 @@ export function daysBetween(a: string, b: string): number {
 // 每日谜题的题数。放在这里而不是 dailyPuzzle.ts:lethalStore 只为了这个常量
 // 就会把谜题池拖进来,而它本身跟残局数据没有任何关系。
 export const DAILY_SLOTS = 3
+
+// FNV-1a。放在这里而不是 dailyPuzzle 里,是因为**每日轮换不止一样东西** ——
+// 谁需要「按日期确定性地挑一个」,都该用同一个哈希,否则两处轮换会各走各的节奏。
+// (dailyPuzzle 里那份是先写的,留着不动:它已经决定了历史上每一天的题面,
+// 改哈希等于把所有人的「连续 N 天」记录重排一遍。)
+export function dayHash(str: string): number {
+  let h = 2166136261
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i)
+    h = Math.imul(h, 16777619)
+  }
+  return Math.abs(h >>> 0)
+}

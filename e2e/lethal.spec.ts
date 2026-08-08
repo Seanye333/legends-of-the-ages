@@ -35,3 +35,15 @@ test('lethal puzzle: enter → fail on end turn → retry → back to list', asy
   await page.getByRole('button', { name: '返回选题' }).click()
   await expect(page.getByRole('heading', { name: /斩杀谜题/ })).toBeVisible()
 })
+
+// 每日名局。每日那一屏此前只有斩杀谜题:三道残局,做法一样、思路一样。
+// 这条守的是「另一种东西真的摆在那儿」,以及它**指向的是名局屏**
+// (名局要带你自己的卡组,这一屏一张牌都不用选,所以只能是入口不能就地开打)。
+test('每日名局:入口在,而且指向名局屏', async ({ page }) => {
+  await seedUnlockedProfile(page)
+  await page.goto('/')
+  await page.getByRole('button', { name: /斩杀谜题|Lethal Puzzles/ }).first().click()
+  await expect(page.getByText('今日名局')).toBeVisible()
+  await page.getByText('今日名局').click()
+  await expect(page.getByRole('heading', { name: /名局重现|Great Battles/ })).toBeVisible()
+})

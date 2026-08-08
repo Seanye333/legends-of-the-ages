@@ -1,5 +1,6 @@
 import { LETHAL_PUZZLES, type LethalPuzzle } from '../../content/lethalPuzzles'
 import { dailyPuzzleFor, dailyPuzzleSetFor, dayKey, SLOT_NAME } from '../../content/dailyPuzzle'
+import { dailyBattleFor } from '../../content/historyBattles'
 import { useState } from 'react'
 import { createGame } from '../../engine/init'
 import { CARDS_BY_ID } from '../../content/cards'
@@ -22,11 +23,14 @@ import styles from './LethalScreen.module.css'
 interface LethalScreenProps {
   onBack: () => void
   onEnterMatch: () => void
+  // 每日名局的入口。名局要带你自己的卡组,而这一屏一张牌都不用选 ——
+  // 把选卡组那一步搬过来等于把名局屏抄一遍,所以这里只负责**指路**。
+  onGoHistory: () => void
 }
 
 // 斩杀谜题:选一道残局,在一个回合内找出 lethal 击杀对手。
 // 用自己的收藏无关 —— 残局由内容层给定,进 match 走 puzzle 通道(见 matchStore)。
-export function LethalScreen({ onBack, onEnterMatch }: LethalScreenProps) {
+export function LethalScreen({ onBack, onEnterMatch, onGoHistory }: LethalScreenProps) {
   const t = useT()
   const pick = usePickText()
   const solved = useLethal((s) => s.solved)
@@ -40,6 +44,7 @@ export function LethalScreen({ onBack, onEnterMatch }: LethalScreenProps) {
   // 分享码仍然只给**第一阵** —— 「今天大家都在打的那一道」得是同一道,
   // 三道都能分享的话「今日残局码」这句话就不成立了。
   const daily = dailyPuzzleFor(today)
+  const todayBattle = dailyBattleFor(today)
   const dailySet = dailyPuzzleSetFor(today)
   const doneSlots = solvedSlots(today)
   const streak = streakAsOf(today)
@@ -103,6 +108,22 @@ export function LethalScreen({ onBack, onEnterMatch }: LethalScreenProps) {
           'A fixed board. Find a line that ends it this very turn — cards, hero power, attack order, all of it.',
         )}
       </p>
+
+      {/* 每日名局。
+          【为什么每日这一屏需要第二种东西】
+          此前只有斩杀谜题:三道残局,做法一样、思路一样 ——「这一手怎么打死他」。
+          它是好题,但连着做三十天就只剩计算。名局问的是完全不同的问题
+          (带自己的牌去接一个历史处境),而它**本来就在库里**,
+          只是藏在另一个入口后面,大多数人一个月也点不进去一次。
+          不发额外奖励:名局自己有首通奖励,这一条要解决的是可见性不是产出。 */}
+      {todayBattle && (
+        <button className={styles.dailyBattle} onClick={() => { playSfx('buttonTap'); onGoHistory() }}>
+          <span className={styles.dailyBattleLabel}>{t('今日名局', "Today's Battle")}</span>
+          <span className={styles.dailyBattleName}>{pick(todayBattle.name)}</span>
+          <span className={styles.dailyBattleEra}>{pick(todayBattle.era)}</span>
+          <span className={styles.dailyBattleGo}>{t('去名局 →', 'Go to Battles →')}</span>
+        </button>
+      )}
 
       {/* 残局分享:UGC 最难的一环从来不是编辑器,是**审核** ——
           谁来保证这道题真的有解?而这里有 solveLethal,导入时当场跑一遍,
