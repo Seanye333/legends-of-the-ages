@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Language } from '../ui/i18n'
+import type { CampaignMode } from '../content/campaign'
 import { safeStorage } from './safeStorage'
 
 // 单机 AI 难度。名字取自兵法典故,对应 greedy.ts 的失误概率。
@@ -37,6 +38,12 @@ interface SettingsState {
   musicEnabled: boolean
   musicVolume: number
   difficulty: Difficulty
+  // 战役难度档。**和上面那个 difficulty 是两回事**:
+  // difficulty 调的是 AI 的失误率(整个游戏通用),这一条只调关底血量,
+  // 而且只影响战役。两个旋钮分开是因为它们回答的问题不一样 ——
+  // 「对手下棋有多准」和「这一关有多长」。
+  // 标准档是**恒等式**(见 content/campaign 的 CAMPAIGN_MODE_HP 那一段)。
+  campaignMode: CampaignMode
   // 减少动效:跟随系统 prefers-reduced-motion,但允许手动覆盖 ——
   // 战斗特效是全站动效最猛的地方,晕动敏感的人需要一个明确的开关。
   reducedMotion: boolean
@@ -84,6 +91,7 @@ interface SettingsState {
   setMusicEnabled: (on: boolean) => void
   setMusicVolume: (v: number) => void
   setDifficulty: (d: Difficulty) => void
+  setCampaignMode: (m: CampaignMode) => void
   setReducedMotion: (on: boolean) => void
   setCardBack: (id: string) => void
   setColorBlind: (on: boolean) => void
@@ -103,6 +111,7 @@ export const useSettings = create<SettingsState>()(
       musicEnabled: true,
       musicVolume: 0.6,
       difficulty: 'veteran',
+      campaignMode: 'standard',
       reducedMotion: false,
       cardBack: 'back-default',
       colorBlind: false,
@@ -117,6 +126,7 @@ export const useSettings = create<SettingsState>()(
       setMusicEnabled: (musicEnabled) => set({ musicEnabled }),
       setMusicVolume: (musicVolume) => set({ musicVolume: Math.max(0, Math.min(1, musicVolume)) }),
       setDifficulty: (difficulty) => set({ difficulty }),
+      setCampaignMode: (campaignMode) => set({ campaignMode }),
       setReducedMotion: (reducedMotion) => set({ reducedMotion }),
       setCardBack: (cardBack) => set({ cardBack }),
       setColorBlind: (colorBlind) => set({ colorBlind }),

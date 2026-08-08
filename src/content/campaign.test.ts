@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { DECK_SIZE } from '../engine/types'
-import { BOSSES, bossChapter, bossDeck, bossTrial, bossPersonality, TRIALS } from './campaign'
+import {
+  BOSSES,
+  bossChapter,
+  bossDeck,
+  bossHpFor,
+  bossHpForMode,
+  bossTrial,
+  bossPersonality,
+  TRIALS,
+} from './campaign'
 import { bossLines } from './bossLines'
 import { CARDS_BY_ID } from './cards'
 import { createGame } from '../engine/init'
@@ -220,5 +229,52 @@ describe('关底结局', () => {
   it('二十四段各不相同 —— 两关共用一段同样是白写', () => {
     const zh = BOSSES.map((b) => b.outro.zh)
     expect(new Set(zh).size, '有重复的结局').toBe(zh.length)
+  })
+})
+
+// 战役难度档。
+//
+// 【这一组里只有第一条是真正重要的】
+// `sim-campaign` 那条难度曲线是几十轮网格搜出来的,而它测的**只有标准档**。
+// 标准档只要不是恒等式,那条曲线连同 ROADMAP 里所有关于它的结论当场作废 ——
+// 而且不会有任何东西报警,因为闸门测的仍然是「标准档」这个名字。
+// 所以第一条不是「顺便验一下默认值」,是**契约**。
+describe('战役难度档', () => {
+  it('**标准档是恒等式** —— 它变了,sim-campaign 那条调校过的曲线就作废了', () => {
+    for (const b of BOSSES) {
+      expect(bossHpForMode(b.hp, 0, 'standard'), b.id).toBe(b.hp)
+    }
+  })
+
+  it('简易 < 标准 < 史实,每一关都成立', () => {
+    for (const b of BOSSES) {
+      const g = bossHpForMode(b.hp, 0, 'gentle')
+      const s = bossHpForMode(b.hp, 0, 'standard')
+      const h = bossHpForMode(b.hp, 0, 'historical')
+      expect(g, `${b.id} 简易没更低`).toBeLessThan(s)
+      expect(h, `${b.id} 史实没更高`).toBeGreaterThan(s)
+    }
+  })
+
+  it('和傳承轮次相乘,不是相加 —— 第三轮的史实档要比第三轮的标准档更厚', () => {
+    for (const cycle of [0, 1, 3]) {
+      expect(bossHpForMode(50, cycle, 'historical')).toBeGreaterThan(
+        bossHpForMode(50, cycle, 'standard'),
+      )
+    }
+    // 轮次本身仍然单调
+    expect(bossHpForMode(50, 2, 'gentle')).toBeGreaterThan(bossHpForMode(50, 0, 'gentle'))
+  })
+
+  it('bossHpFor 与标准档逐位相同 —— 两份算式迟早会分叉,所以钉住', () => {
+    for (const base of [30, 52, 70]) {
+      for (const cycle of [0, 1, 2, 5]) {
+        expect(bossHpFor(base, cycle)).toBe(bossHpForMode(base, cycle, 'standard'))
+      }
+    }
+  })
+
+  it('血量不会被压到 0 以下 —— 简易档乘出来再小也得能打', () => {
+    expect(bossHpForMode(1, 0, 'gentle')).toBeGreaterThanOrEqual(1)
   })
 })

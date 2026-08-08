@@ -1334,9 +1334,67 @@ export function bossTrial(bossId: string): TrialDef | undefined {
 // 闸门测的还是原来那 24 关。
 export const LEGACY_HP_PER_CYCLE = 0.18
 
+// ---------- 战役难度档(简单 / 标准 / 史实)----------
+//
+// 【为什么只有一个旋钮,而且是血量】
+// 手上看起来有三个旋钮:Boss 血量、`deckTier`、双方的 `RunModifiers`。
+// 后两个都不能用:
+//
+// 1. **`deckTier` 对强度是非单调的**,而且是量出来的,不是猜的 ——
+//    于謙 那条曲线是 `0:20% · 0.15:69% · 0.3:35% · 0.45:25% · 0.6:69% · 0.75:51% · 0.9:39%`
+//    (见 tune-campaign 那一节)。拿它当难度旋钮,「调简单一点」有一半概率
+//    是调难了,而且**每一关拨的方向还不一样**。它是网格搜出来的定值,不是刻度。
+// 2. **`RunModifiers` 有优先级冲突。** 试炼的修正必须原样保留(它摆的是胜负目标
+//    那个单位,换掉就没法判胜负),傳承的修正在试炼时本来就要让位 ——
+//    再插一层难度修正,那三者的优先级组合会变成一个没人说得清的表。
+//
+// 血量是**单调的、无冲突的、而且已经是这套战役最主要的刻度**(24 关 30→70)。
+// 一个旋钮说得清,也测得动。
+//
+// 【标准档必须是恒等式】
+// `sim-campaign` 那条难度曲线是几十轮网格搜出来的。标准档只要不是恒等,
+// 那条曲线连同 ROADMAP 里所有关于它的结论**当场作废**。
+// 所以 `standard: 1` 不是「默认值」,是**契约** —— 有测试钉着。
+export type CampaignMode = 'gentle' | 'standard' | 'historical'
+
+export const CAMPAIGN_MODE_HP: Record<CampaignMode, number> = {
+  gentle: 0.75,
+  standard: 1,
+  historical: 1.3,
+}
+
+export const CAMPAIGN_MODE_NAME: Record<CampaignMode, LocalizedText> = {
+  gentle: { zh: '簡易', en: 'Gentle' },
+  standard: { zh: '標準', en: 'Standard' },
+  historical: { zh: '史實', en: 'Historical' },
+}
+
+export const CAMPAIGN_MODE_DESC: Record<CampaignMode, LocalizedText> = {
+  gentle: { zh: '關底血量七五折 —— 先把故事看完', en: 'Bosses at 75% health — see the story through' },
+  standard: { zh: '調校過的那一档', en: 'The tuned baseline' },
+  historical: { zh: '關底血量一點三倍 —— 他們本來就不好打', en: 'Bosses at 130% health — they were not easy men' },
+}
+
+/**
+ * 关底血量 = 基础血 × 难度档 × 傳承轮次。
+ *
+ * 顺序无所谓(都是乘法),但**取整只做一次** —— 分两次取整会让
+ * 「简易 + 第三轮」和「第三轮 + 简易」差一点血,而那种差别永远查不出来。
+ */
+export function bossHpForMode(baseHp: number, cycle: number, mode: CampaignMode): number {
+  const legacy = cycle > 0 ? 1 + LEGACY_HP_PER_CYCLE * cycle : 1
+  return Math.max(1, Math.round(baseHp * CAMPAIGN_MODE_HP[mode] * legacy))
+}
+
+/**
+ * 傳承轮次的血量(**不带难度档**)—— 远征在用,它没有难度档这个概念。
+ *
+ * 转发给 `bossHpForMode(…, 'standard')` 而不是各算一遍:标准档是恒等式,
+ * 所以两者本来就该逐位相同,而「本来就该相同」的两份算式一定会有一天不同
+ * (这个仓库反复吃过这一口)。有测试钉着它们相等。
+ */
 export function bossHpFor(baseHp: number, cycle: number): number {
-  if (cycle <= 0) return baseHp
-  return Math.round(baseHp * (1 + LEGACY_HP_PER_CYCLE * cycle))
+  return bossHpForMode(baseHp, cycle, 'standard')
 }
 
 // 玩家这一轮带着的傳承。台阶式:每一轮多一件具体的东西。

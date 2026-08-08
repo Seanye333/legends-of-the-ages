@@ -7,7 +7,10 @@ import {
   bossTrial,
   bossPersonality,
   bossField,
-  bossHpFor,
+  bossHpForMode,
+  CAMPAIGN_MODE_NAME,
+  CAMPAIGN_MODE_DESC,
+  type CampaignMode,
   LEGACY_HP_PER_CYCLE,
   legacyModifiers,
   legacyName,
@@ -20,6 +23,7 @@ import { useCampaign } from '../../app/campaignStore'
 import { HEROES_BY_ID } from '../../content/overrides/heroes'
 import { START_HP } from '../../engine/types'
 import { useCollection } from '../../app/collectionStore'
+import { useSettings } from '../../app/settingsStore'
 import { launchMatch } from '../matchSetup'
 import { DOCTRINE_COLORS, DOCTRINE_NAME } from '../doctrineColors'
 import { Portrait } from '../components/Portrait'
@@ -91,6 +95,8 @@ export function CampaignScreen({ onBack, onEnterMatch }: CampaignScreenProps) {
   const closeBrief = useCallback(() => setSelected(null), [])
   // 舆图视图。默认关 —— 竖列表在手机上仍是更好用的那个(也是 e2e 依赖的结构)
   const [mapView, setMapView] = useState(false)
+  const campaignMode = useSettings((s) => s.campaignMode)
+  const setCampaignMode = useSettings((s) => s.setCampaignMode)
   const [deckIndex, setDeckIndex] = useState(0)
 
   const myDecks = [...PRECON_DECKS, ...customDecks]
@@ -114,7 +120,7 @@ export function CampaignScreen({ onBack, onEnterMatch }: CampaignScreenProps) {
       heroPowersOverride: [myHero?.power, boss.power],
       // 傳承轮次:Boss 血按轮次涨,玩家带一份开局资本(见 content/campaign 的 legacyModifiers)。
       // cycle 为 0 时两条都退化成原样 —— 首轮一个数都没变。
-      heroHpsOverride: [myHero?.hp ?? START_HP, bossHpFor(boss.hp, cycle)],
+      heroHpsOverride: [myHero?.hp ?? START_HP, bossHpForMode(boss.hp, cycle, campaignMode)],
       objective: trial?.objective,
       // 试炼自带修正,和傳承撞车时以试炼为准:试炼的胜负条件依赖它摆上场的目标单位,
       // 换掉就直接没法判胜负了。傳承那点护甲让一让。
@@ -190,6 +196,28 @@ export function CampaignScreen({ onBack, onEnterMatch }: CampaignScreenProps) {
           </span>
         </button>
       )}
+
+      {/* 难度档。**只调关底血量**,一个旋钮 ——
+          `deckTier` 对强度是非单调的(量出来的,见 content/campaign 那段注释),
+          拿它当难度旋钮有一半概率是调反了;`RunModifiers` 又和试炼/傳承有优先级冲突。
+          标准档是恒等式,所以 sim-campaign 那条调校过的曲线仍然是它测的那一条。 */}
+      <div className={styles.modeTabs} role="group" aria-label={t('难度', 'Difficulty')}>
+        {(['gentle', 'standard', 'historical'] as CampaignMode[]).map((m) => (
+          <button
+            key={m}
+            className={campaignMode === m ? styles.modeTabOn : styles.modeTab}
+            aria-pressed={campaignMode === m}
+            title={pick(CAMPAIGN_MODE_DESC[m])}
+            onClick={() => {
+              playSfx('buttonTap')
+              setCampaignMode(m)
+            }}
+          >
+            {pickCompact(CAMPAIGN_MODE_NAME[m])}
+          </button>
+        ))}
+        <span className={styles.modeHint}>{pick(CAMPAIGN_MODE_DESC[campaignMode])}</span>
+      </div>
 
       {/* 舆图 / 列传两种读法。
           列表回答「这一关是谁、什么称号、多少血」,舆图回答「我走到哪了」——
@@ -278,7 +306,9 @@ export function CampaignScreen({ onBack, onEnterMatch }: CampaignScreenProps) {
                   ) : done ? (
                     <span className={styles.clearedTag}>{t('已破', 'Cleared')}</span>
                   ) : open ? (
-                    <span className={styles.hp}>{b.hp} HP</span>
+                    // 显示的必须是**真的会打的那个数** —— 选了史實却还写着 30 HP,
+                    // 就是卡面在说谎。傳承轮次也一样走这个函数。
+                    <span className={styles.hp}>{bossHpForMode(b.hp, cycle, campaignMode)} HP</span>
                   ) : (
                     <span className={styles.lockTag}>{t('未解锁', 'Locked')}</span>
                   )}
@@ -318,7 +348,7 @@ export function CampaignScreen({ onBack, onEnterMatch }: CampaignScreenProps) {
           )}
           <div className={styles.briefStats}>
             <span>
-              {t('血量', 'Health')} <b>{selected.hp}</b>
+              {t('血量', 'Health')} <b>{bossHpForMode(selected.hp, cycle, campaignMode)}</b>
             </span>
             <span>
               {t('主义', 'Doctrine')} <b>{pickCompact(DOCTRINE_NAME[selected.doctrine])}</b>
