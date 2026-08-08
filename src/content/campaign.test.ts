@@ -198,3 +198,27 @@ describe('boss 台词', () => {
     for (const b of BOSSES) expect(bossPersonality(b.id), b.id).toBeDefined()
   })
 })
+
+// 结局(outro)。**必填字段**已经让 tsc 数过二十四段了,所以这里只钉 tsc 看不见的:
+// 内容本身的质量下限,以及「它不能和 intro 是同一句话」——
+// 后者是复制粘贴二十四次最典型的产物,而它不会报任何错。
+describe('关底结局', () => {
+  it('二十四关每关都有中英双语的结局,且不是空串', () => {
+    for (const b of BOSSES) {
+      expect(b.outro.zh.trim().length, `${b.id} 缺中文结局`).toBeGreaterThan(8)
+      expect(b.outro.en.trim().length, `${b.id} 缺英文结局`).toBeGreaterThan(12)
+    }
+  })
+
+  it('**结局不许和登场词是同一句** —— 复制粘贴不会报错,只会让那一关白写', () => {
+    for (const b of BOSSES) {
+      expect(b.outro.zh, `${b.id} 的 outro 和 intro 一样`).not.toBe(b.intro.zh)
+      expect(b.outro.en, `${b.id} 的 outro 和 intro 一样`).not.toBe(b.intro.en)
+    }
+  })
+
+  it('二十四段各不相同 —— 两关共用一段同样是白写', () => {
+    const zh = BOSSES.map((b) => b.outro.zh)
+    expect(new Set(zh).size, '有重复的结局').toBe(zh.length)
+  })
+})

@@ -401,6 +401,20 @@
   text-align: left;
 }
 
+/* 结局那一段。和 intro 同一栏宽,但**读起来要是另一个声音**:
+   左边一道细金线 + 压暗一档 + 斜体。它讲的是很多年以后的事,
+   和上面那段「他现在正带着兵站在你对面」不该长得一模一样。 */
+.briefOutro {
+  margin: 10px 18px 0;
+  padding-left: 10px;
+  border-left: 2px solid var(--gold-dim, #8a7442);
+  font-size: 12px;
+  line-height: 1.9;
+  font-style: italic;
+  color: var(--parchment-faint);
+  text-align: left;
+}
+
 .briefStats {
   display: flex;
   justify-content: center;

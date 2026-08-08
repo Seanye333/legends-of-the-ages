@@ -310,6 +310,12 @@ export function CampaignScreen({ onBack, onEnterMatch }: CampaignScreenProps) {
             <span className={styles.briefTitle}>{pick(selected.title)}</span>
           </h3>
           <p className={styles.briefIntro}>{pick(selected.intro)}</p>
+          {/* 结局。通关之后才给 —— intro 是「他现在是谁」,outro 是「他后来怎么了」,
+              而后者的力量恰恰来自**你刚刚打赢了他**:白起在牌桌上是最狠的一关,
+              而他的结局是杜邮那一柄剑。放进 intro 就成了剧透。 */}
+          {cleared.includes(selected.id) && (
+            <p className={styles.briefOutro}>{pick(selected.outro)}</p>
+          )}
           <div className={styles.briefStats}>
             <span>
               {t('血量', 'Health')} <b>{selected.hp}</b>

@@ -121,6 +121,22 @@ export interface BossDef {
   name: LocalizedText
   title: LocalizedText
   intro: LocalizedText
+  // 通关之后才显示的一段:这个人**后来怎么了**。
+  //
+  // 【为什么是必填】
+  // 二十四关手写二十四段,漏掉一段不会报错、只会有一关静悄悄地什么都不给 ——
+  // 那正是这个仓库最贵的那类 bug。写成必填,tsc 就替我数这二十四段。
+  //
+  // 【为什么放在通关之后而不是开打之前】
+  // intro 是「他现在是谁」,outro 是「他后来怎么了」。放进 intro 等于剧透,
+  // 而且那一段的力量恰恰来自**你刚刚打赢了他**:白起在牌桌上是最强的一关,
+  // 而他的结局是杜邮那一柄剑。这个游戏的素材本来就带着这层反差,
+  // 缺的只是一个把它交出来的时刻。
+  //
+  // 【写作标准】和 lore-quotes 一样:**只写史书里查得到的结局**,
+  // 不替他们编心理活动。引号里的话(「莫須有」「天亡我」「我固當死」)
+  // 都是有出处的原话,其余是事实摘要。
+  outro: LocalizedText
   doctrine: Doctrine
   hp: number
   deckTier: number // 卡组曲线分位,0=最快(最强) 1=最顶重(最弱);见 bossDeck
@@ -161,6 +177,10 @@ export const BOSSES: BossDef[] = [
       zh: '黃巾蔽野,太平道眾自四方而起。他不缺兵,只缺時間。',
       en: 'Yellow scarves blanket the fields. He does not lack men — only time.',
     },
+    outro: {
+      zh: '他病死在軍中,黃巾自此無首。而那八個字,鄉里又傳了很多年。',
+      en: 'He died of illness in camp, and the Turbans lost their head. The eight words went on being said in the villages for years.',
+    },
     doctrine: 'fame',
     hp: 30,
     deckTier: 0.0,
@@ -183,6 +203,10 @@ export const BOSSES: BossDef[] = [
       zh: '洛陽火起三日不絕。他不在乎守得住什麼,只在乎誰也別想得到。',
       en: 'Luoyang burned for three days. He never meant to hold it — only to leave nothing behind.',
     },
+    outro: {
+      zh: '郿塢裡的糧夠吃三十年。他沒能吃到第二年。',
+      en: 'The granaries at Mei held thirty years of grain. He did not live to eat the second year of it.',
+    },
     doctrine: 'hegemonic',
     hp: 34,
     deckTier: 0.3,
@@ -204,6 +228,10 @@ export const BOSSES: BossDef[] = [
     intro: {
       zh: '三英戰之而不下。他不需要陣法,他自己就是陣法。',
       en: 'Three heroes could not bring him down. He needs no formation — he is one.',
+    },
+    outro: {
+      zh: '白門樓上他開口求一條命。曹操沒答話,只看了看劉備。',
+      en: 'On the White Gate tower he asked for his life. Cao Cao said nothing, and looked at Liu Bei.',
     },
     doctrine: 'hegemonic',
     hp: 36,
@@ -229,6 +257,10 @@ export const BOSSES: BossDef[] = [
     intro: {
       zh: '兵多將廣,糧草如山。他輸的從來不是本錢。',
       en: 'Endless men, endless grain. What he lacked was never resources.',
+    },
+    outro: {
+      zh: '官渡之後兩年而卒。四世三公的家業,由他的兒子們自己拆完。',
+      en: 'He died two years after Guandu. Four generations of high office; his sons pulled it apart themselves.',
     },
     doctrine: 'royal',
     hp: 38,
@@ -258,6 +290,10 @@ export const BOSSES: BossDef[] = [
       zh: '轉鬥千里,盡有江東。二十六歲,已經來不及慢慢打了。',
       en: 'A thousand li of running battle won him all of Jiangdong. At twenty-six, there was no time to be slow.',
     },
+    outro: {
+      zh: '二十六歲,一支冷箭。臨終把印綬交給弟弟,說:舉江東之眾,卿不如我;舉賢任能,我不如卿。',
+      en: 'Twenty-six years old, and one arrow from ambush. He handed the seal to his brother: in leading Jiangdong\'s armies you are not my equal — in choosing men, I am not yours.',
+    },
     doctrine: 'separatist',
     hp: 40,
     deckTier: 0.45,
@@ -283,6 +319,10 @@ export const BOSSES: BossDef[] = [
       zh: '談笑間,檣櫓灰飛煙滅。火起時,你才明白風是什麼時候轉的。',
       en: 'Amid talk and laughter the fleet turned to ash. Only when it burned did you see when the wind had changed.',
     },
+    outro: {
+      zh: '三十六歲,卒於巴丘。他規劃的那條西進的路,後來沒有人再走。',
+      en: 'Thirty-six, and he died at Baqiu. The westward road he had drawn was never taken by anyone.',
+    },
     doctrine: 'separatist',
     hp: 42,
     deckTier: 0.0,
@@ -304,6 +344,10 @@ export const BOSSES: BossDef[] = [
     intro: {
       zh: '六出祁山,鞠躬盡瘁。他算得到每一步,只算不到天時。',
       en: 'Six campaigns from Qishan, spent to the last breath. He foresaw every move but the weather.',
+    },
+    outro: {
+      zh: '五丈原的秋天。木牛流馬還在,人不在了。',
+      en: 'Autumn at Wuzhang Plain. The wooden oxen were still there. He was not.',
     },
     doctrine: 'ritual',
     hp: 45,
@@ -329,6 +373,10 @@ export const BOSSES: BossDef[] = [
     intro: {
       zh: '「設使國家無有孤,不知當幾人稱帝,幾人稱王。」最後一戰,沒有僥倖。',
       en: '“Were it not for me, how many would have called themselves emperor?” The last battle allows no luck.',
+    },
+    outro: {
+      zh: '他終究沒有稱帝。遺令裡說的是幾件小事:分香賣履,婢妾學做鞋。',
+      en: 'He never took the throne. His last orders were small things — divide the perfume, sell the shoes, let the women learn to make slippers and live.',
     },
     doctrine: 'hegemonic',
     hp: 52,
@@ -363,6 +411,10 @@ export const BOSSES: BossDef[] = [
       zh: '長平一夜,四十萬降卒盡坑。人屠所至,從不留俘,也從不留路。',
       en: 'In one night at Changping, four hundred thousand were buried. The Butcher takes no prisoners — and leaves no road back.',
     },
+    outro: {
+      zh: '杜郵,一柄賜劍。他說:我固當死。長平之戰,趙卒降者數十萬,盡坑之。',
+      en: 'At Duyou, a sword sent from the king. He said: I deserve to die. At Changping, hundreds of thousands had surrendered, and he buried them all.',
+    },
     doctrine: 'hegemonic',
     hp: 52, // 与曹操持平(单调不破);白起要当开章软目标,血量这条弱旋钮也一并往下压
     // 0.9 → 0.75:家族上线后卡池身材整体抬了一点(455 张同族在场多 1 血),
@@ -393,6 +445,10 @@ export const BOSSES: BossDef[] = [
       zh: '力拔山兮氣蓋世。他從不守,只是一次次把你的陣線正面撞碎。',
       en: 'His strength could uproot mountains. He never defends — he simply shatters your line head-on, again and again.',
     },
+    outro: {
+      zh: '烏江邊有船,他不肯過。天亡我,非戰之罪也。',
+      en: 'There was a boat at the Wu River. He would not cross. Heaven destroys me — it is not that I failed in war.',
+    },
     doctrine: 'hegemonic',
     hp: 56,
     deckTier: 0.0,
@@ -415,6 +471,10 @@ export const BOSSES: BossDef[] = [
     intro: {
       zh: '韓信將兵,多多益善。你清掉一波,他點出的下一波已在路上。',
       en: 'Han Xin commands troops: the more the merrier. Clear one wave and the next he has already counted out is on its way.',
+    },
+    outro: {
+      zh: '長樂鐘室。狡兔死,走狗烹;高鳥盡,良弓藏。',
+      en: 'The bell chamber at Changle. The hare is caught, so the hound goes in the pot; the birds are gone, so the good bow is put away.',
     },
     doctrine: 'hegemonic',
     hp: 58,
@@ -439,6 +499,10 @@ export const BOSSES: BossDef[] = [
       zh: '匈奴未滅,何以家為。長驅二千里,他的刀鋒永遠越過你的前排,直取要害。',
       en: 'Two thousand li in a single drive — his blade always sweeps past your front rank to the throat behind it.',
     },
+    outro: {
+      zh: '二十四歲。武帝為他起塚,象祁連山。',
+      en: 'Twenty-four years old. The emperor raised him a tomb shaped like the Qilian mountains.',
+    },
     doctrine: 'hegemonic',
     hp: 60,
     deckTier: 0.45,
@@ -461,6 +525,10 @@ export const BOSSES: BossDef[] = [
     intro: {
       zh: '玄甲鐵騎,所向無前。他讓你選:讓開中路,還是被鑿穿中路。',
       en: 'His black-armored horse smashes any line. He offers you a choice: yield the center, or be driven through it.',
+    },
+    outro: {
+      zh: '貞觀二十三年。他一生最怕的,是後人只記得玄武門那一天。',
+      en: 'Twenty-three years of Zhenguan. What he feared most was that posterity would remember only the morning at Xuanwu Gate.',
     },
     doctrine: 'royal',
     hp: 62,
@@ -490,6 +558,10 @@ export const BOSSES: BossDef[] = [
       zh: '陳橋一夜,黃袍加身。一條盤龍棍打下四百軍州 —— 他要的不是一場,是全盤。',
       en: 'One night at Chenqiao, the yellow robe was thrown over him. With a single cudgel he won four hundred prefectures — he wants not a battle but the whole board.',
     },
+    outro: {
+      zh: '燭影斧聲。開國之君,死得比誰都不明不白。',
+      en: 'Shadows on the candle, a sound like an axe. The founder died more obscurely than any of his men.',
+    },
     doctrine: 'royal',
     hp: 65,
     // 第 2 章后半原本比前半还软(67% / 68%),曲线是平的。
@@ -514,6 +586,10 @@ export const BOSSES: BossDef[] = [
     intro: {
       zh: '撼山易,撼岳家軍難。凍死不拆屋,餓死不擄掠 —— 你打不散一支沒有弱點的軍隊。',
       en: 'Easier to move a mountain than the Yue army. Frozen, they tear down no home; starving, they loot nothing — you cannot break a host with no weakness.',
+    },
+    outro: {
+      zh: '風波亭。獄成之日,韓世忠問秦檜憑什麼,答曰:莫須有。',
+      en: 'Fengbo Pavilion. When the case closed, Han Shizhong asked on what evidence. Qin Hui answered: perhaps there is some.',
     },
     doctrine: 'royal',
     hp: 68,
@@ -540,6 +616,10 @@ export const BOSSES: BossDef[] = [
     intro: {
       zh: '驅逐胡虜,恢復中華。他從江南一路打到大都,十年不曾走錯一步。最後一戰,沒有僥倖。',
       en: 'Expel the invaders, restore the realm. From the south he marched to the Yuan capital without a single misstep. The last battle allows no luck.',
+    },
+    outro: {
+      zh: '開國第一功臣,善終。明初的功臣名單上,這四個字比戰功難得多。',
+      en: 'First among the founding generals — and he died in his bed. On that roster, those words were harder to earn than any battle.',
     },
     doctrine: 'royal',
     hp: 70,
@@ -580,6 +660,10 @@ export const BOSSES: BossDef[] = [
       zh: '八千北府兵列于淝水之南。投鞭断流的百萬之眾就在对岸 —— 他等的是对方后退半步。',
       en: 'Eight thousand of the Northern Garrison stand south of the Fei. A million men wait across the water; he waits for half a step back.',
     },
+    outro: {
+      zh: '淝水之後他請求北伐,朝廷不許。回到會稽,病卒,四十六歲。',
+      en: 'After the Fei River he asked leave to march north. The court refused. He went back to Kuaiji and died there at forty-six.',
+    },
     doctrine: 'royal',
     hp: 46,
     deckTier: 0.45,
@@ -606,6 +690,10 @@ export const BOSSES: BossDef[] = [
       zh: '渔阳鼙鼓动地来,惊破霓裳羽衣曲。三镇节度使反了,而长安还在唱歌。',
       en: 'The drums of Yuyang shook the earth. Three commands rose in revolt while Chang’an was still singing.',
     },
+    outro: {
+      zh: '死在自己兒子手裡。從范陽起兵到這一夜,不到兩年。',
+      en: 'Killed by his own son. From the rising at Fanyang to that night was not two years.',
+    },
     doctrine: 'separatist',
     hp: 48,
     // 2026-08-07 第三章方差压缩:0.6 → 0.9(网格实测 37% → 69%)
@@ -629,6 +717,10 @@ export const BOSSES: BossDef[] = [
     intro: {
       zh: '脸上刺着字的行伍出身,一路做到枢密使。昆仑关那一夜他没打灯,天亮时关已经在手里。',
       en: 'A tattooed conscript who rose to command the empire’s armies. He took Kunlun Pass in the dark and held it by dawn.',
+    },
+    outro: {
+      zh: '樞密使做了四年,被文臣逼到陳州。一年而卒 —— 面上那行刺字,他到死沒有洗去。',
+      en: 'Four years as military commissioner, then the civil officials pushed him out to Chenzhou, where he died within the year. He never had the convict\'s tattoo removed from his face.',
     },
     doctrine: 'hegemonic',
     hp: 50,
@@ -655,6 +747,10 @@ export const BOSSES: BossDef[] = [
     intro: {
       zh: '他本是去劳军的文官。到了采石才发现主帅未至、军无斗志 —— 于是他自己站上了江岸。',
       en: 'He came only to deliver supplies. Finding no commander and no will to fight, the clerk took the riverbank himself.',
+    },
+    outro: {
+      zh: '采石一戰,一個書生退了金兵。此後他做到宰相,再沒有打過仗。',
+      en: 'At Caishi a scholar turned back the Jin army. He rose to chancellor afterwards, and never fought again.',
     },
     doctrine: 'ritual',
     hp: 52,
@@ -683,6 +779,10 @@ export const BOSSES: BossDef[] = [
       zh: '惶恐滩头说惶恐,零丁洋里叹零丁。宋已经没有了,他还在打。',
       en: 'Song had already fallen. He went on fighting anyway.',
     },
+    outro: {
+      zh: '柴市。臨刑,他向南再拜而死。',
+      en: 'The firewood market at Dadu. Before the blade he bowed twice towards the south, and died.',
+    },
     doctrine: 'royal',
     hp: 54,
     // 2026-08-07 第三章方差压缩:0.45 → 0.9(网格实测 73% → 55%)
@@ -710,6 +810,10 @@ export const BOSSES: BossDef[] = [
       zh: '六十万众,楼船连锁数十里。中国史上最大的水战,他是兵多的那一边。',
       en: 'Six hundred thousand men and towered ships chained for tens of li. In the largest naval battle in Chinese history, he had the numbers.',
     },
+    outro: {
+      zh: '鄱陽湖上,一支流矢貫睛。六十萬人的舟師,散於一夜。',
+      en: 'On Lake Poyang a stray arrow went through his eye. A fleet of six hundred thousand came apart in a night.',
+    },
     doctrine: 'separatist',
     hp: 56,
     deckTier: 0.45,
@@ -735,6 +839,10 @@ export const BOSSES: BossDef[] = [
     intro: {
       zh: '皇帝被俘,群臣议南迁。他说言南迁者可斩 —— 然后关上城门,守了北京。',
       en: 'The emperor captured, the court urging flight south. "Whoever speaks of fleeing may be executed," he said — then shut the gates and held Beijing.',
+    },
+    outro: {
+      zh: '他保住了京城,沒保住自己。抄家的人進門,發現家無餘資。',
+      en: 'He saved the capital and could not save himself. When they came to confiscate his estate, there was nothing in the house.',
     },
     doctrine: 'ritual',
     hp: 58,
@@ -769,6 +877,10 @@ export const BOSSES: BossDef[] = [
     intro: {
       zh: '大陆已经没有他的立足之地。他带着最后的船队渡海,把一座岛变成了最后一片明土。',
       en: 'No ground left on the mainland. He took the last fleet across the strait and made an island the last of Ming.',
+    },
+    outro: {
+      zh: '收復臺灣的第二年,卒於安平,三十九歲。',
+      en: 'The year after he took Taiwan he died at Anping, thirty-nine years old.',
     },
     doctrine: 'royal',
     hp: 62,
