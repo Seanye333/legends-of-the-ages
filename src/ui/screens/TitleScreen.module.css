@@ -995,3 +995,68 @@
     font-size: clamp(12px, 3.4vw, 15px);
   }
 }
+
+/* 新兵之路。竖排一列而不是横排 —— 它是**一条路**,横着排就读成了四个并列的按钮,
+   而并列正是这个首屏已经太多的东西。 */
+.onboard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: min(92vw, 460px);
+  margin: 0 auto clamp(6px, 1.4vh, 14px);
+  padding: 10px 12px;
+  border: 1px solid rgba(180, 150, 90, 0.28);
+  border-radius: 10px;
+  background: rgba(40, 30, 14, 0.32);
+}
+
+.onboardHead {
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--gold-mid);
+  text-align: center;
+  margin-bottom: 2px;
+}
+
+.onboardStep,
+.onboardDone {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 8px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--parchment);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: left;
+  cursor: pointer;
+}
+
+.onboardStep:hover {
+  background: rgba(180, 150, 90, 0.12);
+}
+
+/* 做完的那几步**压暗但仍然可点** —— 它们是路标不是关卡,
+   而且「我刚才是从哪儿进去的」本身就是新玩家最常问的问题。 */
+.onboardDone {
+  opacity: 0.45;
+}
+
+.onboardMark {
+  flex: none;
+  width: 12px;
+  color: var(--gold-mid);
+  text-align: center;
+}
+
+.onboardName {
+  flex: none;
+}
+
+.onboardHint {
+  font-size: 11px;
+  color: var(--parchment-faint);
+}

@@ -56,7 +56,8 @@ const DailyGeneralPanel = lazy(() =>
 import { useDailyGeneral } from '../../app/dailyGeneralStore'
 import { dayKey } from '../../content/dayKey'
 import { useQuests } from '../../app/questStore'
-import { shouldOfferTutorial, tutorialMatchArgs } from '../tutorial'
+import { shouldOfferTutorial, tutorialDone, tutorialMatchArgs } from '../tutorial'
+import { onboardingSteps, onboardingVisible, type OnboardInput } from '../../app/onboarding'
 import { unlockHint, type UnlockProgress } from '../../content/unlocks'
 import styles from './TitleScreen.module.css'
 import { countOf } from '../plural'
@@ -249,6 +250,21 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
   const [achOpen, setAchOpen] = useState(false)
   const [statsOpen, setStatsOpen] = useState(false)
   const [offerTutorial, setOfferTutorial] = useState(() => shouldOfferTutorial())
+  // 新兵之路。判据全是**别处已经在持久化的状态** —— 这条路不新增任何存档字段,
+  // 所以老玩家一打开就是「四步全绿、清单不显示」,不会凭空冒出一张任务清单。
+  const lessonsDone = useAchievements((s) => s.stats.lessonsDone ?? 0)
+  const onboard: OnboardInput = {
+    tutorialDone: tutorialDone(),
+    matchesPlayed: wins + losses,
+    lessonsDone,
+    customDecks: customDecks.length,
+  }
+  const onboardSteps = onboardingSteps(onboard)
+  // 教程邀请还挂着的时候**不显示这条路**:它俩的第一句话是同一句
+  // (「走一遍教学对局」),并排放就是把注意力劈成两半 ——
+  // 这一屏对新玩家已经有三十多个可点元素,重复一个都嫌多。
+  // 邀请是「第一件事」的强提示,这条路是「然后呢」的答案,时序上本来就该错开。
+  const showOnboard = onboardingVisible(onboard) && !offerTutorial
   const resumeRemoteMatch = useMatch((s) => s.resumeRemoteMatch)
   const quests = useQuests((s) => s.quests)
   const claimable = quests.filter((q) => !q.claimed && q.progress >= q.goal).length
@@ -439,6 +455,37 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
           <button className={styles.inviteDismiss} onClick={() => setOfferTutorial(false)}>
             {t('不必', 'No thanks')}
           </button>
+        </div>
+      )}
+
+      {/* 新兵之路。
+          【缺的从来不是内容,是顺序】教学、讲堂、实练、六套预组、构筑器全都做好了,
+          问题是它们**互相不知道对方存在** —— 教学打完之后没有任何东西说下一步该干嘛,
+          于是新玩家回到标题页,面对三十多个入口自己猜。
+          每一步只**指路**:可以跳过、可以乱序完成(判据是状态不是顺序)。
+          四步全做完就整块收起来 —— 永远挂着的清单会从路标退化成噪音。 */}
+      {showOnboard && (
+        <div className={styles.onboard}>
+          <span className={styles.onboardHead}>{t('新兵之路', 'First Steps')}</span>
+          {onboardSteps.map((step) => (
+            <button
+              key={step.id}
+              className={step.done ? styles.onboardDone : styles.onboardStep}
+              onClick={() => {
+                playSfx('buttonTap')
+                if (step.id === 'tutorial') onTutorial()
+                else if (step.id === 'match') onPlay()
+                else if (step.id === 'drill') onNavigate?.('study')
+                else onNavigate?.('deckbuilder')
+              }}
+            >
+              <span className={styles.onboardMark} aria-hidden="true">
+                {step.done ? '✓' : '·'}
+              </span>
+              <span className={styles.onboardName}>{pick(step.name)}</span>
+              {!step.done && <span className={styles.onboardHint}>{pick(step.hint)}</span>}
+            </button>
+          ))}
         </div>
       )}
 
