@@ -358,4 +358,239 @@ export const BOND_OVERRIDES: Record<string, Partial<CardDef>> = {
       health: 3,
     },
   },
+
+  // ================================================================ 師承(2026-08-08)
+  //
+  // 【为什么师承不是一条新机制,而是羁绊的一批新条目】
+  // ROADMAP 把「师承机制化」和「羁绊 31 → 50」列成两条,做的时候发现它们是同一件事:
+  // 师承的形状就是羁绊的形状 —— 两个人同时在场,彼此变强。
+  // 再造一套平行的「师承」子系统,就是这个仓库反复吃亏的那件事:
+  // **两张同效果的卡并排站着**(见 pack24 的重名教训)。所以这里只加条目,不加机制。
+  //
+  // 【来源:关系网里现成的 38 条 `mentor` 边,每条都带生平原文】
+  // 不是我编的师徒关系,是生平原文里互相点名的(`lore.gen.ts` 的 RELATION_EDGES)。
+  // 逐条注释里附了那句原文 —— 这和 lore-quotes.ts 的规矩一致:
+  // 拿不准的宁可不写。38 条里两边都在池、两边都还没挂羁绊的有 37 条,
+  // 这里取 21 条(羁绊 31 → 52),挑的是**能认得出来**的那些。
+  //
+  // 【两条设计上的自我约束】
+  // 1. **孔门只取十哲一档的八个**,不是全部二十四个。全收的话孔子会变成一张
+  //    「场上随便再来一个弟子就 +1/+1」的卡,那不是羁绊是光环 —— 而光环有自己的字段。
+  //    八个已经足够撑起一套「孔門」构筑,又还留着「抽不到就凑不齐」的张力。
+  // 2. **羁绊声明在弟子身上,老师只当 members。** `bond` 是单字段,一张卡只能声明一条;
+  //    声明在老师身上就只能有一个弟子。引擎两个方向都扫(见 types.ts 的说明),
+  //    所以声明在哪边都一样生效,但声明在弟子身上才装得下八条。
+  //
+  // 定价:单成员一律 +1/+1(比现有羁绊低一档 —— 师承的门槛只有两张卡,
+  // 而且孔门那八条共用同一张老师,凑齐的概率比「结义三人」高得多);
+  // 需要**两位老师同时在场**的两条给到 +1/+2,那才是真凑不齐的。
+
+  // ---- 孔門(声明在弟子身上,members 都是孔子)----
+  // 「孔子弟子」四个字在每一条的生平原文里都是原话。
+  'hist-yan-hui': {
+    bond: {
+      id: 'bond-kongmen-yanhui',
+      name: { zh: '孔門 · 顏回', en: "Confucius' Disciple: Yan Hui" },
+      members: ['hist-confucius'],
+      attack: 1,
+      health: 1,
+    },
+  },
+  'hist-zilu': {
+    bond: {
+      id: 'bond-kongmen-zilu',
+      name: { zh: '孔門 · 子路', en: "Confucius' Disciple: Zilu" },
+      members: ['hist-confucius'],
+      attack: 1,
+      health: 1,
+    },
+  },
+  'hist-zigong': {
+    bond: {
+      id: 'bond-kongmen-zigong',
+      name: { zh: '孔門 · 子貢', en: "Confucius' Disciple: Zigong" },
+      members: ['hist-confucius'],
+      attack: 1,
+      health: 1,
+    },
+  },
+  'hist-zixia': {
+    bond: {
+      id: 'bond-kongmen-zixia',
+      name: { zh: '孔門 · 子夏', en: "Confucius' Disciple: Zixia" },
+      members: ['hist-confucius'],
+      attack: 1,
+      health: 1,
+    },
+  },
+  'hist-ranqiu': {
+    bond: {
+      id: 'bond-kongmen-ranqiu',
+      name: { zh: '孔門 · 冉求', en: "Confucius' Disciple: Ran Qiu" },
+      members: ['hist-confucius'],
+      attack: 1,
+      health: 1,
+    },
+  },
+  'hist-ziyou': {
+    bond: {
+      id: 'bond-kongmen-ziyou',
+      name: { zh: '孔門 · 子游', en: "Confucius' Disciple: Ziyou" },
+      members: ['hist-confucius'],
+      attack: 1,
+      health: 1,
+    },
+  },
+  'hist-zizhang': {
+    bond: {
+      id: 'bond-kongmen-zizhang',
+      name: { zh: '孔門 · 子張', en: "Confucius' Disciple: Zizhang" },
+      members: ['hist-confucius'],
+      attack: 1,
+      health: 1,
+    },
+  },
+  'hist-zhonggong': {
+    bond: {
+      id: 'bond-kongmen-zhonggong',
+      name: { zh: '孔門 · 仲弓', en: "Confucius' Disciple: Zhonggong" },
+      members: ['hist-confucius'],
+      attack: 1,
+      health: 1,
+    },
+  },
+
+  // ---- 諸子與經師 ----
+  // 顏路 是顏回之父、也是孔子弟子 —— 这一条走的是父子那一面(原文:「孔子弟子,顏回之父」)。
+  'hist-yan-lu': {
+    bond: {
+      id: 'bond-yanshi-fuzi',
+      name: { zh: '顏氏父子', en: 'Father and Son Yan' },
+      members: ['hist-yan-hui'],
+      attack: 1,
+      health: 1,
+    },
+  },
+  // 原文:「受業於子思之門人」—— 思孟一脉,宋以后被立为道统正传。
+  'hist-mencius': {
+    bond: {
+      id: 'bond-simeng',
+      name: { zh: '思孟一脈', en: 'The Zisi–Mencius Line' },
+      members: ['hist-zisi'],
+      attack: 1,
+      health: 1,
+    },
+  },
+  // 原文:「弟子李斯、韓非皆法家集大成者」—— 儒者门下出了两个法家,要**两个都在**。
+  'hist-xunzi': {
+    bond: {
+      id: 'bond-xunmen-fajia',
+      name: { zh: '荀門法家', en: 'The Legalists of Xun' },
+      members: ['hist-han-fei', 'hist-li-si'],
+      attack: 1,
+      health: 2,
+    },
+  },
+  // 原文:「東周洛陽人,鬼谷子弟子」
+  'hist-su-qin': {
+    bond: {
+      id: 'bond-guigu-menxia',
+      name: { zh: '鬼谷門下', en: 'Of the Ghost Valley' },
+      members: ['hist-guiguzi'],
+      attack: 1,
+      health: 1,
+    },
+  },
+  // 原文:「魏國人,鬼谷子弟子,與蘇秦同門」—— 合纵与连横出自同一个师门,后来一生为敌。
+  'hist-zhang-yi': {
+    bond: {
+      id: 'bond-tongmen-yilu',
+      name: { zh: '同門異路', en: 'One Master, Two Roads' },
+      members: ['hist-su-qin'],
+      attack: 1,
+      health: 1,
+    },
+  },
+  // 原文:「從董仲舒學《春秋》,知禮法」
+  'hist-er-kuan': {
+    bond: {
+      id: 'bond-chunqiu-zhixue',
+      name: { zh: '春秋之學', en: 'The Study of the Annals' },
+      members: ['hist-dong-zhongshu'],
+      attack: 1,
+      health: 1,
+    },
+  },
+  // 原文:「程顥、程頤弟子」—— 楊時 正是「程門立雪」那个人,所以两位程子要都在场。
+  'hist-yang-shi': {
+    bond: {
+      id: 'bond-chengmen-lixue',
+      name: { zh: '程門立雪', en: 'Waiting in the Snow' },
+      members: ['hist-cheng-hao', 'hist-cheng-yi'],
+      attack: 1,
+      health: 2,
+    },
+  },
+  // 原文:「朱熹再傳弟子」
+  'hist-zhen-dexiu': {
+    bond: {
+      id: 'bond-xishan-chuanzhu',
+      name: { zh: '西山傳朱', en: 'Carrying On Zhu Xi' },
+      members: ['hist-zhu-xi'],
+      attack: 1,
+      health: 1,
+    },
+  },
+  // 原文:「康有為弟子」—— 康梁并称。
+  'hist-liang-qichao': {
+    bond: {
+      id: 'bond-kangliang',
+      name: { zh: '康梁', en: 'Kang and Liang' },
+      members: ['hist-kang-youwei'],
+      attack: 1,
+      health: 1,
+    },
+  },
+
+  // ---- 三国一档 ----
+  // 原文:「從司馬徽學,與諸葛亮、龐統交厚」
+  'xu-shu': {
+    bond: {
+      id: 'bond-shuijing-menxia',
+      name: { zh: '水鏡門下', en: 'Of Water Mirror' },
+      members: ['sima-hui'],
+      attack: 1,
+      health: 1,
+    },
+  },
+  // 原文:「少從蔡邕學,雅靜寡言」
+  'gu-yong': {
+    bond: {
+      id: 'bond-caimen',
+      name: { zh: '蔡門琴書', en: "Cai Yong's Lute and Letters" },
+      members: ['cai-yong'],
+      attack: 1,
+      health: 1,
+    },
+  },
+  // 原文:「少從馬融學,博學多通」
+  'lu-zhi': {
+    bond: {
+      id: 'bond-mamen',
+      name: { zh: '馬融門下', en: 'Of Ma Rong' },
+      members: ['hist-ma-rong'],
+      attack: 1,
+      health: 1,
+    },
+  },
+  // 原文:「廣陵人,華佗弟子」—— 吳普 传五禽戏,活到九十余。
+  'wu-pu': {
+    bond: {
+      id: 'bond-wuqin',
+      name: { zh: '五禽之傳', en: 'The Five Animal Frolics' },
+      members: ['hua-tuo'],
+      attack: 1,
+      health: 1,
+    },
+  },
 }
