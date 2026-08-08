@@ -18,6 +18,7 @@ import { PACK6_LEGEND_OVERRIDES } from './overrides/pack6-legends'
 import { PACK7_TOKENS, PACK7_CARDS, PACK7_OVERRIDES } from './overrides/pack7'
 import { PACK8_TOKENS, PACK8_CARDS, PACK8_OVERRIDES } from './overrides/pack8'
 import { FLAVOR_OVERRIDES } from './overrides/flavor'
+import { VANILLA_FLAVOR } from './overrides/vanilla-flavor'
 import { PACK9_CARDS, PACK9_OVERRIDES } from './overrides/pack9-neutral'
 import { PACK10_CARDS, PACK10_OVERRIDES } from './overrides/pack10'
 import { PACK11_CARDS, PACK11_OVERRIDES } from './overrides/pack11'
@@ -106,6 +107,14 @@ export const KEYWORD_LABEL: Record<Keyword, { zh: string; en: string }> = {
  *
  * 幂等:已经含有那句风味就不再追加(卡池在测试里会被反复构造)。
  */
+// 白板补漏那 97 条包成和 FLAVOR_OVERRIDES 一样的形状(`Pick<CardDef, 'text'>`),
+// 好让它们共用同一条追加路径 —— 见下面 withFlavorText 的说明:
+// 走普通 spread 的话「补一句风味」等于「删掉规则说明」。
+function vanillaFlavorOf(id: string): Pick<CardDef, 'text'> | undefined {
+  const t = VANILLA_FLAVOR[id]
+  return t ? { text: t } : undefined
+}
+
 function withFlavorText(card: CardDef, flavor: Pick<CardDef, 'text'> | undefined): CardDef {
   if (!flavor?.text) return card
   const zh = card.text?.zh ?? ''
@@ -228,7 +237,11 @@ function applyPack24(card: CardDef): CardDef {
 // 覆盖顺序:后者赢。各覆盖表刻意不与签名集重叠(只挑签名之外的花名册)。
 const MERGED_CARDS: CardDef[] = [
   ...GENERATED_CARDS.map((card) => {
-    const fl = FLAVOR_OVERRIDES[card.id]
+    // 白板补漏那一份和人工挑的那一份**走同一条追加路径**,
+    // 但取值时前者让后者:VANILLA_FLAVOR 的判据是机械的(卡面为空),
+    // FLAVOR_OVERRIDES 是人挑的,人挑的更该赢。
+    // 实际上两份没有交集(前者只挑「一个字都没有」的),这一行是防以后有。
+    const fl = FLAVOR_OVERRIDES[card.id] ?? vanillaFlavorOf(card.id)
     const sig = SIGNATURE_OVERRIDES[card.id]
     const sk = SIGNATURE_SKILLS[card.id]
     const p3 = PACK3_OVERRIDES[card.id]
