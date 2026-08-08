@@ -1,0 +1,79 @@
+.wrap {
+  margin-top: 8px;
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+  overflow: visible;
+}
+
+.edge {
+  stroke: rgba(180, 150, 90, 0.32);
+  stroke-width: 1;
+}
+
+/* 和当前这个人直接相连的那几条。**只提亮不加粗** ——
+   加粗会让这张小图在 192 见方里糊成一团。 */
+.edgeLit {
+  stroke: var(--gold-mid, #c8a45c);
+  stroke-width: 1.4;
+}
+
+.node {
+  fill: var(--parchment-dim, #c9bfa8);
+}
+
+.nodeOn {
+  fill: var(--gold-bright, #f7e1a8);
+  filter: drop-shadow(0 0 5px rgba(232, 200, 120, 0.85));
+}
+
+.label {
+  font-size: 8.5px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.label {
+  fill: var(--parchment-faint);
+}
+
+.label:hover {
+  fill: var(--gold-bright, #f7e1a8);
+}
+
+/* 没有明文亲缘的族人。样式和上面的连线图刻意分开 ——
+   它们不是图的一部分,是图**说不出来**的那一部分。 */
+.loners {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.lonerHint {
+  flex-basis: 100%;
+  font-size: 10px;
+  line-height: 1.6;
+  color: var(--parchment-faint);
+  opacity: 0.8;
+}
+
+.loner {
+  padding: 1px 6px;
+  border: 1px dashed rgba(180, 150, 90, 0.3);
+  border-radius: 2px;
+  background: none;
+  font-size: 11px;
+  color: var(--parchment-dim);
+  cursor: pointer;
+}
+
+.loner:hover {
+  border-color: var(--gold-mid, #c8a45c);
+  color: var(--gold-bright, #f7e1a8);
+}

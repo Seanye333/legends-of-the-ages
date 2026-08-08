@@ -22,6 +22,7 @@ import { DOCTRINE_COLORS, dynastyName } from '../doctrineColors'
 import { usePickCompact, usePickText, useT } from '../i18n'
 import { ALL_BONDS, ALL_RIVALS, bondRoster, cardName, clanRoster, rivalLore } from '../../content/relations'
 import { RelationGraph } from '../components/RelationGraph'
+import { ClanTree } from '../components/ClanTree'
 import { EraScroll } from '../components/EraScroll'
 import { ERA_OF, type Era } from '../../content/eras'
 import { RelationWeb } from '../components/RelationWeb'
@@ -368,6 +369,8 @@ export function LoreScreen({ onBack }: Props) {
               {sel.clan && (
                 <div className={styles.clan}>
                   <span className={styles.clanName}>{pick(sel.clan.name)}</span>
+                  {/* 名册留着 —— 图回答「谁和谁有明文亲缘」,名册回答「这一族有谁」,
+                      是两个问题。而且名册是读屏器的通路,SVG 里的 text 不是。 */}
                   {clanRoster(sel.clan.id)
                     .filter((id) => id !== sel.id)
                     .map((id) => (
@@ -375,6 +378,7 @@ export function LoreScreen({ onBack }: Props) {
                         {pickCompact(cardName(id))}
                       </button>
                     ))}
+                  <ClanTree clanId={sel.clan.id} focusId={sel.id} onPick={setSelected} />
                 </div>
               )}
               {(selLore.traits ?? []).length > 0 && (
