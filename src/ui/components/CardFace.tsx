@@ -1,6 +1,7 @@
 import type { CSSProperties, MouseEvent } from 'react'
 import type { CardInstance } from '../../engine/types'
 import { CARDS_BY_ID, needsDynastyTag } from '../../content/cards'
+import { faceAlias } from '../../content/overrides/aliases'
 import { useSettings } from '../../app/settingsStore'
 import { CARD_TYPE_NAME, DOCTRINE_COLORS, DOCTRINE_GLYPH, dynastyName } from '../doctrineColors'
 import { Portrait } from './Portrait'
@@ -35,7 +36,16 @@ export function CardFace({ inst, playable, selected, large, onClick, onInspect }
   const effCost = Math.max(0, def.cost + (inst.costDelta ?? 0))
   const discounted = effCost < def.cost
   const mainName = lang === 'en' ? def.name.en : def.name.zh
-  const subName = lang === 'both' ? def.name.en : null
+  // 副名那一行:双语模式给英文名,否则给**绰号**。
+  //
+  // 【为什么是「否则」而不是「都给」】
+  // 卡面是小尺寸三行布局(名字 / 副名 / 身材),那一行只有一个位置。
+  // 双语模式下英文名是刚需(没有它就读不出这是谁),绰号是锦上添花 —— 让位。
+  // 而中文模式下那一行**本来是空的**,37 张卡因此白白少了一句最好记的东西:
+  // 「三姓家奴」「獨眼龍」「常十萬」比本名更像一个人物。
+  const alias = faceAlias(def.id)
+  // 英文一律回落到中文(见 aliases.ts):「三姓家奴」翻过去既失典故也失节奏。
+  const subName = lang === 'both' ? def.name.en : (alias ? (lang === 'en' ? alias.en : alias.zh) : null)
   const isSpell = def.type !== 'general'
   const frameRarity = {
     common: '',
