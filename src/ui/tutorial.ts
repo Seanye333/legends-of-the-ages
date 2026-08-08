@@ -2,6 +2,9 @@
 // 设计原则 —— 不脚本化「第几回合做什么」(调度与 AI 有随机性,硬脚本必然崩),
 // 而是每一步给一个「何时出现」与「何时算完成」的谓词,玩家怎么打都跟得上。
 import type { GameEvent, GameState } from '../engine/types'
+import { BOARD_LIMIT } from '../engine/types'
+import { effectiveCost } from '../engine/resolve'
+import { CARDS_BY_ID } from '../content/cards'
 import { useCollection } from '../app/collectionStore'
 import { PRECON_DECKS } from '../content/decks'
 import type { StartMatchArgs } from '../app/matchStore'
@@ -14,6 +17,24 @@ export interface TutorialStep {
   when?: (state: GameState) => boolean
   // 自动完成条件(未给 = 需玩家点「明白了」)
   until?: (state: GameState, seen: SeenFlags) => boolean
+  /**
+   * **此刻这一步要求的动作确实做得到** —— 为真时把「结束回合」按住。
+   *
+   * 【为什么需要这一条】
+   * 这个文件顶上原本写着「玩家怎么打都能跟上,不存在『卡在第 3 步』」。
+   * 2026-08-07 真去跑了一遍新玩家流程,那句话是错的:
+   * 谓词确实不会崩,但**它也不会拦人**。只点屏幕中央那个发光的「结束回合」,
+   * 教程会一直停在 `4/10 打出武将`,而对局照跑 —— 实测到第 10 回合时
+   * 教程还在第 4 步,对面已经铺满守护,这一局基本输定了。
+   * 新玩家由此得到的体验是「我照着做了,然后我输了」,而且不知道哪一步错了。
+   *
+   * 所以在**动作做得到的时候**才拦:手上没有打得起的武将时不拦
+   * (那种情况下结束回合正是对的),否则会把玩家硬锁死。
+   * 拦不住的那一档由文案兜底。
+   */
+  blocksEndTurn?: (state: GameState) => boolean
+  /** 被拦住时按钮上写什么 —— 必须说清「为什么不能点」,不能只是灰掉 */
+  blockedLabel?: { zh: string; en: string }
 }
 
 // 整局累计过的事件特征(单批事件会被冲掉,这里做累积)
@@ -49,6 +70,21 @@ export function accumulateSeen(seen: SeenFlags, events: GameEvent[]): SeenFlags 
 }
 
 const myTurn = (s: GameState) => s.phase === 'main' && s.activePlayer === 0
+
+/** 此刻手上有打得起的武将、且场上还有位置 —— 「打出武将」那一步才拦得住人 */
+const canDeployGeneral = (s: GameState): boolean => {
+  const me = s.players[0]
+  if (me.board.length >= BOARD_LIMIT) return false
+  return me.hand.some(
+    (c) =>
+      CARDS_BY_ID[c.defId]?.type === 'general' &&
+      effectiveCost(c, CARDS_BY_ID) <= me.mana.current,
+  )
+}
+
+/** 场上有能动手的武将 —— 「发起攻击」那一步才拦得住人 */
+const canAttackNow = (s: GameState): boolean =>
+  s.players[0].board.some((c) => !c.exhausted && !c.frozen && c.attack > 0)
 
 export const TUTORIAL_STEPS: TutorialStep[] = [
   {
@@ -87,6 +123,8 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     },
     when: myTurn,
     until: (_s, seen) => seen.playedGeneral,
+    blocksEndTurn: canDeployGeneral,
+    blockedLabel: { zh: '先打出一名武将', en: 'Deploy a general first' },
   },
   {
     id: 'endturn',
@@ -107,6 +145,8 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     },
     when: (s) => myTurn(s) && s.players[0].board.some((c) => !c.exhausted && c.attack > 0),
     until: (_s, seen) => seen.attacked,
+    blocksEndTurn: canAttackNow,
+    blockedLabel: { zh: '先发起一次攻击', en: 'Attack once first' },
   },
   {
     id: 'guard',

@@ -15,11 +15,16 @@ interface TutorialCoachProps {
   state: GameState
   events: GameEvent[]
   onQuit: () => void
+  /**
+   * 当前这一步要不要按住「结束回合」,以及按住时按钮上写什么。
+   * 教鞭知道自己走到第几步,而按钮在 MatchScreen 上 —— 所以由这里往上报。
+   */
+  onGate?: (blockedLabel: { zh: string; en: string } | null) => void
 }
 
 // 教程教鞭:一次只讲一步,不遮挡操作(背板不吃点击)。
 // 步骤按谓词推进 —— 玩家怎么打都能跟上,不存在「卡在第 3 步」。
-export function TutorialCoach({ state, events, onQuit }: TutorialCoachProps) {
+export function TutorialCoach({ state, events, onQuit, onGate }: TutorialCoachProps) {
   const t = useT()
   const pick = usePickText()
   const [doneIds, setDoneIds] = useState<string[]>([])
@@ -49,6 +54,16 @@ export function TutorialCoach({ state, events, onQuit }: TutorialCoachProps) {
       setDoneIds((d) => [...d, step.id])
     }
   }, [step, state, seen])
+
+  // 把「该不该按住结束回合」报上去。
+  // **只在动作真的做得到时才按住** —— 手上没有打得起的武将时按住会把人锁死。
+  const gate =
+    step && step.blocksEndTurn?.(state) && step.blockedLabel ? step.blockedLabel : null
+  useEffect(() => {
+    onGate?.(gate ?? null)
+    // 教鞭卸载(教程结束/跳过)时必须解锁,否则按钮永远灰着
+    return () => onGate?.(null)
+  }, [gate, onGate])
 
   // 终局:标记教程完成
   useEffect(() => {
@@ -83,7 +98,9 @@ export function TutorialCoach({ state, events, onQuit }: TutorialCoachProps) {
         </div>
         <p className={styles.body}>{pick(step.body)}</p>
         {waiting ? (
-          <span className={styles.hint}>{t('照做即可继续 ▾', 'Do it to continue ▾')}</span>
+          <span className={styles.hint}>
+            {gate ? pick(gate) + t(' —— 结束回合已暂时按住', ' — End Turn is held') : t('照做即可继续 ▾', 'Do it to continue ▾')}
+          </span>
         ) : (
           <button
             className={styles.next}

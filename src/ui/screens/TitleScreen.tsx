@@ -362,20 +362,34 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
               <span className={styles.rankFill} style={{ width: `${Math.round(nextRank.ratio * 100)}%` }} />
             </span>
           )}
+          {/* 新玩家看到的是「白身 · 距什长还差 20」—— 两个他没见过的词加一个没解释的数。
+              打过一局之后这行才有意义(他见过战功怎么来的),所以第一次进来时
+              直接说清楚这是什么。 */}
           <span className={styles.rankNext}>
-            {nextRank
-              ? t(`距${pick(rank.next!.name)}还差 ${nextRank.need}`, `${nextRank.need} to ${pick(rank.next!.name)}`)
-              : t('已至極位', 'At the summit')}
+            {merit === 0
+              ? t('军衔 · 打赢对局积战功', 'Rank — win matches to earn merit')
+              : nextRank
+                ? t(`距${pick(rank.next!.name)}还差 ${nextRank.need}`, `${nextRank.need} to ${pick(rank.next!.name)}`)
+                : t('已至極位', 'At the summit')}
           </span>
         </div>
         <div className={styles.rule} aria-hidden="true">
           <span className={styles.ruleDiamond} />
         </div>
+        {/* 原来这里写的是「全卡池 2441 张 · 横跨 18 个朝代阵营」——
+            那是**说给开发者听的**,而它占着第一屏最好的一行。
+            2026-08-07 走了一遍新玩家流程:那一刻他要知道的是「这是什么游戏」,
+            不是卡池有多大。卡池规模对**已经开始收**的人才是信息,所以分两档写。 */}
         <p className={styles.tagline}>
-          {t(
-            `全卡池 ${CARDS.length} 张 · 横跨 ${dynastyCount} 个朝代阵营`,
-            `${CARDS.length} cards across ${dynastyCount} dynasties`,
-          )}
+          {merit > 0
+            ? t(
+                `全卡池 ${CARDS.length} 张 · 横跨 ${dynastyCount} 个朝代阵营`,
+                `${CARDS.length} cards across ${dynastyCount} dynasties`,
+              )
+            : t(
+                '一场一对一的历史牌局 —— 用你的名将,打下对面的主帅。',
+                'A one-on-one history duel — bring your generals, break their lord.',
+              )}
         </p>
       </header>
 
@@ -432,9 +446,13 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
         <button className={styles.playButton} onClick={onPlay}>
           {t('开始对战', 'Play')}
         </button>
-        <button className={styles.remoteButton} onClick={onTutorial}>
-          {t('新手教程', 'Tutorial')}
-        </button>
+        {/* 邀请弹窗已经在问同一件事了 —— 两个入口并排放会把注意力劈成两半。
+            弹窗还在时这里不重复(实测新玩家第一屏有 30+ 个可点元素,能省一个是一个)。 */}
+        {!offerTutorial && (
+          <button className={styles.remoteButton} onClick={onTutorial}>
+            {t('新手教程', 'Tutorial')}
+          </button>
+        )}
         <button
           className={styles.remoteButton}
           onClick={() => {
@@ -489,6 +507,13 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
         </button>
       </div>
 
+      {/* 【想过把新玩家那五个灰按钮藏起来,没做 —— 记在这里免得下次又想一遍】
+          2026-08-07 走新玩家流程时数到:新档第一屏有 30+ 个可点元素,
+          其中 5 个是锁着的模式,读起来像连着五个「不行」。
+          但 ModeBtn 上方那段注释写明了相反的决定(藏起来游戏看着空,
+          而内容量正是卖点),那是**有理由的既有选择**,
+          而我这边只有直觉、没有证据。按这个仓库的规矩:先量再写。
+          真要动,该做的是拿两版给真人各看一次,而不是照我的口味改。 */}
       <div className={styles.navGroup}>{t('對局', 'Ways to Play')}</div>
       <div className={styles.navRow}>
         <ModeBtn mode="arena" progress={unlockProgress} onNavigate={onNavigate} glow={arenaLive}>

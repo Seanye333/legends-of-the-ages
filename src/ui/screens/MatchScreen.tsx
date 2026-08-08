@@ -363,6 +363,8 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
         : 0
       : (state.activePlayer as 0 | 1)
   const foeSeat: 0 | 1 = viewer === 0 ? 1 : 0
+  // 教程按住「结束回合」时的按钮文案(null = 不按)
+  const [tutorialGate, setTutorialGate] = useState<{ zh: string; en: string } | null>(null)
   const me = state.players[viewer]
   const foe = state.players[foeSeat]
 
@@ -831,15 +833,17 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
             {t(`护 ${pickText(state.objective.targetName)}`, `Protect ${pickText(state.objective.targetName)}`)}
           </div>
         )}
+        {/* 教程按住时**把原因写在按钮上**,不能只是灰掉 ——
+            一个没有理由的灰按钮和一个坏掉的按钮在玩家眼里是同一回事。 */}
         <button
           className={styles.endTurn}
-          disabled={!canEndTurn}
+          disabled={!canEndTurn || tutorialGate !== null}
           onClick={() => {
             playSfx('buttonTap')
             sendAndClear({ type: 'EndTurn' })
           }}
         >
-          {t('结束回合', 'End Turn')}
+          {tutorialGate ? pickText(tutorialGate) : t('结束回合', 'End Turn')}
         </button>
       </div>
 
@@ -1002,7 +1006,14 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
         </div>
       )}
 
-      {tutorial && <TutorialCoach state={state} events={lastEvents} onQuit={handleExit} />}
+      {tutorial && (
+        <TutorialCoach
+          state={state}
+          events={lastEvents}
+          onQuit={handleExit}
+          onGate={setTutorialGate}
+        />
+      )}
 
       {inspect && <CardInspect def={inspect} onClose={() => setInspect(null)} />}
 

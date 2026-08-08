@@ -6,7 +6,11 @@ import { expect, test } from '@playwright/test'
 test('title screen renders the full pool and navigation', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByRole('heading', { name: '千古名将' })).toBeVisible()
-  await expect(page.getByText(/全卡池 \d+ 张/)).toBeVisible()
+  // 新档看到的是「这是什么游戏」,打过一局的人才看到卡池规模 ——
+  // 那一行原来无条件写着「全卡池 2441 张」,而它占着第一屏最好的位置,
+  // 对第一次进来的人来说是**说给开发者听的**(2026-08-07 走新玩家流程时改的)。
+  // 这个用例用的是全新 profile,所以断言的是新玩家那一档。
+  await expect(page.getByText(/一场一对一的历史牌局/)).toBeVisible()
   await expect(page.getByRole('button', { name: '开始对战' })).toBeVisible()
   await expect(page.getByRole('button', { name: '桃園仁德' })).toBeVisible()
   await expect(page.getByRole('button', { name: '名将图鉴' })).toBeVisible()
