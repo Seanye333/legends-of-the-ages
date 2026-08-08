@@ -105,6 +105,16 @@ export type EffectTarget =
   // 来源左右紧邻的两名友军(与 AuraDef.scope:'adjacent' 同一套相邻语义,
   // 区别是那个是持续光环、这个是一次性效果)。来源不在场则为空。
   | 'adjacentFriendly'
+  // ---- 第三十卡包:夷三族 ----
+  // 选中的那名敌将,**外加敌方场上所有与他同族的人**。
+  //
+  // 这是卡池里第一个**由「选中的那一个」派生出「一组」**的目标 ——
+  // 此前 chosen* 一律是一对一,all* 一律不给选。它要的是那个中间态:
+  // 你挑谁是决定,而挑完之后打中几个由**场面**说了算(见 CardDef.clan)。
+  //
+  // 没有族的人只打中他自己(155 个家族之外的人占多数),
+  // 所以这条目标的下限就是一张普通的单体解场 —— 上限才是「一门皆诛」。
+  | 'clanOfChosenEnemy'
 
 export interface EffectCondition {
   ifDynastyCount?: { dynasty: DynastyTag; atLeast: number }

@@ -813,6 +813,10 @@ const CHOSEN_TARGETS = new Set([
   'chosenAny',
   'chosenFriendly',
   'chosenFriendlyGeneral',
+  // 夷三族:它**也要玩家选一个**(选谁是这张牌的全部决策),
+  // 只是选完之后打中的是一组。漏在这个集合外面的后果不是报错,
+  // 是这张牌变成「不需要目标」→ chosen 恒为 undefined → 恒定什么都不做。
+  'clanOfChosenEnemy',
 ])
 
 export function requiresChosenTarget(script: EffectScript | undefined): boolean {
@@ -835,7 +839,7 @@ export function chosenTargetPool(
   const pool: TargetRef[] = []
   const scopes = new Set(script.ops.filter((op) => 'target' in op).map((op) => op.target))
   const enemy = other(player)
-  if (scopes.has('chosenEnemyGeneral')) {
+  if (scopes.has('chosenEnemyGeneral') || scopes.has('clanOfChosenEnemy')) {
     for (const c of state.players[enemy].board) {
       if (selectableByEnemy(c)) pool.push({ kind: 'general', iid: c.iid })
     }
@@ -1034,6 +1038,30 @@ function resolveRefs(
         return [{ kind: 'general', iid: board[roll.value].iid }]
       }
       return []
+    }
+    // 夷三族:选中的那个 + 敌方场上所有与他同族的人。
+    //
+    // 顺序按 board 下标(不按 iid)—— board 顺序就是战场从左到右,
+    // 而 destroy 会逐个走 processDeaths,顺序必须确定,否则回放分叉。
+    // 潜行只挡「被选中」那一步:已经选好了族长再去株连,躲在暗处的族人一样跑不掉。
+    case 'clanOfChosenEnemy': {
+      let head = chosen
+      if (!head && degradeChosen) {
+        const board = state.players[enemy].board.filter(selectableByEnemy)
+        if (board.length === 0) return []
+        const roll = rngInt(state.rng, board.length)
+        state.rng = roll.next
+        head = { kind: 'general', iid: board[roll.value].iid }
+      }
+      if (!head || head.kind !== 'general') return []
+      const inst = state.players[enemy].board.find((c) => c.iid === head.iid)
+      if (!inst) return []
+      const clanId = lib[inst.defId]?.clan?.id
+      // 无族的人只诛他自己 —— 这条目标的下限就是一张普通的单体解场
+      if (!clanId) return [head]
+      return state.players[enemy].board
+        .filter((c) => lib[c.defId]?.clan?.id === clanId)
+        .map((c) => ({ kind: 'general', iid: c.iid }))
     }
     case 'allEnemyGenerals':
       return state.players[enemy].board.map((c) => ({ kind: 'general', iid: c.iid }))
