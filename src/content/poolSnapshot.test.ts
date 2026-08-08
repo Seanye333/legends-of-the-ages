@@ -90,6 +90,16 @@ describe('卡池快照', () => {
     ).not.toBe(digest(c))
   })
 
+  // 标签本身不做任何事,但**有卡在数它们** —— 贴一个 `defector` 就是在改
+  // 一批卡的战力。这条测试是 2026-08-08 补的:降将那一趟给 65 张卡贴了标签,
+  // 而快照的 diff 只有 3 行(三张新卡),闸门一声不吭。
+  it('部族标签算改动 —— 一个标签只要有人数它,它就是数值', () => {
+    const c = COLLECTIBLE_CARDS.find((x) => !x.token && x.type === 'general' && !x.defector)!
+    expect(digest({ ...c, defector: true } as CardDef)).not.toBe(digest(c))
+    expect(digest({ ...c, troop: 'navy' } as CardDef)).not.toBe(digest(c))
+    expect(digest({ ...c, battles: ['赤壁之戰'] } as CardDef)).not.toBe(digest(c))
+  })
+
   it('关键词换个书写顺序不算改动', () => {
     const c = COLLECTIBLE_CARDS.find((x) => !x.token && x.keywords.length >= 2)!
     expect(digest({ ...c, keywords: [...c.keywords].reverse() } as CardDef)).toBe(digest(c))

@@ -924,6 +924,12 @@ function countFor(
     }
     case 'friendlyTroop':
       return board.filter((c) => lib[c.defId]?.troop === per.troop).length
+    // 降将:**含自己**(和 friendlyDynasty / friendlyBattle 相反)。
+    // 那两条数的是「同伴」,所以把自己排除掉读起来才对;这一条数的是
+    // 「这支队伍里有多少人是从别处来的」—— 一支降将组成的队伍,
+    // 领头那个自己也是降将,没有理由不算他。
+    case 'friendlyDefector':
+      return board.filter((c) => lib[c.defId]?.defector).length
     case 'friendlyGraveyard':
       return state.players[player].graveyard.filter((id) => lib[id]?.type === 'general').length
     case 'enemyGenerals':

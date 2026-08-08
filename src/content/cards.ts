@@ -41,6 +41,8 @@ import { PACK23_CARDS } from './overrides/pack23'
 import { PACK24_CARDS, PACK24_OVERRIDES } from './overrides/pack24'
 import { PACK25_CARDS, PACK25_TOKENS } from './overrides/pack25'
 import { PACK26_CARDS } from './overrides/pack26'
+import { applyDefector } from './overrides/defectors'
+import { PACK27_CARDS } from './overrides/pack27'
 import { CAMPAIGN_TOKENS } from './overrides/campaign-tokens'
 import { HISTORY_TOKENS } from './history-tokens'
 
@@ -291,9 +293,10 @@ const MERGED_CARDS: CardDef[] = [
   ...PACK25_TOKENS,
   ...PACK25_CARDS,
   ...PACK26_CARDS,
+  ...PACK27_CARDS,
   ...CAMPAIGN_TOKENS,
   ...HISTORY_TOKENS,
-].map(applyPack24).map(applyTuning).map(withKeywordText)
+].map(applyPack24).map(applyTuning).map(applyDefector).map(withKeywordText)
 
 const NAME_BY_ID: Record<string, LocalizedText> = Object.fromEntries(
   MERGED_CARDS.map((c) => [c.id, c.name]),

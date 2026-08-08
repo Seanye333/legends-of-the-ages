@@ -140,6 +140,13 @@ export type CountSource =
   | { kind: 'friendlyKeyword'; keyword: Keyword } // 带某关键词的友方武将
   | { kind: 'friendlyGenerals' } // 友方武将总数
   | { kind: 'friendlyTroop'; troop: TroopType } // 某兵种的友方武将(军师不入列,见 content/troops.ts)
+  // ---- 第二十七卡包:降将 ----
+  // 我方场上的**降将**数(`CardDef.defector`,**含自己**)。
+  //
+  // 这条轴和势力/兵种的区别是它**横跨一切分组**:65 个人分布在六个主义、
+  // 从三国到清初,唯一的共同点是「他换过阵营」。这在别的 CCG 里是编不出来的
+  // 部族 —— 它不是设计出来的标签,是史料里现成的一句「降曹操」「歸唐」。
+  | { kind: 'friendlyDefector' }
   // 我方墓地里的**武将**数(锦囊装备不算)。亡语/复生流缺的就是这个计数 ——
   // 此前只有「复生一个」这种一次性效果,没法表达「死得越多越强」。
   | { kind: 'friendlyGraveyard' }
@@ -371,6 +378,11 @@ export interface CardDef {
   archetype: Archetype
   // 兵种(仅武将,军师与衍生物没有)。在 cards.ts 合并层派生 —— 生成层不存这个字段。
   troop?: TroopType
+  // 降将:史料里明确写着换过阵营的人(生平的 `defected` 字段,65 位)。
+  // 和 troop 一样在 cards.ts 合并层贴上 —— 名单是**committed 常量**
+  // (`overrides/defectors.ts`),不在运行时读 lore:那份史料是懒加载的,
+  // 让 cards.ts import 它等于把整份 lore 拖进首屏(perf-budget 闸门会红)。
+  defector?: boolean
   // 傳承(仅装备):持有者阵亡时,这件装备改挂到另一名友军身上。
   // 名将的兵器不该跟着主人一起进土 —— 青龙偃月刀後來在關平手裡,方天畫戟落到別人手上。
   heirloom?: boolean
