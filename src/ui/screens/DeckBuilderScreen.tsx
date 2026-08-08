@@ -14,7 +14,17 @@ const HERO_PICKS = [...ALL_HEROES].sort(
 import { decodeDeck, encodeDeck } from '../../content/deckCode'
 import { useCollection, copyLimit } from '../../app/collectionStore'
 import { cardName, deckBonds, deckClans } from '../../content/relations'
-import { bondsByReadiness, clansByReadiness, suggestDeckForBond, suggestDeckForClan } from '../../content/deckSuggest'
+import {
+  bondsByReadiness,
+  clansByReadiness,
+  defectorReadiness,
+  suggestDeckForBond,
+  suggestDeckForClan,
+  suggestDeckForDefectors,
+  suggestDeckForTroop,
+  troopsByReadiness,
+} from '../../content/deckSuggest'
+import { TROOP_NAME } from '../../content/troops'
 import { deckHealth, verdictOf } from '../../content/deckHealth'
 import { exportDeckImage } from '../deckExport'
 import { useSettings } from '../../app/settingsStore'
@@ -519,7 +529,7 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
           {hero && (
             <details className={styles.seedBox}>
               <summary className={styles.seedSummary}>
-                {t('按羈絆組卡', 'Build around a bond')}
+                {t('按羈絆 · 家族 · 兵種組卡', 'Build around a bond, house, or troop')}
               </summary>
               <div className={styles.seedList}>
                 {bondsByReadiness(hero.doctrine, owned)
@@ -588,6 +598,60 @@ export function DeckBuilderScreen({ onBack }: DeckBuilderScreenProps) {
                       </span>
                     </button>
                   ))}
+                {/* 兵种与降将:种子**不是名单,是判据**(见 deckSuggest 那一段)。
+                    它们没有「凑齐」的概念,所以这一档给的是「你手上够不够铺一副」,
+                    而不是 have/total —— 后者会让人以为还差二十几张才成立。 */}
+                {troopsByReadiness(hero.doctrine, owned).map(({ troop, have }) => (
+                  <button
+                    key={troop}
+                    className={styles.seedRow}
+                    onClick={() => {
+                      playSfx('cardPlay')
+                      const { cardIds } = suggestDeckForTroop(troop, hero.doctrine, owned)
+                      const next: Record<string, number> = {}
+                      for (const id of cardIds) next[id] = (next[id] ?? 0) + 1
+                      setCounts(next)
+                      setDeckName(pickCompact(TROOP_NAME[troop] ?? { zh: troop, en: troop }))
+                      setSeedNote(
+                        t(
+                          `已按「${pickCompact(TROOP_NAME[troop] ?? { zh: troop, en: troop })}」配好 ${cardIds.length} 张`,
+                          `Built ${cardIds.length} cards around ${pickCompact(TROOP_NAME[troop] ?? { zh: troop, en: troop })}`,
+                        ),
+                      )
+                    }}
+                  >
+                    <span className={styles.bondLabel}>
+                      {pickCompact(TROOP_NAME[troop] ?? { zh: troop, en: troop })}
+                    </span>
+                    <span className={styles.bondNeed}>{have}</span>
+                  </button>
+                ))}
+                {/* 降将单独摆一条:它是唯一一条**跨全部主义**的部族,
+                    所以不管你选了哪个主公都组得起来 —— 羁绊和兵种都有主义门槛。 */}
+                {defectorReadiness(hero.doctrine, owned) >= 6 && (
+                  <button
+                    className={styles.seedRow}
+                    onClick={() => {
+                      playSfx('cardPlay')
+                      const { cardIds } = suggestDeckForDefectors(hero.doctrine, owned)
+                      const next: Record<string, number> = {}
+                      for (const id of cardIds) next[id] = (next[id] ?? 0) + 1
+                      setCounts(next)
+                      setDeckName(t('降將', 'Defectors'))
+                      setSeedNote(
+                        t(
+                          `已按「降將」配好 ${cardIds.length} 张 —— 這一支橫跨六個主義,誰都組得起來`,
+                          `Built ${cardIds.length} cards around Defectors — the one tribe every doctrine can field`,
+                        ),
+                      )
+                    }}
+                  >
+                    <span className={styles.bondLabel}>{t('降將', 'Defectors')}</span>
+                    <span className={styles.bondNeed}>
+                      {defectorReadiness(hero.doctrine, owned)}
+                    </span>
+                  </button>
+                )}
                 {seedNote && <p className={styles.seedNote}>{seedNote}</p>}
               </div>
             </details>

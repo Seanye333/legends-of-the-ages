@@ -147,6 +147,84 @@ export function clansByReadiness(
     .sort((a, b) => b.have - a.have || a.id.localeCompare(b.id))
 }
 
+// ---------- 以「部族」为种子(兵种 / 降将)----------
+//
+// 【它和上面两条的区别:种子**不是名单,是判据**】
+// 羁绊要点名的那几个人,家族要同一族的人 —— 两者都是先有一份 id 名单。
+// 兵种与降将不是:它们是**卡面上的一个标签**,符合的人有一两百个。
+// 所以这里的种子不是「谁必须进」,而是「优先把符合的塞满」,
+// 然后照样交给 fillDeck 的曲线那一步收口 —— 一副全是骑兵、曲线却塌了的牌
+// 打不赢任何人,而新玩家不会知道是曲线的问题,只会觉得「骑兵流不行」。
+//
+// 【为什么优先给身材好的】
+// 部族这一档没有「凑齐」的概念,所以种子多放几张少放几张都合法。
+// 那就该按牌本身的好坏排 —— cardScore 与曲线那一步用的是同一把尺子,
+// 不然会出现「种子塞了一堆废骑兵,曲线那步再去挑好牌」的怪事。
+//
+// 上限 TRIBE_SEED_CAP:留够位置给曲线。种子铺满 30 张的话后面两步等于没跑,
+// 而那正是「一副能打的牌」和「一堆同类卡」的分界。
+const TRIBE_SEED_CAP = 18
+
+function tribeSeed(
+  match: (c: CardDef) => boolean,
+  doctrine: Doctrine,
+  owned: Record<string, number>,
+): string[] {
+  return COLLECTIBLE_CARDS.filter(
+    (c) => playable(c, doctrine) && (owned[c.id] ?? 0) > 0 && match(c),
+  )
+    .sort((a, b) => cardScore(b) - cardScore(a) || a.id.localeCompare(b.id))
+    .slice(0, TRIBE_SEED_CAP)
+    .map((c) => c.id)
+}
+
+/** 以兵种为种子。骑兵/步兵/弓/水军/器械/军师 —— 卡面上现成的标签。 */
+export function suggestDeckForTroop(
+  troop: NonNullable<CardDef['troop']>,
+  doctrine: Doctrine,
+  owned: Record<string, number>,
+): SuggestResult {
+  return fillDeck(tribeSeed((c) => c.troop === troop, doctrine, owned), doctrine, owned)
+}
+
+/**
+ * 以降将为种子。
+ *
+ * 这一条比兵种更值得摆出来:降将横跨六个主义、从三国到清初,
+ * 唯一的共同点是那个人换过阵营(见 overrides/defectors.ts)——
+ * 也就是说**任何主公都组得起来**,而兵种/羁绊都有主义的门槛。
+ */
+export function suggestDeckForDefectors(
+  doctrine: Doctrine,
+  owned: Record<string, number>,
+): SuggestResult {
+  return fillDeck(tribeSeed((c) => c.defector === true, doctrine, owned), doctrine, owned)
+}
+
+/** 给 UI 排序用:手上这个主义下每个兵种各有几张,多的排前面。 */
+export function troopsByReadiness(
+  doctrine: Doctrine,
+  owned: Record<string, number>,
+): { troop: NonNullable<CardDef['troop']>; have: number }[] {
+  const tally = new Map<NonNullable<CardDef['troop']>, number>()
+  for (const c of COLLECTIBLE_CARDS) {
+    if (!c.troop || (owned[c.id] ?? 0) === 0 || !playable(c, doctrine)) continue
+    tally.set(c.troop, (tally.get(c.troop) ?? 0) + 1)
+  }
+  return [...tally.entries()]
+    .map(([troop, have]) => ({ troop, have }))
+    // 少于这个数就不必摆出来 —— 三张同兵种撑不起一副牌,列出来只是让人白点一次
+    .filter((x) => x.have >= 6)
+    .sort((a, b) => b.have - a.have || a.troop.localeCompare(b.troop))
+}
+
+/** 手上有几张降将(同一主义下)。少于 6 张不摆出来,理由同上。 */
+export function defectorReadiness(doctrine: Doctrine, owned: Record<string, number>): number {
+  return COLLECTIBLE_CARDS.filter(
+    (c) => c.defector && (owned[c.id] ?? 0) > 0 && playable(c, doctrine),
+  ).length
+}
+
 // 给 UI 排序用:能凑得**最齐**的羁绊排在前面。
 export function bondsByReadiness(
   doctrine: Doctrine,

@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { bondsByReadiness, clansByReadiness, suggestDeckForBond, suggestDeckForClan } from './deckSuggest'
+import {
+  bondsByReadiness,
+  clansByReadiness,
+  defectorReadiness,
+  suggestDeckForBond,
+  suggestDeckForClan,
+  suggestDeckForDefectors,
+  suggestDeckForTroop,
+  troopsByReadiness,
+} from './deckSuggest'
 import { ALL_BONDS, bondRoster, clanRoster, deckClans } from './relations'
 import { CLAN_QUORUM } from '../engine/types'
 import { CARDS_BY_ID, COLLECTIBLE_CARDS } from './cards'
@@ -112,5 +121,69 @@ describe('以家族为种子的自动组卡', () => {
     const someClan = clanRoster(clansByReadiness('royal', ALL_OWNED)[0].id)
     const onlyOne: Record<string, number> = { [someClan[0]]: 2 }
     expect(clansByReadiness('royal', onlyOne).length).toBe(0)
+  })
+})
+
+// ---------- 以「部族」为种子(兵种 / 降将)----------
+//
+// 这两条和上面两条最大的区别:**种子不是名单,是判据**。
+// 于是它们多一个上面两条没有的失败模式:**种子铺满整副牌**,
+// 曲线那一步等于没跑 —— 产出「一堆同类卡」而不是「一副能打的牌」。
+// 下面第二条就是钉这件事的(TRIBE_SEED_CAP 那个上限)。
+describe('以兵种 / 降将为种子的自动组卡', () => {
+  it('每个兵种都能产出一副通过合法性校验的三十张牌', () => {
+    for (const doctrine of ['royal', 'hegemonic', 'separatist'] as const) {
+      const hero = Object.values(HEROES_BY_ID).find((h) => h.doctrine === doctrine)!
+      for (const { troop } of troopsByReadiness(doctrine, ALL_OWNED)) {
+        const { cardIds } = suggestDeckForTroop(troop, doctrine, ALL_OWNED)
+        expect(cardIds, troop).toHaveLength(DECK_SIZE)
+        const errs = validateDeck(
+          { name: { zh: 't', en: 't' }, heroId: hero.id, cardIds },
+          CARDS_BY_ID,
+          HEROES_BY_ID,
+        )
+        expect(errs, `${doctrine}/${troop}: ${errs.join(' / ')}`).toEqual([])
+      }
+    }
+  })
+
+  it('**种子不许铺满整副牌** —— 曲线那一步还得有位置可填', () => {
+    const doctrine = 'royal'
+    for (const { troop } of troopsByReadiness(doctrine, ALL_OWNED)) {
+      const { cardIds } = suggestDeckForTroop(troop, doctrine, ALL_OWNED)
+      const same = cardIds.filter((id) => CARDS_BY_ID[id]?.troop === troop).length
+      // 一副全是同兵种、曲线却塌了的牌打不赢任何人,而新手只会觉得「这个流派不行」
+      expect(same, `${troop} 塞了 ${same}/${DECK_SIZE} 张同兵种`).toBeLessThan(DECK_SIZE)
+    }
+  })
+
+  it('配出来的牌里那个兵种真的占了大头 —— 否则这颗种子等于没种', () => {
+    const doctrine = 'royal'
+    for (const { troop } of troopsByReadiness(doctrine, ALL_OWNED)) {
+      const { cardIds } = suggestDeckForTroop(troop, doctrine, ALL_OWNED)
+      const same = cardIds.filter((id) => CARDS_BY_ID[id]?.troop === troop).length
+      expect(same, `${troop} 只放进了 ${same} 张`).toBeGreaterThanOrEqual(6)
+    }
+  })
+
+  it('降将横跨全部六个主义 —— 每个主义都组得起来', () => {
+    for (const h of Object.values(HEROES_BY_ID)) {
+      const n = defectorReadiness(h.doctrine, ALL_OWNED)
+      expect(n, `${h.doctrine} 只有 ${n} 张降将`).toBeGreaterThanOrEqual(6)
+      const { cardIds } = suggestDeckForDefectors(h.doctrine, ALL_OWNED)
+      expect(cardIds, h.doctrine).toHaveLength(DECK_SIZE)
+      const errs = validateDeck(
+        { name: { zh: 't', en: 't' }, heroId: h.id, cardIds },
+        CARDS_BY_ID,
+        HEROES_BY_ID,
+      )
+      expect(errs, `${h.doctrine}: ${errs.join(' / ')}`).toEqual([])
+      expect(cardIds.filter((id) => CARDS_BY_ID[id]?.defector).length).toBeGreaterThanOrEqual(6)
+    }
+  })
+
+  it('手上没有那一档就不列出来 —— 空收藏下两条都是空的', () => {
+    expect(troopsByReadiness('royal', {})).toEqual([])
+    expect(defectorReadiness('royal', {})).toBe(0)
   })
 })
