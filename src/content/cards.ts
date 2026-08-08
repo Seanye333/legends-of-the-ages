@@ -38,6 +38,7 @@ import { PACK20_CARDS } from './overrides/pack20'
 import { PACK21_CARDS } from './overrides/pack21'
 import { PACK22_CARDS } from './overrides/pack22'
 import { PACK23_CARDS } from './overrides/pack23'
+import { PACK24_CARDS, PACK24_OVERRIDES } from './overrides/pack24'
 import { CAMPAIGN_TOKENS } from './overrides/campaign-tokens'
 import { HISTORY_TOKENS } from './history-tokens'
 
@@ -203,6 +204,17 @@ function applyTuning(card: CardDef): CardDef {
   return reconcileExclusive({ ...card, ...tn }, tn)
 }
 
+/**
+ * 第二十四卡包给**已有的四张卡**加条件(見 overrides/pack24.ts 尾部)。
+ * 和调平层同一个理由挂在全池这一层:那四张是 `STRATAGEMS` 里直接定义的,
+ * 根本不经过上面那个只跑生成层的合并循环。
+ */
+function applyPack24(card: CardDef): CardDef {
+  const ov = PACK24_OVERRIDES[card.id]
+  if (!ov) return card
+  return reconcileExclusive({ ...card, ...ov }, ov)
+}
+
 // 全卡池 = (生成默认值 ⊕ 各卡包覆盖) + 手工锦囊 + 第二~六卡包
 // 覆盖顺序:后者赢。各覆盖表刻意不与签名集重叠(只挑签名之外的花名册)。
 const MERGED_CARDS: CardDef[] = [
@@ -273,9 +285,10 @@ const MERGED_CARDS: CardDef[] = [
   ...PACK21_CARDS,
   ...PACK22_CARDS,
   ...PACK23_CARDS,
+  ...PACK24_CARDS,
   ...CAMPAIGN_TOKENS,
   ...HISTORY_TOKENS,
-].map(applyTuning).map(withKeywordText)
+].map(applyPack24).map(applyTuning).map(withKeywordText)
 
 const NAME_BY_ID: Record<string, LocalizedText> = Object.fromEntries(
   MERGED_CARDS.map((c) => [c.id, c.name]),

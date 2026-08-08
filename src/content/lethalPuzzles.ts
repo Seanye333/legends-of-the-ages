@@ -291,14 +291,17 @@ export const LETHAL_PUZZLES: LethalPuzzle[] = [
   {
     id: 'lp-beishui',
     title: { zh: '背水一戰', en: 'Backs to the River' },
-    situation: { zh: '高顺在场,一道锦囊能再添两分力 —— 敌主帅 8 血。', en: 'Gao Shun on board, one stratagem lends two more. Enemy at 8.' },
-    hint: { zh: '给他加上那两点。', en: 'Grant him the two attack he needs.' },
+    // 2026-08-07:背水一戰 改成「主公血量低於 15 才生效」之后,这题原来的 20 血
+    // 让它**无解** —— 单测当场红了(斩杀谜题内容自检)。
+    // 改的是题面而不是卡:一道叫「背水一戰」的题,主公站在 20 血上本来就不叫背水。
+    situation: { zh: '自己只剩 9 血,高顺在场 —— 绝境里那道锦囊才发得动。敌主帅 8 血。', en: 'You are down to 9, Gao Shun stands ready — the stratagem only fires from the brink. Enemy at 8.' },
+    hint: { zh: '背水才有那两点。', en: 'Only with your back to the river does it grant the two Attack.' },
     difficulty: 2,
     heroes: ['guo-jia', 'cao-cao'],
     scenario: {
       activePlayer: 0,
       players: [
-        { heroHp: 20, mana: 3, board: [{ defId: 'gao-shun' }], hand: ['strat-beishui-yizhan'] },
+        { heroHp: 9, mana: 3, board: [{ defId: 'gao-shun' }], hand: ['strat-beishui-yizhan'] },
         { heroHp: 8, mana: 0, board: [], hand: [] },
       ],
     },
