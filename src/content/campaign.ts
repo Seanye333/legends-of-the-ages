@@ -608,7 +608,8 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'separatist',
     hp: 48,
-    deckTier: 0.6,
+    // 2026-08-07 第三章方差压缩:0.6 → 0.9(网格实测 37% → 69%)
+    deckTier: 0.9,
     power: power(
       'bp-yuyang',
       { zh: '漁陽鼙鼓', en: 'Drums of Yuyang' },
@@ -657,7 +658,8 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'ritual',
     hp: 52,
-    deckTier: 0.45,
+    // 2026-08-07 第三章方差压缩:0.45 → 0(网格实测 72% → 62%)
+    deckTier: 0.0,
     power: power(
       'bp-caishi',
       { zh: '采石卻敵', en: 'Turning Them at Caishi' },
@@ -683,7 +685,8 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'royal',
     hp: 54,
-    deckTier: 0.45,
+    // 2026-08-07 第三章方差压缩:0.45 → 0.9(网格实测 73% → 55%)
+    deckTier: 0.9,
     power: power(
       'bp-danxin',
       { zh: '丹心照汗青', en: 'A Red Heart in the Histories' },
@@ -735,7 +738,8 @@ export const BOSSES: BossDef[] = [
     },
     doctrine: 'ritual',
     hp: 58,
-    deckTier: 0.0,
+    // 2026-08-07 第三章方差压缩:0 → 0.75(网格实测 20% → 51%)
+    deckTier: 0.75,
     power: power(
       'bp-shouji',
       { zh: '九門禦敵', en: 'Nine Gates Held' },
