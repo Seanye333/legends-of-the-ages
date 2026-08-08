@@ -12,7 +12,8 @@ import type {
 } from '../../engine/types'
 import { COLLECTIBLE_CARDS } from '../../content/cards'
 import { TROOP_NAME } from '../../content/troops'
-import { claimableGoals, eraProgress } from '../../content/collectionGoals'
+import { claimableGoals, eraProgress, loreProgress } from '../../content/collectionGoals'
+import { loadLore, type CardLore } from '../../content/loreLazy'
 import { adviceTotal, disenchantAdvice } from '../../content/disenchantAdvice'
 import { disenchantValue, useCollection } from '../../app/collectionStore'
 import { DOCTRINE_COLORS, DYNASTY_NAME } from '../doctrineColors'
@@ -183,6 +184,19 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
   const claimGoal = useCollection((s) => s.claimCollectionGoal)
   const [goalPulseCls, fireGoalPulse] = useClaimPulse()
   const progress = useMemo(() => eraProgress(owned), [owned])
+  // 档案进度按需拉列传(144KB,懒加载 —— 见 loreLazy)。
+  // 拉不到就整段不显示:这一段是**锦上添花**,不该让收藏屏为它等一帧白屏。
+  const [lore, setLore] = useState<Record<string, CardLore> | null>(null)
+  useEffect(() => {
+    let alive = true
+    loadLore().then((m) => {
+      if (alive) setLore(m)
+    })
+    return () => {
+      alive = false
+    }
+  }, [])
+  const loreRows = useMemo(() => (lore ? loreProgress(lore, owned) : []), [lore, owned])
   const claimable = useMemo(
     () => claimableGoals(owned, collectionClaimed),
     [owned, collectionClaimed],
@@ -323,6 +337,43 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
               )}
             </div>
           ))}
+          {/* 档案进度。和上面那条时代进度问的**不是同一个问题**:
+              时代进度对每张卡是等价的(有名言、有绝命诗的卡和纯白板一样重),
+              而这个游戏最不可替代的东西恰恰是那些字段。
+              一句话:时代进度奖励**开包量**,档案进度奖励**你收到了谁**。
+              列传是懒加载的(144KB),没拉到就整段不显示 —— 这一段是锦上添花,
+              不该让图鉴为它等一帧白屏。 */}
+          {loreRows.length > 0 && (
+            <>
+              <div className={styles.goalRow}>
+                <span className={styles.goalName} style={{ opacity: 0.75 }}>
+                  {t('檔案', 'Dossiers')}
+                </span>
+                <span className={styles.goalNum} style={{ width: 'auto', flex: 1 }}>
+                  {t('收的是谁,不只是多少', 'Who you have, not just how many')}
+                </span>
+              </div>
+              {loreRows.map((p) => (
+                <div key={p.field} className={styles.goalRow}>
+                  <span className={styles.goalName}>{pick(p.name)}</span>
+                  <span className={styles.goalBar}>
+                    <span
+                      className={styles.goalFill}
+                      style={{ width: `${Math.round(p.ratio * 100)}%` }}
+                    />
+                  </span>
+                  <span className={styles.goalNum}>
+                    {p.owned}/{p.total}
+                  </span>
+                  {p.ratio >= 1 && (
+                    <span className={styles.eraSeal} aria-hidden="true">
+                      成
+                    </span>
+                  )}
+                </div>
+              ))}
+            </>
+          )}
           {/* 分解建议:功勋入口只有三个,而收藏里通常躺着几百张从没进过任何牌组的卡 ——
               既不会被用到,也不会被想起来分解。只列**真正安全**的:
               不在任何预组/自组卡组里,且不是史诗与传说(收藏价值,合回来要四倍功勋)。 */}
