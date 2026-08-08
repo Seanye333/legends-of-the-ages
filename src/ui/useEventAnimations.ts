@@ -564,6 +564,15 @@ function buildTimeline(
         break
       }
 
+      case 'LegendFell': {
+        // 落在当前节拍(阵亡那一拍)而不是自己占一拍:它讲的是刚刚那次阵亡的
+        // **份量**,拆到下一拍就变成一件不相干的事了。
+        const e = loose()
+        e.events.push(ev)
+        addSfxOnce(e, 'bond')
+        break
+      }
+
       case 'ChainTriggered': {
         const e = loose()
         e.events.push(ev)

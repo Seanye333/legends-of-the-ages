@@ -697,6 +697,35 @@ export function processDeaths(state: GameState, events: GameEvent[], lib: CardLi
       changeMorale(state, d.player, -1, events)
       changeMorale(state, other(d.player), 1, events)
     }
+    // 将星陨落:传奇武将倒下时,**双方各再 -1**。
+    //
+    // 【第一版是「失主 -1、斩将方 +1」,那个版本把闸门弄红了】
+    // 它等于把传奇交易的士气摆动从 2 格放大到 4 格,而那正好是滚雪球的形状:
+    // 打得动传奇的那一方赚得更多,赚了之后身材更好、更打得动传奇。
+    // 实测 魏武揮鞭 从 57.8% 冲到 **61.8%**,并且拉出两个 25% / 74% 的极化对位。
+    //
+    // 现在这一版是**差值中性**的:双方同吃,所以「斩掉一个传奇」相对
+    // 「斩掉一个普通武将」并不多赚一格 —— 它不制造优势,只把**两支队伍一起**
+    // 往溃散那条线上推。史书里将星陨落也从来不是一方的好消息。
+    // 副产品是一个真的决策:你自己的传奇死了会连带把对面也往下压一格,
+    // 对面已经 -2 的时候,这一下就是苦肉计。
+    //
+    // 分成单独一轮而不是并进上面那个循环:上面那一轮是**每个死者**都吃的通则,
+    // 这一轮是例外。混在一起以后想读「传奇死了会怎样」得先在心里做减法。
+    //
+    // `LegendFell` 只是给 UI 的播报信号,状态全在士气里 —— 事件丢了对局也不会错
+    // (同 SkyChanged 的取舍)。铁律 7 的三处同步照样要补,漏了就是**静默丢失**。
+    for (const d of dead) {
+      if (lib[d.inst.defId]?.rarity !== 'legendary') continue
+      events.push({
+        type: 'LegendFell',
+        player: d.player,
+        iid: d.inst.iid,
+        defId: d.inst.defId,
+      })
+      changeMorale(state, d.player, -1, events)
+      changeMorale(state, other(d.player), -1, events)
+    }
     refreshAuras(state, lib)
     // 傳承:阵亡者身上带 heirloom 的附魔(装备)改挂到另一名友军身上。
     //

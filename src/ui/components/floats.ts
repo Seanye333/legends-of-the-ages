@@ -186,6 +186,13 @@ export function extractFloats(events: GameEvent[], batch: number, lang: Language
       case 'ChainTriggered':
         push(`hero-${ev.player}`, pickCompact({ zh: '连环计', en: 'CHAIN' }, lang), 'buff')
         break
+      // ---- 第二十六卡包 ----
+      // 将星陨落飘在**主帅**头上,不是飘在那个单位上:同一拍里那个单位已经
+      // 在播阵亡动画、位置马上就没了,而这一下讲的是整支队伍失了气 ——
+      // 和士气/粮道挂主帅是同一条理由。
+      case 'LegendFell':
+        push(`hero-${ev.player}`, pickCompact({ zh: '将星陨落', en: 'STAR FALLS' }, lang), 'damage')
+        break
       default:
         break
     }

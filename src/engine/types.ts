@@ -768,6 +768,9 @@ export type GameEvent =
   // 天时换段。零状态(由 turn 推出),事件只是给 UI 一个「该播报了」的信号。
   | { type: 'SkyChanged'; sky: Sky; turn: number }
   | { type: 'GeneralDied'; player: PlayerIdx; iid: number; defId: string }
+  // 将星陨落:**传奇**武将阵亡。零状态 —— 士气那额外一格由 changeMorale 单独发事件,
+  // 这一条只是给 UI 一个「该播报了」的信号(同 SkyChanged 的取舍)。
+  | { type: 'LegendFell'; player: PlayerIdx; iid: number; defId: string }
   | {
       type: 'AttackResolved'
       attacker: PlayerIdx

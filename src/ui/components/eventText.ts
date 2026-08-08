@@ -74,6 +74,7 @@ export function eventKind(ev: GameEvent): LogKind {
     case 'TurnEnded':
       return 'turn'
     case 'GeneralDied':
+    case 'LegendFell':
     case 'GeneralBanished':
     case 'GameEnded':
       return 'death'
@@ -185,6 +186,9 @@ function line(ev: GameEvent, ctx: EventTextCtx, l: Lang): string {
         : `${n(ev.iid)} gained [${KEYWORD_NAME[ev.keyword].en}]`
     case 'GeneralDied':
       return zh ? `${n(ev.iid)}阵亡` : `${n(ev.iid)} fell in battle`
+    case 'LegendFell':
+      // 紧跟在那一行「阵亡」后面。说的是**这一下不一样**:士气会再摆一格。
+      return zh ? `将星陨落 —— ${n(ev.iid)},三军夺气` : `A star falls — ${n(ev.iid)}. The army's spirit goes with them`
     case 'HeroPowerUpgraded':
       return zh ? `${hero(ev.player)}的主公技已升階` : `${hero(ev.player)}'s Hero Power was upgraded`
     case 'FieldChanged':
