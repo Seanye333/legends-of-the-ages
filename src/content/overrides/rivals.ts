@@ -379,6 +379,96 @@ export const RIVAL_OVERRIDES: Record<string, Partial<CardDef>> = {
     // 长乐钟室:韩信为吕后所诱,斩于钟室,夷三族。
     rival: { id: 'rival-zhongshi', name: { zh: '長樂鐘室', en: 'The Bell Chamber' }, foe: 'hist-han-xin', attack: 2, health: 1 },
   },
+
+  // ================= 2026-08-08 补的十九条(41 → 60)=================
+  //
+  // 【素材是关系网里现成的 `foe` 边,每条注释里那句都是生平原文】
+  // 和师承那一批同一个来源(`lore.gen.ts` 的 RELATION_EDGES)。
+  // 筛法:两边都在卡池、两边都还没**声明过** rival、而且那条边真的是敌对
+  // —— 最后一条得人来判。关系网里有几条 `foe` 其实是**同僚**
+  // (高覽 / 張郃 是一起降曹的,那条边来自郭图的传里那句谗言),没有采用。
+  //
+  // 同一个人可以是**多条宿敌的 foe**(曹仁 这里出现两次),因为 foe 不是
+  // 声明在他自己身上的字段;但**声明方必须唯一** —— `bond`/`rival` 都是单字段。
+  //
+  // 定价照旧:双方同吃,所以数值中性,一律 1~2 点。
+
+  // 街亭:亮使守街亭,馬謖捨水上山,為張郃所破,蜀軍大敗。
+  'ma-su': {
+    rival: { id: 'rival-jieting', name: { zh: '街亭', en: 'Jieting' }, foe: 'zhang-he', attack: 2, health: 1 },
+  },
+  // 討董:孫堅首入洛陽,得傳國玉璽。
+  'sun-jian': {
+    rival: { id: 'rival-taodong', name: { zh: '首入洛陽', en: 'First into Luoyang' }, foe: 'dong-zhuo', attack: 2, health: 1 },
+  },
+  // 舊主:龐德原馬超部,馬超降劉備,德隨張魯,後降曹操 —— 樊城相見已是敵國。
+  'pang-de': {
+    rival: { id: 'rival-jiuzhu', name: { zh: '舊主', en: 'The Old Lord' }, foe: 'ma-chao', attack: 2, health: 1 },
+  },
+  // 八門金鎖:事劉備於新野,獻計破曹仁八門金鎖陣。
+  'xu-shu': {
+    rival: { id: 'rival-bamen', name: { zh: '八門金鎖', en: 'The Eight Gates' }, foe: 'cao-ren', attack: 1, health: 2 },
+  },
+  // 南皮:曹純從征,於南皮陣斬袁譚。
+  'cao-chun': {
+    rival: { id: 'rival-nanpi', name: { zh: '南皮', en: 'Nanpi' }, foe: 'yuan-tan', attack: 2, health: 1 },
+  },
+  // 江陵:朱然以五千人拒夏侯尚數萬,固守半年,卒解圍。
+  'zhu-ran': {
+    rival: { id: 'rival-jiangling', name: { zh: '江陵孤守', en: 'The Siege of Jiangling' }, foe: 'xiahou-shang', attack: 1, health: 2 },
+  },
+  // 東興:雪夜短兵,大破諸葛誕援兵於東興。
+  'ding-feng': {
+    rival: { id: 'rival-dongxing', name: { zh: '雪夜短兵', en: 'Short Blades in the Snow' }, foe: 'zhuge-dan', attack: 2, health: 1 },
+  },
+  // 濡須:朱桓鎮濡須,大破曹仁五萬之眾,陣斬常雕,生擒王雙。
+  'zhu-huan': {
+    rival: { id: 'rival-ruxu', name: { zh: '濡須塢', en: 'The Ruxu Fort' }, foe: 'cao-ren', attack: 2, health: 1 },
+  },
+  // 諸葛恪 平山越、伐魏,初勝後敗,終為孫峻所殺,夷三族。
+  'zhuge-ke': {
+    rival: { id: 'rival-sunjun', name: { zh: '東吳鴆酒', en: 'Wine at the Wu Court' }, foe: 'sun-jun', attack: 2, health: 1 },
+  },
+  // 兄弟相攻:袁紹卒,袁譚與弟袁尚相攻,曹操乘隙渡河。
+  'yuan-tan': {
+    rival: { id: 'rival-xiongdi', name: { zh: '兄弟相攻', en: 'Brother Against Brother' }, foe: 'yuan-shang', attack: 2, health: 1 },
+  },
+  // 遼東:曹操破鄴,袁尚奔遼東,公孫康畏曹操,斬其首送許都。
+  'yuan-shang': {
+    rival: { id: 'rival-liaodong', name: { zh: '遼東首級', en: 'A Head Sent to Xu' }, foe: 'gongsun-kang', attack: 2, health: 1 },
+  },
+  // 汴水:中平六年汴水之戰,徐榮大破曹操、鮑信,曹操中流矢。
+  'xu-rong': {
+    rival: { id: 'rival-bianshui', name: { zh: '汴水', en: 'The Bian River' }, foe: 'bao-xin', attack: 2, health: 1 },
+  },
+  // 長安:王允后被李傕、郭汜攻陷長安,自焚而死。
+  'wang-yun': {
+    rival: { id: 'rival-changan', name: { zh: '長安之陷', en: 'The Fall of Chang’an' }, foe: 'li-jue', attack: 1, health: 2 },
+  },
+  // 董卓專政,蔡邕被脅入朝;卓敗,王允下之獄 —— 一声叹息送了命。
+  'cai-yong': {
+    rival: { id: 'rival-yushi', name: { zh: '一嘆下獄', en: 'One Sigh, and Prison' }, foe: 'wang-yun', attack: 1, health: 2 },
+  },
+  // 漢中:諸葛亮死後,馬岱奉遺命斬叛將魏延於漢中。
+  'ma-dai': {
+    rival: { id: 'rival-hanzhong', name: { zh: '遺命斬延', en: 'The Last Order' }, foe: 'wei-yan', attack: 2, health: 1 },
+  },
+  // 石室:于吉南遊,孫策怒其惑眾,殺之於石室。
+  'yu-ji': {
+    rival: { id: 'rival-shishi', name: { zh: '石室', en: 'The Stone Chamber' }, foe: 'sun-ce', attack: 1, health: 2 },
+  },
+  // 廣宗:皇甫嵩夜襲破之,黃巾大局自此潰。
+  'huangfu-song': {
+    rival: { id: 'rival-guangzong', name: { zh: '廣宗夜襲', en: 'Night Attack at Guangzong' }, foe: 'zhang-jiao', attack: 2, health: 1 },
+  },
+  // 宛城:中平元年攻潁川、宛城,屢為皇甫嵩、朱儁所敗。
+  'zhang-bao-yt': {
+    rival: { id: 'rival-wancheng', name: { zh: '宛城', en: 'Wancheng' }, foe: 'zhu-jun', attack: 2, health: 1 },
+  },
+  // 水淹七軍:關平助父出征襄樊,擒于禁、斬龐德,父子之名震華夏。
+  'guan-ping': {
+    rival: { id: 'rival-shuiyan', name: { zh: '水淹七軍', en: 'The Seven Armies Drowned' }, foe: 'yu-jin', attack: 2, health: 1 },
+  },
 }
 
 // 史料一句 —— 图鉴/列传点开宿敌时显示。放在内容层,引擎不需要知道它。
@@ -547,5 +637,83 @@ export const RIVAL_LORE: Record<string, LocalizedText> = {
   'rival-shanhaiguan': {
     zh: '衝冠一怒為紅顏。一道關門開了,天下就換了主人。',
     en: 'One gate opened in a fit of rage, and the empire changed hands.',
+  },
+
+  // ---- 2026-08-08 补的十九条 ----
+  'rival-jieting': {
+    zh: '亮使守街亭,馬謖捨水上山,為張郃所破,蜀軍大敗 —— 第一次北伐止于此。',
+    en: 'Ordered to hold Jieting, Ma Su left the water and camped on the hill. Zhang He broke him, and the first northern campaign ended there.',
+  },
+  'rival-taodong': {
+    zh: '諸侯畏卓兵鋒,唯孫堅獨進,首入洛陽,掃除宗廟,得傳國玉璽於井中。',
+    en: 'The lords feared Dong Zhuo. Sun Jian alone pressed on, entered Luoyang first, swept the ancestral shrines, and found the Imperial Seal in a well.',
+  },
+  'rival-jiuzhu': {
+    zh: '龐德原馬超部;超降劉備,德隨張魯,後降曹操。樊城再見,已是敵國。',
+    en: 'Pang De once served Ma Chao. Chao went over to Liu Bei; De followed Zhang Lu, then Cao Cao. When they met again at Fancheng, they met as enemies.',
+  },
+  'rival-bamen': {
+    zh: '事劉備於新野,獻計破曹仁八門金鎖陣 —— 徐庶出手只此一回。',
+    en: 'At Xinye he served Liu Bei, and broke Cao Ren’s Eight Gates formation. It was the only time Xu Shu ever took the field.',
+  },
+  'rival-nanpi': {
+    zh: '從征,於南皮陣斬袁譚,於長坂大破劉備 —— 虎豹騎所向披靡。',
+    en: 'He cut down Yuan Tan in the field at Nanpi and shattered Liu Bei at Changban. Nothing stood before the Tiger and Leopard Cavalry.',
+  },
+  'rival-jiangling': {
+    zh: '江陵之役,以五千人拒夏侯尚數萬,固守半年,卒解圍。',
+    en: 'At Jiangling, five thousand men held off tens of thousands under Xiahou Shang for half a year, until the siege broke.',
+  },
+  'rival-dongxing': {
+    zh: '雪夜短兵,解鎧棄矛,直取魏軍前屯 —— 大破諸葛誕援兵於東興。',
+    en: 'A snowy night, short blades, armour thrown off: they took the Wei forward camp head-on and shattered Zhuge Dan’s relief force at Dongxing.',
+  },
+  'rival-ruxu': {
+    zh: '鎮濡須,大破曹仁五萬之眾,陣斬常雕,生擒王雙。',
+    en: 'Holding Ruxu, he broke Cao Ren’s fifty thousand, cut down Chang Diao in the field, and took Wang Shuang alive.',
+  },
+  'rival-sunjun': {
+    zh: '平山越、伐魏,初勝後敗;終為孫峻所殺,夷三族。',
+    en: 'He pacified the Shanyue and marched on Wei — won, then lost. Sun Jun killed him, and his three kindreds with him.',
+  },
+  'rival-xiongdi': {
+    zh: '袁紹卒,譚與弟尚相攻;辛評勸其聯曹圖尚,曹操乘隙渡河。',
+    en: 'When Yuan Shao died, Tan and his brother Shang turned on each other. Xin Ping urged an alliance with Cao Cao — and Cao Cao crossed the river.',
+  },
+  'rival-liaodong': {
+    zh: '曹操破鄴,袁尚奔遼東;公孫康畏曹操,斬其首送許都。',
+    en: 'Cao Cao took Ye; Yuan Shang fled to Liaodong. Gongsun Kang, fearing Cao Cao, sent his head to Xu.',
+  },
+  'rival-bianshui': {
+    zh: '中平六年汴水之戰,徐榮大破曹操、鮑信,曹操中流矢,賴曹洪救之。',
+    en: 'At the Bian River, Xu Rong broke Cao Cao and Bao Xin. Cao Cao took an arrow, and lived only because Cao Hong gave him his horse.',
+  },
+  'rival-changan': {
+    zh: '誅卓之後,王允不赦涼州兵;李傕、郭汜遂攻陷長安,允死之。',
+    en: 'After Dong Zhuo fell, Wang Yun refused amnesty to the Liangzhou troops. Li Jue and Guo Si stormed Chang’an, and Wang Yun died in it.',
+  },
+  'rival-yushi': {
+    zh: '卓敗,蔡邕在座聞之而嘆;王允怒,下之獄,死獄中。',
+    en: 'When word came that Dong Zhuo was dead, Cai Yong sighed where he sat. Wang Yun had him thrown in prison, and there he died.',
+  },
+  'rival-hanzhong': {
+    zh: '諸葛亮死後,奉遺命斬叛將魏延於漢中。',
+    en: 'After Zhuge Liang died, he carried out the last order and cut down Wei Yan at Hanzhong.',
+  },
+  'rival-shishi': {
+    zh: '于吉南遊吳會,士民多從之;孫策怒其惑眾,殺之於石室。',
+    en: 'Yu Ji travelled south and the people flocked to him. Sun Ce, calling it sorcery, had him killed in the stone chamber.',
+  },
+  'rival-guangzong': {
+    zh: '中平元年,皇甫嵩夜襲廣宗,陣斬張梁;黃巾大局自此而潰。',
+    en: 'In 184, Huangfu Song attacked Guangzong by night and cut down Zhang Liang. The Yellow Turban cause never recovered.',
+  },
+  'rival-wancheng': {
+    zh: '中平元年攻潁川、宛城,屢為皇甫嵩、朱儁所敗。',
+    en: 'In 184 they struck at Yingchuan and Wancheng, and were beaten again and again by Huangfu Song and Zhu Jun.',
+  },
+  'rival-shuiyan': {
+    zh: '隨父鎮荊州,助父出征襄樊;水淹七軍,擒于禁、斬龐德,父子之名震華夏。',
+    en: 'He held Jing with his father and marched with him on Fancheng. The seven armies drowned, Yu Jin was taken, Pang De beheaded — and the two names shook the realm.',
   },
 }
