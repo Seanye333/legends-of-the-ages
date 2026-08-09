@@ -75,5 +75,5 @@
 
 .loner:hover {
   border-color: var(--gold-mid, #c8a45c);
-  color: var(--gold-bright, #f7e1a8);
+  color: var(--gold-bright, var(--gold-bright));
 }

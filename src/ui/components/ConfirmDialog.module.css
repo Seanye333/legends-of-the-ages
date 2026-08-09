@@ -67,7 +67,7 @@
 }
 
 .confirm {
-  background: linear-gradient(180deg, #d4a84a, #8a6c26);
+  background: linear-gradient(180deg, var(--gold-mid), #8a6c26);
   color: #1a1206;
 }
 

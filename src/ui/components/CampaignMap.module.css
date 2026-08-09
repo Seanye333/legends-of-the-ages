@@ -114,7 +114,7 @@
 }
 
 .flag {
-  color: var(--ok, #8ce082);
+  color: var(--ok, var(--ok));
 }
 
 .here {

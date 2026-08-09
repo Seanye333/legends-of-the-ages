@@ -113,7 +113,7 @@
 }
 
 .draw {
-  background: linear-gradient(175deg, #d8ccb0 8%, #9a8a6a 55%, #6a5e46 92%);
+  background: linear-gradient(175deg, #d8ccb0 8%, var(--parchment-faint) 55%, #6a5e46 92%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -258,7 +258,7 @@
   font-family: var(--font-display);
   font-size: 9px;
   line-height: 1;
-  color: #f7e1a8;
+  color: var(--gold-bright);
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.9);
 }
 

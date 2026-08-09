@@ -6,7 +6,7 @@
   min-height: 100vh;
   min-height: 100dvh;
   padding: 18px clamp(12px, 4vw, 40px) 60px;
-  background: linear-gradient(180deg, #14100a, #0c0a07);
+  background: linear-gradient(180deg, #14100a, var(--ink-0));
 }
 
 .head {

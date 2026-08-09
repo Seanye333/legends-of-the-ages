@@ -354,7 +354,7 @@
   border-radius: 999px;
   background: rgba(212, 168, 74, 0.14);
   border: 1px solid rgba(212, 168, 74, 0.45);
-  color: #e8c878;
+  color: var(--gold);
   font-family: var(--font-display);
   font-size: 13px;
   font-weight: 700;

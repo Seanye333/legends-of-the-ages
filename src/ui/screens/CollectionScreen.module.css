@@ -213,7 +213,7 @@
   border-radius: 999px;
   background: rgba(212, 168, 74, 0.14);
   border: 1px solid rgba(212, 168, 74, 0.45);
-  color: #e8c878;
+  color: var(--gold);
   font-family: var(--font-display);
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -430,7 +430,7 @@
   font-size: 12px;
   font-family: var(--font-display);
   color: #1a1206;
-  background: linear-gradient(180deg, #d4a84a, #8a6c26);
+  background: linear-gradient(180deg, var(--gold-mid), #8a6c26);
   border: none;
   cursor: pointer;
 }

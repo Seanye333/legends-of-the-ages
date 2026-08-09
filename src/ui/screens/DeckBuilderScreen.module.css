@@ -699,7 +699,7 @@
   margin: 6px 0 0;
   font-size: 11px;
   line-height: 1.6;
-  color: #e8c878;
+  color: var(--gold);
 }
 
 /* 宽屏(左右分栏)才锁定整屏高度。

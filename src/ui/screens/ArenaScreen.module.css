@@ -32,7 +32,7 @@
   border-radius: 999px;
   background: rgba(212, 168, 74, 0.14);
   border: 1px solid rgba(212, 168, 74, 0.45);
-  color: #e8c878;
+  color: var(--gold);
   font-family: var(--font-display);
   font-weight: 700;
 }
@@ -101,7 +101,7 @@
 }
 
 .primary {
-  background: linear-gradient(180deg, #d4a84a, #8a6c26);
+  background: linear-gradient(180deg, var(--gold-mid), #8a6c26);
   color: #1a1206;
 }
 
@@ -202,7 +202,7 @@
 
 .progressFill {
   height: 100%;
-  background: linear-gradient(90deg, #8a6c26, #d4a84a);
+  background: linear-gradient(90deg, #8a6c26, var(--gold-mid));
   transition: width 0.25s ease;
 }
 
@@ -243,7 +243,7 @@
 }
 
 .pickedChip b {
-  color: #5aa8f0;
+  color: var(--mana);
   margin-right: 3px;
 }
 
@@ -259,7 +259,7 @@
 }
 
 .win {
-  color: #d4a84a;
+  color: var(--gold-mid);
 }
 
 .loss {

@@ -175,7 +175,7 @@
 }
 
 .gemFull {
-  color: #5aa8f0;
+  color: var(--mana);
   text-shadow:
     0 0 4px rgba(90, 168, 240, 0.95),
     0 1px 1px rgba(0, 20, 60, 0.8);
@@ -458,7 +458,7 @@
 .powerCost {
   font-size: clamp(9px, 1.7vh, 12px);
   font-weight: 800;
-  color: #5aa8f0;
+  color: var(--mana);
   text-shadow: 0 0 4px rgba(90, 168, 240, 0.8);
 }
 

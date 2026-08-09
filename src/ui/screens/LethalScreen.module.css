@@ -313,7 +313,7 @@
   width: min(94vw, 720px);
   margin: 0 auto 10px;
   font-size: 12px;
-  color: #e8c878;
+  color: var(--gold);
 }
 
 
@@ -386,7 +386,7 @@
   font-family: var(--font-display);
   font-size: 15px;
   letter-spacing: 0.06em;
-  color: var(--gold-bright, #f7e1a8);
+  color: var(--gold-bright, var(--gold-bright));
 }
 
 .dailyBattleEra {

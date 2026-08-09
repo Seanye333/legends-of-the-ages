@@ -199,7 +199,7 @@
   width: 100%;
   height: 56%;
   flex: none;
-  background: #14110c;
+  background: var(--ink-1);
 }
 
 /* 立绘内压暗角,嵌进卡框 */

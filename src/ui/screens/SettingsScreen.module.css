@@ -133,13 +133,13 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #d8e4c4, #7a9a5a 78%);
+  background: radial-gradient(circle at 35% 30%, #d8e4c4, var(--jade) 78%);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
   transition: transform var(--dur-fast) var(--ease-out);
 }
 
 .toggleRow input[type='checkbox']:checked {
-  background: linear-gradient(180deg, #b8863b, #7a5a1e);
+  background: linear-gradient(180deg, var(--gold-deep), var(--gold-dark));
   border-color: var(--gold);
 }
 

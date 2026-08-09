@@ -144,7 +144,7 @@
   width: 9px;
   height: 9px;
   margin: 0 auto;
-  background: #e8c878;
+  background: var(--gold);
   transform: rotate(45deg);
   box-shadow: 0 0 8px rgba(232, 200, 120, 0.9);
 }
@@ -460,7 +460,7 @@
   position: relative;
   width: 100%;
   aspect-ratio: 1;
-  background: #14110c;
+  background: var(--ink-1);
 }
 
 .portrait {
@@ -786,7 +786,7 @@
   margin-top: -4px;
   font-size: 12.5px;
   letter-spacing: 0.06em;
-  color: var(--parchment-faint, #9a8a6a);
+  color: var(--parchment-faint, var(--parchment-faint));
   font-variant-numeric: tabular-nums;
 }
 

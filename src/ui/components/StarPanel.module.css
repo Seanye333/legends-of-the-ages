@@ -80,7 +80,7 @@
 .off {
   margin: 4px 0 0;
   font-size: 11px;
-  color: #d4a84a;
+  color: var(--gold-mid);
 }
 
 .note {
