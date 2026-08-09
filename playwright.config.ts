@@ -4,6 +4,10 @@ export default defineConfig({
   testDir: './e2e',
   timeout: 30_000,
   retries: 1,
+  // 开跑前先把 dev server 的「按请求现转」付掉 —— 理由与实测数字见那个文件。
+  // 它是这一套 e2e 在**冷机器**上稳不稳的关键:各模式的内容数据是懒加载的,
+  // 第一次点进某一屏时的转换开销正好落在断言最密的那一步上。
+  globalSetup: './e2e/global-setup.ts',
   use: {
     baseURL: 'http://localhost:5175',
     trace: 'retain-on-failure',
