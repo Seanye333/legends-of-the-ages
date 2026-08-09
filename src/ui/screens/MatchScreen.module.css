@@ -1760,13 +1760,22 @@
    实测手机横屏可用高只有 342px:两排战线被压到贴着,38% 正好落在
    敌方那一排上。我方主帅面板与敌方战线之间有一条约 45px 的空带,
    横幅收小之后正好坐进去,谁都不挡。 */
+/* 矮视口(手机横屏 ≈390px 高)下的回合横幅。
+   【上一版只是把碰撞挪了个地方】
+   38% 在矮屏上压着**敌方**那一排,于是改成了 48% —— 而 48% × 390 = 187px,
+   我方那一排正好在 171–221。碰撞从对面挪到了自己身上,而这一边更要命:
+   你看不见的是**你正要操作的那些单位**。
+   两排之间只有一条约 30px 的分界带(敌方排到 140,我方排从 171 起),
+   所以横幅必须**同时**挪到带中央并且瘦下来 —— 只做其中一件都还是压着人。
+   e2e/landscape.spec.ts 现在断言横幅矩形与任何令牌矩形不相交,
+   两个方向都验过:只挪不瘦、或只瘦不挪,那条都会红。 */
 @media (max-height: 430px) {
   .turnBanner,
   .bannerFoe {
-    top: 48%;
-    padding: 5px 20px;
-    font-size: 15px;
-    letter-spacing: calc(0.2em * var(--ls-wide));
-    text-indent: calc(0.2em * var(--ls-wide));
+    top: 40%;
+    padding: 3px 14px;
+    font-size: 12px;
+    letter-spacing: calc(0.14em * var(--ls-wide));
+    text-indent: calc(0.14em * var(--ls-wide));
   }
 }
