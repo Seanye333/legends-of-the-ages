@@ -44,6 +44,7 @@
     "test": "vitest run",
     "theme-audit": "node --import tsx scripts/theme-audit.ts",
     "tune-campaign": "node --import tsx scripts/tune-campaign.ts",
+    "tune-history": "node --import tsx scripts/tune-history.ts",
     "typecheck": "tsc -b && tsc -p tsconfig.test.json && tsc -p tsconfig.server.json && tsc -p tsconfig.drivetest.json && tsc -p tsconfig.scripts.json"
   },
   "dependencies": {

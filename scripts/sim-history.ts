@@ -1,74 +1,77 @@
 // 历史名战难度模拟:六套预组轮流去打每一场名战,输出玩家胜率。
 // 运行:npm run sim-history(GAMES=每场局数,默认 60)
 //
+// 对局本体在 workers/history.worker.ts,这里不留副本 —— 那份 worker 与
+// tune-history 共用,两处各留一份 play() 的话,改一处忘了改另一处的表现是
+// 「调参搜出来的数落库之后闸门不认」,而两边都自洽,极难查。
+//
 // 与 sim-campaign 的关键差别:名战**带开局态势**(RunModifiers),必须把
 // battleModifiers 传进 GameConfig —— 少传这一项,模拟出的难度就和实际玩的不是一回事。
+// (这一条现在钉在 worker 里,和取池、目标一起。)
 //
 // 闸门也不同:名战是**可自由挑选的设定局**,不是线性阶梯,所以不校验「单调递减」,
 // 只校验每一场都落在「打得过、但要认真打」的带里(贪心 AI 基准尺 35%–68%)。
 // 同样的警告:这测的是贪心 AI 的游戏,真人更强,故这里的胜率是**下限**。
 //
+// ⚠️ **默认局数是 240,不是 60。改小之前先算一遍这道闸门配不配得上样本量。**
+//
+// 判据照抄 balanceGate 文件头那一套 —— 看**带的半宽与标准误的比值**,不看阈值本身:
+//
+//   · 带 35–68%,半宽 16.5pp
+//   · GAMES=60  → 单场标准误 6.5pp → 比值 **2.5**
+//   · GAMES=240 → 单场标准误 3.2pp → 比值 **5.2**
+//
+// balanceGate 那两道的比值是 4.5(总胜率)与 4.0(单个对位),它把 4.0 当下限。
+// 60 局的 2.5 远在下限之下,而这里有 17 场各判一次,**至少有一场误红几乎是必然的**。
+//
+// 这不是推算,是 2026-08-09 实测到的:同一份卡池与牌表,60 局说
+// 「番吾 77% 出带、台州 65% 在带内」,240 局说「番吾 68% 在带内、台州 78% 出带」——
+// 两场都反了。60 局跑一遍 32 秒、240 局 123 秒,而一道会随机翻红的闸门比没有更糟。
+//
+// 想快速试探可以 `GAMES=60`,但**下结论必须用默认值**,调参更是。
+//
 // **护送(protect)目标只观察、不闸门**:贪心 AI 不懂「守住 VIP」,不会为保它而清场,
 // 于是敌方总能把它秒了 → sim 恒为 0%,这是假阴性(真人会主动清威胁)。斩将(assassinate)
 // 反而能测:目标带守护逼 AI 必须啃穿它,斩将自然发生。所以只把 protect 排除在闸门外。
-import { HISTORY_BATTLES, battleDeck, battleModifiers } from '../src/content/historyBattles'
-import { PRECON_DECKS } from '../src/content/decks'
-import { CARDS_BY_ID } from '../src/content/cards'
-import { HEROES_BY_ID } from '../src/content/overrides/heroes'
-import { createGame } from '../src/engine/init'
-import { applyCommand } from '../src/engine/reducer'
-import { aiStep, AI_LEVELS, AI_NORMAL } from '../src/ai/greedy'
-import { START_HP } from '../src/engine/types'
-import type { GameConfig, PlayerIdx, Winner } from '../src/engine/types'
+import { HISTORY_BATTLES } from '../src/content/historyBattles'
+import { parallelMap, defaultConcurrency, progress } from './parallel'
+import { fileURLToPath } from 'node:url'
+import type { HistoryTask } from './workers/history.worker'
 
-const GAMES = Number(process.env.GAMES ?? 60)
-const BOSS_AI = process.env.BOSS_AI === 'general' ? AI_LEVELS.general : AI_NORMAL
+const GAMES = Number(process.env.GAMES ?? 240)
 
 // 「打得过、但要认真打」的带:低于 LOW 太劝退,高于 HIGH 太送。
 const LOW = 35
 const HIGH = 68
 
-function play(battleIdx: number, playerDeckIdx: number, seed: number, first: PlayerIdx): Winner {
-  const battle = HISTORY_BATTLES[battleIdx]
-  const mine = PRECON_DECKS[playerDeckIdx]
-  const myHero = HEROES_BY_ID[mine.heroId]
-  const cfg: GameConfig = {
-    seed,
-    heroIds: [mine.heroId, battle.heroId],
-    deckIds: [[...mine.cardIds], battleDeck(battle)],
-    first,
-    heroPowers: [myHero?.power, battle.power],
-    heroHps: [myHero?.hp ?? START_HP, battle.hp],
-    modifiers: battleModifiers(battle), // ← 名战的灵魂:开局态势
-    objective: battle.objective, // 目标版(守成等);普通场为 undefined
-  }
-  let state = createGame(cfg, CARDS_BY_ID)
-  const rngs: [number, number] = [seed ^ 0xa1, seed ^ 0xb2]
-  let guard = 0
-  while (state.phase !== 'ended') {
-    if (++guard > 5000) return 'draw'
-    const actor: PlayerIdx =
-      state.phase === 'mulligan' ? (state.players[0].mulliganDone ? 1 : 0) : state.activePlayer
-    const step = aiStep(state, actor, CARDS_BY_ID, rngs[actor], actor === 1 ? BOSS_AI : AI_NORMAL)
-    rngs[actor] = step.rng
-    const r = applyCommand(state, actor, step.cmd, CARDS_BY_ID)
-    if (!r.ok) throw new Error(`AI illegal command (${r.error}) vs ${battle.foeName.zh}`)
-    state = r.state
-  }
-  return state.winner ?? 'draw'
-}
-
 console.log(`sim-history: ${HISTORY_BATTLES.length} 场,${GAMES} 局/场(六套预组轮流上)\n`)
 const t0 = performance.now()
-const rates: number[] = []
+
+// 切成「场 × 局段」而不是整整一场:名局之间耗时差得多(93% 那场早早结束,
+// 43% 那场局局打满),按场切的话最后一轮只剩一两个线程在动。
+// 同样的教训在 sim-campaign 上先踩过,它的 worker 头上写着经过。
+const CHUNK = 20
+const WORKER = fileURLToPath(new URL('./workers/history.worker.ts', import.meta.url))
+const jobs: HistoryTask[] = []
 for (let b = 0; b < HISTORY_BATTLES.length; b++) {
-  let wins = 0
-  for (let g = 0; g < GAMES; g++) {
-    const w = play(b, g % PRECON_DECKS.length, b * 7919 + g * 31 + 1, ((g >> 1) % 2) as PlayerIdx)
-    if (w === 0) wins++
+  for (let from = 0; from < GAMES; from += CHUNK) {
+    jobs.push({ battle: b, from, to: Math.min(from + CHUNK, GAMES) })
   }
-  const pct = Math.round((wins / GAMES) * 100)
-  rates.push(pct)
+}
+const parts = await parallelMap<HistoryTask, number>(
+  WORKER,
+  jobs,
+  progress(`${jobs.length} 段`),
+  process.env.JOBS ? Number(process.env.JOBS) : defaultConcurrency(),
+)
+const won = new Array<number>(HISTORY_BATTLES.length).fill(0)
+jobs.forEach((job, k) => {
+  won[job.battle] += parts[k]
+})
+
+const rates = won.map((w) => Math.round((w / GAMES) * 100))
+for (let b = 0; b < HISTORY_BATTLES.length; b++) {
+  const pct = rates[b]
   const observeOnly = HISTORY_BATTLES[b].objective?.kind === 'protect'
   const bar = '█'.repeat(Math.max(0, Math.round(pct / 4)))
   const flag = observeOnly ? ' (护送·仅观察)' : pct < LOW ? ' ← 太难' : pct > HIGH ? ' ← 太送' : ''
@@ -78,7 +81,11 @@ for (let b = 0; b < HISTORY_BATTLES.length; b++) {
       `玩家胜率 ${String(pct).padStart(3)}%  ${bar}${flag}`,
   )
 }
-console.log(`\n(${((performance.now() - t0) / 1000).toFixed(1)}s)`)
+const se = 100 * Math.sqrt(0.25 / GAMES)
+console.log(
+  `\n(${((performance.now() - t0) / 1000).toFixed(1)}s · 每场 ${GAMES} 局,` +
+    `单场标准误最大 ±${se.toFixed(1)} 个百分点 —— 离 ${LOW}/${HIGH} 不到两个标准误的读数别拿来调参)`,
+)
 
 const problems: string[] = []
 for (let b = 0; b < HISTORY_BATTLES.length; b++) {
@@ -91,5 +98,6 @@ if (problems.length === 0) {
 } else {
   console.log('⚠ 难度需要调整:')
   for (const p of problems) console.log(`  ${p}`)
+  console.log('  (调参:ONLY=<场次 id> npm run tune-history)')
   process.exit(1)
 }
