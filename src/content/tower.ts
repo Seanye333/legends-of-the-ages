@@ -1,6 +1,5 @@
 import type { Doctrine, HeroPowerDef, RunModifiers } from '../engine/types'
 import { ALL_HEROES } from './overrides/heroes'
-import { bossDeck } from './campaign'
 
 // 无尽爬塔「登樓」:一层比一层难,看你能爬多高。
 //
@@ -57,7 +56,7 @@ export function towerFloor(floor: number): TowerFloorSpec {
   }
 }
 
-// 这一层敌人的卡组(确定性)
-export function towerDeck(spec: TowerFloorSpec): string[] {
-  return bossDeck(spec.doctrine, spec.deckTier)
-}
+// 【卡组在 towerDeck.ts,不在这里】
+// 那三行是这个文件里唯一要用到 `campaign.ts` 的东西,而 `towerFloor()` 是纯数学。
+// 放在一起时,`towerStore` 只为读一个 `rewardMerit` 就把 61.8KB 的关底定义
+// 拽进了首屏主包(store 是首屏加载的)。拆开之后这个文件是轻的。

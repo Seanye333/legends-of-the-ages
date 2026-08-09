@@ -1,6 +1,11 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { BOSSES, bossTrial } from '../content/campaign'
+// 【只引轻量索引,不引 campaign】
+// 这个 store 只问四件事:一共几关、这一关排第几、通关发多少、有没有试炼。
+// 主公技脚本、开场白、牌组曲线一个字段都没碰,而它是首屏就要加载的 ——
+// 引重的那一份等于把 61.8KB 的关底定义拖进主包(首屏里最大的一块内容数据)。
+// 索引与真数据由 campaignIndex.test.ts 逐关对拍,走样当场红。
+import { CAMPAIGN_BOSS_COUNT, CAMPAIGN_BOSS_IDS, CAMPAIGN_INDEX } from '../content/campaignIndex'
 import { useCollection } from './collectionStore'
 import { useAchievements } from './achievementStore'
 import { safeStorage } from './safeStorage'
@@ -43,17 +48,17 @@ export const useCampaign = create<CampaignState>()(
 
       // 已解锁的关卡数 = 已通关数 + 1(下一关),上限为总关数
       unlockedCount() {
-        return Math.min(BOSSES.length, get().cleared.length + 1)
+        return Math.min(CAMPAIGN_BOSS_COUNT, get().cleared.length + 1)
       },
 
       isUnlocked(bossId) {
-        const idx = BOSSES.findIndex((b) => b.id === bossId)
+        const idx = CAMPAIGN_BOSS_IDS.indexOf(bossId)
         return idx >= 0 && idx < get().unlockedCount()
       },
 
       // 试炼是**首通之后**的第二种打法 —— 先按常规赢一次,才拿得到换胜负条件的那一版
       isTrialUnlocked(bossId) {
-        return get().cleared.includes(bossId) && Boolean(bossTrial(bossId))
+        return get().cleared.includes(bossId) && CAMPAIGN_INDEX[bossId]?.trial !== undefined
       },
 
       begin(bossId, trial = false) {
@@ -68,20 +73,20 @@ export const useCampaign = create<CampaignState>()(
         if (!active) return null
         set({ active: null, activeTrial: false })
         if (!win) return null
-        const boss = BOSSES.find((b) => b.id === active)
+        const boss = CAMPAIGN_INDEX[active]
         if (!boss) return null
         // 试炼走自己那条账:只给功勋、不给卡包(卡包产出会冲击「一局一包」的基线),
         // 也不再 bump campaignCleared —— 那条成就数的是关卡数,不是打法数。
         if (activeTrial) {
-          const trial = bossTrial(active)
-          if (!trial) return null
+          const trial = boss.trial
+          if (trial === undefined) return null
           if (trialsCleared.includes(active)) return null
           set({ trialsCleared: [...trialsCleared, active] })
           useAchievements.getState().bump('trialsCleared')
           useCollection.setState({
-            merit: useCollection.getState().merit + trial.rewardMerit,
+            merit: useCollection.getState().merit + trial,
           })
-          return { merit: trial.rewardMerit, packs: 0 }
+          return { merit: trial, packs: 0 }
         }
         if (cleared.includes(active)) return null // 重打不再发奖
         set({ cleared: [...cleared, active] })
@@ -90,16 +95,16 @@ export const useCampaign = create<CampaignState>()(
         // 卡包产出会直接冲击「一局一包」的基线(经济表在 ARCHITECTURE 里),
         // 而功勋是可以按难度给的:它买的是合成,不是开箱。
         const cycle = get().cycle ?? 0
-        const merit = Math.round(boss.rewardMerit * (1 + 0.5 * cycle))
-        useCollection.getState().grantPacks(boss.rewardPacks)
+        const merit = Math.round(boss.merit * (1 + 0.5 * cycle))
+        useCollection.getState().grantPacks(boss.packs)
         useCollection.setState({
           merit: useCollection.getState().merit + merit,
         })
-        return { merit, packs: boss.rewardPacks }
+        return { merit, packs: boss.packs }
       },
 
       canAscend() {
-        return get().cleared.length >= BOSSES.length
+        return get().cleared.length >= CAMPAIGN_BOSS_COUNT
       },
 
       ascend() {

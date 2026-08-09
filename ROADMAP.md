@@ -1598,18 +1598,30 @@ ifTurnAtLeast 1 张 · ifEnemyHeroHpBelow 1 张 · ifTroopCount 2 张
 
     第 4 条是通用教训:e2e 里任何「第一个 / 最新的 / 今天的」都是隐形随机源。
 
-    ⏳ **剩下的那一类,有了一条很具体的线索(2026-08-09,三次观测)。**
-    模式一致得可疑:**每次 `npm run build` 或改过源码之后的第一次整套跑**
-    会有 2~3 条 flaky,而**紧接着重跑一次就是干净的 81/81**;
-    报错永远是 `expect(locator).toBeVisible()` / `element(s) not found`,
-    从来不是「内容不对」那一类。
-    怀疑是 playwright 的 webServer 复用了已在跑的 vite dev server
-    (`reuseExistingServer: true`),源码一变它重新预构建依赖并**整页重载**,
-    正好打断当时在跑的那条用例。
-    没有坐实,所以没动;要查的话两条路:
-    - 加一段 globalSetup 先打开一次首页,把重载吃掉,再开跑
-    - 或者让 e2e 跑**构建产物**(`vite preview`)而不是 dev server ——
-      顺带也更贴近玩家实际拿到的东西,代价是每次都得先 build
+    ⏳ **剩下的那一类查清了根因(2026-08-09,受控实验)。**
+    不是用例的问题,是**测试在和 vite dev server 抢时间**:
+    dev 下模块是**按请求现转**的,而 e2e 的断言最密的地方恰好是「点进模式 → 进对局」,
+    正是那一屏第一次被转换的时刻。
+
+    | 情形 | 结果 |
+    |---|---|
+    | 刚改过源码 / 刚启的 server | 4~11 条要靠重试才过,3.9~6.5 min |
+    | 同样那几条**单独**跑 | 5 条全过,22 秒 |
+    | 紧接着再跑一次(模块热了) | **81/81,2.6 min** |
+
+    报错永远是 `toBeVisible() failed` / `element(s) not found` / `click timeout`,
+    从来不是「内容不对」那一类 —— 这也是判断它不是回归的依据。
+
+    ⛔ **`server.warmup` 试过,反效果**:刚启的 server 无 warmup 4 条,
+    有 warmup **7 条**。因为 warmup 在服务端进程里转换,而 Playwright
+    探到端口能响应就开跑了 —— 不是把开销挪走,是让测试去抢一个正忙的 server 的 CPU。
+
+    剩下两条路(都还没做):
+    - **globalSetup**:在**任何 worker 开跑之前**串行走一遍各模式入口,
+      把转换开销先付掉。比 warmup 靠谱的地方正是「开跑之前」这四个字。
+    - 让 e2e 跑**构建产物**(`vite preview`)而不是 dev server —— 没有现转这回事,
+      顺带更贴近玩家拿到的东西。⚠️ 但产物会注册 Service Worker,
+      缓存行为会掺进每一条用例里,得先想清楚(`check-offline` 那道闸门就是为它存在的)。
 
 50. ✅ **六张卡带着一条恒等于空操作的 `draw: 0`**(2026-08-09 做完)
 
@@ -1695,8 +1707,30 @@ ifTurnAtLeast 1 张 · ifEnemyHeroHpBelow 1 张 · ifTroopCount 2 张
     没有这道闸门就别抽索引 —— 走样的表现是「标题页分母少一场、通关少发一个卡包」,
     全是不崩不红的那一类。
 
-    剩下四个 store 同一个路子,按收益排:`campaignStore`(61.8KB,但被
-    bossRush/expedition/tower 四家共用,最麻烦)、`lethalStore`、`expeditionStore`。
+    **✅ 第二、三刀:`lethalStore` 与冒险那一家(2026-08-09)**
+
+    | 这一刀 | 主包 | 合计首屏 |
+    |---|---|---|
+    | 起点 | 189.8 / 190 | 387.0 / 400 |
+    | `historyStore` | 180.3 | 377.5 |
+    | `lethalStore` | 177.7 | 374.9 |
+    | 冒险那一家 | **161.9** | **359.1** |
+
+    合计从主包上剥掉 **27.9 KB gzip**,余量 0.2 → 40.9 KB。
+
+    冒险这一刀动了四处,因为 `campaign.ts` 是被**四家**拽着的:
+    - `campaignStore` / `bossRushStore` / `expeditionStore` → 改引 `campaignIndex.ts`
+      (32 关的 id、奖励、试炼奖励;顺序也是数据 —— 解锁判定问的是「这一关排第几」)
+    - `tower.ts` 里的 `towerDeck()` 拆去 `towerDeck.ts` —— 那三行是它唯一用到
+      `campaign.ts` 的地方,而 `towerFloor()` 是纯数学。`towerStore` 只为读一个
+      `rewardMerit` 就把 61.8KB 拽了进来。
+
+    ⚠️ **这一刀让 e2e 的冷启动更容易翻红**:数据挪到路由入口才加载,
+    而那正是 dev server 现转最贵、e2e 断言最密的一步。不是回归(单独跑全过,
+    热了之后 81/81),详见第 49 条那张表。
+
+    剩下:`expeditionStore` 的 `relics.ts`(9.7KB,只要 id + 稀有度做加权抽取)——
+    最后一块,收益也最小。
 
     ⛔ 重新分块救不了,已经量过两次:见第 50 条末尾(overrides)与本条上半(modes)。
 

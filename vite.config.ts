@@ -10,6 +10,16 @@ import { VitePWA } from 'vite-plugin-pwa'
 const isTauri = !!(process.env.TAURI_ENV_PLATFORM ?? process.env.TAURI_PLATFORM)
 
 export default defineConfig({
+  // ⛔ **别加 server.warmup**(2026-08-09 量过,反效果)
+  // 动机是对的:dev 下 vite 按请求现转,而各模式的内容数据现在是懒加载的,
+  // 这笔冷启动开销正好落在「点进模式 → 进对局」这一步 —— e2e 断言最密的地方。
+  // 但 `warmup: { clientFiles: [...screens, ...content] }` 实测让情况更糟:
+  //   刚启的 server,无 warmup → 4 条要靠重试才过(3.9 min)
+  //   刚启的 server,有 warmup → **7 条**(4.1 min)
+  //   模块热了之后          → 81/81(2.6 min)
+  // 因为 warmup 是在**服务端进程里**转换的,而 Playwright 探到端口能响应就开跑了 ——
+  // 于是它不是把开销挪走,是让测试去和一个正忙的 server 抢 CPU。
+  // 真要治得让**测试开跑之前**这件事就做完(globalSetup),见 ROADMAP 第 49 条。
   server: { port: 5174 },
   build: {
     rollupOptions: {

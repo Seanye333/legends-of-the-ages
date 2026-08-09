@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { BOSSES } from '../content/campaign'
+// 只要一个关数。引轻量索引而不是 campaign —— 后者带着 61.8KB 的关底定义,
+// 而这个 store 是首屏就要加载的(见 content/campaignIndex.ts)。
+import { CAMPAIGN_BOSS_COUNT } from '../content/campaignIndex'
 import { RELICS, type RelicDef } from '../content/relics'
 import { MODIFIERS_BY_ID, rollTwoModifiers } from '../content/expeditionModifiers'
 import { offerCards } from '../content/expeditionDraft'
@@ -42,7 +44,7 @@ export interface ExpeditionRun {
 
 interface ExpeditionState {
   run: ExpeditionRun | null
-  // 历史最深:通到第几关。上限是 BOSSES.length(现在 24,不是注释里那个 8)。
+  // 历史最深:通到第几关。上限是 CAMPAIGN_BOSS_COUNT(现在 32)。
   bestDepth: number
   // 無盡绕过的最多圈数。**可选**:老存档没有它 → undefined → 当 0,
   // 于是老玩家下一圈仍会正常发奖(铁律 6:新增持久字段必须可选且有默认)。
@@ -124,11 +126,11 @@ export const useExpedition = create<ExpeditionState>()(
         // 高难修饰符的补偿:通关多给一件宝物 → 直接折成一个卡包(结算即得)
         const clearedMod = run.stageMod ? MODIFIERS_BY_ID[run.stageMod] : undefined
         if (clearedMod?.bonusRelic) useCollection.getState().grantPacks(1)
-        if (clearedStage >= BOSSES.length - 1 && !run.endless) {
+        if (clearedStage >= CAMPAIGN_BOSS_COUNT - 1 && !run.endless) {
           // 通关全部:大奖 + 满进度
           useCollection.getState().grantPacks(3)
           useCollection.setState({ merit: useCollection.getState().merit + 300 })
-          set({ run: null, bestDepth: BOSSES.length })
+          set({ run: null, bestDepth: CAMPAIGN_BOSS_COUNT })
           return
         }
         // 無盡:每绕完一圈发一次通关奖,然后接着走。
@@ -139,8 +141,8 @@ export const useExpedition = create<ExpeditionState>()(
         // 那是一个没有上限的卡包泵。登楼(只在刷新最高层时发,towerStore 的注释
         // 明写「否则重打第 1 层就是无限功勋泵」)和连斩(first 判定只发一次)
         // 都做了防重复,只有这里漏了。
-        if (run.endless && (clearedStage + 1) % BOSSES.length === 0) {
-          const lap = Math.floor((clearedStage + 1) / BOSSES.length)
+        if (run.endless && (clearedStage + 1) % CAMPAIGN_BOSS_COUNT === 0) {
+          const lap = Math.floor((clearedStage + 1) / CAMPAIGN_BOSS_COUNT)
           if (lap > (get().bestLap ?? 0)) {
             set({ bestLap: lap })
             useCollection.getState().grantPacks(3)

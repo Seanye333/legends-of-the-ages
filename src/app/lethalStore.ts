@@ -1,7 +1,12 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { LESSONS_BY_ID } from '../content/lessons'
-import { LETHAL_PUZZLES } from '../content/lethalPuzzles'
+// 【只引 id,不引残局定义】
+// 这个 store 对谜题只问两件事:「是不是真题」和「全解完了没有」——
+// 双方场面、手牌、主公技、解法提示,一个都用不上。
+// 而它是首屏就要加载的,引重的那一份等于把 14.3KB 残局定义拖进主包。
+// 索引与真数据由 lethalIndex.test.ts 对拍,走样当场红。
+import { LETHAL_PUZZLE_IDS, LETHAL_PUZZLE_ID_SET } from '../content/lethalIndex'
 import { DAILY_SLOTS, daysBetween } from '../content/dayKey'
 import { useCollection } from './collectionStore'
 import { useAchievements } from './achievementStore'
@@ -140,7 +145,7 @@ export const useLethal = create<LethalState>()(
           return { firstSolve: true, merit: 0, packs: 0, allComplete: false }
         }
         // 只认真实存在的谜题 id
-        if (!LETHAL_PUZZLES.some((p) => p.id === id)) {
+        if (!LETHAL_PUZZLE_ID_SET.has(id)) {
           return { firstSolve: false, merit: 0, packs: 0, allComplete: false }
         }
         if (get().solved.includes(id)) {
@@ -154,7 +159,7 @@ export const useLethal = create<LethalState>()(
         // 全套通关:再补一个卡包(只一次)
         let packs = 0
         let allComplete = false
-        const all = LETHAL_PUZZLES.every((p) => solved.includes(p.id))
+        const all = LETHAL_PUZZLE_IDS.every((pid) => solved.includes(pid))
         if (all && !get().completedRewardGiven) {
           set({ completedRewardGiven: true })
           useCollection.getState().grantPacks(COMPLETE_ALL_PACKS)

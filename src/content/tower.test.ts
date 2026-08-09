@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DECK_SIZE } from '../engine/types'
-import { towerDeck, towerFloor } from './tower'
+import { towerFloor } from './tower'
+import { towerDeck } from './towerDeck'
 import { CARDS_BY_ID } from './cards'
 
 describe('无尽爬塔', () => {

@@ -19,7 +19,9 @@ import { InstallPrompt } from '../components/InstallPrompt'
 import { StarPanel } from '../components/StarPanel'
 import { useArena } from '../../app/arenaStore'
 import { useCampaign } from '../../app/campaignStore'
-import { BOSSES } from '../../content/campaign'
+// 标题页只要一个分母(「群雄逐鹿 12/32」)。引轻量索引而不是 campaign ——
+// 后者是 61.8KB 的关底定义,首屏里最大的一块内容数据。
+import { CAMPAIGN_BOSS_COUNT } from '../../content/campaignIndex'
 import { useHistory } from '../../app/historyStore'
 import { useTower } from '../../app/towerStore'
 import { useStreak } from '../../app/streakStore'
@@ -214,7 +216,7 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
   const campaignDone = useCampaign((s) => s.cleared.length)
   const historyDone = useHistory((s) => s.cleared.length)
   const towerBest = useTower((s) => s.best)
-  const campaignAllCleared = useCampaign((s) => s.cleared.length >= BOSSES.length)
+  const campaignAllCleared = useCampaign((s) => s.cleared.length >= CAMPAIGN_BOSS_COUNT)
   const wins = useCollection((s) => s.wins)
   const losses = useCollection((s) => s.losses)
   const { merit, rank, next: nextRank } = useWarMerit()
@@ -538,8 +540,8 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
             onNavigate?.('campaign')
           }}
         >
-          {campaignDone < BOSSES.length
-            ? t(`群雄逐鹿 ${campaignDone}/${BOSSES.length}`, `Contenders ${campaignDone}/${BOSSES.length}`)
+          {campaignDone < CAMPAIGN_BOSS_COUNT
+            ? t(`群雄逐鹿 ${campaignDone}/${CAMPAIGN_BOSS_COUNT}`, `Contenders ${campaignDone}/${CAMPAIGN_BOSS_COUNT}`)
             : t('群雄逐鹿 ✦', 'Contenders ✦')}
         </button>
         <button

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { CSSProperties } from 'react'
-import { towerDeck, towerFloor } from '../../content/tower'
+import { towerFloor } from '../../content/tower'
+import { towerDeck } from '../../content/towerDeck'
 import { PRECON_DECKS } from '../../content/decks'
 import { useTower } from '../../app/towerStore'
 import { HEROES_BY_ID } from '../../content/overrides/heroes'

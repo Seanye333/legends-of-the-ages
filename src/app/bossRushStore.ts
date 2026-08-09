@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { BOSSES } from '../content/campaign'
+// 只要一个关数。引轻量索引而不是 campaign —— 后者带着 61.8KB 的关底定义,
+// 而这个 store 是首屏就要加载的(见 content/campaignIndex.ts)。
+import { CAMPAIGN_BOSS_COUNT } from '../content/campaignIndex'
 import { useCollection } from './collectionStore'
 import { useAchievements } from './achievementStore'
 import { safeStorage } from './safeStorage'
@@ -60,7 +62,7 @@ export const useBossRush = create<BossRushState>()(
           return null
         }
         const nextStage = stage + 1
-        const finished = nextStage >= BOSSES.length
+        const finished = nextStage >= CAMPAIGN_BOSS_COUNT
         set({ best: Math.max(get().best, nextStage) })
         useAchievements.getState().bump('bossRushBest', nextStage) // MAX 统计
         if (finished) {
