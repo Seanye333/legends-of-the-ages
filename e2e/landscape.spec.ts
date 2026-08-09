@@ -10,7 +10,13 @@ import { seedUnlockedProfile } from './unlocked'
 //
 // 回合横幅就是这么错过两次的:38% 压着敌方那一排,改成 48% 之后压着**我方**那一排
 // —— 而后者更要命,你看不见的是你正要操作的那些单位。
-// 所以这条断言的不是「横幅在」,是**横幅和任何一个令牌都不相交**。
+// 所以这条断言的不是「横幅在」,是**横幅和任何一个令牌之间留得出余量**。
+//
+// 落点现在由 src/ui/useBannerPlacement.ts 按两排令牌之间的净空算出来
+// (判据本身是纯函数 planBanner,在 src/ui/bannerPlacement.test.ts 里双向验过)。
+// ⚠️ 高屏(> 430px)**故意不接管**:1024x768 下横幅仍然压着两排各 5.6 / 17.2px,
+// 那是定过的桌面观感 —— 大屏上一块 1.4 秒的居中提示压一点没人抱怨,
+// 而按几何让位会把它推到左侧空档去。要改的话是设计决定,不是修 bug。
 const BANNER = '[class*=turnBanner], [class*=bannerFoe]'
 
 // 【为什么要从首帧就关掉动效】
@@ -18,14 +24,28 @@ const BANNER = '[class*=turnBanner], [class*=bannerFoe]'
 // 带着动画去量矩形,量到的是**某一帧**,而是哪一帧取决于机器多快 ——
 // 那样的测试红不红是随机的,红了也说不清是布局坏了还是抽到了动画中间态。
 //
-// `data-reduced-motion` 是 app 自己的开关(main.tsx 汇总系统偏好与设置页,
-// 落成 <html data-reduced-motion>),CSS 里对应 `animation: none; opacity: 1`,
-// 也就是**静止位置**——正是这条用例想断言的东西。
-// 用 addInitScript 而不是进页面之后再 setAttribute:后者晚于横幅挂载,
-// 等于又把「多快」放回了判据里。
+// 【关动效要关在设置里,只钉 <html data-reduced-motion> 是不够的】
+// 那个属性**只喂 CSS**。JS 这一侧还有 useFlip(战线合拢的 FLIP 动画),
+// 它读的是 useSettings.reducedMotion —— 而那个值默认 false,并且**不跟随系统偏好**
+// (main.tsx 只在写 <html> 属性时才把系统偏好并进去)。
+// 于是钉属性关掉了 CSS 动画,令牌却仍然在被 JS 变换着。
+// 6 并发 × 6 轮压力测试下实测:量到的令牌是 36x36 且位置偏上,而静止态是 49x52 ——
+// 那是 FLIP 的中间帧。横幅落点算得再准,量的那一刻东西还在动也是白搭。
+//
+// 所以改成播种设置项:走的是玩家在设置页打开「减少动效」时那条真实路径,
+// 一次把 CSS 与 JS 两侧都关掉。写法照抄 unlocked.ts 的合并写入 ——
+// addInitScript 每次导航都重跑,直接 setItem 会冲掉别处注入的前置条件。
 async function intoPuzzle(page: import('@playwright/test').Page) {
   await page.addInitScript(() => {
-    document.documentElement.setAttribute('data-reduced-motion', 'true')
+    let box: { state?: Record<string, unknown>; version?: number } = {}
+    try {
+      box = JSON.parse(localStorage.getItem('qiangu-settings') ?? '{}')
+    } catch {
+      box = {}
+    }
+    box.state = { ...(box.state ?? {}), reducedMotion: true }
+    box.version = box.version ?? 0
+    localStorage.setItem('qiangu-settings', JSON.stringify(box))
   })
   await page.goto('/')
   await page.getByRole('button', { name: /斩杀谜题|Lethal Puzzles/ }).first().click()
@@ -39,60 +59,96 @@ async function intoPuzzle(page: import('@playwright/test').Page) {
   await page.getByRole('button', { name: /破壁一擊|Breach the Wall/ }).first().click()
 }
 
-// 【别把这里改回 `waitForTimeout`】
-// 原来这条是 `await page.waitForTimeout(1200)` 然后直接量 —— 而回合横幅是
-// **会自己消失**的:MatchScreen 在挂上它 1400ms 之后 setTurnBanner(0) 把它摘掉。
-// 也就是说那版测试的可用窗口只有 **200 毫秒**:页面加载或铺场只要慢一点,
-// 横幅就已经没了,断言当场挂,而报出来的是「横幅没渲染出来」——
-// 看上去像布局坏了,其实是测试自己踩空。
-// 在空闲的快机器上跑十次十次过,只有整套一起跑时偶尔红一次,极难查。
-//
-// 改成等元素真的出现再量:窗口从 200ms 变成约 1.3 秒,而且断言的东西一点没变。
-async function waitForBanner(page: import('@playwright/test').Page) {
-  await page.locator(BANNER).first().waitFor({ state: 'visible', timeout: 10_000 })
-  // 还要等字体。这一条是压力测试逼出来的:整套一起跑时偶尔量到令牌
-  // `180..232`(高 52px),而空闲时量到的是 `186.5..236.5`(高 50px)——
-  // 尺寸和位置一起变,那不是布局在抖,是**回退字体的度量**和正式字体不一样,
-  // 而字号是 clamp(…vh) 的,行高一变整排令牌就往上挪了六个多像素,
-  // 正好蹭到横幅底边。间隙本来只有 3.3px(926x428),经不起这个。
-  await page.evaluate(() => document.fonts.ready)
+// 断言的不是「不相交」,是**留得出余量**。
+// 上一版只验相交,于是 844x390 曾经以 4.4px 的间隙「通过」——
+// 而字体从回退切到正式时整排令牌会挪六个多像素,那种通过第二天就会变成红。
+// 现在量的是横幅与最近一个令牌在**某一条轴上**分开多少(分开一条轴就够了),
+// 负数即压上。落点改成按几何量之后实测:640/740 走横向让开是 92.8 / 117.8px,
+// 844 / 900 / 926 坐进带子正中是 6.9 / 7.1 / 8.3px。3px 的门槛离两者都远。
+const MIN_GAP = 3
+
+interface GapProbe {
+  gap: number
+  worst: string
 }
 
-async function overlaps(page: import('@playwright/test').Page) {
-  return page.evaluate(() => {
-    const banner = document.querySelector(
-      '[class*=turnBanner], [class*=bannerFoe]',
-    ) as HTMLElement | null
-    if (!banner) return { banner: false, hits: [] as string[] }
-    const b = banner.getBoundingClientRect()
-    if (b.width === 0 || b.height === 0) return { banner: false, hits: [] as string[] }
-    const hits: string[] = []
-    document.querySelectorAll('[class*=token]').forEach((t) => {
-      const r = t.getBoundingClientRect()
-      if (r.width === 0) return
-      const hit = !(r.right < b.left || r.left > b.right || r.bottom < b.top || r.top > b.bottom)
-      if (hit) hits.push(`${Math.round(r.top)}..${Math.round(r.bottom)}`)
-    })
-    return { banner: true, hits }
+declare global {
+  interface Window {
+    __bannerGap?: GapProbe
+  }
+}
+
+// 【在页面里逐帧盯,不要在外面等完再进去量】
+// 回合横幅**会自己消失**:MatchScreen 挂上它 1400ms 之后就把它摘掉。
+// 于是「等它可见 → 等字体 → evaluate 量一次」这条路有一个会被负载吃掉的窗口 ——
+// 6 并发压力测试下实测翻红过,报的是「横幅没渲染出来」,看着像布局坏了,
+// 其实是测试自己踩空。历史上同一处还踩过更糙的一版:waitForTimeout(1200) 之后直接量,
+// 可用窗口只有 200ms。
+//
+// 改成把探针装在页面里,从首帧起逐帧记录,取横幅**一生中的最小间隙**。
+// 这样做有两个好处:测试再也不依赖「外面跑得多快」,
+// 而且断言从「某一瞬间不压」变成了**横幅存在期间一直不压** —— 是更强的那条。
+// 起测条件挂在 fonts.status 上:回退字体与正式字体度量不同,而字号是 clamp(…vh),
+// 行高一变整排令牌能挪六个多像素,那一帧不该算数(落点自己也会在 fonts.ready 时重算)。
+async function installGapProbe(page: import('@playwright/test').Page) {
+  await page.addInitScript(() => {
+    const tick = () => {
+      requestAnimationFrame(tick)
+      if (document.fonts.status !== 'loaded') return
+      const banner = document.querySelector(
+        '[class*=turnBanner], [class*=bannerFoe]',
+      ) as HTMLElement | null
+      if (!banner) return
+      const b = banner.getBoundingClientRect()
+      if (b.width === 0 || b.height === 0) return
+      document.querySelectorAll('[class*=token]').forEach((t) => {
+        const r = t.getBoundingClientRect()
+        if (r.width === 0) return
+        const dx = Math.max(r.left - b.right, b.left - r.right)
+        const dy = Math.max(r.top - b.bottom, b.top - r.bottom)
+        const d = Math.max(dx, dy)
+        if (window.__bannerGap && window.__bannerGap.gap <= d) return
+        window.__bannerGap = {
+          gap: Math.round(d * 10) / 10,
+          // 类名一起记下来。查过一次:压力测试下最近的那个「令牌」是个 36x36 的方块,
+          // 和战场上 49x52 的单位对不上 —— 光有坐标看不出量到的是不是中间态。
+          worst: `${t.className} ${Math.round(r.left)},${Math.round(r.top)}..${Math.round(r.right)},${Math.round(r.bottom)}`,
+        }
+      })
+    }
+    requestAnimationFrame(tick)
   })
 }
 
-// ⚠️ **这两档是覆盖到的全部,而不是「矮屏都没问题」。**
-// 2026-08-09 顺手试过 740x360 与 900x420,两档都稳定复现「横幅压着我方战线」——
-// 和这里修好的是同一个病(浮层按视口百分比落位),而解法不是再猜一个数。
-// 没有把它们留在套件里,是因为那会让 e2e 长期红;记在 ROADMAP 待办上。
+// 【这份档位表是这条不变量的全部证据,加档比调数值重要】
+// 曾经这里只有 844x390 与 926x428 两档,而 740x360 / 900x420 是稳定压着战线的 ——
+// 也就是说「矮屏修好了」这句话当时只对两个被挑出来的数成立。
+// 落点改成按几何量(src/ui/useBannerPlacement.ts)之后才敢把档位铺开:
+//   640x360 / 740x360 —— 安卓横屏最常见的一档,净空只有 16.6px,走的是「横着让开」那条分支
+//   844x390 / 900x420 / 926x428 —— iPhone 各代,净空 35~39px,横幅坐进带子正中
+// 两条分支都在表里,改了几何判据而只顾一边的话,另一边当场红。
 for (const [w, h] of [
+  [640, 360],
+  [740, 360],
   [844, 390],
+  [900, 420],
   [926, 428],
 ] as const) {
-  test(`手机横屏 ${w}x${h}:回合横幅不压在任何令牌上`, async ({ page }) => {
+  test(`手机横屏 ${w}x${h}:回合横幅与战线之间留得出余量`, async ({ page }) => {
     await seedUnlockedProfile(page)
+    await installGapProbe(page)
     await page.setViewportSize({ width: w, height: h })
     await intoPuzzle(page)
-    await waitForBanner(page)
-    const r = await overlaps(page)
-    expect(r.banner, '横幅没渲染出来 —— 这条就没在验什么了').toBe(true)
-    expect(r.hits, `横幅压着这些令牌:${r.hits.join(' ')}`).toEqual([])
+    // 横幅可见只是**开始采样**的信号,不是采样本身 —— 数据在探针里。
+    await page.locator(BANNER).first().waitFor({ state: 'visible', timeout: 10_000 })
+    await page.waitForFunction(() => window.__bannerGap !== undefined, undefined, {
+      timeout: 10_000,
+    })
+    const r = (await page.evaluate(() => window.__bannerGap)) as GapProbe
+    expect(
+      r.gap,
+      `横幅与最近的令牌一度只隔 ${r.gap}px(要求全程 ≥${MIN_GAP}):${r.worst}`,
+    ).toBeGreaterThanOrEqual(MIN_GAP)
   })
 }
 

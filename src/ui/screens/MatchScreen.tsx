@@ -10,6 +10,7 @@ import type {
 } from '../../engine/types'
 import { legalCommands } from '../../engine/legal'
 import { skyOf } from '../../engine/resolve'
+import { useBannerPlacement } from '../useBannerPlacement'
 import { useFlip } from '../useFlip'
 import { SKY_SPAN } from '../../engine/types'
 import { SKY_COLOR, SKY_GLYPH, SKY_NAME } from '../doctrineColors'
@@ -310,6 +311,12 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
     const timer = window.setTimeout(() => setFoeBanner(0), 1400)
     return () => window.clearTimeout(timer)
   }, [foeTurnNo])
+
+  // 矮屏上横幅的落点由两排令牌之间的净空算出来(见 useBannerPlacement)。
+  const bannerRef = useRef<HTMLDivElement>(null)
+  const foeBannerRef = useRef<HTMLDivElement>(null)
+  useBannerPlacement(bannerRef, foeRowRef, myRowRef, turnBanner)
+  useBannerPlacement(foeBannerRef, foeRowRef, myRowRef, foeBanner)
 
   // Esc 取消选择
   useEffect(() => {
@@ -862,7 +869,13 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
         <div key={`sweep-${turnBanner}`} className={styles.turnSweep} aria-hidden="true" />
       )}
       {turnBanner > 0 && myTurn && (
-        <div key={turnBanner} className={styles.turnBanner} role="status" aria-live="polite">
+        <div
+          key={turnBanner}
+          ref={bannerRef}
+          className={styles.turnBanner}
+          role="status"
+          aria-live="polite"
+        >
           {t('轮到你了', 'Your Turn')}
         </div>
       )}
@@ -878,6 +891,7 @@ export function MatchScreen({ onExit }: MatchScreenProps) {
       {foeBanner > 0 && (
         <div
           key={`fbanner-${foeBanner}`}
+          ref={foeBannerRef}
           className={`${styles.turnBanner} ${styles.bannerFoe}`}
           role="status"
           aria-live="polite"
