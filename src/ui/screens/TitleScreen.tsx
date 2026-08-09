@@ -24,7 +24,9 @@ import { useHistory } from '../../app/historyStore'
 import { useTower } from '../../app/towerStore'
 import { useStreak } from '../../app/streakStore'
 import { useWarMerit } from '../../app/useWarMerit'
-import { HISTORY_BATTLES } from '../../content/historyBattles'
+// 标题页只要一个分母。引轻量索引而不是 historyBattles ——
+// 后者带着 35.4KB 的战役定义(牌组/修正/态势文案),而这里只显示「5/18」。
+import { HISTORY_BATTLE_COUNT } from '../../content/historyIndex'
 import { ACHIEVEMENTS, useAchievements } from '../../app/achievementStore'
 import type { DeckList } from '../../content/decks'
 
@@ -548,8 +550,8 @@ export function TitleScreen({ onStart, onNavigate }: TitleScreenProps) {
             onNavigate?.('history')
           }}
         >
-          {historyDone < HISTORY_BATTLES.length
-            ? t(`名局重现 ${historyDone}/${HISTORY_BATTLES.length}`, `Great Battles ${historyDone}/${HISTORY_BATTLES.length}`)
+          {historyDone < HISTORY_BATTLE_COUNT
+            ? t(`名局重现 ${historyDone}/${HISTORY_BATTLE_COUNT}`, `Great Battles ${historyDone}/${HISTORY_BATTLE_COUNT}`)
             : t('名局重现 ✦', 'Great Battles ✦')}
         </button>
       </div>

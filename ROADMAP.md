@@ -1597,8 +1597,19 @@ ifTurnAtLeast 1 张 · ifEnemyHeroHpBelow 1 张 · ifTroopCount 2 张
     5. **在外面等、进去量一次**:等到了不代表量得到。会消失的东西要在页面内采样。
 
     第 4 条是通用教训:e2e 里任何「第一个 / 最新的 / 今天的」都是隐形随机源。
-    ⏳ 剩下的:`modes.spec` 与 `puzzle-share.spec` 历史上出现过「重试才过」,
-    这一轮整套跑没有复现,但也没有专门压过 —— 按上面五层去查。
+
+    ⏳ **剩下的那一类,有了一条很具体的线索(2026-08-09,三次观测)。**
+    模式一致得可疑:**每次 `npm run build` 或改过源码之后的第一次整套跑**
+    会有 2~3 条 flaky,而**紧接着重跑一次就是干净的 81/81**;
+    报错永远是 `expect(locator).toBeVisible()` / `element(s) not found`,
+    从来不是「内容不对」那一类。
+    怀疑是 playwright 的 webServer 复用了已在跑的 vite dev server
+    (`reuseExistingServer: true`),源码一变它重新预构建依赖并**整页重载**,
+    正好打断当时在跑的那条用例。
+    没有坐实,所以没动;要查的话两条路:
+    - 加一段 globalSetup 先打开一次首页,把重载吃掉,再开跑
+    - 或者让 e2e 跑**构建产物**(`vite preview`)而不是 dev server ——
+      顺带也更贴近玩家实际拿到的东西,代价是每次都得先 build
 
 50. ✅ **六张卡带着一条恒等于空操作的 `draw: 0`**(2026-08-09 做完)
 
@@ -1662,8 +1673,30 @@ ifTurnAtLeast 1 张 · ifEnemyHeroHpBelow 1 张 · ifTroopCount 2 张
     结构上的根子是一句话:**TitleScreen 为了显示「群雄逐鹿 12/32」这样的进度角标,
     急加载了每个模式的 store,而每个 store 又在模块顶层 import 自己那份内容数据。**
     TitleScreen 自己只用到 `BOSSES.length` / `HISTORY_BATTLES.length` 两个数,
-    但 store 的 action(开一关、结算一阶)确实要数据,所以不是把两个常数抽出来就完事 ——
-    要动的是五个 store 的加载时机,得一个一个来,每个都过冒险/登楼/远征那几道闸门。
+    但 store 的 action(开一关、结算一阶)确实要数据,所以不是把两个常数抽出来就完事。
+
+    **✅ 第一刀已经开完:`historyStore`(2026-08-09)**
+
+    | | 主包 | 合计首屏 |
+    |---|---|---|
+    | 之前 | 189.8 / 190 | 387.0 / 400 |
+    | 之后 | **180.3** / 190 | **377.5** / 400 |
+
+    真减 9.5 KB gzip(不是换个文件装 —— 合计跟着一起降了),余量 13.0 → 22.5 KB。
+
+    做法**不是**把 store 改成异步,而是查清楚它到底要什么:
+    `historyStore` 从 35.4KB 的名局定义里只取三样 —— id 存不存在、发多少功勋/卡包、
+    有没有逆位/分歧点。牌组、修正、态势文案一个字段都没碰。
+    于是抽出 `content/historyIndex.ts`(18 行,一场一行),store 与标题页只引它;
+    重的那一份现在只有懒加载的三屏(名局/斩杀/讲堂)还引着。
+
+    ⚠️ 手写的投影会烂,所以 `historyIndex.test.ts` 逐场逐字段**双向**对拍:
+    多一场、少一场、奖励改了、新加了逆位而索引没跟上,四种都红。
+    没有这道闸门就别抽索引 —— 走样的表现是「标题页分母少一场、通关少发一个卡包」,
+    全是不崩不红的那一类。
+
+    剩下四个 store 同一个路子,按收益排:`campaignStore`(61.8KB,但被
+    bossRush/expedition/tower 四家共用,最麻烦)、`lethalStore`、`expeditionStore`。
 
     ⛔ 重新分块救不了,已经量过两次:见第 50 条末尾(overrides)与本条上半(modes)。
 

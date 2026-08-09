@@ -1,7 +1,11 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { DIVERGENCE_BY_BATTLE, REVERSE_BY_BATTLE } from '../content/historyBattles'
-import { BATTLES_BY_ID } from '../content/historyBattles'
+// 【只引轻量索引,不引 historyBattles】
+// 这个 store 从名局数据里只取三样:id 存不存在、发多少奖、有没有逆位/分歧点。
+// 而它是**首屏就要加载的**(标题页要显示「名局重现 5/18」),
+// 引重的那一份等于把 35.4KB 的战役定义(牌组/修正/态势文案)也拖进首屏主包。
+// 索引与真数据由 historyIndex.test.ts 逐场逐字段对拍,走样当场红。
+import { HISTORY_INDEX } from '../content/historyIndex'
 import { useCollection } from './collectionStore'
 import { useAchievements } from './achievementStore'
 import { safeStorage } from './safeStorage'
@@ -52,15 +56,15 @@ export const useHistory = create<HistoryState>()(
 
       // 逆位要先正位通关才解锁 —— 先把这一仗按史实打赢一次,再来问「反过来呢」
       isReverseUnlocked(battleId) {
-        return get().cleared.includes(battleId) && Boolean(REVERSE_BY_BATTLE[battleId])
+        return get().cleared.includes(battleId) && HISTORY_INDEX[battleId]?.reverse !== undefined
       },
 
       isDivergeUnlocked(battleId) {
-        return get().cleared.includes(battleId) && Boolean(DIVERGENCE_BY_BATTLE[battleId])
+        return get().cleared.includes(battleId) && HISTORY_INDEX[battleId]?.diverge !== undefined
       },
 
       begin(battleId, reverse = false, diverge = false) {
-        if (!BATTLES_BY_ID[battleId]) return false
+        if (!HISTORY_INDEX[battleId]) return false
         if (reverse && !get().isReverseUnlocked(battleId)) return false
         if (diverge && !get().isDivergeUnlocked(battleId)) return false
         set({ active: battleId, activeReverse: reverse, activeDiverge: diverge })
@@ -73,39 +77,39 @@ export const useHistory = create<HistoryState>()(
         if (!active) return null
         set({ active: null, activeReverse: false, activeDiverge: false })
         if (!win) return null
-        const battle = BATTLES_BY_ID[active]
+        const battle = HISTORY_INDEX[active]
         if (!battle) return null
         // 逆位走自己那条账:只给功勋不给卡包(与关底试炼同一条原则 ——
         // 卡包产出会冲击「一局一包」的基线),也不 bump historyCleared:
         // 那条成就数的是战役数,不是打法数。
         if (activeReverse) {
-          const rev = REVERSE_BY_BATTLE[active]
-          if (!rev || reversed.includes(active)) return null
+          const rev = battle.reverse
+          if (rev === undefined || reversed.includes(active)) return null
           set({ reversed: [...reversed, active] })
           useCollection.setState({
-            merit: useCollection.getState().merit + rev.rewardMerit,
+            merit: useCollection.getState().merit + rev,
           })
-          return { merit: rev.rewardMerit, packs: 0 }
+          return { merit: rev, packs: 0 }
         }
         // 分歧点同样走「只给功勋」那条账,理由与逆位一字不差
         if (activeDiverge) {
-          const div = DIVERGENCE_BY_BATTLE[active]
+          const div = battle.diverge
           const done = get().diverged ?? []
-          if (!div || done.includes(active)) return null
+          if (div === undefined || done.includes(active)) return null
           set({ diverged: [...done, active] })
           useCollection.setState({
-            merit: useCollection.getState().merit + div.rewardMerit,
+            merit: useCollection.getState().merit + div,
           })
-          return { merit: div.rewardMerit, packs: 0 }
+          return { merit: div, packs: 0 }
         }
         if (cleared.includes(active)) return null // 重打不再发奖
         set({ cleared: [...cleared, active] })
         useAchievements.getState().bump('historyCleared')
-        useCollection.getState().grantPacks(battle.rewardPacks)
+        useCollection.getState().grantPacks(battle.packs)
         useCollection.setState({
-          merit: useCollection.getState().merit + battle.rewardMerit,
+          merit: useCollection.getState().merit + battle.merit,
         })
-        return { merit: battle.rewardMerit, packs: battle.rewardPacks }
+        return { merit: battle.merit, packs: battle.packs }
       },
 
       abandon() {
