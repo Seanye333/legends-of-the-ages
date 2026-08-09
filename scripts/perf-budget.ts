@@ -86,10 +86,18 @@ console.log(`  ${kb(totalRaw)}  合计原始`)
 // 每次都只涨一点点)。按 chunk 钉基线,谁胖了当场看得见。
 //
 // 钉的是**上限不是等值**:留 15% 余量,免得改一行文案就红。
+//
+// **首屏的每一个文件都得在这张表上。** 漏一个不是漏报,是那一块不受任何约束 ——
+// 而且改一行 manualChunks 就能把胖的部分挪进一个没人管的新 chunk,
+// 让每条基线一起变绿(实测过,见 perfBudgetGate.ts 文件头)。判定在那边。
 const CHUNK_CEILING: ChunkCeiling[] = [
   { re: /\/assets\/index-.*\.js$/, ceilKB: 190, label: '首屏主包' },
   { re: /\/assets\/content-.*\.js$/, ceilKB: 150, label: '内容层(卡池 + 覆盖表)' },
   { re: /\/assets\/vendor-.*\.js$/, ceilKB: 75, label: '第三方' },
+  { re: /\/assets\/.*\.css$/, ceilKB: 12, label: '样式' },
+  // 0.1KB 的 PWA 注册脚本。写这一条不是因为它会胖,是因为「表要盖全」——
+  // 留一个白名单式的例外,下一个人就会照着再留一个。
+  { re: /registerSW\.js$/, ceilKB: 1, label: 'PWA 注册脚本' },
 ]
 
 // 判定逻辑在 perfBudgetGate.ts —— 抽出去才验得了「该红时红、不该红时不红」。
@@ -119,10 +127,15 @@ for (const c of verdict.chunks) {
   console.log(`  ${mark} ${c.label.padEnd(20)} ${c.kb!.toFixed(1)} / ${c.ceilKB} KB`)
 }
 
-const chunkProblems = verdict.problems.filter((p) => p.startsWith('chunk'))
-if (chunkProblems.length > 0) {
+// 【按 kind 排除,不按前缀匹配】
+// 这里原来是 `problems.filter(p => p.startsWith('chunk'))`,于是判定层新加的
+// 「有 chunk 没人管」那一类**报了却被这一行丢掉**,闸门照样绿(2026-08-09 实测踩到)。
+// 现在写成「除了上面已单独处理的总量,其余全报」—— 判定层将来再加类别,
+// 默认会被报出来,而不是默认被吃掉。
+const rest = verdict.problems.filter((p) => p.kind !== 'total')
+if (rest.length > 0) {
   console.error('')
-  for (const p of chunkProblems) console.error(`✗ ${p}`)
+  for (const p of rest) console.error(`✗ ${p.msg}`)
   console.error('\n要么瘦身,要么把基线连同理由一起调高;基线失配就改正则或删掉它。')
   process.exit(1)
 }
