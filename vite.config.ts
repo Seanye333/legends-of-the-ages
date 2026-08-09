@@ -26,6 +26,15 @@ export default defineConfig({
           // 产物里首屏照样下载,而且没有任何地方会报错。
           if (id.includes('/content/generated/lore.gen')) return 'lore'
           if (id.includes('/content/generated/')) return 'content'
+          // ⛔ **别把 overrides 也归到 content**(2026-08-09 量过,反效果)
+          // 动机是合理的:上面那条基线的标签写着「内容层(卡池 + 覆盖表)」,
+          // 而规则只收 generated/,覆盖表其实一直待在首屏主包里,
+          // 把主包顶到贴着 190KB 的上限(189.8)。
+          // 但加一行 `if (id.includes('/content/overrides/')) return 'content'`
+          // 实测:主包 189.8 → 109.9,内容层 128.7 → **233.1**,合计 390 → 411.5KB,
+          // 反而超总预算 11.5KB。覆盖表挨着 cards.gen 那一整串 JSON 压得更差 ——
+          // gzip 是**按 chunk 各压各的**,分开反而各自有更合身的字典。
+          // 也就是说现在这个分法不是历史遗留,是它本来就更省。
         },
       },
     },

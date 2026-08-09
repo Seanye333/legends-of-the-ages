@@ -7,6 +7,7 @@
 // 抽出来之后:price-cards.ts 只管排版和打印,fit-price.ts 拿它跟实测 Δ 对拟合,
 // pricing.test.ts 直接钉住那几条最容易在重构里被改坏的性质。
 import type { CardDef, EffectOp, EffectScript } from '../src/engine/types'
+import { isNoOp } from '../src/content/noOp'
 
 /**
  * 身材那三个系数。**和效果的点数表一样,它也是数据** ——
@@ -434,28 +435,15 @@ export function unusedWeights(cards: CardDef[]): (keyof Weights)[] {
 /**
  * 这一步是不是**恒等于什么都不做**(量为 0)。
  *
+ * 判据本体搬去了 `src/content/noOp.ts` —— 那边还有第三个用处(合并层把它剥掉),
+ * 而那一处在浏览器包里,进不了 scripts/。三处共用一份定义,理由见那个文件的注释。
+ * 这里保留同名导出,是因为 contentRules 等处按老路径引它。
+ *
  * `lint-content` 的 `no-op` 规则报的是同一件事,那边负责让它可见,
  * 这里负责让它**不进统计**。两处都在,是因为它们服务于不同的问题:
  * 一个是「卡池里有没有脏数据」,一个是「校准的分母对不对」。
  */
-const ZERO_FIELDS: Record<string, string[]> = {
-  damage: ['amount'], heal: ['amount'], aoeDamage: ['amount'], damageAll: ['amount'],
-  damagePer: ['amount'], gainArmor: ['amount'], gainMana: ['amount'], gainMorale: ['amount'],
-  gainSupply: ['amount'], reduceCost: ['amount'],
-  draw: ['count'], summon: ['count'], summonForEnemy: ['count'], tutor: ['count'],
-  recruit: ['count'], discardRandom: ['count'], stealCard: ['count'], resurrect: ['count'],
-  addToHand: ['count'], mill: ['count'], shuffleIntoDeck: ['count'],
-  // 增益两项都为 0 才算废;+1/+0 是有意义的
-  buffStats: ['attack', 'health'], buffPer: ['attack', 'health'],
-}
-
-export function isNoOp(op: { op: string }): boolean {
-  const fields = ZERO_FIELDS[op.op]
-  if (!fields) return false
-  const rec = op as unknown as Record<string, unknown>
-  const vals = fields.map((f) => rec[f]).filter((v): v is number => typeof v === 'number')
-  return vals.length > 0 && vals.every((v) => v === 0)
-}
+export { isNoOp }
 
 /**
  * 一张卡用到了哪些 op(去重)。

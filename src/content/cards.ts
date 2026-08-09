@@ -1,6 +1,7 @@
 import type { CardDef, CardLibrary, Keyword, LocalizedText } from '../engine/types'
 import { CLAN_ATTACK, CLAN_HEALTH } from '../engine/types'
 import { GENERATED_CARDS } from './generated/cards.gen'
+import { stripNoOps } from './noOp'
 import { SIGNATURE_OVERRIDES } from './overrides/signature'
 import { SIGNATURE_SKILLS } from './overrides/signature-skills'
 import { STRATAGEMS } from './overrides/stratagems'
@@ -236,7 +237,15 @@ function applyPack24(card: CardDef): CardDef {
 // 全卡池 = (生成默认值 ⊕ 各卡包覆盖) + 手工锦囊 + 第二~六卡包
 // 覆盖顺序:后者赢。各覆盖表刻意不与签名集重叠(只挑签名之外的花名册)。
 const MERGED_CARDS: CardDef[] = [
-  ...GENERATED_CARDS.map((card) => {
+  // 【先把生成层的空操作剥掉】(2026-08-09)
+  // 六张卡的战吼是 `[{gainSupply:1}, {draw:0}]` —— 王允 · 孫匡 · 張英 ·
+  // 陶應 · 劉範 · 楊復恭。`draw 0` 在对局里什么都不做,卡面也没提它
+  // (文案只写「屯糧 +1」),所以玩家看不见;但它会被按名字数进 `draw` 组,
+  // 给定价校准掺沙子,也让 lint-content 长期挂着六条 warn。
+  // 根子在素材源头的生成器,改那个要姊妹仓库 —— 这台机器上没有,
+  // 而合并层本来就是「改不动生成层时在这里改」的地方。
+  // **只对生成层用**:手写卡包改得动,该让 lint 直接报,不该被这里替它们擦干净。
+  ...GENERATED_CARDS.map(stripNoOps).map((card) => {
     // 白板补漏那一份和人工挑的那一份**走同一条追加路径**,
     // 但取值时前者让后者:VANILLA_FLAVOR 的判据是机械的(卡面为空),
     // FLAVOR_OVERRIDES 是人挑的,人挑的更该赢。
