@@ -3,7 +3,12 @@ import { persist } from 'zustand/middleware'
 // 只要一个关数。引轻量索引而不是 campaign —— 后者带着 61.8KB 的关底定义,
 // 而这个 store 是首屏就要加载的(见 content/campaignIndex.ts)。
 import { CAMPAIGN_BOSS_COUNT } from '../content/campaignIndex'
-import { RELICS, type RelicDef } from '../content/relics'
+// 【只引轻量索引,不引 relics】
+// 这个 store 对宝物只做一件事:按稀有度加权抽三件没拿过的。
+// 名字、说明、开局修正都是展示与结算时才要的,而那两处(ExpeditionScreen)是懒加载的;
+// store 却是首屏就要加载的(matchStore 与 useWarMerit 都引它)。
+// ⚠️ 顺序影响抽取结果 —— 下面的 LCG 按数组顺序累加权重。由 relicIndex.test.ts 逐位钉住。
+import { RELIC_INDEX, RELIC_RARITY_WEIGHT } from '../content/relicIndex'
 import { MODIFIERS_BY_ID, rollTwoModifiers } from '../content/expeditionModifiers'
 import { offerCards } from '../content/expeditionDraft'
 import { HEROES_BY_ID } from '../content/overrides/heroes'
@@ -21,8 +26,6 @@ import { safeStorage } from './safeStorage'
 // 而不是血线管理。这样单局仍是完整的一盘,不需要「残血硬撑」那套。
 
 // 抽取权重:越稀有越少见
-const RARITY_WEIGHT: Record<RelicDef['rarity'], number> = { rare: 6, epic: 3, legendary: 1 }
-
 export interface ExpeditionRun {
   heroId: string
   deck: string[]
@@ -63,7 +66,7 @@ interface ExpeditionState {
 
 // 确定性抽取:从 rngState 推出 3 个不重复、按稀有度加权的宝物(排除已拥有)
 function offerRelics(owned: string[], rngState: number): { offered: string[]; next: number } {
-  const pool = RELICS.filter((r) => !owned.includes(r.id))
+  const pool = RELIC_INDEX.filter((r) => !owned.includes(r.id))
   let s = rngState >>> 0
   const rand = () => {
     // 简单 LCG,足够给宝物加点随机;整趟可复现
@@ -73,11 +76,11 @@ function offerRelics(owned: string[], rngState: number): { offered: string[]; ne
   const picks: string[] = []
   const remaining = [...pool]
   while (picks.length < 3 && remaining.length > 0) {
-    const totalW = remaining.reduce((n, r) => n + RARITY_WEIGHT[r.rarity], 0)
+    const totalW = remaining.reduce((n, r) => n + RELIC_RARITY_WEIGHT[r.rarity], 0)
     let roll = rand() * totalW
     let idx = 0
     for (let i = 0; i < remaining.length; i++) {
-      roll -= RARITY_WEIGHT[remaining[i].rarity]
+      roll -= RELIC_RARITY_WEIGHT[remaining[i].rarity]
       if (roll <= 0) {
         idx = i
         break
