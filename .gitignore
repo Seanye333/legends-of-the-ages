@@ -22,3 +22,10 @@ server/.wrangler/
 # 而这个仓库的提交纪律是「按明确路径提交」(可能有另一个会话同时在改)。
 # 它是**本机的便利**,不是数据源 —— 权威数字仍然写在源码注释与 ROADMAP 里。
 .balance-baseline.json
+
+# 全池单卡 Δ 落盘(`SAMPLE=3000 GAMES=60 DUMP=.card-delta-dump.json npm run sim-cards`,
+# 约 5 小时 / 145,000 局)。它是 fit-price 唯一的**外部**真值 —— 定价表本身是
+# 从卡池反推卡池的,而这份 Δ 来自对局结果,不在那个环里。
+# 不入库的理由同上:一跑就重写,而且它是一次测量的快照,不是数据源;
+# 结论(哪几张越过校正线、复测多少)写进 ROADMAP 才算数。
+.card-delta-dump.json
