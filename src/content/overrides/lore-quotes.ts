@@ -1092,4 +1092,117 @@ export const LORE_OVERRIDES: Record<string, LoreOverride> = {
   'hist-xiang-yu': { arms: { zh: '烏騅馬', en: 'Wuzhui' } }, // 《史记·项羽本纪》「駿馬名騅」,正史
   'hist-yue-fei': { arms: { zh: '瀝泉槍', en: 'Liquan Spear' } }, // 《说岳全传》,小说
   'hist-yuchi-gong': { arms: { zh: '鋼鞭', en: 'Steel Whip' } }, // 《隋唐演义》
+  // ================= 2026-08-08 补的一批名言 =================
+  //
+  // 【标准没有放松,而且它这次真的砍掉了东西】
+  // 签名卡里缺名言的有 140 张。第一版草了 22 条,自查之后**只留下 12 条** ——
+  // 砍掉的那 10 条各自的理由值得写下来,因为它们是最容易混进来的几类:
+  //
+  //   · **不是他说的,是别人说他的**
+  //     郭子儀「國家再造,卿力也」是代宗**评价他**的话;
+  //     徐達「受命而出,成功而旋,不矜不伐」是《明史》的**史臣评语**。
+  //     `quote` 这个字段的意思是「他自己的声音」,放史评进去等于把字段的意思改了。
+  //   · **张冠李戴**
+  //     「明公擁百萬之眾,而少松江鱸魚」出自《后汉书》,是**曹操**说的,
+  //     左慈只答了一句「此可得也」。挂到左慈身上是把对话的两头接反了。
+  //   · **是叙述不是台词**
+  //     吳廣 那条「失期,法皆斬」是《陈涉世家》的**旁白**,不是谁说的话。
+  //   · **伪托**
+  //     張獻忠 的「七杀碑」文字来源存疑,和《入川題壁》是同一类 ——
+  //     文件头那句「伪托同样不算」写的就是这种。
+  //   · **我只是记得有这么回事,但复述不出原文**
+  //     虞允文 采石阵前那句、王世充 守洛阳那句、于吉 那句 —— 三条都属于这一档。
+  //     拿不准的宁可空着。
+  //
+  // 剩下 128 位大多是割据军阀、五代节度使、唐末流寇,汉文史料里只有事迹没有原话。
+  // 出处照旧标在注释里,不进游戏内文案。
+  'hist-mao-sui': {
+    // 《史记·平原君虞卿列传》,正史
+    quote: {
+      zh: '使遂蚤得處囊中,乃穎脫而出,非特其末見而已。',
+      en: 'Had I been put in the bag sooner, the whole awl would have come through — not merely its tip.',
+    },
+  },
+  'hist-su-qin': {
+    // 《史记·苏秦列传》,正史
+    quote: {
+      zh: '使我有洛陽負郭田二頃,吾豈能佩六國相印乎!',
+      en: 'Had I owned two acres of good land outside Luoyang, would I ever have worn the seals of six kingdoms?',
+    },
+  },
+  'hist-zhang-yi': {
+    // 《史记·张仪列传》:被笞归家问其妻,正史
+    quote: { zh: '視吾舌尚在不?足矣。', en: 'Look — is my tongue still there? Then it is enough.' },
+  },
+  'hist-fan-ju': {
+    // 《史记·范雎蔡泽列传》,正史
+    quote: {
+      zh: '一飯之德必償,睚眦之怨必報。',
+      en: 'A single meal given me will be repaid; a single hard look will be answered.',
+    },
+  },
+  'hist-li-si': {
+    // 《史记·李斯列传》:观仓鼠与厕鼠而叹,正史
+    quote: {
+      zh: '人之賢不肖譬如鼠矣,在所自處耳。',
+      en: 'A man is worthy or worthless like a rat — it depends only on where he places himself.',
+    },
+  },
+  'hist-fan-kuai': {
+    // 《史记·项羽本纪》鸿门宴,正史
+    quote: { zh: '臣死且不避,卮酒安足辭!', en: 'I do not flinch from death — why would I refuse a cup of wine?' },
+  },
+  'hist-sima-guang': {
+    // 《宋史·司马光传》,正史
+    quote: {
+      zh: '平生所為,未嘗有不可對人言者。',
+      en: 'In all my life I have done nothing I could not say aloud to another man.',
+    },
+  },
+  'hist-zhu-xi': {
+    // 朱熹《观书有感》
+    quote: {
+      zh: '問渠那得清如許?為有源頭活水來。',
+      en: 'How does the channel stay so clear? Because living water comes from the source.',
+    },
+  },
+  'hist-han-yu': {
+    // 韩愈《师说》开篇一句,唐代散文,传世
+    quote: {
+      zh: '師者,所以傳道受業解惑也。',
+      en: 'A teacher is one who passes on the way, imparts the craft, and resolves what puzzles you.',
+    },
+  },
+  'hist-huang-chao': {
+    // 黄巢《不第后赋菊》,传世归属
+    quote: {
+      zh: '待到秋來九月八,我花開後百花殺。',
+      en: 'Wait for autumn, the eighth of the ninth month — when my flower opens, the hundred flowers die.',
+    },
+  },
+  'gongsun-zan': {
+    // 《三国志·公孙瓒传》,正史
+    quote: {
+      zh: '昔謂天下事可指麾而定,今日視之,似不可也。',
+      en: 'I once thought the affairs of the realm could be settled with a wave of the hand. Looking at it now, it seems not.',
+    },
+  },
+  'hist-wang-xizhi': {
+    // 王羲之《兰亭集序》
+    quote: {
+      zh: '後之視今,亦猶今之視昔。',
+      en: 'Those who come after will look on us as we look on those before.',
+    },
+  },
+  'hist-wang-wei': {
+    // 王维《终南别业》
+    quote: { zh: '行到水窮處,坐看雲起時。', en: 'Walk to where the water ends; sit and watch the clouds rise.' },
+  },
+  'hist-bian-que': {
+    // 《韩非子·喻老》扁鹊见蔡桓公
+    quote: {
+      zh: '在骨髓,司命之所屬,無奈何也。',
+      en: 'Once it is in the marrow, it belongs to the Arbiter of Fate, and nothing can be done.',
+    },
+  },
 }
