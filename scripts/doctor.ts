@@ -104,17 +104,23 @@ if (bad > 0) {
 
 // ---- 闸门清单:跑之前先知道要等多久 ----
 // 这些数字是 2026-08-04 在一台 12 核 Windows 上量的,只用来估量级。
+//
+// ⚠️ **加了新闸门就加进这份清单。** 2026-08-09 的教训:`sim-history` 既不在这里、
+// 也不在 ROADMAP 的命令表里,于是没人跑它,于是它红了很久没人看见。
+// 一道闸门不在清单上,等于没有。
 console.log(`
 闸门(有明确 exit code):
   npm run build            类型检查 + 构建            ~40s
   npm test                 单测(含 server/)          ~45s
   npm run lint-content     卡池结构性自检              ~5s
+  npm run deck-stats       六套预组骨架自检            ~5s
   npm run perf-budget      首屏体积                    ~10s
   npm run replay-diff      引擎确定性对拍              ~10s
   npm run check-offline    PWA 断网可玩                ~10s
 
-平衡(五道全部并行,耗时是 10 线程实测;全套约 11 分钟,串行要 39 分钟):
-  npm run sim-campaign     冒险 24 关曲线    GAMES=240  ~4min   (串行 12min)
+平衡(六道全部并行,耗时是 10 线程实测;全套约 13 分钟,串行要 48 分钟):
+  npm run sim-campaign     冒险 32 关曲线    GAMES=240  ~4min   (串行 12min)
+  npm run sim-history      18 场名局难度     GAMES=240  ~2min   (串行 9min)
   npm run sim-firstplayer  先手优势/仪器自检 GAMES=400  ~2.5min (串行 5min)
   npm run sim-cards        单卡边际胜率      SAMPLE=12  ~2min   (扫全池另算)
   npm run sim-hero-mirror  备选主公技对镜    GAMES=400  ~1.7min (串行 8.5min)
