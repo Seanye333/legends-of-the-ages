@@ -101,6 +101,15 @@ export const HISTORY_BATTLES: HistoryBattle[] = [
       { zh: '召喚一個 0/4 的江東水寨(守護)。', en: 'Summon a 0/4 Jiangdong Stockade with Guard.' },
       [{ op: 'summon', defId: 'token-shui-zhai', count: 1 }],
     ),
+    // ⚠️ 这一关调不动,四根轴全量过了(2026-08-09),别再试:
+    //   · tier   7 档:92 / 100 / 81 / 83 / **61** / 92 / 94 —— 只有 0.60 一档落进带里
+    //   · hp     36/44/52:92 / 92 / 92(tier=0 时),0.60 档 61 / 61 / 59 —— 零效果
+    //   · 敌方护甲 2→16(八倍):61% → 61% —— 一次性缓冲扛不住二十五回合的对局
+    //   · 玩家那张额外起手牌:拿掉只值 1pp,和噪声分不开 —— **试过,已撤回**
+    // 结论不是「还没找到旋钮」,是**这套旋钮的粒度就这么粗**:
+    // tier 是唯一有分量的一根,而它只有七个离散取值,取到哪档就是哪档的胜率,
+    // 档与档之间没有可以微调的东西。63~64% 就是 0.60 那副牌的落点,它在带内。
+    // 真要再往下压,得动主公技或换一档 doctrine —— 那是重做这一关,不是调参。
     enemyModifiers: { startArmor: 2 },
     playerModifiers: { startArmor: 3, bonusHandSize: 1 },
     rewardMerit: 160,
@@ -446,8 +455,8 @@ export const HISTORY_BATTLES: HistoryBattle[] = [
       en: 'Eight thousand Song troops pinned your hundred thousand horse for forty-eight days. Han Shizhong holds the river to the death — can you break this wall of water?',
     },
     situation: {
-      zh: '据江死守:敌方开局带一座 0/4 守护水寨、披 4 甲 —— 一堵不还手却极难凿穿的墙。',
-      en: 'Holding the river: the enemy opens with a 0/4 Guard Stockade and 4 Armor — a wall that never strikes but scarcely breaks.',
+      zh: '据江死守:敌方开局带两座 0/4 守护水寨、披 4 甲 —— 一堵不还手却极难凿穿的墙。',
+      en: 'Holding the river: the enemy opens with two 0/4 Guard Stockades and 4 Armor — a wall that never strikes but scarcely breaks.',
     },
     heroId: 'hist-han-shizhong',
     doctrine: 'royal',
@@ -462,7 +471,10 @@ export const HISTORY_BATTLES: HistoryBattle[] = [
         { op: 'grantKeyword', keyword: 'guard', target: 'chosenFriendlyGeneral' },
       ],
     ),
-    enemyModifiers: { startTokens: ['token-shui-zhai'], startArmor: 4 },
+    // 2026-08-09:水寨从一座加到两座。同样是量出来的 —— 敌方护甲 4→16 只把这一关
+    // 从 58% 挪到 56%(一次性缓冲扛不住二十五回合),而一座 0/4 守护是**每回合都在**的身材。
+    // 八千人困十万金骑四十八日,两座也更对得上 situation 里那句「一堵极难凿穿的墙」。
+    enemyModifiers: { startTokens: ['token-shui-zhai', 'token-shui-zhai'], startArmor: 4 },
     rewardMerit: 360,
     rewardPacks: 2,
   },

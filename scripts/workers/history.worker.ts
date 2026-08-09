@@ -25,6 +25,12 @@ const BOSS_AI = process.env.BOSS_AI === 'general' ? AI_LEVELS.general : AI_NORMA
 export interface BattleOverride {
   hp?: number
   tier?: number
+  /**
+   * 敌方开局护甲。第三个旋钮,存在的理由是前两个会用尽:
+   * 笠澤之戰 的 tier × hp 网格 21 格里只有一格落在带内,再怎么搜也是那一格。
+   * 开局态势是**设计量**不是调参量,所以它不进默认网格 —— 要用得显式写 `EARMOR=`。
+   */
+  eArmor?: number
 }
 
 export function playBattle(
@@ -49,7 +55,14 @@ export function playBattle(
     first,
     heroPowers: [myHero?.power, battle.power],
     heroHps: [myHero?.hp ?? START_HP, ov.hp ?? battle.hp],
-    modifiers: battleModifiers(battle), // ← 名战的灵魂:开局态势
+    // ← 名战的灵魂:开局态势。eArmor 只覆盖敌方那一项,其余(水寨、额外手牌)原样保留。
+    modifiers:
+      ov.eArmor === undefined
+        ? battleModifiers(battle)
+        : (() => {
+            const [pm, em] = battleModifiers(battle)
+            return [pm, { ...em, startArmor: ov.eArmor }] as ReturnType<typeof battleModifiers>
+          })(),
     objective: battle.objective, // 目标版(守成等);普通场为 undefined
   }
   let state = createGame(cfg, CARDS_BY_ID)
