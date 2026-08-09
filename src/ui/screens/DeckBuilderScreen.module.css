@@ -124,7 +124,7 @@
 
 .deleteBtn {
   font-size: 12px;
-  color: #c88;
+  color: var(--cinnabar-61);
   background: none;
   border: 1px solid rgba(160, 80, 70, 0.5);
   border-radius: 5px;
@@ -304,7 +304,7 @@
 }
 
 .deckRow:hover {
-  border-color: #c88;
+  border-color: var(--cinnabar-61);
 }
 
 /* 行首立绘:直径对齐费用圆点(20px),所以行高一像素都不涨。
@@ -326,7 +326,7 @@
   font-size: 12px;
   font-weight: 700;
   color: var(--ash-99);
-  background: #2359a8;
+  background: var(--azure-34);
   flex-shrink: 0;
 }
 
@@ -392,7 +392,7 @@
 
 /* 偏低标黄、偏高标青 —— 都不是错,只是提示「这项和健康的牌不一样」 */
 .low b {
-  color: #e0a84a;
+  color: var(--brass-69);
 }
 
 .high b {
@@ -464,7 +464,7 @@
    会原样保留,所以**不要**在这里重新声明它。保存成功原来只是这行字硬切出现。 */
 .savedOk {
   font-size: 13px;
-  color: #a8d89a;
+  color: var(--jade-77);
   animation: panelRise var(--dur-med) var(--ease-out) both;
 }
 

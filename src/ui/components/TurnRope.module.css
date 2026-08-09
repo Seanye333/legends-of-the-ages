@@ -16,7 +16,7 @@
   position: absolute;
   inset: 0 auto 0 0;
   border-radius: 3px;
-  background: linear-gradient(90deg, var(--brass-42), var(--gold-mid) 70%, #ffe6a8);
+  background: linear-gradient(90deg, var(--brass-42), var(--gold-mid) 70%, var(--brass-108));
   transition: width 0.25s linear;
 }
 
@@ -28,7 +28,7 @@
   height: 9px;
   margin-top: -4.5px;
   border-radius: 50%;
-  background: radial-gradient(circle, var(--brass-97) 0%, #ffb648 55%, rgba(255, 120, 30, 0) 75%);
+  background: radial-gradient(circle, var(--brass-97) 0%, var(--brass-81) 55%, rgba(255, 120, 30, 0) 75%);
   filter: drop-shadow(0 0 5px rgba(255, 170, 60, 0.9));
 }
 
@@ -45,16 +45,16 @@
 }
 
 .urgent .fuse {
-  background: linear-gradient(90deg, var(--cinnabar-23), #d4472e 70%, #ff9a7a);
+  background: linear-gradient(90deg, var(--cinnabar-23), var(--cinnabar-44) 70%, var(--cinnabar-72));
 }
 
 .urgent .spark {
-  background: radial-gradient(circle, #fff0e8 0%, #ff6a3c 55%, rgba(255, 60, 20, 0) 75%);
+  background: radial-gradient(circle, var(--brass-111) 0%, var(--cinnabar-57) 55%, rgba(255, 60, 20, 0) 75%);
   animation: sparkPulse 0.5s ease-in-out infinite;
 }
 
 .urgent .count {
-  color: #ff8a6a;
+  color: var(--cinnabar-67);
 }
 
 @keyframes sparkPulse {

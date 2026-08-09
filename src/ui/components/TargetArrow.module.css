@@ -21,7 +21,7 @@
 
 .line {
   fill: none;
-  stroke: #f0cf7e;
+  stroke: var(--brass-98);
   stroke-width: 4;
   stroke-linecap: round;
   /* 虚线 + 位移动画:线本身在**流动**,方向感比静态线强得多。

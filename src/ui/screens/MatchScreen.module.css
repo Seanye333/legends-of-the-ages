@@ -215,7 +215,7 @@
 .turnNo {
   font-family: var(--font-display);
   font-size: clamp(10px, 1.8vh, 13px);
-  color: #c8ae6e;
+  color: var(--brass-71);
   letter-spacing: 0.12em;
   white-space: nowrap;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
@@ -225,7 +225,7 @@
 .objective {
   font-family: var(--font-display);
   font-size: clamp(10px, 1.7vh, 13px);
-  color: #e6c878;
+  color: var(--brass-88);
   letter-spacing: 0.1em;
   white-space: nowrap;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
@@ -236,11 +236,11 @@
   position: relative;
   font-family: var(--font-display);
   font-weight: 700;
-  border: 1px solid #33240c;
+  border: 1px solid var(--brass-34);
   background:
     linear-gradient(180deg, rgba(255, 244, 210, 0.42), rgba(255, 244, 210, 0) 46%),
-    linear-gradient(180deg, #f0cf7e, #c89a3e 55%, #a1762a);
-  color: #33240c;
+    linear-gradient(180deg, var(--brass-98), var(--brass-63) 55%, var(--brass-58));
+  color: var(--brass-34);
   border-radius: 9px;
   padding: clamp(7px, 1.5vh, 11px) clamp(11px, 2vw, 19px);
   font-size: clamp(12px, 2.1vh, 16px);
@@ -386,7 +386,7 @@
   box-shadow:
     inset 0 1px 0 rgba(255, 200, 190, 0.2),
     0 4px 14px rgba(0, 0, 0, 0.55);
-  color: #ffd8d0;
+  color: var(--cinnabar-88);
   border-radius: 9px;
   padding: 6px 16px;
   font-size: clamp(11px, 2vh, 14px);
@@ -872,7 +872,7 @@
 .panelSteps li {
   font-size: 14px;
   line-height: 1.5;
-  color: var(--parchment, #ece0c6);
+  color: var(--parchment, var(--brass-105));
 }
 .panelSteps li::marker {
   color: var(--gold-bright, var(--brass-70));
@@ -1204,8 +1204,8 @@
       rgba(0, 0, 0, 0.02) 3px 7px,
       rgba(0, 0, 0, 0) 7px 16px
     ),
-    linear-gradient(180deg, #3a2a15 0%, #2c1f0f 42%, #241a0c 72%, #170f06 100%),
-    #150e06;
+    linear-gradient(180deg, var(--brass-40) 0%, var(--brass-28) 42%, var(--brass-25) 72%, var(--ash-16) 100%),
+    var(--ash-17);
 }
 
 .screen[data-table='silk'] {
@@ -1221,8 +1221,8 @@
       rgba(232, 216, 176, 0.026) 0 1px,
       rgba(0, 0, 0, 0) 1px 4px
     ),
-    linear-gradient(180deg, #3d3524 0%, #2f2819 46%, #241e12 100%),
-    #1a150d;
+    linear-gradient(180deg, var(--brass-44) 0%, var(--brass-35) 46%, var(--brass-27) 100%),
+    var(--ash-22);
 }
 
 /* ==================== 第二轮:战斗的重量 ==================== */
@@ -1356,7 +1356,7 @@
   margin: -5px 0 0 -5px;
   border-radius: 50%;
   pointer-events: none;
-  background: radial-gradient(circle, #fff8e0, rgba(255, 222, 130, 0.9) 40%, transparent 75%);
+  background: radial-gradient(circle, var(--brass-112), rgba(255, 222, 130, 0.9) 40%, transparent 75%);
   animation: sparkCore 0.38s ease-out both;
 }
 
@@ -1501,7 +1501,7 @@
 }
 
 .bannerFoe {
-  color: #f2b3a4;
+  color: var(--cinnabar-77);
   text-shadow:
     0 2px 10px rgba(0, 0, 0, 0.9),
     0 0 30px rgba(197, 59, 44, 0.4);
@@ -1612,7 +1612,7 @@
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: radial-gradient(circle, #ffcf7a, #e06428 70%);
+  background: radial-gradient(circle, var(--brass-99), var(--cinnabar-53) 70%);
   box-shadow: 0 0 6px 1px rgba(224, 100, 40, 0.6);
   animation: emberRise 7s ease-in infinite;
 }
@@ -1669,7 +1669,7 @@
   width: 3px;
   height: 3px;
   border-radius: 50%;
-  background: #f5e6a0;
+  background: var(--brass-106);
   box-shadow: 0 0 7px 2px rgba(240, 222, 140, 0.55);
   animation: fireflyDrift 11s ease-in-out infinite;
 }

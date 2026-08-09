@@ -85,7 +85,7 @@
   border: 1px solid rgba(212, 168, 74, 0.4);
   background:
     repeating-linear-gradient(45deg, rgba(60, 44, 22, 0.6) 0 6px, rgba(38, 28, 14, 0.6) 6px 12px),
-    #1a1208;
+    var(--brass-08);
   animation: backPulse 2.2s ease-in-out infinite;
 }
 

@@ -110,7 +110,7 @@
   font-size: 0.82rem;
   letter-spacing: 0.18em;
   font-weight: 700;
-  color: #e8c86a;
+  color: var(--brass-87);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
   white-space: nowrap;
 }
@@ -318,7 +318,7 @@
 }
 
 .hp {
-  color: #e88a7a;
+  color: var(--cinnabar-64);
 }
 
 .clearedTag {
@@ -642,7 +642,7 @@
   border: 1px solid rgba(240, 214, 138, 0.55);
   background:
     radial-gradient(ellipse at 50% 0%, rgba(240, 214, 138, 0.2), rgba(0, 0, 0, 0) 70%),
-    linear-gradient(180deg, #2e2413, #1a1409);
+    linear-gradient(180deg, var(--brass-32), var(--ash-21));
   color: var(--gold-bright);
   cursor: pointer;
   box-shadow: 0 0 22px -6px rgba(240, 214, 138, 0.7);
@@ -709,8 +709,8 @@
   padding: 10px 16px;
   border-radius: 9px;
   border: 1px solid rgba(120, 170, 200, 0.6);
-  background: linear-gradient(180deg, #14313f, #0a1820);
-  color: #a8d0e0;
+  background: linear-gradient(180deg, var(--cyan-16), var(--azure-08));
+  color: var(--cyan-77);
   font-family: var(--font-display);
   font-size: clamp(13px, 3.4vw, 15px);
   letter-spacing: 0.1em;
@@ -948,7 +948,7 @@
   height: 100%;
   width: calc(var(--hp, 1) * 100%);
   border-radius: inherit;
-  background: linear-gradient(90deg, #c5533b, var(--gold-mid) 62%, var(--brass-83));
+  background: linear-gradient(90deg, var(--cinnabar-45), var(--gold-mid) 62%, var(--brass-83));
   box-shadow: 0 0 8px rgba(197, 83, 59, 0.5);
   transition: width var(--dur-med) var(--ease-out);
 }

@@ -133,7 +133,7 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #d8e4c4, var(--jade) 78%);
+  background: radial-gradient(circle at 35% 30%, var(--jade-86), var(--jade) 78%);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
   transition: transform var(--dur-fast) var(--ease-out);
 }

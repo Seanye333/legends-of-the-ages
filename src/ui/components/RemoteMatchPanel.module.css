@@ -128,7 +128,7 @@
   padding: 10px;
   border-radius: 8px;
   border: 1px solid var(--brass-82);
-  background: linear-gradient(180deg, var(--brass-36), #503810);
+  background: linear-gradient(180deg, var(--brass-36), var(--brass-46));
   color: var(--gold-bright);
   font-size: 14px;
   letter-spacing: 0.06em;

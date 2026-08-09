@@ -106,7 +106,7 @@
   font-family: var(--font-display);
   font-size: 12px;
   letter-spacing: calc(0.2em * var(--ls-wide));
-  color: #7a6a4a;
+  color: var(--brass-53);
   text-align: center;
   padding: 10px 0;
 }

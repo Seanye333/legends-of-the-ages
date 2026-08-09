@@ -92,11 +92,11 @@
 }
 
 .row:nth-child(2) .rank {
-  color: #c8c8d0;
+  color: var(--ash-78);
 }
 
 .row:nth-child(3) .rank {
-  color: #c08a5a;
+  color: var(--brass-62);
 }
 
 .rank {

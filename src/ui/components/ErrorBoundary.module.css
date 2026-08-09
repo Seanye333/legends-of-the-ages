@@ -19,9 +19,9 @@
   align-items: center;
   justify-content: center;
   border-radius: 10px;
-  background: linear-gradient(180deg, #9e3324, #6d1f14);
+  background: linear-gradient(180deg, var(--cinnabar-32), var(--cinnabar-21));
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
-  color: #ffe9df;
+  color: var(--cinnabar-93);
   font-family: var(--font-display);
   font-size: 34px;
   font-weight: 800;
@@ -51,7 +51,7 @@
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.45);
   border: 1px solid rgba(212, 168, 74, 0.22);
-  color: #d8a08a;
+  color: var(--cinnabar-68);
   font-size: 12px;
   text-align: left;
   white-space: pre-wrap;

@@ -90,7 +90,7 @@
 
 .cleared {
   border-color: rgba(120, 200, 120, 0.7);
-  color: #8fe08f;
+  color: var(--jade-75);
 }
 
 .current {
@@ -395,7 +395,7 @@
   font-size: 12px;
   cursor: pointer;
 }
-.trimItem:hover { border-color: #cf5346; color: #f0b4ac; }
+.trimItem:hover { border-color: #cf5346; color: var(--cinnabar-76); }
 
 
 /* ---- 無盡 ---- */

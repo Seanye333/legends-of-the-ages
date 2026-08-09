@@ -94,12 +94,12 @@
   background: conic-gradient(
     from 210deg,
     var(--brass-43),
-    #ecd08a 13%,
+    var(--brass-92) 13%,
     var(--brass-36) 28%,
-    #f4dc96 44%,
-    #96702a 58%,
-    #e0be74 74%,
-    #6e5220 88%,
+    var(--brass-102) 44%,
+    var(--brass-55) 58%,
+    var(--brass-80) 74%,
+    var(--brass-48) 88%,
     var(--brass-43)
   );
   box-shadow:
@@ -113,12 +113,12 @@
   background: conic-gradient(
     from 210deg,
     var(--azure-38),
-    #ccd4e4 13%,
-    #4a5264 28%,
-    #dde4f0 44%,
-    #667088 58%,
-    #b8c2d6 74%,
-    #454e60 88%,
+    var(--azure-82) 13%,
+    var(--azure-33) 28%,
+    var(--azure-88) 44%,
+    var(--azure-43) 58%,
+    var(--azure-76) 74%,
+    var(--azure-30) 88%,
     var(--azure-38)
   );
 }
@@ -144,8 +144,8 @@
   font-family: var(--font-display);
   font-size: clamp(8px, 1.6vh, 11px);
   font-weight: 700;
-  color: #e8ecf6;
-  background: linear-gradient(180deg, #4c5468, var(--azure-20));
+  color: var(--ash-92);
+  background: linear-gradient(180deg, var(--azure-35), var(--azure-20));
   border: 1px solid #9aa4c0;
   border-radius: 4px;
   padding: 0 4px;
@@ -176,7 +176,7 @@
 .selected .circle {
   box-shadow:
     inset 0 0 10px rgba(0, 0, 0, 0.6),
-    0 0 0 3px #b0f2a8,
+    0 0 0 3px var(--jade-83),
     0 0 18px 6px rgba(150, 240, 140, 0.75);
 }
 
@@ -235,15 +235,15 @@
   background:
     radial-gradient(circle at 32% 24%, rgba(255, 235, 225, 0.85), rgba(255, 255, 255, 0) 42%),
     radial-gradient(circle at 50% 65%, var(--cinnabar-50) 0%, var(--cinnabar-31) 55%, var(--cinnabar-16) 100%);
-  border: 1px solid #e88a7a;
+  border: 1px solid var(--cinnabar-64);
   text-shadow: 0 1px 2px rgba(60, 8, 0, 0.9);
 }
 
 .hurt {
-  color: #ffd0c8;
+  color: var(--cinnabar-86);
   background:
     radial-gradient(circle at 32% 24%, rgba(255, 220, 210, 0.7), rgba(255, 255, 255, 0) 42%),
-    radial-gradient(circle at 50% 65%, #e83a2a 0%, #8e1c10 55%, #4a0c06 100%);
+    radial-gradient(circle at 50% 65%, var(--cinnabar-42) 0%, var(--cinnabar-27) 55%, var(--cinnabar-13) 100%);
 }
 
 .badges {
@@ -485,16 +485,16 @@
   content: '▲';
   top: -3px;
   right: -3px;
-  background: #1c2a18;
-  color: #b0f2a8;
+  background: var(--jade-14);
+  color: var(--jade-83);
 }
 
 :root[data-colorblind='true'] .targetable::before {
   content: '◎';
   top: -3px;
   left: -3px;
-  background: #2a1614;
-  color: #ff8a72;
+  background: var(--cinnabar-11);
+  color: var(--cinnabar-66);
 }
 
 
@@ -565,7 +565,7 @@
   height: 15px;
   border-radius: 50%;
   border: 1px solid rgba(10, 7, 3, 0.85);
-  background: linear-gradient(180deg, #6a5320, #3a2c0e);
+  background: linear-gradient(180deg, var(--brass-49), var(--brass-37));
   color: var(--brass-83);
   font-size: 9px;
   line-height: 1;

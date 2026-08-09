@@ -108,7 +108,7 @@
   background:
     radial-gradient(circle at 32% 24%, rgba(255, 235, 225, 0.85), rgba(255, 255, 255, 0) 42%),
     radial-gradient(circle at 50% 65%, var(--cinnabar-50) 0%, var(--cinnabar-31) 55%, var(--cinnabar-16) 100%);
-  border: 1px solid #e88a7a;
+  border: 1px solid var(--cinnabar-64);
   box-shadow:
     0 2px 5px rgba(0, 0, 0, 0.7),
     inset 0 -2px 3px rgba(0, 0, 0, 0.5);
@@ -132,7 +132,7 @@
   border-radius: 50%;
   background:
     radial-gradient(circle at 32% 24%, rgba(240, 246, 255, 0.85), rgba(255, 255, 255, 0) 42%),
-    radial-gradient(circle at 50% 65%, #9aa4b8 0%, #5a6478 55%, var(--azure-20) 100%);
+    radial-gradient(circle at 50% 65%, var(--azure-63) 0%, var(--azure-39) 55%, var(--azure-20) 100%);
   border: 1px solid #c8d0e0;
   box-shadow:
     0 2px 5px rgba(0, 0, 0, 0.7),
@@ -182,13 +182,13 @@
 }
 
 .gemEmpty {
-  color: #253248;
+  color: var(--azure-19);
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.6);
 }
 
 .manaText {
   margin-left: 5px;
-  color: #8ab0d8;
+  color: var(--azure-66);
   font-size: clamp(9px, 1.7vh, 12px);
   font-weight: 700;
 }
@@ -205,7 +205,7 @@
   border-radius: 2.5px;
   background:
     radial-gradient(circle at 50% 50%, rgba(232, 200, 120, 0.4) 0 12%, transparent 14%),
-    linear-gradient(150deg, #45361c, var(--brass-12));
+    linear-gradient(150deg, var(--brass-45), var(--brass-12));
   border: 1px solid #8a7238;
   box-shadow: inset 0 0 0 0.5px rgba(20, 14, 6, 0.9);
 }
@@ -342,7 +342,7 @@
 }
 
 .deckLow {
-  color: #e8a05a;
+  color: var(--brass-67);
   text-shadow: 0 0 6px rgba(232, 160, 90, 0.5);
 }
 
@@ -374,12 +374,12 @@
 }
 
 .moraleDown {
-  color: #9aa8c0;
+  color: var(--azure-65);
   text-shadow: 0 0 6px rgba(120, 140, 180, 0.45);
 }
 
 .supply {
-  color: #9ab87a;
+  color: var(--jade-66);
 }
 
 /* ---- 主公技印钮 ---- */
@@ -393,8 +393,8 @@
   border: 2px solid #6d5a2c;
   background:
     radial-gradient(circle at 34% 26%, rgba(255, 236, 180, 0.16), rgba(255, 255, 255, 0) 55%),
-    linear-gradient(180deg, #2b2214, #171106);
-  color: #8d7c50;
+    linear-gradient(180deg, var(--brass-29), var(--ash-19));
+  color: var(--brass-59);
   font-family: var(--font-display);
   cursor: not-allowed;
   display: flex;
@@ -434,9 +434,9 @@
   left: -4px;
   padding: 0 3px;
   border-radius: 3px;
-  background: #2a3328;
+  background: var(--ash-29);
   border: 1px solid #6f8a68;
-  color: #b8d0ae;
+  color: var(--jade-76);
   font-size: 9px;
   line-height: 1.3;
   font-family: var(--font-display);
@@ -531,7 +531,7 @@
 
 /* 被过载锁住的水晶:和「未花费」区分开 */
 .gemLocked {
-  color: #7a4b8c;
+  color: var(--amethyst-37);
   text-shadow: 0 0 4px rgba(160, 90, 200, 0.7);
 }
 
@@ -539,7 +539,7 @@
   margin-left: 6px;
   font-size: 10px;
   font-weight: 700;
-  color: #c08ae0;
+  color: var(--amethyst-64);
 }
 
 /* 伏兵区:横排小徽记,悬停出提示 */
@@ -569,7 +569,7 @@
 /* 自己的伏兵看得见名字,给一点区分度 */
 .secretKnown {
   border-color: rgba(120, 200, 255, 0.75);
-  color: #bfe6ff;
+  color: var(--azure-86);
 }
 
 @keyframes secretIdle {
@@ -592,7 +592,7 @@
   font-weight: 700;
   font-family: var(--font-display);
   color: var(--brass-07);
-  background: linear-gradient(180deg, var(--cyan-71), #2c8d86);
+  background: linear-gradient(180deg, var(--cyan-71), var(--cyan-43));
   border: 1px solid rgba(255, 255, 255, 0.35);
   cursor: pointer;
   z-index: 3;
@@ -681,12 +681,12 @@
 @keyframes gemShatter {
   0% {
     transform: scale(1.35) rotate(0deg);
-    color: #a8d8ff;
+    color: var(--azure-80);
     text-shadow: 0 0 10px rgba(150, 210, 255, 1);
   }
   45% {
     transform: scale(0.72) rotate(28deg);
-    color: #3f5a7c;
+    color: var(--azure-36);
   }
   100% {
     transform: scale(1) rotate(0deg);
@@ -763,5 +763,5 @@
 /* 伏笔用青色:它是一条**计时器**,和金色的「进度」不是一回事 */
 .fuse {
   border-color: rgba(143, 184, 160, 0.65);
-  color: #9fd0bb;
+  color: var(--jade-74);
 }

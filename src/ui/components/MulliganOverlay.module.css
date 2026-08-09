@@ -83,7 +83,7 @@
   justify-content: center;
   font-size: clamp(30px, 7vh, 54px);
   font-weight: 800;
-  color: #ff5a44;
+  color: var(--cinnabar-56);
   background:
     radial-gradient(circle at 50% 50%, rgba(60, 12, 6, 0.55), rgba(20, 6, 3, 0.72)),
     rgba(20, 8, 5, 0.35);

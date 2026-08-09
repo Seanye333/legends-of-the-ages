@@ -54,7 +54,7 @@
   background:
     radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--doctrine) 38%, transparent), transparent 72%),
     repeating-linear-gradient(115deg, rgba(255, 240, 210, 0.03) 0 2px, transparent 2px 7px),
-    linear-gradient(180deg, #221c11, #120e07);
+    linear-gradient(180deg, var(--ash-27), var(--ash-15));
 }
 
 /* 印环 */
@@ -115,7 +115,7 @@
   font-size: 46cqmin;
   font-weight: 700;
   line-height: 1;
-  color: color-mix(in srgb, var(--doctrine) 55%, #f2e6c8);
+  color: color-mix(in srgb, var(--doctrine) 55%, var(--brass-107));
   text-shadow:
     0 2px 6px rgba(0, 0, 0, 0.85),
     0 0 18px color-mix(in srgb, var(--doctrine) 45%, transparent);

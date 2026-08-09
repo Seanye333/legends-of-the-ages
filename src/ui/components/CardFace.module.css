@@ -178,7 +178,7 @@
   border-radius: 50%;
   background:
     radial-gradient(circle at 32% 24%, rgba(255, 252, 225, 0.85), rgba(255, 255, 255, 0) 42%),
-    radial-gradient(circle at 50% 65%, #b8c07a 0%, #7a8a3a 55%, #3e4a10 100%);
+    radial-gradient(circle at 50% 65%, var(--brass-77) 0%, var(--jade-48) 55%, var(--jade-25) 100%);
   border: 1px solid #d6e0a0;
   box-shadow:
     0 2px 4px rgba(0, 0, 0, 0.7),
@@ -286,7 +286,7 @@
   background:
     radial-gradient(circle at 32% 24%, rgba(255, 235, 225, 0.85), rgba(255, 255, 255, 0) 42%),
     radial-gradient(circle at 50% 65%, var(--cinnabar-50) 0%, var(--cinnabar-31) 55%, var(--cinnabar-16) 100%);
-  border: 1px solid #e88a7a;
+  border: 1px solid var(--cinnabar-64);
   text-shadow: 0 1px 2px rgba(60, 8, 0, 0.9);
 }
 
@@ -309,11 +309,11 @@
   font-family: var(--font-display);
   font-size: clamp(9px, 11cqw, 12px);
   font-weight: 700;
-  color: #f0d8a0;
+  color: var(--brass-100);
   letter-spacing: calc(0.22em * var(--ls-wide));
   text-indent: calc(0.22em * var(--ls-wide));
   padding: 1px 7px;
-  background: linear-gradient(180deg, #7a2a1a, #4e1810);
+  background: linear-gradient(180deg, var(--cinnabar-29), var(--cinnabar-15));
   border: 1px solid rgba(224, 170, 100, 0.65);
   clip-path: polygon(
     6% 0,
@@ -377,7 +377,7 @@
 
 /* 费用消减后的折后价:绿色高亮 */
 .costDown {
-  color: #6fe08a;
+  color: var(--jade-70);
   text-shadow: 0 0 6px rgba(80, 220, 130, 0.8);
 }
 

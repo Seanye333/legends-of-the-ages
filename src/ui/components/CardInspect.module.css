@@ -129,19 +129,19 @@
 .cost {
   top: 10px;
   left: 10px;
-  background: radial-gradient(circle at 35% 30%, #4a83d6, #1c3f80);
+  background: radial-gradient(circle at 35% 30%, var(--azure-48), var(--azure-23));
 }
 
 .atk {
   bottom: 10px;
   left: 10px;
-  background: radial-gradient(circle at 35% 30%, #f0c060, #8a5a14);
+  background: radial-gradient(circle at 35% 30%, var(--brass-86), var(--brass-50));
 }
 
 .hp {
   bottom: 10px;
   right: 10px;
-  background: radial-gradient(circle at 35% 30%, #e06048, #8a2014);
+  background: radial-gradient(circle at 35% 30%, var(--cinnabar-51), var(--cinnabar-26));
 }
 
 /* 唯一滚动容器:列传再长也在这里滚,不与内层再嵌一层滚动 */
@@ -176,10 +176,10 @@
   font-weight: 700;
 }
 
-.common { color: #b0b0b0; }
-.rare { color: #6aa8e8; }
-.epic { color: #c084e8; }
-.legendary { color: #f0a850; }
+.common { color: var(--ash-68); }
+.rare { color: var(--azure-61); }
+.epic { color: var(--amethyst-63); }
+.legendary { color: var(--brass-74); }
 
 .collector {
   color: var(--parchment-faint);
@@ -411,7 +411,7 @@
 .dustBtn {
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(150, 170, 190, 0.4);
-  color: #b8c4d0;
+  color: var(--azure-75);
 }
 
 .craftBtn:disabled,
@@ -614,11 +614,11 @@
   background: rgba(216, 178, 106, 0.26);
 }
 
-.rel_kin { color: #c9a86a; }
-.rel_mentor { color: #b79ad6; }
-.rel_liege { color: #88b7e8; }
-.rel_foe { color: #c96a5a; }
-.rel_friend { color: #8fb88a; }
+.rel_kin { color: var(--brass-66); }
+.rel_mentor { color: var(--amethyst-66); }
+.rel_liege { color: var(--azure-68); }
+.rel_foe { color: var(--cinnabar-52); }
+.rel_friend { color: var(--jade-65); }
 .rel_era { color: rgba(232, 220, 198, 0.45); }
 
 .relationWho {

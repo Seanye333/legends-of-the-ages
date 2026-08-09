@@ -218,5 +218,5 @@
 
 .secondary:hover {
   color: var(--parchment-dim);
-  border-color: #7a6a4a;
+  border-color: var(--brass-53);
 }

@@ -241,7 +241,7 @@
 }
 
 .lose {
-  color: #c96a5c;
+  color: var(--cinnabar-55);
 }
 
 .rowMain {
@@ -316,7 +316,7 @@
   gap: 10px;
   padding: 16px 18px;
   border-radius: 12px;
-  background: linear-gradient(180deg, #1d1811, var(--ink-1));
+  background: linear-gradient(180deg, var(--ash-24), var(--ink-1));
   border: 1px solid rgba(212, 168, 74, 0.4);
 }
 

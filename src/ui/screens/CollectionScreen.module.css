@@ -197,7 +197,7 @@
   padding: 10px 30px;
   border-radius: 6px;
   border: 1px solid var(--gold-deep);
-  background: linear-gradient(180deg, #3a2f1d, var(--brass-12));
+  background: linear-gradient(180deg, var(--brass-41), var(--brass-12));
   color: var(--gold-bright);
   cursor: pointer;
 }
@@ -225,7 +225,7 @@
   border-radius: 8px;
   border: 1px solid rgba(212, 168, 74, 0.4);
   background: rgba(20, 15, 9, 0.9);
-  color: var(--ink-bright, #e8dcc0);
+  color: var(--ink-bright, var(--brass-104));
   font-size: 12px;
   font-family: inherit;
   cursor: pointer;
@@ -388,8 +388,8 @@
   font-family: var(--font-display);
   font-size: 10px;
   line-height: 1;
-  color: #f8ecd8;
-  background: linear-gradient(180deg, #c0432f, #93301f);
+  color: var(--brass-109);
+  background: linear-gradient(180deg, var(--cinnabar-41), var(--cinnabar-30));
   border-radius: 3px;
   box-shadow: inset 0 0 0 1px rgba(255, 235, 210, 0.3);
   transform: translateY(-50%) rotate(-4deg);

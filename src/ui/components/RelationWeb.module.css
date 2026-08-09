@@ -109,5 +109,5 @@
 }
 
 .legendRival {
-  color: #d4675a;
+  color: var(--cinnabar-54);
 }

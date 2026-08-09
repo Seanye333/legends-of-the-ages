@@ -74,7 +74,7 @@
 .danger {
   background: linear-gradient(180deg, var(--cinnabar-39), var(--cinnabar-23));
   border-color: #d4674e;
-  color: #ffeee8;
+  color: var(--cinnabar-94);
 }
 
 .cancel:hover,
