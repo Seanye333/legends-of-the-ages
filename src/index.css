@@ -88,87 +88,256 @@ body {
   --ash-12: #1d1710; /* 5 处 */
   --ash-13: #241e14; /* 2 处 */
   --ash-14: #26221b; /* 8 处 */
+  --ash-15: #120e07;
+  --ash-16: #170f06;
+  --ash-17: #150e06;
+  --ash-18: #17120a;
+  --ash-19: #171106;
+  --ash-20: #16110a;
+  --ash-21: #1a1409;
+  --ash-22: #1a150d;
+  --ash-23: #1c1610;
+  --ash-24: #1d1811;
+  --ash-25: #171d13;
+  --ash-26: #221c12;
+  --ash-27: #221c11;
+  --ash-28: #232c1c;
+  --ash-29: #2a3328;
   --ash-41: #6a6a6a; /* 2 处 */
+  --ash-68: #b0b0b0;
   --ash-71: #b8b8b8; /* 2 处 */
+  --ash-78: #c8c8d0;
+  --ash-92: #e8ecf6;
   --ash-99: #fff; /* 12 处 */
 
   /* 黄铜:牌桌与按钮的主色系,从深底到浅字 */
   --brass-07: #1a1206; /* 12 处 */
+  --brass-08: #1a1208;
   --brass-09: #201607; /* 2 处 */
+  --brass-10: #191307;
   --brass-11: #241c10; /* 8 处 */
   --brass-12: #241d12; /* 11 处 */
   --brass-13: #2a1c08; /* 3 处 */
   --brass-14: #2e1f08; /* 10 处 */
   --brass-15: #2a2010; /* 2 处 */
   --brass-16: #2c2210; /* 4 处 */
+  --brass-17: #1c1408;
   --brass-18: #3a2c14; /* 2 处 */
   --brass-19: #3a2c12; /* 2 处 */
   --brass-20: #46310f; /* 11 处 */
+  --brass-21: #221909;
+  --brass-22: #241a08;
   --brass-23: #4a3a18; /* 2 处 */
   --brass-24: #4c3d20; /* 3 处 */
+  --brass-25: #241a0c;
+  --brass-26: #2a1e0c;
+  --brass-27: #241e12;
+  --brass-28: #2c1f0f;
+  --brass-29: #2b2214;
   --brass-30: #6e4a0e; /* 3 处 */
   --brass-31: #6a4d1e; /* 13 处 */
+  --brass-32: #2e2413;
+  --brass-33: #2c2415;
+  --brass-34: #33240c;
+  --brass-35: #2f2819;
   --brass-36: #7a5a20; /* 2 处 */
+  --brass-37: #3a2c0e;
+  --brass-38: #3a2a10;
+  --brass-39: #3a2a0e;
+  --brass-40: #3a2a15;
+  --brass-41: #3a2f1d;
   --brass-42: #8a6c26; /* 14 处 */
   --brass-43: #8a6a2a; /* 2 处 */
+  --brass-44: #3d3524;
+  --brass-45: #45361c;
+  --brass-46: #503810;
+  --brass-47: #6a5024;
+  --brass-48: #6e5220;
+  --brass-49: #6a5320;
+  --brass-50: #8a5a14;
+  --brass-51: #6a5e46;
+  --brass-52: #8a5f1e;
+  --brass-53: #7a6a4a;
   --brass-54: #b8862a; /* 3 处 */
+  --brass-55: #96702a;
   --brass-56: #c8862a; /* 2 处 */
+  --brass-57: #9a6f26;
+  --brass-58: #a1762a;
+  --brass-59: #8d7c50;
   --brass-60: #c89644; /* 4 处 */
+  --brass-61: #ba8a35;
+  --brass-62: #c08a5a;
+  --brass-63: #c89a3e;
   --brass-64: #cfa049; /* 3 处 */
+  --brass-66: #c9a86a;
+  --brass-67: #e8a05a;
   --brass-68: #c8b070; /* 2 处 */
+  --brass-69: #e0a84a;
   --brass-70: #e0b060; /* 6 处 */
+  --brass-71: #c8ae6e;
   --brass-72: #e0b860; /* 2 处 */
   --brass-73: #c7b998; /* 2 处 */
+  --brass-74: #f0a850;
   --brass-75: #e8c060; /* 2 处 */
   --brass-76: #f0c250; /* 3 处 */
+  --brass-77: #b8c07a;
+  --brass-78: #d8bc7c;
   --brass-79: #d8ccb0; /* 4 处 */
+  --brass-80: #e0be74;
+  --brass-81: #ffb648;
   --brass-82: #f0d090; /* 2 处 */
   --brass-83: #f0d68a; /* 3 处 */
   --brass-84: #f5d78a; /* 7 处 */
   --brass-85: #f0d79a; /* 6 处 */
+  --brass-86: #f0c060;
+  --brass-87: #e8c86a;
+  --brass-88: #e6c878;
   --brass-89: #f0e6cf; /* 2 处 */
   --brass-90: #ffe9a8; /* 4 处 */
   --brass-91: #f0e6d2; /* 2 处 */
+  --brass-92: #ecd08a;
   --brass-93: #fdf0c0; /* 3 处 */
   --brass-94: #fdf3d0; /* 4 处 */
   --brass-95: #ffefe2; /* 4 处 */
   --brass-96: #fff3d0; /* 2 处 */
   --brass-97: #fff6dc; /* 2 处 */
+  --brass-98: #f0cf7e;
+  --brass-99: #ffcf7a;
+  --brass-100: #f0d8a0;
+  --brass-101: #f2d996;
+  --brass-102: #f4dc96;
+  --brass-103: #f0d8c8;
+  --brass-104: #e8dcc0;
+  --brass-105: #ece0c6;
+  --brass-106: #f5e6a0;
+  --brass-107: #f2e6c8;
+  --brass-108: #ffe6a8;
+  --brass-109: #f8ecd8;
+  --brass-110: #ffe9d8;
+  --brass-111: #fff0e8;
+  --brass-112: #fff8e0;
 
   /* 朱砂:告警、减益、敌方 */
+  --cinnabar-11: #2a1614;
+  --cinnabar-12: #3a120c;
+  --cinnabar-13: #4a0c06;
+  --cinnabar-15: #4e1810;
   --cinnabar-16: #5e130c; /* 4 处 */
+  --cinnabar-21: #6d1f14;
   --cinnabar-22: #6e241c; /* 2 处 */
   --cinnabar-23: #7a2418; /* 2 处 */
+  --cinnabar-24: #6a2018;
+  --cinnabar-25: #7c1f12;
+  --cinnabar-26: #8a2014;
+  --cinnabar-27: #8e1c10;
   --cinnabar-28: #9c2517; /* 4 处 */
+  --cinnabar-29: #7a2a1a;
+  --cinnabar-30: #93301f;
   --cinnabar-31: #a82e20; /* 4 处 */
+  --cinnabar-32: #9e3324;
   --cinnabar-34: #b03520; /* 3 处 */
   --cinnabar-39: #b8442e; /* 2 处 */
   --cinnabar-40: #b0453a; /* 2 处 */
+  --cinnabar-41: #c0432f;
+  --cinnabar-42: #e83a2a;
   --cinnabar-43: #d8452e; /* 4 处 */
+  --cinnabar-44: #d4472e;
+  --cinnabar-45: #c5533b;
   --cinnabar-50: #e05a48; /* 4 处 */
+  --cinnabar-51: #e06048;
+  --cinnabar-52: #c96a5a;
+  --cinnabar-53: #e06428;
+  --cinnabar-54: #d4675a;
+  --cinnabar-55: #c96a5c;
+  --cinnabar-56: #ff5a44;
+  --cinnabar-57: #ff6a3c;
   --cinnabar-58: #e07a68; /* 3 处 */
   --cinnabar-59: #ff6a55; /* 3 处 */
+  --cinnabar-61: #c88;
+  --cinnabar-64: #e88a7a;
   --cinnabar-65: #d8968a; /* 2 处 */
+  --cinnabar-66: #ff8a72;
+  --cinnabar-67: #ff8a6a;
+  --cinnabar-68: #d8a08a;
   --cinnabar-70: #e8a094; /* 3 处 */
   --cinnabar-71: #e8a08a; /* 4 处 */
+  --cinnabar-72: #ff9a7a;
+  --cinnabar-76: #f0b4ac;
+  --cinnabar-77: #f2b3a4;
+  --cinnabar-78: #f0b9a0;
+  --cinnabar-83: #f4c9c3;
+  --cinnabar-86: #ffd0c8;
+  --cinnabar-88: #ffd8d0;
+  --cinnabar-93: #ffe9df;
+  --cinnabar-94: #ffeee8;
 
   /* 玉色:达成、增益、我方 */
+  --jade-14: #1c2a18;
+  --jade-22: #33402a;
+  --jade-25: #3e4a10;
+  --jade-48: #7a8a3a;
+  --jade-65: #8fb88a;
+  --jade-66: #9ab87a;
+  --jade-70: #6fe08a;
   --jade-72: #7ae87a; /* 6 处 */
+  --jade-74: #9fd0bb;
+  --jade-75: #8fe08f;
+  --jade-76: #b8d0ae;
+  --jade-77: #a8d89a;
+  --jade-81: #cbd9b4;
+  --jade-83: #b0f2a8;
+  --jade-86: #d8e4c4;
+  --jade-90: #d8f0de;
+  --jade-95: #eafbe6;
 
   /* 青:提示与次要强调 */
+  --cyan-16: #14313f;
+  --cyan-43: #2c8d86;
   --cyan-71: #6fd8d0; /* 6 处 */
+  --cyan-77: #a8d0e0;
 
   /* 靛:稀有度与蓝色系标记 */
+  --azure-08: #0a1820;
   --azure-17: #142c5e; /* 2 处 */
+  --azure-19: #253248;
   --azure-20: #2e3442; /* 2 处 */
+  --azure-23: #1c3f80;
+  --azure-24: #1e3f74;
+  --azure-30: #454e60;
   --azure-32: #2a55a8; /* 2 处 */
+  --azure-33: #4a5264;
+  --azure-34: #2359a8;
+  --azure-35: #4c5468;
+  --azure-36: #3f5a7c;
   --azure-37: #2a68b8; /* 2 处 */
   --azure-38: #5a6274; /* 2 处 */
+  --azure-39: #5a6478;
+  --azure-43: #667088;
+  --azure-46: #4a7ec8;
+  --azure-48: #4a83d6;
   --azure-56: #5a9aee; /* 2 处 */
+  --azure-61: #6aa8e8;
+  --azure-63: #9aa4b8;
+  --azure-65: #9aa8c0;
+  --azure-66: #8ab0d8;
+  --azure-68: #88b7e8;
+  --azure-69: #9fb0cd;
   --azure-70: #8ac0f0; /* 3 处 */
+  --azure-74: #a8c0f0;
+  --azure-75: #b8c4d0;
+  --azure-76: #b8c2d6;
+  --azure-80: #a8d8ff;
+  --azure-82: #ccd4e4;
+  --azure-84: #cddaf5;
+  --azure-86: #bfe6ff;
+  --azure-88: #dde4f0;
 
   /* 紫:史诗稀有度 */
   --amethyst-34: #7a34b0; /* 2 处 */
+  --amethyst-37: #7a4b8c;
+  --amethyst-63: #c084e8;
+  --amethyst-64: #c08ae0;
+  --amethyst-66: #b79ad6;
   --amethyst-70: #d09af0; /* 3 处 */
 
 
@@ -520,7 +689,7 @@ button {
 
 /* 卡牌与场上单位是自绘的圆/矩形,描边跟着形状走才不难看 */
 [role='button']:focus-visible {
-  outline: 2px solid #ffe6a8;
+  outline: 2px solid var(--brass-108);
   outline-offset: 3px;
   box-shadow: 0 0 14px 3px rgba(255, 230, 168, 0.45);
 }
