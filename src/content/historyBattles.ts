@@ -529,6 +529,141 @@ export const HISTORY_BATTLES: HistoryBattle[] = [
     rewardMerit: 460,
     rewardPacks: 2,
   },
+  // ---------- 战国 · 前 341 ----------
+  {
+    id: 'hb-maling',
+    name: { zh: '馬陵之戰', en: 'The Road at Maling' },
+    era: { zh: '戰國 · 周顯王二十八年', en: 'Warring States · 341 BC' },
+    foeName: { zh: '龐涓', en: 'Pang Juan' },
+    foeTitle: { zh: '魏武卒', en: 'The Wei Conscripts' },
+    intro: {
+      zh: '減灶而退:第一天十萬灶,第二天五萬,第三天三萬。龐涓大喜,棄輜重輕騎急追。',
+      en: 'Fewer cookfires each dawn — a hundred thousand, then fifty, then thirty. Pang Juan rejoiced, dropped his baggage and rode hard after them.',
+    },
+    situation: {
+      zh: '你退他就追:敵方開局多兩名輕騎、多一點護甲,但你多抽兩張 —— 減灶減的是灶,不是兵。',
+      en: 'He chases because you withdraw: the enemy opens with two extra riders and some armour, while you draw two more cards. The fires were fewer; the army was not.',
+    },
+    heroId: 'hist-pang-juan',
+    doctrine: 'hegemonic',
+    hp: 54,
+    deckTier: 0.7,
+    power: power(
+      'hbp-qingqi',
+      { zh: '倍道兼行', en: 'Forced March' },
+      { zh: '對隨機一名敵方武將造成 2 點傷害。', en: 'Deal 2 damage to a random enemy general.' },
+      [{ op: 'damage', amount: 2, target: 'randomEnemyGeneral' }],
+    ),
+    enemyModifiers: { startTokens: ['token-tie-qi', 'token-tie-qi', 'token-tie-qi'], startArmor: 5 },
+    playerModifiers: { bonusHandSize: 1 },
+    rewardMerit: 180,
+    rewardPacks: 1,
+  },
+  // ---------- 三国 · 219 ----------
+  {
+    id: 'hb-xiangfan',
+    name: { zh: '襄樊 · 水淹七軍', en: 'The Seven Armies Drowned' },
+    era: { zh: '三國 · 建安二十四年', en: 'Three Kingdoms · AD 219' },
+    foeName: { zh: '于禁', en: 'Yu Jin' },
+    foeTitle: { zh: '七軍在野', en: 'Seven Armies in the Open' },
+    intro: {
+      zh: '八月大霖雨,漢水溢。于禁七軍屯於城北低地 —— 水一夜漲了五六丈。',
+      en: 'The eighth month brought ten days of rain and the Han river rose. Yu Jin had camped seven armies on the low ground north of the wall.',
+    },
+    situation: {
+      zh: '斬將:擒下于禁即勝。他開局帶三隊禁軍在低地,而水正在漲 —— 你手上多一張牌。',
+      en: 'Assassinate: take Yu Jin and it is over. He opens with three companies on the low ground, and the water is rising. You hold one extra card.',
+    },
+    heroId: 'yu-jin',
+    doctrine: 'hegemonic',
+    // ⚠️ 主帅血量在**斩将**局里是错的旋钮:赢法是斩下目标,不是打空主帅。
+    // 42 → 54 实测一点没动(78% → 78%)。真正的旋钮是**目标前面挡着谁**。
+    hp: 42,
+    deckTier: 0.7,
+    power: power(
+      'hbp-qijun',
+      { zh: '七軍列陣', en: 'The Seven Armies Form Up' },
+      { zh: '召喚一個 2/2 的禁軍。', en: 'Summon a 2/2 Guardsman.' },
+      [{ op: 'summon', defId: 'token-jin-jun', count: 1 }],
+    ),
+    // 目标换成 5/10 守護 的「敵軍主將」而不是 2/2 的禁軍 ——
+    // 一个 2/2 的斩将目标会被任何一发群伤顺手带走,于是这一局比普通局还容易,
+    // 而**在它旁边加多少人都不管用**(实测加两道守护墙:78% → 78%,一动不动)。
+    // 斩将局真正的旋钮是**目标自己有多硬**,不是它前面站着谁。
+    // 换成 5/10 之后一步从 78% 掉到 3% —— 这个旋钮很沉,所以身边那两队禁軍撤掉,
+    // 玩家那边再加一手。斩将局的难度几乎全压在目标一个人身上。
+    enemyModifiers: { startTokens: ['token-di-zhu-jiang'] },
+    playerModifiers: { bonusHandSize: 1 },
+    objective: {
+      kind: 'assassinate',
+      targetSide: 1,
+      targetDefId: 'token-di-zhu-jiang',
+      targetName: { zh: '于禁的中軍', en: "Yu Jin's Command" },
+    },
+    rewardMerit: 320,
+    rewardPacks: 2,
+  },
+  // ---------- 三国 · 222 ----------
+  {
+    id: 'hb-yiling',
+    name: { zh: '夷陵之戰', en: 'The Fire at Yiling' },
+    era: { zh: '三國 · 章武二年', en: 'Three Kingdoms · AD 222' },
+    foeName: { zh: '陸遜', en: 'Lu Xun' },
+    foeTitle: { zh: '火燒連營', en: 'The Camps Ablaze' },
+    intro: {
+      zh: '蜀軍舍船就步,結營七百餘里。陸遜等了半年,只等一陣風。',
+      en: 'The Shu army left its boats and built camps for seven hundred li. Lu Xun waited half a year — for a wind.',
+    },
+    situation: {
+      zh: '守成:撐過第 8 回合。連營一燒起來就止不住 —— 敵方每回合燒你一個,你得比火快。',
+      en: 'Survive to turn 8. Once the camps burn they do not stop: he takes one of yours each turn, and you must outrun the fire.',
+    },
+    heroId: 'lu-xun',
+    doctrine: 'separatist',
+    hp: 40,
+    deckTier: 0.65,
+    power: power(
+      'hbp-lianying',
+      { zh: '火燒連營', en: 'Fire the Camps' },
+      { zh: '對所有敵方武將造成 1 點傷害。', en: 'Deal 1 damage to all enemy generals.' },
+      [{ op: 'aoeDamage', amount: 1 }],
+    ),
+    enemyModifiers: { startTokens: ['token-tie-qi', 'token-tie-qi', 'token-tie-qi'], startArmor: 4 },
+    playerModifiers: {},
+    objective: { kind: 'survive', turns: 10 },
+    rewardMerit: 340,
+    rewardPacks: 2,
+  },
+  // ---------- 东晋 · 383 ----------
+  {
+    id: 'hb-feishui',
+    name: { zh: '淝水之戰', en: 'The Fei River' },
+    era: { zh: '東晉 · 太元八年', en: 'Eastern Jin · AD 383' },
+    foeName: { zh: '苻堅', en: 'Fu Jian' },
+    foeTitle: { zh: '投鞭斷流', en: 'Whips Enough to Dam a River' },
+    intro: {
+      zh: '以吾之眾旅,投鞭於江,足斷其流。八十七萬人壓到淝水北岸,南岸只有八萬。',
+      en: 'Throw the whips of my host into the river, and its flow would stop. Eight hundred thousand on the north bank; eighty thousand on the south.',
+    },
+    situation: {
+      zh: '他人多得多:開局三隊、護甲六點。而他的兵是拼湊來的 —— 陣一退就收不住。',
+      en: 'He has the numbers: three companies and six armour to open. But his host is stitched together — once it steps back, it does not stop.',
+    },
+    heroId: 'hist-fu-jian',
+    doctrine: 'hegemonic',
+    hp: 40,
+    deckTier: 0.75,
+    power: power(
+      'hbp-toubian',
+      { zh: '投鞭斷流', en: 'Whips in the River' },
+      { zh: '召喚一個 2/2 的禁軍。', en: 'Summon a 2/2 Guardsman.' },
+      [{ op: 'summon', defId: 'token-jin-jun', count: 1 }],
+    ),
+    enemyModifiers: { startTokens: ['token-jin-jun'], startArmor: 2 },
+    playerModifiers: { bonusHandSize: 2, startArmor: 5 },
+    rewardMerit: 380,
+    rewardPacks: 2,
+  },
 ]
 
 export const BATTLES_BY_ID: Record<string, HistoryBattle> = Object.fromEntries(
