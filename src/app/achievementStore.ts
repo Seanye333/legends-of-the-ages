@@ -400,8 +400,9 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     'trialsCleared',
     { zh: '試煉', en: 'Trials' },
     (n) => ({ zh: `通过 ${n} 场关底试炼`, en: `Complete ${n} boss trials` }),
-    // 16 → 24:关卡从 16 扩到 24 时漏改了这里,打满试炼成就却停在第 16 条
-    [1, 8, 24],
+    // 16 → 24 → 32:关卡每扩一章,这里都得跟着走 —— 前两次都是被 economy.test
+    // 那条「顶格 = 关卡总数」抓出来的(漏改的表现是「打满了成就却停在旧关数」)。
+    [1, 8, 32],
     [80, 240, 900],
   ),
   ...tier(
@@ -409,8 +410,8 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     'bossRushBest',
     { zh: '連斬', en: 'Gauntlet' },
     (n) => ({ zh: `群雄连斩连过 ${n} 关`, en: `Clear ${n} bouts in the Gauntlet` }),
-    // 同上:连斩打的就是那 24 关,顶格没理由停在 16
-    [4, 12, 24],
+    // 同上:连斩打的就是全部关卡,顶格没理由停在旧数字
+    [4, 12, 32],
     [120, 350, 1200],
   ),
   ...tier(

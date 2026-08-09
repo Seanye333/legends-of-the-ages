@@ -157,6 +157,9 @@ export const CHAPTER_TITLES: Record<number, LocalizedText> = {
   1: { zh: '第一章 · 漢末群雄', en: 'Chapter I · Warlords of Han’s Fall' },
   2: { zh: '第二章 · 逐鹿千年', en: 'Chapter II · A Thousand Years of Contenders' },
   3: { zh: '第三章 · 山河永寂', en: 'Chapter III · The Silent Land' },
+  // 前三章打的都是提着刀的人;这一章打的是**改规矩的人** ——
+  // 他们没有一个是靠武功留在史书上的,而他们改动的东西比任何一场仗都活得久。
+  4: { zh: '第四章 · 立法者', en: 'Chapter IV · Those Who Made the Rules' },
 }
 
 const power = (
@@ -899,6 +902,250 @@ export const BOSSES: BossDef[] = [
     rewardPacks: 4,
     chapter: 3,
   },
+  // ================= 第四章 · 立法者 =================
+  //
+  // 前三章打的都是提着刀的人。这一章打的是**改规矩的人** ——
+  // 他们没有一个是靠武功留在史书上的,而他们改动的东西比任何一场仗都活得久。
+  //
+  // 主公技刻意全部走「资源 / 规则」而不是「打脸」:变法者的力量不在这一回合,
+  // 在于他把往后每一回合都改了。
+  {
+    id: 'boss-guan-zhong',
+    heroId: 'hist-guan-zhong',
+    name: { zh: '管仲', en: 'Guan Zhong' },
+    title: { zh: '九合諸侯', en: 'Nine Times He Gathered the Lords' },
+    intro: {
+      zh: '通商惠工,設鹽鐵之官。他把一个诸侯国变成了一台会赚钱的机器,然后用钱把天下称了霸。',
+      en: 'He opened trade, taxed salt and iron, and turned a dukedom into a machine that made money — then bought hegemony with it.',
+    },
+    outro: {
+      zh: '微管仲,吾其被髮左衽矣。',
+      en: 'But for Guan Zhong, we would be wearing our hair loose and our robes buttoned on the left.',
+    },
+    doctrine: 'fame',
+    hp: 46,
+    deckTier: 0.75,
+    power: power(
+      'bp-tongshang',
+      { zh: '通商惠工', en: 'Trade and Craft' },
+      { zh: '抽一張牌,主公獲得 2 點護甲。', en: 'Draw a card; your hero gains 2 Armor.' },
+      2,
+      [
+        { op: 'draw', count: 1 },
+        { op: 'gainArmor', amount: 2 },
+      ],
+    ),
+    rewardMerit: 1800,
+    rewardPacks: 4,
+    chapter: 4,
+  },
+  {
+    id: 'boss-shang-yang',
+    heroId: 'hist-shang-yang',
+    name: { zh: '商鞅', en: 'Shang Yang' },
+    title: { zh: '徙木立信', en: 'The Pole at the South Gate' },
+    intro: {
+      zh: '三丈之木,徙者予五十金。他先证明了「说了就算数」,然后才开始立法。',
+      en: 'A pole three yards long, fifty gold to whoever moved it. First he proved his word was good; only then did he write the law.',
+    },
+    outro: {
+      zh: '作法自斃 —— 逃亡投宿,店家不敢留,因為商君之法,舍人無驗者坐之。',
+      en: 'Caught by his own law: fleeing, he was refused lodging — under Lord Shang’s statutes, an innkeeper who took a man without papers shared his punishment.',
+    },
+    doctrine: 'hegemonic',
+    hp: 48,
+    deckTier: 0.9,
+    power: power(
+      'bp-bianfa',
+      { zh: '變法', en: 'Reform the Law' },
+      { zh: '使一名友方武將獲得+2/+1。', en: 'Give a friendly general +2/+1.' },
+      2,
+      [{ op: 'buffStats', attack: 2, health: 1, target: 'chosenFriendlyGeneral' }],
+    ),
+    rewardMerit: 1900,
+    rewardPacks: 4,
+    chapter: 4,
+  },
+  {
+    id: 'boss-li-si',
+    heroId: 'hist-li-si',
+    name: { zh: '李斯', en: 'Li Si' },
+    title: { zh: '書同文', en: 'One Script for All' },
+    intro: {
+      zh: '車同軌,書同文,行同倫。他把六国的字统一成一种,也把六国的书烧成了一堆。',
+      en: 'One gauge for the carts, one script for the books, one measure for conduct. He made six states write alike — and burned what six states had written.',
+    },
+    outro: {
+      zh: '腰斬咸陽市。臨刑顧其中子曰:吾欲與若復牽黃犬,俱出上蔡東門逐狡兔,豈可得乎!',
+      en: 'Cut in two at the Xianyang market. He turned to his son: I should like to walk the yellow dog with you again, out the east gate of Shangcai, chasing hares. Can it be had?',
+    },
+    doctrine: 'fame',
+    hp: 50,
+    deckTier: 0.9,
+    power: power(
+      'bp-shutongwen',
+      { zh: '書同文', en: 'One Script' },
+      { zh: '從牌庫檢索一張錦囊。', en: 'Draw a Stratagem from your deck.' },
+      2,
+      [{ op: 'tutor', kind: 'stratagem', count: 1 }],
+    ),
+    rewardMerit: 2000,
+    rewardPacks: 4,
+    chapter: 4,
+  },
+  {
+    id: 'boss-sang-hongyang',
+    heroId: 'hist-sang-hongyang',
+    name: { zh: '桑弘羊', en: 'Sang Hongyang' },
+    title: { zh: '鹽鐵均輸', en: 'Salt, Iron and the Levelling Tax' },
+    intro: {
+      zh: '民不益賦而天下用饒 —— 他说他能不加一分税,却让国库满起来。武帝信了他四十年。',
+      en: 'No new levy, and yet the realm has plenty — so he claimed. Emperor Wu believed him for forty years.',
+    },
+    outro: {
+      zh: '鹽鐵會議上他一个人对六十余名賢良文學。次年,以謀反罪族誅。',
+      en: 'At the salt-and-iron debate he stood alone against sixty scholars. The next year he was executed with his whole house, for treason.',
+    },
+    doctrine: 'ritual',
+    // 第一轮 95%:主公技给的是**粮道**,而 Boss 卡组里一张军需卡都没有
+    // (bossDeck 早些时候把它们整个排除了)—— 那个技能对它是彻底的空转。
+    // 换成护甲 + 全体加血之后 87%,再补血量。
+    hp: 68,
+    deckTier: 0.0,
+    power: power(
+      'bp-yanti',
+      { zh: '均輸', en: 'The Levelling Tax' },
+      { zh: '主公獲得 3 點護甲,友方全體 +0/+1。', en: 'Your hero gains 3 Armor; all friendly generals gain +0/+1.' },
+      2,
+      [
+        { op: 'gainArmor', amount: 3 },
+        { op: 'buffStats', attack: 0, health: 1, target: 'allFriendlyGenerals' },
+      ],
+    ),
+    rewardMerit: 2100,
+    rewardPacks: 4,
+    chapter: 4,
+  },
+  {
+    id: 'boss-wang-meng',
+    heroId: 'hist-wang-meng',
+    name: { zh: '王猛', en: 'Wang Meng' },
+    title: { zh: '捫蝨而談', en: 'Talking While Picking Lice' },
+    intro: {
+      zh: '桓溫問他天下事,他一边捉着虱子一边答 —— 答得桓溫一句话都接不上。',
+      en: 'Huan Wen asked him about the state of the realm. He answered while picking lice from his robe, and Huan Wen had nothing to say back.',
+    },
+    outro: {
+      zh: '臨終勸苻堅勿伐晉。八年後淝水,前秦一战而亡。',
+      en: 'On his deathbed he told Fu Jian not to march on Jin. Eight years later, at the Fei River, Former Qin ended in a single day.',
+    },
+    doctrine: 'royal',
+    hp: 70,
+    deckTier: 0.9,
+    power: power(
+      'bp-menshi',
+      { zh: '整肅吏治', en: 'Purge the Offices' },
+      { zh: '使一名敵方武將攻擊力變為 0(繳械)。', en: 'Disarm an enemy general.' },
+      2,
+      [{ op: 'grantKeyword', keyword: 'disarm', target: 'chosenEnemyGeneral' }],
+    ),
+    rewardMerit: 2200,
+    rewardPacks: 5,
+    chapter: 4,
+  },
+  {
+    id: 'boss-wang-anshi',
+    heroId: 'hist-wang-anshi',
+    name: { zh: '王安石', en: 'Wang Anshi' },
+    title: { zh: '三不足', en: 'The Three That Need Not Be Feared' },
+    intro: {
+      zh: '天變不足畏,祖宗不足法,人言不足恤。整个朝廷都在反对他,而他一条都不改。',
+      en: 'Heaven’s portents need not be feared, the ancestors’ ways need not be followed, men’s words need not be heeded. The whole court opposed him; he changed nothing.',
+    },
+    outro: {
+      zh: '新法尽废的那一年他死在江宁。司馬光說:介甫無他,唯執拗耳。',
+      en: 'He died at Jiangning the year his reforms were repealed. Sima Guang said of him: nothing wrong with the man — only that he would not bend.',
+    },
+    doctrine: 'ritual',
+    hp: 74,
+    deckTier: 0.0,
+    power: power(
+      'bp-qingmiao',
+      { zh: '青苗法', en: 'The Green Sprouts Loan' },
+      { zh: '抽兩張牌,我方主公受到 1 點傷害。', en: 'Draw two cards; your hero takes 1 damage.' },
+      2,
+      [
+        { op: 'draw', count: 2 },
+        { op: 'damage', amount: 1, target: 'friendlyHero' },
+      ],
+    ),
+    rewardMerit: 2300,
+    rewardPacks: 5,
+    chapter: 4,
+  },
+  {
+    id: 'boss-zhang-juzheng',
+    heroId: 'hist-zhang-juzheng',
+    name: { zh: '張居正', en: 'Zhang Juzheng' },
+    title: { zh: '一條鞭法', en: 'The Single Whip' },
+    intro: {
+      zh: '十年首輔,考成法一出,天下官吏无人敢懈。太仓的粮够吃十年。',
+      en: 'Ten years as chief grand secretary. With his performance statutes in force, no official in the realm dared slack. The granaries held ten years of grain.',
+    },
+    outro: {
+      zh: '死后半年被抄家,長子自縊,谥号追夺。他扶起来的那个皇帝亲自下的令。',
+      en: 'Half a year after his death his house was seized and his eldest son hanged himself; his posthumous titles were stripped — by order of the emperor he had raised.',
+    },
+    doctrine: 'royal',
+    hp: 80,
+    deckTier: 0.45,
+    power: power(
+      'bp-yitiaobian',
+      { zh: '考成法', en: 'The Performance Statutes' },
+      { zh: '使一名友方武將獲得+1/+2並抽一張牌。', en: 'Give a friendly general +1/+2 and draw a card.' },
+      2,
+      [
+        { op: 'buffStats', attack: 1, health: 2, target: 'chosenFriendlyGeneral' },
+        { op: 'draw', count: 1 },
+      ],
+    ),
+    rewardMerit: 2400,
+    rewardPacks: 5,
+    chapter: 4,
+  },
+  {
+    id: 'boss-yongzheng',
+    heroId: 'hist-yongzheng',
+    name: { zh: '雍正', en: 'The Yongzheng Emperor' },
+    title: { zh: '攤丁入畝', en: 'The Head Tax Folded into the Land' },
+    intro: {
+      zh: '在位十三年,几乎没有一天不在批奏折。他把一个空国库变成了六千万两。',
+      en: 'Thirteen years on the throne, and hardly a day when he was not answering memorials. He turned an empty treasury into sixty million taels.',
+    },
+    outro: {
+      zh: '为君难 —— 他自己刻了这三个字当印。五十八岁猝死于圆明园。',
+      en: '“It is hard to be a ruler” — he cut those words into his own seal. He died suddenly at fifty-eight, in the Garden of Perfect Brightness.',
+    },
+    doctrine: 'hegemonic',
+    // 第一轮 66 血实测 65% —— 关底不够关底(z=6.7),而前一关 張居正 是 47%,
+    // 章内递减反了。血量是**单调**的那个旋钮(deckTier 不是,见第 12 条),所以只动它。
+    // 82 血 → 57%,仍然不够关底(z=3.8)。血量是线性的,继续加。
+    hp: 104,
+    deckTier: 0.9,
+    power: power(
+      'bp-tandingrumu',
+      { zh: '攤丁入畝', en: 'Folded into the Land' },
+      { zh: '主公獲得 2 點護甲,並使友方全體獲得+1/+0。', en: 'Your hero gains 2 Armor and all friendly generals gain +1/+0.' },
+      2,
+      [
+        { op: 'gainArmor', amount: 2 },
+        { op: 'buffStats', attack: 1, health: 0, target: 'allFriendlyGenerals' },
+      ],
+    ),
+    rewardMerit: 2600,
+    rewardPacks: 6,
+    chapter: 4,
+  },
 ]
 
 // Boss 卡组:从该主义 + 中立池里按曲线取满 30 张,**优先带关键词或效果的卡**。
@@ -1306,6 +1553,101 @@ export const TRIALS: Record<string, TrialDef> = {
     objective: { kind: 'survive', turns: 16 },
     rewardMerit: 400,
   },
+  // ---- 第四章 · 立法者 ----
+  // 试炼刻意都不是「打得更狠」,而是**换一种约束**:
+  // 立法者的对局讲的是规矩,那么试炼就该是「在他的规矩下赢」。
+  'boss-guan-zhong': {
+    id: 'trial-guan-zhong',
+    name: { zh: '尊王攘夷', en: 'Honour the King' },
+    text: {
+      zh: '守成:九合诸侯靠的是耗得起。撑过 14 回合,盟主就是你的。',
+      en: 'Endure: he gathered the lords nine times by outlasting them. Survive 14 turns and the office is yours.',
+    },
+    objective: { kind: 'survive', turns: 14 },
+    rewardMerit: 520,
+  },
+  'boss-shang-yang': {
+    id: 'trial-shang-yang',
+    name: { zh: '徙木立信', en: 'The Pole at the South Gate' },
+    text: {
+      zh: '护送:三丈之木,徙者予五十金。木头到了,法才立得起来。',
+      en: 'Escort: fifty gold to whoever moves the pole. The law stands only once it has been moved.',
+    },
+    ...escort({ zh: '糧車', en: 'Grain Cart' }, 'token-liang-che'),
+    rewardMerit: 540,
+  },
+  'boss-li-si': {
+    id: 'trial-li-si',
+    name: { zh: '焚書', en: 'The Burning of the Books' },
+    text: {
+      zh: '守成:书烧得完,人烧不完。撑过 15 回合。',
+      en: 'Endure: the books can be burned; the men cannot. Survive 15 turns.',
+    },
+    objective: { kind: 'survive', turns: 15 },
+    rewardMerit: 560,
+  },
+  'boss-sang-hongyang': {
+    id: 'trial-sang-hongyang',
+    name: { zh: '平準', en: 'The Price Office' },
+    text: {
+      zh: '护送:粮车进京,平准才有本钱。',
+      en: 'Escort: the grain must reach the capital, or there is nothing to steady prices with.',
+    },
+    ...escort({ zh: '糧車', en: 'Grain Cart' }, 'token-liang-che'),
+    rewardMerit: 580,
+  },
+  'boss-wang-meng': {
+    id: 'trial-wang-meng',
+    name: { zh: '整肅', en: 'The Purge' },
+    text: {
+      zh: '斩将:王猛上任第一个月杀了二十几个豪强。先拿下他的主将。',
+      en: 'Assassinate: in his first month in office he executed twenty-odd magnates. Start with his commander.',
+    },
+    objective: {
+      kind: 'assassinate',
+      targetSide: 1,
+      targetDefId: 'token-di-zhu-jiang',
+      targetName: { zh: '敵軍主將', en: 'The Enemy Commander' },
+    },
+    bossModifiers: { startTokens: ['token-di-zhu-jiang'] },
+    rewardMerit: 600,
+  },
+  'boss-wang-anshi': {
+    id: 'trial-wang-anshi',
+    name: { zh: '人言不足恤', en: 'Let Them Talk' },
+    text: {
+      zh: '守成:满朝都在反对他,而他一条都不改。撑过 16 回合。',
+      en: 'Endure: the whole court opposed him and he changed nothing. Survive 16 turns.',
+    },
+    objective: { kind: 'survive', turns: 16 },
+    rewardMerit: 620,
+  },
+  'boss-zhang-juzheng': {
+    id: 'trial-zhang-juzheng',
+    name: { zh: '考成', en: 'The Reckoning' },
+    text: {
+      zh: '斩将:考成法之下,做不到的人要负责。先拿下他的主将。',
+      en: 'Assassinate: under his statutes, whoever fails answers for it. Start with his commander.',
+    },
+    objective: {
+      kind: 'assassinate',
+      targetSide: 1,
+      targetDefId: 'token-di-zhu-jiang',
+      targetName: { zh: '敵軍主將', en: 'The Enemy Commander' },
+    },
+    bossModifiers: { startTokens: ['token-di-zhu-jiang'] },
+    rewardMerit: 640,
+  },
+  'boss-yongzheng': {
+    id: 'trial-yongzheng',
+    name: { zh: '為君難', en: 'Hard to Be a Ruler' },
+    text: {
+      zh: '守成:他十三年几乎没有一天不在批奏折。撑过 18 回合。',
+      en: 'Endure: thirteen years, and hardly a day when he was not answering memorials. Survive 18 turns.',
+    },
+    objective: { kind: 'survive', turns: 18 },
+    rewardMerit: 700,
+  },
 }
 
 export function bossTrial(bossId: string): TrialDef | undefined {
@@ -1466,6 +1808,17 @@ export const BOSS_PERSONALITIES: Record<string, Partial<EvalWeights>> = {
   'boss-chen-youliang': { board: 1.25, foeHp: 0.5 }, // 楼船连锁 —— 靠体量碾
   'boss-yu-qian': { myHp: 0.9, board: 1.1 }, // 九门御敌 —— 纯守城
   'boss-zheng-chenggong': { board: 1.15, hand: 0.55 }, // 海上孤忠 —— 场面与资源双吃
+  // ---- 第四章 · 立法者 ----
+  // 这一章的人不靠打,靠攒。性格整体偏资源(hand 高),
+  // 只有商鞅与雍正偏场面 —— 那两个是真的会动手的。
+  'boss-guan-zhong': { board: 0.85, hand: 1.25 }, // 通商惠工 —— 攒得比谁都快
+  'boss-shang-yang': { board: 1.2, hand: 0.7 }, // 變法 —— 立了法就照着推
+  'boss-li-si': { board: 0.9, hand: 1.15 }, // 書同文 —— 检索优先
+  'boss-sang-hongyang': { board: 0.8, hand: 1.3 }, // 鹽鐵均輸 —— 纯理财
+  'boss-wang-meng': { board: 1.1, hand: 0.9 }, // 整肅吏治 —— 先拆再谈
+  'boss-wang-anshi': { board: 0.9, hand: 1.2 }, // 青苗法 —— 借将来的钱打现在
+  'boss-zhang-juzheng': { board: 1.05, hand: 1.05 }, // 考成法 —— 两头都要
+  'boss-yongzheng': { board: 1.2, hand: 1.0 }, // 攤丁入畝 —— 场面压制
 }
 
 export function bossPersonality(bossId: string): Partial<EvalWeights> | undefined {

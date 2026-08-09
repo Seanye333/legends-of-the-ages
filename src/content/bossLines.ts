@@ -164,6 +164,56 @@ export const BOSS_LINES: Record<string, BossLines> = {
     low: { zh: '孤軍在外,更不能亂。', en: 'Alone in the field, all the more reason not to falter.' },
     win: { zh: '大將者,不恃勇。', en: 'A great general does not rely on courage.' },
   },
+  // ---- 第四章 · 立法者 ----
+  // 四句全部取原话。这一章的人留下的本来就是话,不是战功。
+  'boss-guan-zhong': {
+    open: { zh: '倉廩實而知禮節,衣食足而知榮辱。', en: 'Fill the granaries and men learn courtesy; feed and clothe them and they learn shame.' },
+    kill: { zh: '一年之計,莫如樹穀。', en: 'For one year, plant grain.' },
+    low: { zh: '十年之計,莫如樹木。', en: 'For ten years, plant trees.' },
+    win: { zh: '終身之計,莫如樹人。', en: 'For a lifetime, raise men.' },
+  },
+  'boss-shang-yang': {
+    open: { zh: '法之不行,自上犯之。', en: 'The law fails when those above it break it.' },
+    kill: { zh: '疑行無名,疑事無功。', en: 'Hesitant action wins no name; hesitant work wins no result.' },
+    low: { zh: '治世不一道,便國不法古。', en: 'There is no single way to govern; to profit the state, do not copy the ancients.' },
+    win: { zh: '令既具未布 —— 先立信。', en: 'The edict was written and not yet issued. First they had to believe me.' },
+  },
+  'boss-li-si': {
+    open: { zh: '人之賢不肖譬如鼠矣,在所自處耳。', en: 'A man is worthy or worthless like a rat — it depends only on where he places himself.' },
+    kill: { zh: '車同軌,書同文。', en: 'One gauge for the carts, one script for the books.' },
+    low: { zh: '斯乃上蔡布衣。', en: 'I was a commoner from Shangcai.' },
+    win: { zh: '天下無異意,則安寧之術也。', en: 'When no one under heaven differs, that is the art of peace.' },
+  },
+  'boss-sang-hongyang': {
+    open: { zh: '民不益賦而天下用饒。', en: 'No new levy, and yet the realm has plenty.' },
+    kill: { zh: '鹽鐵之利,足以奉軍。', en: 'Salt and iron alone will keep an army.' },
+    low: { zh: '賢良文學,何以易之?', en: 'You scholars — what would you put in its place?' },
+    win: { zh: '國無蓄積,何以待敵?', en: 'Without a store laid by, with what do you meet an enemy?' },
+  },
+  'boss-wang-meng': {
+    open: { zh: '捫蝨而談,亦無不可。', en: 'I can pick lice and speak of the realm at the same time.' },
+    kill: { zh: '不肅則不治。', en: 'Without severity there is no order.' },
+    low: { zh: '晉雖僻陋,正朔相承。', en: 'Jin is remote and poor, but the true calendar has passed down there.' },
+    win: { zh: '願不以晉為圖。', en: 'I beg you: do not set your mind on Jin.' },
+  },
+  'boss-wang-anshi': {
+    open: { zh: '天變不足畏。', en: 'The portents of heaven need not be feared.' },
+    kill: { zh: '祖宗不足法。', en: 'The ways of the ancestors need not be followed.' },
+    low: { zh: '人言不足恤。', en: 'The talk of men need not be heeded.' },
+    win: { zh: '不畏浮雲遮望眼,只緣身在最高層。', en: 'I do not fear the drifting clouds across my sight — I stand on the topmost tier.' },
+  },
+  'boss-zhang-juzheng': {
+    open: { zh: '事不考成,雖日日言之無益。', en: 'Without a reckoning you may speak of a thing daily and gain nothing.' },
+    kill: { zh: '尊主權,課吏職,信賞罰。', en: 'Uphold the throne, hold the offices to account, make reward and punishment mean something.' },
+    low: { zh: '知我罪我,其惟春秋。', en: 'Whether they praise me or condemn me, let the histories decide.' },
+    win: { zh: '太倉之粟,可支十年。', en: 'The granaries hold ten years of grain.' },
+  },
+  'boss-yongzheng': {
+    open: { zh: '為君難。', en: 'It is hard to be a ruler.' },
+    kill: { zh: '朕就是這樣漢子。', en: 'This is the sort of man I am.' },
+    low: { zh: '朕自朝至夕,不敢暇逸。', en: 'From dawn to dusk I do not dare be idle.' },
+    win: { zh: '以爾之心,還治爾身。', en: 'By your own measure you are measured.' },
+  },
 }
 
 export function bossLines(bossId: string | null | undefined): BossLines | undefined {
