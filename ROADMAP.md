@@ -891,7 +891,28 @@ ifTurnAtLeast 1 张 · ifEnemyHeroHpBelow 1 张 · ifTroopCount 2 张
 
     顺带:这四条进度条的分母就是 C19–C21 的现状(名言 253 · 台词 307 ·
     兵器 19 · 绝命诗 79),等于给那三条待办装了个看得见的进度表。
-30. 🟢⏱ 暗色 / 亮色主题
+30. 🟡⏱ **暗色 / 亮色主题** —— **2026-08-08 量过了,先装了尺子,主题本身没做**。
+    `npm run theme-audit`,判定层 `scripts/themeAudit.ts` 带 13 条测试。
+
+    调色板确实是集中的(`index.css` 里 15 个颜色变量),照理说加一组
+    `:root[data-theme='light']` 覆盖就完事。而一量:**56 个 CSS 模块里有 1,889 处
+    写死的颜色,一个模块都没漏掉**。只翻那 15 个变量,得到的是「深色底的字压在
+    浅色底上」—— 一个字都读不清,而且不报任何错。
+    **所以这一条不是「还没排上」,是「直接做会做出一个坏的亮色模式」。**
+
+    尺子把 1,889 分成两档,这一步很重要:
+
+    | | 数 | |
+    |---|---|---|
+    | **挡路** | **561** | 不透明的 `color` / `background` 字面量 —— 直接决定字读不读得出来 |
+    | 不挡路 | 1,359 | 阴影、描边、半透明叠加 —— 在深浅两种底上都成立,**不用还** |
+
+    已经不欠债的文件 7 / 57。欠得最多的:`TitleScreen 54 · MatchScreen 44 ·
+    GeneralToken 41 · HeroPlate 36 · CardFace 34`。
+
+    **怎么还**:把那 561 处逐个换成 `var(--…)`。这是**零视觉变化**的重构
+    (深色值不变),所以可以一份一份来、每份截图对拍;数字降到 0 之后,
+    亮色主题才真的只差一组变量覆盖。这也是 uiKit 那一轮的做法(先装闸门再动按钮)。
 31. 🟢 ~~色盲模式~~ —— **早就做完了,这条清单过期了**(2026-08-08 核对)。
     `settingsStore.colorBlind` → `main.tsx` 写 `document.documentElement.dataset.colorblind`
     → `CardFace` / `GeneralToken` 的 `:root[data-colorblind='true']` 规则接管:
@@ -1611,6 +1632,7 @@ npm run fit-price        # 拿实测 Δ 量定价表准不准(DELTAS= 指向 sim
 
 # 界面(不卡门,只记录)
 npm run dead-css          # 死样式清单(动态取用的模块会跳过,那是盲区)
+npm run theme-audit       # 主题就绪度:还有多少写死的颜色挡着亮色主题(561 挡路 / 1359 不挡路)
 npm run css-dupes         # 同一个按钮在各屏长得不一样 —— 逐字节重复 + 取值分布
 npm run css-order         # 上面那道闸门;输出的「比对了 N 对」= 真正押了注的覆盖条数
 
