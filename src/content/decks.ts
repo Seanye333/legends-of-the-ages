@@ -65,13 +65,26 @@ export const PRECON_DECKS: DeckList[] = [
     heroId: 'cao-cao',
     name: { zh: '魏武揮鞭', en: 'The Tyrant’s Lash' },
     // 霸道:全场最高攻。守护清一色自家猛将(周亞夫/許褚/樊噲),
-    // 霸道 6 费内没有点杀战吼,改用龐德「單挑」上场就换掉一个敌将。
+    // 点杀战吼这个位子由許褚(6 费 6/5 守护,战吼随机 3 伤)兼着。
+    //
+    // 抢攻**只留張遼一张**。2026-08-08 之前这里是張遼(衝鋒)+ 鄧艾(突襲)两张,
+    // 而骨架写的是「抢攻 1~2 张」—— 六套里只有这一套取了上限,同时它的总身材(216)、
+    // 总攻(99)也都是六套最高。三项都压着上沿的结果是总胜率 59.4%,并且把
+    // 坐斷東南打到 31%、大隱於市 34%,离 30% 的对位闸门只剩一步。
+    //
+    // 为什么砍的是抢攻而不是身材:同一次 A/B 里试过把李典(5/6)换成死戰之士(4/5),
+    // 魏武反而从 58.6% 涨到 60.6% —— 身材不是自由变量,省下的身材会被文本吃回去。
+    // 抢攻则是**直接对着坐斷東南的答案**:那套牌 12 张守护里 5 张压在 6 费,
+    // 靠站场磨人,而突袭正是当回合就能拆墙的东西。
+    // 实测(每对位 500 局):魏武 58.6% → 53.4%,坐斷那一格 31% → 38%,
+    // 六套总胜率极差 14.4 → 7.2 个百分点。
     cardIds: [
       ...copies(1, 'cao-lin'), ...copies(2, 'eq-teng-jia', 'strat-shengdong-jixi'),
       ...copies(2, 'wang-lang', 'eq-mingguang-kai', 'strat-huo-ji'),
       ...copies(2, 'cao-ang', 'cao-rui'), ...copies(1, 'mao-jie'),
       ...copies(2, 'wang-ping', 'li-dian'), ...copies(1, 'hist-tian-dan', 'hist-shang-yang'),
-      ...copies(2, 'hist-zhou-yafu', 'xu-chu', 'hist-fan-kuai'), ...copies(1, 'zhang-liao', 'deng-ai'),
+      ...copies(2, 'hist-zhou-yafu', 'xu-chu', 'hist-fan-kuai'),
+      ...copies(1, 'zhang-liao', 'hist-mai-tiezhang'),
     ],
   },
   {

@@ -8,6 +8,7 @@
 // 会同时成立。
 import { PRECON_DECKS } from '../src/content/decks'
 import { deckHealth } from '../src/content/deckHealth'
+import { judgeSkeleton, POWER_AXES, AXIS_LABEL, MAX_TOPS, BODY_DEV_PCT } from './skeletonGate'
 
 const COSTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
@@ -35,16 +36,33 @@ for (const r of rows) {
   console.log(pad(r.name, 6) + COSTS.map((c) => num(r.curve[c] ?? 0, 4)).join(''))
 }
 
-// 离群提示:任何一项与中位数差得离谱,基本就是那套牌被碾压/碾压别人的原因
-const median = (xs: number[]) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)]
-const medBody = median(rows.map((r) => r.body))
-console.log(`\n总身材中位数 ${medBody};偏离超过 8% 的卡组:`)
-let flagged = 0
-for (const r of rows) {
-  const dev = (100 * (r.body - medBody)) / medBody
-  if (Math.abs(dev) > 8) {
-    console.log(`  ${r.name}: ${r.body}(${dev > 0 ? '+' : ''}${dev.toFixed(0)}%)`)
-    flagged++
-  }
+// ---------- 判定 ----------
+// 判定逻辑在 skeletonGate.ts —— 抽出去是为了能不看这张表就验证它,
+// 那边钉着两个方向,其中最要紧的一条是「每项都在限内、但一套牌把好处占全了」
+// 必须被抓住(那正是 2026-08-08 那次失衡的形状)。
+const decks = rows.map((r) => ({ name: r.name, health: r }))
+const verdict = judgeSkeleton(decks)
+
+console.log(`\n各项之首(★ = 独占;并列不算占住):`)
+for (const axis of POWER_AXES) {
+  const vals = rows.map((r) => r[axis])
+  const mx = Math.max(...vals)
+  console.log(
+    `  ${pad(AXIS_LABEL[axis], 4)}` +
+      rows.map((r, i) => `${r.name}=${vals[i]}${vals[i] === mx ? '★' : ' '}`).join('  '),
+  )
 }
-if (flagged === 0) console.log('  (无)')
+const held = verdict.tops.filter((t) => t.axes.length > 0)
+console.log(
+  `  独占计数(上限 ${MAX_TOPS}):` +
+    (held.map((t) => `${t.name}×${t.axes.length}`).join('  ') || '(无)'),
+)
+console.log(`\n总身材中位数 ${verdict.medianBody},容差 ±${BODY_DEV_PCT}%`)
+
+if (verdict.problems.length) {
+  console.log('\n⚠ 骨架失衡:')
+  for (const p of verdict.problems) console.log(`  ${p}`)
+  process.exitCode = 1
+} else {
+  console.log('\n✓ 无卡组独占超过上限,总身材均在容差内')
+}
