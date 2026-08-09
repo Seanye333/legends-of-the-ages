@@ -13,7 +13,7 @@
     radial-gradient(ellipse 120% 90% at 50% 45%, transparent 30%, rgba(6, 4, 2, 0.86) 100%),
     linear-gradient(180deg, rgba(24, 18, 9, 0.82), rgba(14, 10, 5, 0.9)),
     url('/art/battlefield-bg.webp') center 40% / cover no-repeat,
-    #12100c;
+    var(--ash-07);
   box-shadow: var(--shadow-2);
 }
 
@@ -95,7 +95,7 @@
   padding: 0 3px;
   border-radius: 999px;
   border: 1px solid rgba(10, 7, 3, 0.9);
-  background: linear-gradient(180deg, #4c3d20, #2c2210);
+  background: linear-gradient(180deg, var(--brass-24), var(--brass-16));
   color: var(--gold-bright);
   font-size: 10px;
   font-variant-numeric: tabular-nums;

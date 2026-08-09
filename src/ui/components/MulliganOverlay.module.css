@@ -18,7 +18,7 @@
     radial-gradient(ellipse 120% 90% at 50% 40%, transparent 30%, rgba(6, 4, 2, 0.9) 100%),
     linear-gradient(180deg, rgba(8, 6, 3, 0.82), rgba(8, 6, 3, 0.66) 40%, rgba(6, 4, 2, 0.88)),
     url('/art/mulligan-bg.webp') center 30% / cover no-repeat,
-    #0c0a07;
+    var(--ash-05);
   animation: overlayIn 0.35s ease;
 }
 
@@ -39,7 +39,7 @@
   font-weight: 700;
   letter-spacing: calc(0.5em * var(--ls-wide));
   text-indent: calc(0.5em * var(--ls-wide));
-  background: linear-gradient(175deg, #fdf3d0 8%, #f5d78a 38%, #c89644 68%, #e0b860 96%);
+  background: linear-gradient(175deg, var(--brass-94) 8%, var(--brass-84) 38%, var(--brass-60) 68%, var(--brass-72) 96%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -114,10 +114,10 @@
   text-indent: calc(0.26em * var(--ls-wide));
   padding: clamp(10px, 1.8vh, 14px) clamp(34px, 7vw, 58px);
   border-radius: 6px;
-  border: 1px solid #f0d090;
+  border: 1px solid var(--brass-82);
   background:
     linear-gradient(180deg, rgba(255, 244, 210, 0.28), rgba(255, 244, 210, 0) 45%),
-    linear-gradient(180deg, #6a4d1e, #46310f 55%, #2e1f08);
+    linear-gradient(180deg, var(--brass-31), var(--brass-20) 55%, var(--brass-14));
   color: var(--gold-bright);
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
   cursor: pointer;

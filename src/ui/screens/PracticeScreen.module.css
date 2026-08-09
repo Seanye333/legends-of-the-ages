@@ -5,7 +5,7 @@
      七个模式一个样,换屏读不出「到了别处」。极淡:是底色不是招牌。 */
   background:
     radial-gradient(ellipse 100% 46% at 50% 0%, rgba(90, 140, 170, 0.07), transparent 62%),
-    radial-gradient(ellipse at 50% 30%, #26221b, #12100c);
+    radial-gradient(ellipse at 50% 30%, var(--ash-14), var(--ash-07));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -158,10 +158,10 @@
   text-indent: calc(0.24em * var(--ls-wide));
   padding: 12px 48px;
   border-radius: 8px;
-  border: 1px solid #f0d090;
+  border: 1px solid var(--brass-82);
   background:
     linear-gradient(180deg, rgba(255, 244, 210, 0.28), rgba(255, 244, 210, 0) 45%),
-    linear-gradient(180deg, #6a4d1e, #46310f 55%, #2e1f08);
+    linear-gradient(180deg, var(--brass-31), var(--brass-20) 55%, var(--brass-14));
   color: var(--gold-bright);
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
   box-shadow:

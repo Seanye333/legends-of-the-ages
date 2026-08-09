@@ -6,7 +6,7 @@
   min-height: 100vh;
   min-height: 100dvh;
   padding: 18px clamp(12px, 4vw, 40px) 60px;
-  background: linear-gradient(180deg, #14100a, var(--ink-0));
+  background: linear-gradient(180deg, var(--ash-08), var(--ink-0));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -45,11 +45,11 @@
 
 .nextBtn {
   margin-top: 20px; padding: 11px 30px; border-radius: 9px;
-  border: 1px solid var(--gold-deep); background: linear-gradient(180deg, #2c2415, #1b150c);
+  border: 1px solid var(--gold-deep); background: linear-gradient(180deg, #2c2415, var(--ash-11));
   color: var(--gold-bright); font-family: var(--font-display); letter-spacing: 0.16em;
   font-size: 15px; cursor: pointer;
 }
-.nextBtn:hover { border-color: var(--gold); color: #fff; }
+.nextBtn:hover { border-color: var(--gold); color: var(--ash-99); }
 
 .result { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 40px; }
 .score { font-family: var(--font-display); font-size: 44px; color: var(--gold-bright); font-variant-numeric: tabular-nums; }
@@ -173,7 +173,7 @@
 /* ---- 满分 ----
    全对与四对一错此前长得一模一样,而全对是这个模式唯一值得追的东西。 */
 .scorePerfect {
-  color: #fff3d0;
+  color: var(--brass-96);
   text-shadow:
     0 0 12px rgba(240, 214, 138, 0.75),
     0 0 34px rgba(212, 168, 74, 0.4);
@@ -200,8 +200,8 @@
   font-family: var(--font-brush);
   font-size: 21px;
   letter-spacing: 0.06em;
-  color: #ffefe2;
-  background: linear-gradient(160deg, #d8452e, #9c2517 70%);
+  color: var(--brass-95);
+  background: linear-gradient(160deg, var(--cinnabar-43), var(--cinnabar-28) 70%);
   box-shadow:
     inset 0 0 0 2px rgba(255, 235, 215, 0.85),
     inset 0 0 0 4px rgba(154, 30, 16, 0.9),

@@ -15,7 +15,7 @@
   position: fixed;
   inset: -4vh -4vw;
   z-index: -2;
-  background: url('/art/title-hero.webp') center 18% / cover no-repeat, #12100c;
+  background: url('/art/title-hero.webp') center 18% / cover no-repeat, var(--ash-07);
   animation: bgDrift 36s ease-in-out infinite alternate;
 }
 
@@ -71,11 +71,11 @@
   letter-spacing: 0.14em;
   background: linear-gradient(
     175deg,
-    #fdf3d0 4%,
-    #f5d78a 32%,
-    #c89644 58%,
+    var(--brass-94) 4%,
+    var(--brass-84) 32%,
+    var(--brass-60) 58%,
     #9a6f26 78%,
-    #e0b860 96%
+    var(--brass-72) 96%
   );
   -webkit-background-clip: text;
   background-clip: text;
@@ -94,7 +94,7 @@
   width: clamp(30px, 8vw, 46px);
   aspect-ratio: 1 / 1.9;
   padding: 2px 0;
-  background: linear-gradient(160deg, #d8452e, #9c2517 70%, #b03520);
+  background: linear-gradient(160deg, var(--cinnabar-43), var(--cinnabar-28) 70%, var(--cinnabar-34));
   border-radius: 4px;
   box-shadow:
     inset 0 0 0 1.5px rgba(255, 235, 215, 0.85),
@@ -108,7 +108,7 @@
   font-size: clamp(15px, 4vw, 23px);
   font-weight: 700;
   line-height: 1.05;
-  color: #ffefe2;
+  color: var(--brass-95);
   text-shadow: 0 0 2px rgba(120, 20, 8, 0.8);
 }
 
@@ -118,7 +118,7 @@
   letter-spacing: calc(0.52em * var(--ls-wide));
   text-indent: calc(0.52em * var(--ls-wide));
   text-transform: uppercase;
-  color: #c8b070;
+  color: var(--brass-68);
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
 }
 
@@ -159,7 +159,7 @@
 
 .errorLine {
   margin: 0;
-  color: #e8a094;
+  color: var(--cinnabar-70);
   font-size: 13px;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
 }
@@ -209,13 +209,13 @@
 }
 
 .deckActive {
-  color: #2a1c08;
-  background: linear-gradient(180deg, #fdf0c0, #8a5f1e);
+  color: var(--brass-13);
+  background: linear-gradient(180deg, var(--brass-93), #8a5f1e);
   text-shadow: 0 1px 0 rgba(255, 240, 200, 0.5);
 }
 
 .deckActive::before {
-  background: linear-gradient(180deg, #f2d996, #cfa049 55%, #ba8a35);
+  background: linear-gradient(180deg, #f2d996, var(--brass-64) 55%, #ba8a35);
 }
 
 /* —— 出征按钮 —— */
@@ -229,10 +229,10 @@
   text-indent: calc(0.34em * var(--ls-wide));
   padding: clamp(12px, 2vh, 16px) clamp(44px, 12vw, 72px);
   border-radius: 6px;
-  border: 1px solid #f0d090;
+  border: 1px solid var(--brass-82);
   background:
     linear-gradient(180deg, rgba(255, 244, 210, 0.28), rgba(255, 244, 210, 0) 45%),
-    linear-gradient(180deg, #6a4d1e, #46310f 55%, #2e1f08);
+    linear-gradient(180deg, var(--brass-31), var(--brass-20) 55%, var(--brass-14));
   color: var(--gold-bright);
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
   cursor: pointer;
@@ -354,7 +354,7 @@
   border-radius: 10px;
   background:
     linear-gradient(160deg, rgba(255, 236, 190, 0.06), rgba(0, 0, 0, 0) 40%),
-    linear-gradient(180deg, #241e14, #171208 70%, #120d06);
+    linear-gradient(180deg, var(--ash-13), var(--ash-10) 70%, var(--ash-06));
   overflow: hidden;
   padding-bottom: 4px;
   box-shadow:
@@ -440,12 +440,12 @@
   border-radius: 50%;
   background:
     radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0) 40%),
-    radial-gradient(circle at 50% 65%, #5a9aee 0%, #2a55a8 52%, #142c5e 100%);
+    radial-gradient(circle at 50% 65%, var(--azure-56) 0%, var(--azure-32) 52%, var(--azure-17) 100%);
   border: 1px solid #9cc0f2;
   box-shadow:
     0 2px 4px rgba(0, 0, 0, 0.7),
     inset 0 -2px 3px rgba(8, 18, 52, 0.85);
-  color: #fff;
+  color: var(--ash-99);
   font-weight: 800;
   font-size: 13px;
   font-family: var(--font-display);
@@ -514,7 +514,7 @@
   font-weight: 800;
   font-size: 12px;
   font-family: var(--font-display);
-  color: #fff;
+  color: var(--ash-99);
   box-shadow:
     0 1px 3px rgba(0, 0, 0, 0.7),
     inset 0 1px 1px rgba(255, 255, 255, 0.35),
@@ -524,15 +524,15 @@
 .attack {
   background:
     radial-gradient(circle at 32% 24%, rgba(255, 250, 225, 0.9), rgba(255, 255, 255, 0) 42%),
-    radial-gradient(circle at 50% 65%, #f0c250 0%, #b8862a 55%, #6e4a0e 100%);
-  border: 1px solid #f5d78a;
+    radial-gradient(circle at 50% 65%, var(--brass-76) 0%, var(--brass-54) 55%, var(--brass-30) 100%);
+  border: 1px solid var(--brass-84);
   text-shadow: 0 1px 2px rgba(70, 45, 0, 0.9);
 }
 
 .health {
   background:
     radial-gradient(circle at 32% 24%, rgba(255, 235, 225, 0.85), rgba(255, 255, 255, 0) 42%),
-    radial-gradient(circle at 50% 65%, #e05a48 0%, #a82e20 55%, #5e130c 100%);
+    radial-gradient(circle at 50% 65%, var(--cinnabar-50) 0%, var(--cinnabar-31) 55%, var(--cinnabar-16) 100%);
   border: 1px solid #e88a7a;
   text-shadow: 0 1px 2px rgba(60, 8, 0, 0.9);
 }
@@ -546,24 +546,24 @@
 }
 
 .common {
-  background: linear-gradient(135deg, #b8b8b8, #6a6a6a);
+  background: linear-gradient(135deg, var(--ash-71), var(--ash-41));
   border: 1px solid rgba(255, 255, 255, 0.25);
 }
 
 .rare {
-  background: linear-gradient(135deg, #8ac0f0, #2a68b8);
+  background: linear-gradient(135deg, var(--azure-70), var(--azure-37));
   border: 1px solid rgba(180, 220, 255, 0.6);
   box-shadow: 0 0 5px rgba(74, 144, 217, 0.9);
 }
 
 .epic {
-  background: linear-gradient(135deg, #d09af0, #7a34b0);
+  background: linear-gradient(135deg, var(--amethyst-70), var(--amethyst-34));
   border: 1px solid rgba(220, 180, 255, 0.6);
   box-shadow: 0 0 5px rgba(164, 90, 208, 0.9);
 }
 
 .legendary {
-  background: linear-gradient(135deg, #ffe9a8, #c8862a);
+  background: linear-gradient(135deg, var(--brass-90), var(--brass-56));
   border: 1px solid rgba(255, 235, 180, 0.7);
   box-shadow: 0 0 6px rgba(232, 178, 58, 1);
 }
@@ -728,8 +728,8 @@
   text-indent: 0.14em;
   padding: 7px 18px;
   border-radius: 6px;
-  border: 1px solid #f0d090;
-  background: linear-gradient(180deg, #6a4d1e, #46310f 55%, #2e1f08);
+  border: 1px solid var(--brass-82);
+  background: linear-gradient(180deg, var(--brass-31), var(--brass-20) 55%, var(--brass-14));
   color: var(--gold-bright);
   cursor: pointer;
 }

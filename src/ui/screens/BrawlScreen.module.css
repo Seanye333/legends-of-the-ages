@@ -5,7 +5,7 @@
      七个模式一个样,换屏读不出「到了别处」。极淡:是底色不是招牌。 */
   background:
     radial-gradient(ellipse 100% 46% at 50% 0%, rgba(197, 59, 44, 0.09), transparent 62%),
-    radial-gradient(ellipse at 50% 30%, #26221b, #12100c);
+    radial-gradient(ellipse at 50% 30%, var(--ash-14), var(--ash-07));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -82,7 +82,7 @@
 
 .brawlName { font-family: var(--font-display); font-size: 17px; color: var(--gold-bright); }
 .brawlText { font-size: 13px; line-height: 1.55; color: var(--parchment-dim); flex: 1; }
-.brawlGo { font-size: 13px; font-weight: 700; color: #e0b060; align-self: flex-end; }
+.brawlGo { font-size: 13px; font-weight: 700; color: var(--brass-70); align-self: flex-end; }
 
 /* 行首字章:十四条规则原来是十四段纯文字,一眼扫过去全长一个样。
    取规则名首字作一枚圆印(深底金字、微斜)—— 像盖上去的,不是排上去的。 */
@@ -100,7 +100,7 @@
   place-items: center;
   border-radius: 50%;
   border: 1px solid rgba(212, 168, 74, 0.55);
-  background: radial-gradient(circle at 35% 30%, #3a2c14, #1c1408 75%);
+  background: radial-gradient(circle at 35% 30%, var(--brass-18), #1c1408 75%);
   color: var(--gold);
   font-family: var(--font-display);
   font-size: 15px;
@@ -141,7 +141,7 @@
   padding: 1px 7px;
   border-radius: 999px;
   background: var(--gold);
-  color: #1b150c;
+  color: var(--ash-11);
   font-size: 11px;
   letter-spacing: 0.08em;
   vertical-align: 2px;
@@ -190,8 +190,8 @@
   font-family: var(--font-display);
   font-size: 13px;
   letter-spacing: 0.08em;
-  color: #1a1206;
-  background: linear-gradient(180deg, var(--gold-mid), #8a6c26);
+  color: var(--brass-07);
+  background: linear-gradient(180deg, var(--gold-mid), var(--brass-42));
   border: none;
   cursor: pointer;
 }

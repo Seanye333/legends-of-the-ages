@@ -32,7 +32,7 @@
     radial-gradient(ellipse 120% 90% at 50% 40%, transparent 25%, rgba(8, 6, 2, 0.9) 100%),
     linear-gradient(180deg, rgba(14, 10, 4, 0.72), rgba(20, 14, 5, 0.5) 45%, rgba(8, 6, 2, 0.86)),
     url('/art/result-victory.webp') center 35% / cover no-repeat,
-    #0c0a07;
+    var(--ash-05);
 }
 
 /* 败:灰烬战场 */
@@ -41,7 +41,7 @@
     radial-gradient(ellipse 120% 90% at 50% 40%, transparent 25%, rgba(4, 3, 3, 0.94) 100%),
     linear-gradient(180deg, rgba(8, 6, 6, 0.8), rgba(10, 8, 8, 0.62) 45%, rgba(4, 3, 3, 0.92)),
     url('/art/result-defeat.webp') center 35% / cover no-repeat,
-    #0a0808;
+    var(--ash-04);
 }
 
 .bgDraw {
@@ -49,7 +49,7 @@
     radial-gradient(ellipse 120% 90% at 50% 40%, transparent 25%, rgba(6, 5, 3, 0.94) 100%),
     linear-gradient(180deg, rgba(10, 8, 5, 0.82), rgba(10, 8, 5, 0.7)),
     url('/art/battlefield-bg.webp') center 40% / cover no-repeat,
-    #0c0a07;
+    var(--ash-05);
 }
 
 /* 书法大字 */
@@ -97,7 +97,7 @@
 }
 
 .win {
-  background: linear-gradient(175deg, #fdf3d0 6%, #f5d78a 36%, #c89644 66%, #e8c060 94%);
+  background: linear-gradient(175deg, var(--brass-94) 6%, var(--brass-84) 36%, var(--brass-60) 66%, var(--brass-75) 94%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -105,7 +105,7 @@
 }
 
 .lose {
-  background: linear-gradient(175deg, #d8968a 6%, #b0453a 45%, #6e241c 90%);
+  background: linear-gradient(175deg, var(--cinnabar-65) 6%, var(--cinnabar-40) 45%, var(--cinnabar-22) 90%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -113,7 +113,7 @@
 }
 
 .draw {
-  background: linear-gradient(175deg, #d8ccb0 8%, var(--parchment-faint) 55%, #6a5e46 92%);
+  background: linear-gradient(175deg, var(--brass-79) 8%, var(--parchment-faint) 55%, #6a5e46 92%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -141,10 +141,10 @@
 }
 
 .primary {
-  border: 1px solid #f0d090;
+  border: 1px solid var(--brass-82);
   background:
     linear-gradient(180deg, rgba(255, 244, 210, 0.28), rgba(255, 244, 210, 0) 45%),
-    linear-gradient(180deg, #6a4d1e, #46310f 55%, #2e1f08);
+    linear-gradient(180deg, var(--brass-31), var(--brass-20) 55%, var(--brass-14));
   color: var(--gold-bright);
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
   box-shadow:
@@ -245,7 +245,7 @@
   border: 1px solid var(--gold-deep, #b8863b);
   background:
     radial-gradient(circle at 50% 42%, rgba(197, 59, 44, 0.85) 0 7px, transparent 7px),
-    linear-gradient(160deg, #3a2c12, #201607);
+    linear-gradient(160deg, var(--brass-19), var(--brass-09));
   box-shadow:
     inset 0 0 0 1px rgba(0, 0, 0, 0.6),
     0 2px 6px rgba(0, 0, 0, 0.6),
@@ -302,7 +302,7 @@
   margin: 0;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  color: var(--gold-bright, #f0d79a);
+  color: var(--gold-bright, var(--brass-85));
 }
 
 /* ==================== 长卷 ====================

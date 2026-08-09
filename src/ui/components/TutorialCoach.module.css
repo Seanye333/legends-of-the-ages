@@ -109,8 +109,8 @@
   text-indent: 0.16em;
   padding: 7px 20px;
   border-radius: 6px;
-  border: 1px solid #f0d090;
-  background: linear-gradient(180deg, #6a4d1e, #46310f 55%, #2e1f08);
+  border: 1px solid var(--brass-82);
+  background: linear-gradient(180deg, var(--brass-31), var(--brass-20) 55%, var(--brass-14));
   color: var(--gold-bright);
   cursor: pointer;
 }

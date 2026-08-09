@@ -8,7 +8,7 @@
   scroll-behavior: smooth;
   min-height: 100dvh;
   padding: max(20px, env(safe-area-inset-top) + 8px) 16px max(28px, env(safe-area-inset-bottom));
-  background: radial-gradient(ellipse at 50% 0%, #1d1710 0%, #0b0805 65%);
+  background: radial-gradient(ellipse at 50% 0%, var(--ash-12) 0%, var(--ash-03) 65%);
   -webkit-user-select: none;
   user-select: none;
 }
@@ -246,7 +246,7 @@
 
 .danger {
   border-color: rgba(184, 68, 46, 0.7);
-  color: #e8a08a;
+  color: var(--cinnabar-71);
 }
 
 .chip:focus-visible,

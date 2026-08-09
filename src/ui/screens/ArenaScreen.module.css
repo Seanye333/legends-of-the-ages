@@ -5,7 +5,7 @@
 .screen {
   min-height: 100dvh;
   padding: max(20px, env(safe-area-inset-top) + 8px) 16px max(28px, env(safe-area-inset-bottom));
-  background: radial-gradient(ellipse at 50% 0%, #1d1710 0%, #0b0805 65%);
+  background: radial-gradient(ellipse at 50% 0%, var(--ash-12) 0%, var(--ash-03) 65%);
   -webkit-user-select: none;
   user-select: none;
 }
@@ -101,8 +101,8 @@
 }
 
 .primary {
-  background: linear-gradient(180deg, var(--gold-mid), #8a6c26);
-  color: #1a1206;
+  background: linear-gradient(180deg, var(--gold-mid), var(--brass-42));
+  color: var(--brass-07);
 }
 
 .primary:disabled {
@@ -113,7 +113,7 @@
 .danger {
   background: rgba(255, 255, 255, 0.04);
   border-color: rgba(184, 68, 46, 0.6);
-  color: #e8a08a;
+  color: var(--cinnabar-71);
 }
 
 .primary:focus-visible,
@@ -202,7 +202,7 @@
 
 .progressFill {
   height: 100%;
-  background: linear-gradient(90deg, #8a6c26, var(--gold-mid));
+  background: linear-gradient(90deg, var(--brass-42), var(--gold-mid));
   transition: width 0.25s ease;
 }
 
@@ -263,7 +263,7 @@
 }
 
 .loss {
-  color: #b8442e;
+  color: var(--cinnabar-39);
 }
 
 .sep {

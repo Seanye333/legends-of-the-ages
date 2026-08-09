@@ -16,7 +16,7 @@
   position: absolute;
   inset: 0 auto 0 0;
   border-radius: 3px;
-  background: linear-gradient(90deg, #8a6c26, var(--gold-mid) 70%, #ffe6a8);
+  background: linear-gradient(90deg, var(--brass-42), var(--gold-mid) 70%, #ffe6a8);
   transition: width 0.25s linear;
 }
 
@@ -28,7 +28,7 @@
   height: 9px;
   margin-top: -4.5px;
   border-radius: 50%;
-  background: radial-gradient(circle, #fff6dc 0%, #ffb648 55%, rgba(255, 120, 30, 0) 75%);
+  background: radial-gradient(circle, var(--brass-97) 0%, #ffb648 55%, rgba(255, 120, 30, 0) 75%);
   filter: drop-shadow(0 0 5px rgba(255, 170, 60, 0.9));
 }
 
@@ -45,7 +45,7 @@
 }
 
 .urgent .fuse {
-  background: linear-gradient(90deg, #7a2418, #d4472e 70%, #ff9a7a);
+  background: linear-gradient(90deg, var(--cinnabar-23), #d4472e 70%, #ff9a7a);
 }
 
 .urgent .spark {

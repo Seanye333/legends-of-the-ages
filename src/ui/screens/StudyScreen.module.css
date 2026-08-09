@@ -5,7 +5,7 @@
 .screen {
   min-height: 100dvh;
   padding: max(20px, env(safe-area-inset-top) + 8px) 16px max(28px, env(safe-area-inset-bottom));
-  background: radial-gradient(ellipse at 50% 0%, #1d1710 0%, #0b0805 65%);
+  background: radial-gradient(ellipse at 50% 0%, var(--ash-12) 0%, var(--ash-03) 65%);
 }
 
 .head {

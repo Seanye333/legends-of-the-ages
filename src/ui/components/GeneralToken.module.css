@@ -93,14 +93,14 @@
   border-radius: 50%;
   background: conic-gradient(
     from 210deg,
-    #8a6a2a,
+    var(--brass-43),
     #ecd08a 13%,
-    #7a5a20 28%,
+    var(--brass-36) 28%,
     #f4dc96 44%,
     #96702a 58%,
     #e0be74 74%,
     #6e5220 88%,
-    #8a6a2a
+    var(--brass-43)
   );
   box-shadow:
     0 3px 8px rgba(0, 0, 0, 0.6),
@@ -112,14 +112,14 @@
 .guard::before {
   background: conic-gradient(
     from 210deg,
-    #5a6274,
+    var(--azure-38),
     #ccd4e4 13%,
     #4a5264 28%,
     #dde4f0 44%,
     #667088 58%,
     #b8c2d6 74%,
     #454e60 88%,
-    #5a6274
+    var(--azure-38)
   );
 }
 
@@ -145,7 +145,7 @@
   font-size: clamp(8px, 1.6vh, 11px);
   font-weight: 700;
   color: #e8ecf6;
-  background: linear-gradient(180deg, #4c5468, #2e3442);
+  background: linear-gradient(180deg, #4c5468, var(--azure-20));
   border: 1px solid #9aa4c0;
   border-radius: 4px;
   padding: 0 4px;
@@ -213,7 +213,7 @@
   font-family: var(--font-display);
   font-weight: 800;
   font-size: clamp(10px, 2vh, 14px);
-  color: #fff;
+  color: var(--ash-99);
   z-index: 3;
   box-shadow:
     0 2px 4px rgba(0, 0, 0, 0.7),
@@ -225,8 +225,8 @@
   left: -4px;
   background:
     radial-gradient(circle at 32% 24%, rgba(255, 250, 225, 0.9), rgba(255, 255, 255, 0) 42%),
-    radial-gradient(circle at 50% 65%, #f0c250 0%, #b8862a 55%, #6e4a0e 100%);
-  border: 1px solid #f5d78a;
+    radial-gradient(circle at 50% 65%, var(--brass-76) 0%, var(--brass-54) 55%, var(--brass-30) 100%);
+  border: 1px solid var(--brass-84);
   text-shadow: 0 1px 2px rgba(70, 45, 0, 0.9);
 }
 
@@ -234,7 +234,7 @@
   right: -4px;
   background:
     radial-gradient(circle at 32% 24%, rgba(255, 235, 225, 0.85), rgba(255, 255, 255, 0) 42%),
-    radial-gradient(circle at 50% 65%, #e05a48 0%, #a82e20 55%, #5e130c 100%);
+    radial-gradient(circle at 50% 65%, var(--cinnabar-50) 0%, var(--cinnabar-31) 55%, var(--cinnabar-16) 100%);
   border: 1px solid #e88a7a;
   text-shadow: 0 1px 2px rgba(60, 8, 0, 0.9);
 }
@@ -286,13 +286,13 @@
 }
 
 .damage {
-  color: #ff6a55;
+  color: var(--cinnabar-59);
 }
 
 /* 治疗不再和伤害共用一条「砸下弹起」—— 挨刀是砸,回血是长出来:
    慢半拍地绽开、缓缓上浮,没有冲击帧。 */
 .heal {
-  color: #7ae87a;
+  color: var(--jade-72);
   animation: healUp 1.4s ease-out forwards;
 }
 
@@ -316,7 +316,7 @@
 }
 
 .buff {
-  color: #f5d78a;
+  color: var(--brass-84);
   font-size: clamp(12px, 2.4vh, 18px);
 }
 
@@ -566,7 +566,7 @@
   border-radius: 50%;
   border: 1px solid rgba(10, 7, 3, 0.85);
   background: linear-gradient(180deg, #6a5320, #3a2c0e);
-  color: #f0d68a;
+  color: var(--brass-83);
   font-size: 9px;
   line-height: 1;
   pointer-events: none;

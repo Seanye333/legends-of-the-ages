@@ -15,7 +15,7 @@
     radial-gradient(ellipse 110% 70% at 50% 0%, rgba(58, 44, 22, 0.42), transparent 62%),
     linear-gradient(180deg, rgba(9, 7, 4, 0.9), rgba(7, 5, 3, 0.96)),
     url('/art/battlefield-bg.webp') center 30% / cover no-repeat fixed,
-    #0b0805;
+    var(--ash-03);
   /* 底部渐隐。
      登楼那一屏只有五层,列表到 560px 就结束了,底下 370px 是**裸露的舆图** ——
      从「一列卡片」到「一片地图」是一条硬边,读起来像页面没画完。
@@ -322,7 +322,7 @@
 }
 
 .clearedTag {
-  color: #7ae87a;
+  color: var(--jade-72);
 }
 
 .lockTag {
@@ -356,7 +356,7 @@
   padding: 0 0 18px;
   border-radius: 16px;
   border: 1px solid color-mix(in srgb, var(--doctrine) 60%, transparent);
-  background: linear-gradient(180deg, #241c10, #120e08);
+  background: linear-gradient(180deg, var(--brass-11), var(--ash-09));
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.72);
   text-align: center;
 }
@@ -476,7 +476,7 @@
   border: 1px solid #b8863b;
   background:
     radial-gradient(circle at 50% 42%, rgba(197, 59, 44, 0.85) 0 5px, transparent 5px),
-    linear-gradient(160deg, #3a2c12, #201607);
+    linear-gradient(160deg, var(--brass-19), var(--brass-09));
   box-shadow:
     inset 0 0 0 1px rgba(0, 0, 0, 0.6),
     0 1px 4px rgba(0, 0, 0, 0.6),
@@ -509,8 +509,8 @@
 }
 
 .primary {
-  background: linear-gradient(180deg, var(--gold-mid), #8a6c26);
-  color: #1a1206;
+  background: linear-gradient(180deg, var(--gold-mid), var(--brass-42));
+  color: var(--brass-07);
 }
 
 .plain {
@@ -529,7 +529,7 @@
 /* ---- 关底试炼:首通后解锁的第二种打法 ---- */
 /* 用青色而不是金色 —— 与常规关底的「已破」区分开,一眼看得出是另一条线 */
 .trialTag {
-  color: #6fd8d0;
+  color: var(--cyan-71);
 }
 
 .trialBox {
@@ -547,12 +547,12 @@
 .trialName {
   font-family: var(--font-display);
   font-size: 13px;
-  color: #6fd8d0;
+  color: var(--cyan-71);
   letter-spacing: 0.06em;
 }
 
 .trialDone {
-  color: #7ae87a;
+  color: var(--jade-72);
 }
 
 .trialText {
@@ -576,7 +576,7 @@
   cursor: pointer;
   background: rgba(111, 216, 208, 0.12);
   border: 1px solid rgba(111, 216, 208, 0.5);
-  color: #6fd8d0;
+  color: var(--cyan-71);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -832,7 +832,7 @@
     0 6px 18px rgba(0, 0, 0, 0.5);
   background:
     radial-gradient(ellipse at 50% 0%, rgba(212, 168, 74, 0.14), transparent 65%),
-    linear-gradient(180deg, #241c10, #120e08);
+    linear-gradient(180deg, var(--brass-11), var(--ash-09));
   color: var(--parchment);
   cursor: pointer;
   text-align: center;
@@ -948,7 +948,7 @@
   height: 100%;
   width: calc(var(--hp, 1) * 100%);
   border-radius: inherit;
-  background: linear-gradient(90deg, #c5533b, var(--gold-mid) 62%, #f0d68a);
+  background: linear-gradient(90deg, #c5533b, var(--gold-mid) 62%, var(--brass-83));
   box-shadow: 0 0 8px rgba(197, 83, 59, 0.5);
   transition: width var(--dur-med) var(--ease-out);
 }

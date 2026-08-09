@@ -5,7 +5,7 @@
      七个模式一个样,换屏读不出「到了别处」。极淡:是底色不是招牌。 */
   background:
     radial-gradient(ellipse 100% 46% at 50% 0%, rgba(212, 168, 74, 0.07), transparent 62%),
-    radial-gradient(ellipse at 50% 30%, #26221b, #12100c);
+    radial-gradient(ellipse at 50% 30%, var(--ash-14), var(--ash-07));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -98,7 +98,7 @@
 .toggleActive {
   color: var(--gold-bright);
   border-color: var(--gold-deep);
-  background: linear-gradient(180deg, #4c3d20, #2c2210);
+  background: linear-gradient(180deg, var(--brass-24), var(--brass-16));
 }
 
 .grid {
@@ -186,8 +186,8 @@
   font-weight: 700;
   padding: 1px 6px;
   border-radius: 4px;
-  color: #2a1c08;
-  background: linear-gradient(180deg, #fdf0c0, #cfa049);
+  color: var(--brass-13);
+  background: linear-gradient(180deg, var(--brass-93), var(--brass-64));
   box-shadow: 0 1px 5px rgba(0, 0, 0, 0.6);
 }
 
@@ -197,7 +197,7 @@
   padding: 10px 30px;
   border-radius: 6px;
   border: 1px solid var(--gold-deep);
-  background: linear-gradient(180deg, #3a2f1d, #241d12);
+  background: linear-gradient(180deg, #3a2f1d, var(--brass-12));
   color: var(--gold-bright);
   cursor: pointer;
 }
@@ -323,8 +323,8 @@
   font-family: var(--font-brush);
   font-size: 12px;
   line-height: 1;
-  color: #ffefe2;
-  background: linear-gradient(160deg, #d8452e, #9c2517 70%);
+  color: var(--brass-95);
+  background: linear-gradient(160deg, var(--cinnabar-43), var(--cinnabar-28) 70%);
   box-shadow:
     inset 0 0 0 1px rgba(255, 235, 215, 0.8),
     0 1px 4px rgba(0, 0, 0, 0.6);
@@ -351,7 +351,7 @@
 
 .goalDot {
   margin-left: 8px;
-  color: #7ae87a;
+  color: var(--jade-72);
   font-size: 11px;
 }
 
@@ -429,8 +429,8 @@
   border-radius: 8px;
   font-size: 12px;
   font-family: var(--font-display);
-  color: #1a1206;
-  background: linear-gradient(180deg, var(--gold-mid), #8a6c26);
+  color: var(--brass-07);
+  background: linear-gradient(180deg, var(--gold-mid), var(--brass-42));
   border: none;
   cursor: pointer;
 }

@@ -148,7 +148,7 @@
   padding: 10px 20px;
   border-radius: var(--r-md);
   border: 1px solid var(--gold-mid);
-  background: linear-gradient(180deg, #4a3a18, #2a2010);
+  background: linear-gradient(180deg, var(--brass-23), var(--brass-15));
   color: var(--gold-bright);
   font-family: var(--font-display);
   font-size: var(--fs-body);

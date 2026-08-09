@@ -95,7 +95,7 @@
 
 .member:hover {
   border-color: rgba(216, 178, 106, 0.6);
-  color: #f0e6d2;
+  color: var(--brass-91);
 }
 
 /* ---- 牽連(最短关系链)---- */
