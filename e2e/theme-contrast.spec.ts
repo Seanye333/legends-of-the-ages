@@ -13,8 +13,7 @@ import { seedUnlockedProfile } from './unlocked'
 // 不断言「所有文字都达到 WCAG AA 4.5:1」—— 这是一屏做旧的暗金牌桌,描边、
 // 外发光、纹理都在参与可读性,而 getComputedStyle 只看得见色值,拿绝对线去卡
 // 会把一堆本来读得清的地方判红。断言的是**亮色不比暗色差**:同一批文字,
-// 低于 4.5:1 的个数不许变多。它守的是「翻转有没有把某处翻坏」,
-// 而那正是这一版唯一没被规则保证的东西。
+// 低于 4.5:1 的个数不许变多。它守的是「翻转有没有把某处翻坏」。
 const AA = 4.5
 
 interface Probe {
@@ -27,49 +26,88 @@ interface Probe {
 /** 页面内测量:每个直接含文字的可见元素,算它与**实际背景**的对比度。 */
 async function probe(page: import('@playwright/test').Page): Promise<Probe> {
   return page.evaluate((AA) => {
-    const lum = (c: string): number | null => {
+    type RGBA = [number, number, number, number]
+
+    const parse = (c: string): RGBA | null => {
       const m = c.match(/rgba?\(([^)]+)\)/)
       if (!m) return null
       const p = m[1].split(/[,/]/).map((s) => parseFloat(s.trim()))
-      if (p.length >= 4 && p[3] < 0.95) return null // 半透明:算不准,跳过
+      if (p.length < 3 || p.some((v) => Number.isNaN(v))) return null
+      return [p[0], p[1], p[2], p.length >= 4 ? p[3] : 1]
+    }
+
+    /** 上层按 alpha 合成到下层。**这是这道闸门能工作的关键一步** —— 见 bgOf。 */
+    const over = (top: RGBA, under: RGBA): RGBA => {
+      const a = top[3]
+      return [
+        top[0] * a + under[0] * (1 - a),
+        top[1] * a + under[1] * (1 - a),
+        top[2] * a + under[2] * (1 - a),
+        1,
+      ]
+    }
+
+    const relLum = (c: RGBA): number => {
       const f = (v: number) => {
         const s = v / 255
         return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
       }
-      return 0.2126 * f(p[0]) + 0.7152 * f(p[1]) + 0.0722 * f(p[2])
+      return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2])
+    }
+
+    /** 一个元素自己这一层的底色(渐变取色标平均)。没有就返回 null。 */
+    const layerOf = (n: Element): RGBA | null => {
+      const cs = getComputedStyle(n)
+      const bi = cs.backgroundImage
+      if (bi !== 'none') {
+        const stops = [...bi.matchAll(/rgba?\([^)]+\)/g)]
+          .map((m) => parse(m[0]))
+          .filter((v): v is RGBA => v !== null)
+          // 完全透明的色标是渐变的「淡出端」,不代表这一片的颜色
+          .filter((v) => v[3] > 0.02)
+        if (stops.length) {
+          const n0 = stops.length
+          return [
+            stops.reduce((s, v) => s + v[0], 0) / n0,
+            stops.reduce((s, v) => s + v[1], 0) / n0,
+            stops.reduce((s, v) => s + v[2], 0) / n0,
+            stops.reduce((s, v) => s + v[3], 0) / n0,
+          ]
+        }
+        if (bi.includes('url(')) return null // 位图且没有可用色标:真算不出来
+      }
+      const bg = parse(cs.backgroundColor)
+      return bg && bg[3] > 0.02 ? bg : null
     }
 
     /**
-     * 往上找第一个能定色的背景。
+     * 文字底下**实际**是什么颜色。
      *
-     * 【第一版这里是「碰到 background-image 就放弃」,而那让整道闸门变成空的】
-     * 探针实测:标题页 1001 个文字元素,**一个都没量到** —— 全站底纹与渐变
-     * 让每一条祖先链上都有 background-image,于是全被跳过,而测试照样绿。
-     * 一道量不到东西的闸门比没有闸门更糟:它让人以为验过了。
-     * 所以渐变不放弃:把色标取出来平均,当作那一片的底色 —— 近似,
-     * 但比「不量」诚实得多。真正未知的只有 url() 位图,那个才返回 null。
+     * 【两版都错过,记在这儿】
+     * 一、第一版「碰到 background-image 就放弃」—— 全站底纹让每条祖先链上都有
+     *     背景图,于是 1001 个文字元素**一个都没量到**,而测试照样绿。
+     * 二、第二版把 alpha < 0.95 的层直接丢掉 —— 而这个界面的面板底几乎全是
+     *     `linear-gradient(rgba(...,0.8), ...)`,于是设置页只量到 **1** 个元素。
+     * 两次都是「算不准就不算」,而结果是整道闸门在半个 app 上是瞎的。
+     * 现在按 alpha **合成到下层**:半透明层不再是障碍,它就是它本来的样子。
+     * 真正未知的只剩位图,那个才返回 null。
      */
-    const bgOf = (el: Element): number | null => {
+    const bgOf = (el: Element): RGBA | null => {
       let n: Element | null = el
+      const stack: RGBA[] = []
       while (n) {
-        const cs = getComputedStyle(n)
-        // 【顺序要紧:先看纯色,再看渐变,最后才为位图放弃】
-        // 反过来写(撞见 url() 就 return null)会让整道闸门在**有底纹的屏**上全盲:
-        // 设置页与图鉴实测只量到 1 个元素,而它们的底色其实就写在 background-color 上,
-        // 只是被同一条 background 里的 url() 挡在了后面。
-        const l = lum(cs.backgroundColor)
-        if (l !== null) return l
-        const bi = cs.backgroundImage
-        if (bi !== 'none') {
-          const stops = [...bi.matchAll(/rgba?\([^)]+\)/g)]
-            .map((m) => lum(m[0]))
-            .filter((v): v is number => v !== null)
-          if (stops.length) return stops.reduce((a, b) => a + b, 0) / stops.length
-          if (bi.includes('url(')) return null // 位图且没有可用色标:真算不出来
+        const layer = layerOf(n)
+        if (layer) {
+          if (layer[3] >= 0.999) {
+            let acc = layer
+            for (let i = stack.length - 1; i >= 0; i--) acc = over(stack[i], acc)
+            return acc
+          }
+          stack.push(layer)
         }
         n = n.parentElement
       }
-      return null
+      return null // 一路到顶都没有不透明的底 —— 说不清,不硬算
     }
 
     const low: string[] = []
@@ -83,11 +121,14 @@ async function probe(page: import('@playwright/test').Page): Promise<Probe> {
       if (r.width < 4 || r.height < 4) continue
       const cs = getComputedStyle(el)
       if (cs.visibility === 'hidden' || cs.opacity === '0') continue
-      const fg = lum(cs.color)
+      const fgRaw = parse(cs.color)
       const bg = bgOf(el)
-      if (fg === null || bg === null) continue
+      if (!fgRaw || !bg) continue
+      const fg = fgRaw[3] >= 0.999 ? fgRaw : over(fgRaw, bg)
       measured++
-      const ratio = (Math.max(fg, bg) + 0.05) / (Math.min(fg, bg) + 0.05)
+      const a = relLum(fg)
+      const b = relLum(bg)
+      const ratio = (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
       if (ratio < AA) {
         const cls = typeof el.className === 'string' ? el.className.slice(0, 28) : ''
         low.push(`${el.tagName.toLowerCase()}.${cls} ${ratio.toFixed(2)}`)
@@ -113,28 +154,38 @@ function seedTheme(page: import('@playwright/test').Page, theme: 'dark' | 'light
 
 type Page = import('@playwright/test').Page
 
-// 【为什么只有标题页在跑】
-// 探针要能算出「文字底下是什么颜色」才有意义。标题页量得到 999 / 1000 个元素;
-// 而设置页与图鉴上,文字一路往上找到的都是透明背景,最后落在一张 url() 底图上 ——
-// 位图里那一块是什么颜色,getComputedStyle 是答不出来的,实测**只量到 1 个元素**。
-// 那两屏留在这里但标成 fixme:不是「对比度不合格」,是**这道闸门在那儿是瞎的**。
-// 假装绿比红更糟,所以不给它们一个恒真的断言。
-// 要让它们也能测,得换一种取底色的办法 —— 截图之后按像素采样,
-// 那是另一件事(见 ROADMAP 30)。
-const SCREENS: [string, (p: Page) => Promise<void>, boolean][] = [
-  ['标题页', async (p) => { await p.goto('/') }, true],
+// ⚠️ **点完必须等那一屏真的渲染出来**。
+// 设置页与图鉴都是懒加载的(React.lazy),点击之后有一段 Suspense 空窗;
+// 这里原来点完就开测,量到的是还没挂上的空壳 —— 实测**只有 1 个文字元素**,
+// 于是「量到了东西」那条断言把整个测试判红,而看上去像是主题不合格。
+// 同一段测量逻辑单独跑能量到 1076 个,差别只在有没有等。
+// 这和 ROADMAP 49 那一栏是同一类错:等错东西 / 不等,通过与否取决于机器多快。
+const SCREENS: [string, (p: Page) => Promise<void>][] = [
+  ['标题页', async (p) => {
+    await p.goto('/')
+    await p.getByRole('button', { name: /开始|Play|对战/ }).first().waitFor({ timeout: 10_000 })
+  }],
   ['设置页', async (p) => {
     await p.goto('/')
     await p.getByRole('button', { name: /设置|Settings/ }).first().click()
-  }, false],
+    await p.getByText(/减少动效|Reduce motion/).first().waitFor({ timeout: 10_000 })
+  }],
   ['图鉴', async (p) => {
     await p.goto('/')
     await p.getByRole('button', { name: /名将图鉴|Collection/ }).first().click()
-  }, false],
+    await p.locator('[class*=card]').first().waitFor({ timeout: 10_000 })
+  }],
 ]
 
-for (const [name, go, measurable] of SCREENS) {
-  const t = measurable ? test : test.fixme
+// 标题页现在是通过的;设置页与图鉴**确实不合格**,标成 fixme 跟着 ROADMAP 30 走:
+// 设置页 76 个文字元素里 75 个在亮色下低于 4.5:1,图鉴 426/545。
+// 根因不是配色没调好,是 307 处 alpha>=0.5 的半透明**填充**还没进色阶 ——
+// 0.8 不透明度的深色面板压在浅底上仍然是深色面板,而审计把它们归进了「不挡路」。
+// 不给它们一个恒真的断言:红着比假装绿好,fixme 是把「已知坏、在跟」写进代码里。
+const KNOWN_BAD = new Set(['设置页', '图鉴'])
+
+for (const [name, go] of SCREENS) {
+  const t = KNOWN_BAD.has(name) ? test.fixme : test
   t(`${name}:亮色的低对比处不比暗色多`, async ({ page }) => {
     await seedUnlockedProfile(page)
 
@@ -150,12 +201,10 @@ for (const [name, go, measurable] of SCREENS) {
     const light = await probe(page)
 
     // 【先断言「量到了东西」,再断言「量出来的结果好」】
-    // 第一版没有这两条,而它的 bgOf 碰到背景图就放弃 —— 于是一个元素都没量到,
-    // 测试照样绿;后来把亮色整条色阶刷成同一个灰(文字与底同色,对比度 1.0),
-    // 它**还是绿的**。一道量不到东西的闸门不会失败,因为它什么都不知道。
-    // 所以这两条排在前面:它们守的是闸门自己还活着。
-    expect(dark.measured, '暗色下几乎没量到元素 —— 闸门空了,先修它再谈结果').toBeGreaterThan(200)
-    expect(light.measured, '亮色下几乎没量到元素 —— 闸门空了').toBeGreaterThan(200)
+    // 一道量不到东西的闸门不会失败,因为它什么都不知道 —— 这道闸门的前两版
+    // 就是这么「通过」的(详见 bgOf 的注释)。所以这两条排在前面。
+    expect(dark.measured, '暗色下几乎没量到元素 —— 闸门空了,先修它再谈结果').toBeGreaterThan(30)
+    expect(light.measured, '亮色下几乎没量到元素 —— 闸门空了').toBeGreaterThan(30)
 
     const added = light.low.filter((x) => !dark.low.includes(x)).slice(0, 12)
     const msg = [
