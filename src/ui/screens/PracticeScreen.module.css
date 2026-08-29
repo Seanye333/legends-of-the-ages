@@ -81,7 +81,7 @@
   padding: 14px;
   border-radius: 14px;
   border: 1px solid rgba(212, 168, 74, 0.4);
-  background: linear-gradient(180deg, rgba(30, 22, 12, 0.9), rgba(16, 11, 6, 0.92));
+  background: linear-gradient(180deg, var(--veil-brass-16), var(--veil-ash-62));
 }
 
 .mineSide .card {
@@ -135,7 +135,7 @@
   padding: 7px 18px;
   border-radius: 7px;
   border: 1px solid rgba(122, 100, 58, 0.6);
-  background: rgba(24, 18, 10, 0.7);
+  background: var(--veil-ash-91);
   color: var(--parchment-dim);
   cursor: pointer;
   transition: filter 0.15s ease, border-color 0.15s ease;
@@ -148,7 +148,7 @@
 .diffOn {
   border-color: var(--gold-bright);
   color: var(--gold-bright);
-  background: linear-gradient(180deg, rgba(106, 77, 30, 0.6), rgba(46, 33, 14, 0.6));
+  background: linear-gradient(180deg, var(--veil-brass-52), var(--veil-brass-26));
 }
 
 .fightBtn {

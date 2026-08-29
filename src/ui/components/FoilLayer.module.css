@@ -65,7 +65,7 @@
     115deg,
     transparent 38%,
     rgba(255, 236, 190, 0.08) 45%,
-    rgba(255, 250, 225, 0.42) 50%,
+    var(--veil-brass-102) 50%,
     rgba(255, 236, 190, 0.08) 55%,
     transparent 62%
   );
@@ -118,12 +118,12 @@
   inset: 0;
   mix-blend-mode: screen;
   background:
-    radial-gradient(2.5px 2.5px at 22% 18%, rgba(255, 255, 255, 0.95), transparent 70%),
-    radial-gradient(1.8px 1.8px at 72% 12%, rgba(255, 244, 210, 0.9), transparent 70%),
-    radial-gradient(2px 2px at 86% 42%, rgba(255, 255, 255, 0.85), transparent 70%),
-    radial-gradient(1.6px 1.6px at 12% 56%, rgba(255, 244, 210, 0.8), transparent 70%),
-    radial-gradient(2.2px 2.2px at 56% 72%, rgba(255, 255, 255, 0.9), transparent 70%),
-    radial-gradient(1.6px 1.6px at 34% 88%, rgba(255, 244, 210, 0.8), transparent 70%);
+    radial-gradient(2.5px 2.5px at 22% 18%, var(--veil-ash-129), transparent 70%),
+    radial-gradient(1.8px 1.8px at 72% 12%, var(--veil-brass-96), transparent 70%),
+    radial-gradient(2px 2px at 86% 42%, var(--veil-ash-126), transparent 70%),
+    radial-gradient(1.6px 1.6px at 12% 56%, var(--veil-brass-95), transparent 70%),
+    radial-gradient(2.2px 2.2px at 56% 72%, var(--veil-ash-127), transparent 70%),
+    radial-gradient(1.6px 1.6px at 34% 88%, var(--veil-brass-95), transparent 70%);
   animation: sparkleTwinkle 2.2s ease-in-out infinite alternate;
 }
 

@@ -101,7 +101,7 @@
   border-radius: 7px;
   border: 1px solid rgba(212, 168, 74, 0.14);
   border-left-width: 3px;
-  background: rgba(0, 0, 0, 0.32);
+  background: var(--veil-ash-131);
   color: var(--parchment);
   font-size: 12px;
   cursor: pointer;

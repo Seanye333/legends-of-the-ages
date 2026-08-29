@@ -59,7 +59,7 @@
   height: 14px;
   transform: translateX(-50%) scale(0.3);
   border-radius: 50%;
-  background: radial-gradient(ellipse 50% 100% at 50% 50%, rgba(224, 200, 150, 0.5), transparent 70%);
+  background: radial-gradient(ellipse 50% 100% at 50% 50%, var(--veil-brass-78), transparent 70%);
   opacity: 0;
   pointer-events: none;
   animation: tokenDust 0.42s ease-out both;
@@ -224,7 +224,7 @@
 .atk {
   left: -4px;
   background:
-    radial-gradient(circle at 32% 24%, rgba(255, 250, 225, 0.9), rgba(255, 255, 255, 0) 42%),
+    radial-gradient(circle at 32% 24%, var(--veil-brass-100), rgba(255, 255, 255, 0) 42%),
     radial-gradient(circle at 50% 65%, var(--brass-76) 0%, var(--brass-54) 55%, var(--brass-30) 100%);
   border: 1px solid var(--brass-84);
   text-shadow: 0 1px 2px rgba(70, 45, 0, 0.9);
@@ -233,7 +233,7 @@
 .hp {
   right: -4px;
   background:
-    radial-gradient(circle at 32% 24%, rgba(255, 235, 225, 0.85), rgba(255, 255, 255, 0) 42%),
+    radial-gradient(circle at 32% 24%, var(--veil-cinnabar-93), rgba(255, 255, 255, 0) 42%),
     radial-gradient(circle at 50% 65%, var(--cinnabar-50) 0%, var(--cinnabar-31) 55%, var(--cinnabar-16) 100%);
   border: 1px solid var(--cinnabar-64);
   text-shadow: 0 1px 2px rgba(60, 8, 0, 0.9);
@@ -242,7 +242,7 @@
 .hurt {
   color: var(--cinnabar-86);
   background:
-    radial-gradient(circle at 32% 24%, rgba(255, 220, 210, 0.7), rgba(255, 255, 255, 0) 42%),
+    radial-gradient(circle at 32% 24%, var(--veil-cinnabar-89), rgba(255, 255, 255, 0) 42%),
     radial-gradient(circle at 50% 65%, var(--cinnabar-42) 0%, var(--cinnabar-27) 55%, var(--cinnabar-13) 100%);
 }
 
@@ -264,7 +264,7 @@
   line-height: 1.35;
   padding: 0 3px;
   border-radius: 4px;
-  background: linear-gradient(180deg, rgba(52, 41, 22, 0.96), rgba(24, 18, 9, 0.96));
+  background: linear-gradient(180deg, var(--veil-brass-41), var(--veil-ash-99));
   border: 1px solid rgba(212, 168, 74, 0.75);
   color: var(--gold-bright);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
@@ -444,7 +444,7 @@
   right: 8%;
   top: 46%;
   height: 2px;
-  background: rgba(190, 190, 190, 0.85);
+  background: var(--veil-ash-124);
   transform: rotate(-14deg);
   box-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
   pointer-events: none;
@@ -520,8 +520,8 @@
   background:
     repeating-linear-gradient(
       90deg,
-      rgba(205, 214, 232, 0.85) 0 9px,
-      rgba(74, 82, 100, 0.9) 9px 11px
+      var(--veil-azure-83) 0 9px,
+      var(--veil-azure-32) 9px 11px
     );
   box-shadow:
     0 2px 5px rgba(0, 0, 0, 0.7),

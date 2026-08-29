@@ -42,6 +42,36 @@ const COLOR = /#[0-9a-fA-F]{3,8}\b|(?:rgba?|hsla?)\([^)]*\)/g
 const BLOCKING_PROPS = new Set(['color', 'background', 'background-color'])
 
 /**
+ * 【2026-08-09:填充的门槛从「不透明」降到 alpha ≥ 0.3】
+ * 原来只认不透明,于是 307 处半透明**填充**被归进「不挡路」——
+ * 而 `linear-gradient(rgba(30,24,15,0.8), …)` 是面板底,0.8 不透明度的深色
+ * 压在浅底上**仍然是深色面板**。代价实测过:亮色下设置页 76 个文字元素里
+ * 75 个低于 4.5:1。0.4 那一档也翻了车(一个 rgba(0,0,0,0.4) 的代码块底),
+ * 所以门槛定在 0.3 —— 再淡才真的是「两种底上都成立」的叠色。
+ *
+ * 文字色仍然只认不透明:半透明的字本来就少,且它压在什么底上由底决定。
+ * 债先还完了才改判据(那 307 处已经全进色阶),否则就是把绿闸门改红然后放着。
+ */
+export function fillAlpha(value: string): number {
+  const v = value.trim().toLowerCase()
+  if (v.startsWith('#')) {
+    const hex = v.slice(1)
+    if (hex.length === 4) return parseInt(hex[3] + hex[3], 16) / 255
+    if (hex.length === 8) return parseInt(hex.slice(6), 16) / 255
+    return 1
+  }
+  const m = v.match(/^(?:rgba|hsla)(([^)]*))/)
+  if (!m) return 1
+  const parts = m[1].split(/[,/]/).map((x) => x.trim())
+  if (parts.length < 4) return 1
+  const a = parseFloat(parts[3])
+  return Number.isNaN(a) ? 1 : a
+}
+
+/** 填充算不算挡路的门槛。见上面的注释:0.3 是量出来的,不是拍的。 */
+export const FILL_ALPHA_FLOOR = 0.3
+
+/**
  * 这个颜色值是不是不透明。
  *
  * 半透明的叠加在深浅两种底上都成立,所以它不算债。
@@ -83,7 +113,12 @@ export function colorsIn(css: string): ColorHit[] {
     const value = decl.slice(i + 1)
     for (const m of value.matchAll(COLOR)) {
       const v = m[0]
-      out.push({ prop, value: v, blocking: BLOCKING_PROPS.has(prop) && isOpaque(v) })
+      // 文字看「是不是不透明」;填充看「够不够浓到能改变底色」。
+      const blocking =
+        prop === 'color'
+          ? isOpaque(v)
+          : BLOCKING_PROPS.has(prop) && fillAlpha(v) >= FILL_ALPHA_FLOOR
+      out.push({ prop, value: v, blocking })
     }
   }
   return out

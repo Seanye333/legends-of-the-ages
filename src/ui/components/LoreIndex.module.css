@@ -38,7 +38,7 @@
 
 .group {
   border-radius: 8px;
-  background: rgba(20, 16, 10, 0.7);
+  background: var(--veil-ash-70);
   border-left: 2px solid var(--gold-deep);
   overflow: hidden;
 }
@@ -116,7 +116,7 @@
   padding: 6px 10px;
   border-radius: 8px;
   border: 1px solid rgba(122, 100, 58, 0.55);
-  background: rgba(20, 16, 10, 0.8);
+  background: var(--veil-ash-76);
   color: var(--parchment);
   font-family: inherit;
   font-size: 13px;

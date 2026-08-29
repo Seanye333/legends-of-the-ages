@@ -38,13 +38,30 @@ describe('不透明判定', () => {
 })
 
 describe('扫描', () => {
-  it('只有不透明的 color / background 算 blocking', () => {
+  it('文字只算不透明的;**填充算到 alpha 0.3**;阴影描边一概不算', () => {
+    // 2026-08-09 契约改过一次:填充原来也只认不透明,于是 307 处半透明面板底
+    // 被归进「不用还」,而 0.8 不透明度的深色压在浅底上仍然是深色面板 ——
+    // 代价是亮色下设置页 76 个文字元素里 75 个低于 4.5:1。
     const hits = colorsIn(`
       .a { color: #e8dfc8; background: #14110c; }
       .b { box-shadow: 0 0 6px rgba(0, 0, 0, 0.5); border-color: #7a5a1e; }
       .c { background: rgba(60, 45, 20, 0.35); }
     `)
-    expect(hits.filter((h) => h.blocking).map((h) => h.value)).toEqual(['#e8dfc8', '#14110c'])
+    expect(hits.filter((h) => h.blocking).map((h) => h.value)).toEqual([
+      '#e8dfc8',
+      '#14110c',
+      'rgba(60, 45, 20, 0.35)',
+    ])
+  })
+
+  it('填充的门槛是 0.3:**两侧都验**,免得把 >= 写成 > 也照样绿', () => {
+    const at = (a: string) => judgeFile('x.css', `.a { background: rgba(1, 2, 3, ${a}); }`).blocking
+    expect(at('0.3')).toBe(1)
+    expect(at('0.29')).toBe(0)
+  })
+
+  it('半透明的**文字**仍然不算 —— 它压在什么底上由底决定', () => {
+    expect(judgeFile('x.css', '.a { color: rgba(1, 2, 3, 0.5); }').blocking).toBe(0)
   })
 
   it('**border-color 不算债** —— 描边在深浅两种底上都还是描边', () => {
@@ -74,13 +91,15 @@ describe('扫描', () => {
     expect(r.blocking).toBe(2)
   })
 
-  it('**渐变里的半透明不算债** —— 它压在什么底上都成立', () => {
+  it('渐变里够浓的色标算债,淡的不算 —— 一条渐变里两种都可能有', () => {
+    // 0.5 那一档是面板底,翻不过来就是亮色下的一块深色;
+    // 0.28 那一档是叠色,压在什么底上都成立。同一条声明里各算各的。
     const r = judgeFile(
       'x.css',
       '.a { background: linear-gradient(rgba(70,52,22,0.5), rgba(40,30,14,0.28)); }',
     )
-    expect(r.blocking).toBe(0)
-    expect(r.soft).toBe(2)
+    expect(r.blocking).toBe(1)
+    expect(r.soft).toBe(1)
   })
 })
 

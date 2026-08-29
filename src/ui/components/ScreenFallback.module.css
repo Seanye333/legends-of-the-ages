@@ -13,7 +13,7 @@
   place-items: center;
   border-radius: 10px;
   border: 2px solid rgba(212, 168, 74, 0.55);
-  background: linear-gradient(180deg, rgba(58, 42, 16, 0.7), rgba(28, 20, 8, 0.7));
+  background: linear-gradient(180deg, var(--veil-brass-42), var(--veil-brass-08));
   font-family: var(--font-brush);
   font-size: 38px;
   color: var(--gold-bright, var(--brass-82));

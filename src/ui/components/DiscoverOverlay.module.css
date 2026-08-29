@@ -15,8 +15,8 @@
   justify-content: center;
   gap: clamp(10px, 2.4vh, 22px);
   background:
-    radial-gradient(ellipse 120% 90% at 50% 40%, transparent 26%, rgba(6, 4, 2, 0.92) 100%),
-    linear-gradient(180deg, rgba(8, 6, 3, 0.86), rgba(6, 4, 2, 0.9));
+    radial-gradient(ellipse 120% 90% at 50% 40%, transparent 26%, var(--veil-ash-23) 100%),
+    linear-gradient(180deg, var(--veil-ash-17), var(--veil-ash-21));
   animation: discoverIn 0.28s ease;
 }
 
@@ -84,7 +84,7 @@
   border-radius: 10px;
   border: 1px solid rgba(212, 168, 74, 0.4);
   background:
-    repeating-linear-gradient(45deg, rgba(60, 44, 22, 0.6) 0 6px, rgba(38, 28, 14, 0.6) 6px 12px),
+    repeating-linear-gradient(45deg, var(--veil-brass-45) 0 6px, var(--veil-brass-20) 6px 12px),
     var(--brass-08);
   animation: backPulse 2.2s ease-in-out infinite;
 }

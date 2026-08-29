@@ -27,7 +27,7 @@
 .prompt {
   max-width: 620px; margin: 0 0 22px; padding: 18px 20px;
   border-radius: 12px; border: 1px solid rgba(122, 100, 58, 0.45);
-  background: rgba(26, 20, 11, 0.75);
+  background: var(--veil-ash-105);
   font-family: var(--font-display); font-size: 16px; line-height: 1.8;
   color: var(--parchment); text-align: justify;
 }
@@ -36,11 +36,11 @@
 .opt, .optRight, .optWrong, .optDim {
   padding: 13px 14px; border-radius: 10px; font-family: var(--font-display);
   font-size: 15px; cursor: pointer; transition: all 0.15s ease;
-  border: 1px solid rgba(122, 100, 58, 0.5); background: rgba(30, 24, 14, 0.85); color: var(--parchment);
+  border: 1px solid rgba(122, 100, 58, 0.5); background: var(--veil-ash-117); color: var(--parchment);
 }
 .opt:hover { border-color: var(--gold); transform: translateY(-2px); }
-.optRight { border-color: #8bb598; background: rgba(60, 96, 70, 0.5); color: var(--jade-90); cursor: default; }
-.optWrong { border-color: #cf5346; background: rgba(110, 44, 38, 0.5); color: var(--cinnabar-83); cursor: default; }
+.optRight { border-color: #8bb598; background: var(--veil-jade-32); color: var(--jade-90); cursor: default; }
+.optWrong { border-color: #cf5346; background: var(--veil-cinnabar-24); color: var(--cinnabar-83); cursor: default; }
 .optDim { opacity: 0.4; cursor: default; }
 
 .nextBtn {
@@ -112,7 +112,7 @@
   padding: 12px 14px;
   border-radius: var(--r-md);
   border: 1px solid rgba(122, 100, 58, 0.45);
-  background: rgba(26, 20, 11, 0.8);
+  background: var(--veil-ash-106);
   animation: revealIn 0.36s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 

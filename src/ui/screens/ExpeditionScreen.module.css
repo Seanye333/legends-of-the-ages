@@ -56,7 +56,7 @@
   display: grid;
   place-items: center;
   border: 1px solid rgba(212, 168, 74, 0.35);
-  background: rgba(20, 15, 9, 0.7);
+  background: var(--veil-ash-72);
   color: var(--parchment-faint);
   font-size: 13px;
   font-weight: 700;
@@ -77,7 +77,7 @@
   /* 未过段:暗虚线(3px 线 + 3px 空) */
   background: repeating-linear-gradient(
     90deg,
-    rgba(122, 100, 58, 0.5) 0 3px,
+    var(--veil-brass-53) 0 3px,
     transparent 3px 6px
   );
 }
@@ -114,7 +114,7 @@
   padding: 14px 18px;
   border-radius: 14px;
   border: 1px solid rgba(212, 168, 74, 0.4);
-  background: linear-gradient(180deg, rgba(30, 22, 12, 0.9), rgba(16, 11, 6, 0.92));
+  background: linear-gradient(180deg, var(--veil-brass-16), var(--veil-ash-62));
 }
 
 .bossPortrait {
@@ -150,7 +150,7 @@
 .fightBtn,
 .startBtn {
   border: 1px solid var(--gold-bright);
-  background: linear-gradient(180deg, rgba(80, 60, 24, 0.95), rgba(50, 36, 14, 0.95));
+  background: linear-gradient(180deg, var(--veil-brass-50), var(--veil-brass-40));
   color: var(--parchment-bright, var(--brass-89));
   border-radius: 10px;
   padding: 12px 26px;
@@ -194,14 +194,14 @@
   padding: 4px 10px;
   border-radius: 12px;
   border: 1px solid rgba(212, 168, 74, 0.4);
-  background: rgba(28, 20, 10, 0.8);
+  background: var(--veil-brass-09);
   cursor: help;
 }
 
 .abandonBtn {
   margin-top: 8px;
   border: 1px solid rgba(140, 70, 60, 0.6);
-  background: rgba(30, 14, 12, 0.7);
+  background: var(--veil-cinnabar-08);
   color: var(--parchment-faint);
   border-radius: 8px;
   padding: 8px 16px;
@@ -235,7 +235,7 @@
   padding: 18px 16px;
   border-radius: 14px;
   border: 2px solid;
-  background: linear-gradient(180deg, rgba(30, 22, 12, 0.95), rgba(16, 11, 6, 0.96));
+  background: linear-gradient(180deg, var(--veil-brass-18), var(--veil-ash-64));
   cursor: pointer;
   transition: transform 0.14s ease, filter 0.14s ease;
   text-align: left;
@@ -321,7 +321,7 @@
   padding: 18px;
   border-radius: 14px;
   border: 1px solid rgba(212, 168, 74, 0.4);
-  background: linear-gradient(180deg, rgba(30, 22, 12, 0.9), rgba(16, 11, 6, 0.92));
+  background: linear-gradient(180deg, var(--veil-brass-16), var(--veil-ash-62));
 }
 
 .deckPortrait {
@@ -368,7 +368,7 @@
   width: 100%;
   border: 1px solid rgba(122, 100, 58, 0.45);
   border-radius: 10px;
-  background: rgba(20, 16, 10, 0.7);
+  background: var(--veil-ash-70);
   padding: 8px 12px;
 }
 .trimSummary {
@@ -390,7 +390,7 @@
   padding: 4px 10px;
   border-radius: 999px;
   border: 1px solid rgba(122, 100, 58, 0.5);
-  background: rgba(30, 24, 14, 0.8);
+  background: var(--veil-ash-114);
   color: var(--parchment-dim);
   font-size: 12px;
   cursor: pointer;
@@ -413,7 +413,7 @@
   padding: 11px 16px;
   border-radius: 9px;
   border: 1px solid rgba(197, 59, 44, 0.6);
-  background: linear-gradient(180deg, rgba(60, 24, 18, 0.7), rgba(28, 12, 8, 0.7));
+  background: linear-gradient(180deg, var(--veil-cinnabar-14), var(--veil-cinnabar-07));
   color: var(--cinnabar-71);
   font-family: var(--font-display);
   font-size: clamp(13px, 3.4vw, 16px);
@@ -433,7 +433,7 @@
   margin-bottom: 6px;
   padding: 4px 10px;
   border-radius: 6px;
-  background: rgba(60, 24, 18, 0.55);
+  background: var(--veil-cinnabar-13);
   border: 1px solid rgba(197, 59, 44, 0.4);
   font-family: var(--font-display);
   font-size: 13px;

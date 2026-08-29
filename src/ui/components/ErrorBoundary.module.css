@@ -49,7 +49,7 @@
   margin: 0;
   padding: 10px 12px;
   border-radius: 8px;
-  background: rgba(0, 0, 0, 0.45);
+  background: var(--veil-ash-135);
   border: 1px solid rgba(212, 168, 74, 0.22);
   color: var(--cinnabar-68);
   font-size: 12px;

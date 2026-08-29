@@ -106,7 +106,7 @@
     115deg,
     transparent 40%,
     rgba(247, 225, 168, 0.09) 47%,
-    rgba(255, 240, 200, 0.32) 50%,
+    var(--veil-brass-94) 50%,
     rgba(247, 225, 168, 0.09) 53%,
     transparent 60%
   );
@@ -149,7 +149,7 @@
   aspect-ratio: 1;
   border-radius: 50%;
   background:
-    radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0) 40%),
+    radial-gradient(circle at 32% 24%, var(--veil-ash-128), rgba(255, 255, 255, 0) 40%),
     radial-gradient(circle at 50% 65%, var(--azure-56) 0%, var(--azure-32) 52%, var(--azure-17) 100%);
   border: 1px solid #9cc0f2;
   box-shadow:
@@ -177,7 +177,7 @@
   aspect-ratio: 1;
   border-radius: 50%;
   background:
-    radial-gradient(circle at 32% 24%, rgba(255, 252, 225, 0.85), rgba(255, 255, 255, 0) 42%),
+    radial-gradient(circle at 32% 24%, var(--veil-brass-99), rgba(255, 255, 255, 0) 42%),
     radial-gradient(circle at 50% 65%, var(--brass-77) 0%, var(--jade-48) 55%, var(--jade-25) 100%);
   border: 1px solid #d6e0a0;
   box-shadow:
@@ -224,7 +224,7 @@
   justify-content: center;
   padding: 2px 3px 1px;
   overflow: hidden;
-  background: linear-gradient(180deg, rgba(46, 36, 20, 0.55), rgba(14, 10, 5, 0.2) 65%);
+  background: linear-gradient(180deg, var(--veil-brass-31), rgba(14, 10, 5, 0.2) 65%);
 }
 
 .name {
@@ -275,7 +275,7 @@
 .atk {
   left: 2px;
   background:
-    radial-gradient(circle at 32% 24%, rgba(255, 250, 225, 0.9), rgba(255, 255, 255, 0) 42%),
+    radial-gradient(circle at 32% 24%, var(--veil-brass-100), rgba(255, 255, 255, 0) 42%),
     radial-gradient(circle at 50% 65%, var(--brass-76) 0%, var(--brass-54) 55%, var(--brass-30) 100%);
   border: 1px solid var(--brass-84);
   text-shadow: 0 1px 2px rgba(70, 45, 0, 0.9);
@@ -284,7 +284,7 @@
 .hp {
   right: 2px;
   background:
-    radial-gradient(circle at 32% 24%, rgba(255, 235, 225, 0.85), rgba(255, 255, 255, 0) 42%),
+    radial-gradient(circle at 32% 24%, var(--veil-cinnabar-93), rgba(255, 255, 255, 0) 42%),
     radial-gradient(circle at 50% 65%, var(--cinnabar-50) 0%, var(--cinnabar-31) 55%, var(--cinnabar-16) 100%);
   border: 1px solid var(--cinnabar-64);
   text-shadow: 0 1px 2px rgba(60, 8, 0, 0.9);
@@ -471,7 +471,7 @@
       115deg,
       transparent 40%,
       rgba(247, 225, 168, 0.09) 47%,
-      rgba(255, 240, 200, 0.32) 50%,
+      var(--veil-brass-94) 50%,
       rgba(247, 225, 168, 0.09) 53%,
       transparent 60%
     ),

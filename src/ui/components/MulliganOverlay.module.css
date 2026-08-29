@@ -15,8 +15,8 @@
   justify-content: center;
   gap: clamp(10px, 2.2vh, 20px);
   background:
-    radial-gradient(ellipse 120% 90% at 50% 40%, transparent 30%, rgba(6, 4, 2, 0.9) 100%),
-    linear-gradient(180deg, rgba(8, 6, 3, 0.82), rgba(8, 6, 3, 0.66) 40%, rgba(6, 4, 2, 0.88)),
+    radial-gradient(ellipse 120% 90% at 50% 40%, transparent 30%, var(--veil-ash-21) 100%),
+    linear-gradient(180deg, var(--veil-ash-14), var(--veil-ash-11) 40%, var(--veil-ash-20)),
     url('/art/mulligan-bg.webp') center 30% / cover no-repeat,
     var(--ash-05);
   animation: overlayIn 0.35s ease;
@@ -85,8 +85,8 @@
   font-weight: 800;
   color: var(--cinnabar-56);
   background:
-    radial-gradient(circle at 50% 50%, rgba(60, 12, 6, 0.55), rgba(20, 6, 3, 0.72)),
-    rgba(20, 8, 5, 0.35);
+    radial-gradient(circle at 50% 50%, var(--veil-cinnabar-10), var(--veil-ash-39)),
+    var(--veil-ash-137);
   border-radius: 10px;
   cursor: pointer;
   text-shadow: 0 0 14px rgba(230, 60, 40, 0.9);

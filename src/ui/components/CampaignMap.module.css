@@ -10,8 +10,8 @@
   border: 1px solid rgba(122, 100, 58, 0.4);
   overflow: hidden;
   background:
-    radial-gradient(ellipse 120% 90% at 50% 45%, transparent 30%, rgba(6, 4, 2, 0.86) 100%),
-    linear-gradient(180deg, rgba(24, 18, 9, 0.82), rgba(14, 10, 5, 0.9)),
+    radial-gradient(ellipse 120% 90% at 50% 45%, transparent 30%, var(--veil-ash-16) 100%),
+    linear-gradient(180deg, var(--veil-ash-93), var(--veil-ash-45)),
     url('/art/battlefield-bg.webp') center 40% / cover no-repeat,
     var(--ash-07);
   box-shadow: var(--shadow-2);
@@ -58,7 +58,7 @@
   padding: 0;
   border-radius: 50%;
   border: 2px solid var(--doctrine, var(--gold-deep));
-  background: rgba(16, 12, 6, 0.9);
+  background: var(--veil-ash-58);
   cursor: pointer;
   transition:
     transform var(--dur-fast) var(--ease-out),

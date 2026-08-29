@@ -11,8 +11,8 @@
   padding: 4px 0 12px;
   /* 卷面:绢帛的横向纹理 + 上下两道包边 */
   background:
-    linear-gradient(180deg, rgba(212, 168, 74, 0.5), rgba(212, 168, 74, 0) 6px),
-    linear-gradient(0deg, rgba(212, 168, 74, 0.5), rgba(212, 168, 74, 0) 6px),
+    linear-gradient(180deg, var(--veil-brass-66), rgba(212, 168, 74, 0) 6px),
+    linear-gradient(0deg, var(--veil-brass-66), rgba(212, 168, 74, 0) 6px),
     repeating-linear-gradient(
       0deg,
       rgba(232, 223, 200, 0.028) 0 1px,
@@ -56,9 +56,9 @@
   width: 3px;
   background: linear-gradient(
     90deg,
-    rgba(0, 0, 0, 0.6),
-    rgba(212, 168, 74, 0.35),
-    rgba(0, 0, 0, 0.6)
+    var(--veil-ash-03),
+    var(--veil-brass-71),
+    var(--veil-ash-03)
   );
 }
 
@@ -134,7 +134,7 @@
   padding: 2px 7px;
   border: 1px solid rgba(180, 150, 90, 0.35);
   border-radius: 2px;
-  background: rgba(60, 45, 20, 0.35);
+  background: var(--veil-brass-57);
   font-size: 11px;
   line-height: 1.5;
   letter-spacing: 0.06em;

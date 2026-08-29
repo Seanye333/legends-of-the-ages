@@ -13,7 +13,7 @@
   padding: 10px 12px;
   border-radius: 12px;
   border: 1px solid rgba(212, 168, 74, 0.5);
-  background: linear-gradient(180deg, rgba(36, 29, 17, 0.97), rgba(18, 14, 8, 0.97));
+  background: linear-gradient(180deg, var(--veil-brass-23), var(--veil-ash-89));
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.7);
   animation: installIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }

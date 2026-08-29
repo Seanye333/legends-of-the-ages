@@ -177,16 +177,8 @@ const SCREENS: [string, (p: Page) => Promise<void>][] = [
   }],
 ]
 
-// 标题页现在是通过的;设置页与图鉴**确实不合格**,标成 fixme 跟着 ROADMAP 30 走:
-// 设置页 76 个文字元素里 75 个在亮色下低于 4.5:1,图鉴 426/545。
-// 根因不是配色没调好,是 307 处 alpha>=0.5 的半透明**填充**还没进色阶 ——
-// 0.8 不透明度的深色面板压在浅底上仍然是深色面板,而审计把它们归进了「不挡路」。
-// 不给它们一个恒真的断言:红着比假装绿好,fixme 是把「已知坏、在跟」写进代码里。
-const KNOWN_BAD = new Set(['设置页', '图鉴'])
-
 for (const [name, go] of SCREENS) {
-  const t = KNOWN_BAD.has(name) ? test.fixme : test
-  t(`${name}:亮色的低对比处不比暗色多`, async ({ page }) => {
+  test(`${name}:亮色的低对比处不比暗色多`, async ({ page }) => {
     await seedUnlockedProfile(page)
 
     await seedTheme(page, 'dark')

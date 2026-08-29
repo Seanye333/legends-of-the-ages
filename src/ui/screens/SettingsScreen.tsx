@@ -231,13 +231,24 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
             </button>
           ))}
         </div>
-        {/* 【亮色主题的开关**故意还没放出来**】
-            CSS 那一组覆盖已经在 index.css 里了,store 与 main.tsx 也接好了 ——
-            差的是它还不合格:e2e/theme-contrast.spec.ts 实测,设置页 76 个文字元素
-            里 75 个在亮色下低于 4.5:1,图鉴 426/545。
-            根因是 307 处 alpha≥0.5 的半透明**填充**没进色阶(见 ROADMAP 30):
-            0.8 不透明度的深色面板压在浅底上仍然是深色面板。
-            放一个会把设置页变成读不出字的开关,比不放更糟。 */}
+        {/* 亮色主题。默认暗色 —— 这游戏的美术底子是暗金牌桌。
+            亮色的值全在 index.css 的 :root[data-theme='light'] 里:色阶与半透明填充
+            按「明度翻转、色相不动」算,卡面稀有度与费用宝石**不翻**(印在物件上的
+            东西不随桌子变色)。验收不靠肉眼 —— e2e/theme-contrast.spec.ts
+            逐个文字节点算它与实际背景的对比度,三屏都断言「亮色不比暗色差」。 */}
+        <label className={styles.toggleRow}>
+          <span>
+            {t('亮色主题', 'Light theme')}
+            <small className={styles.hint}>
+              {t('浅底深字;卡面印色不变', 'Light surfaces, dark ink; card printing unchanged')}
+            </small>
+          </span>
+          <input
+            type="checkbox"
+            checked={s.theme === 'light'}
+            onChange={(e) => s.setTheme(e.target.checked ? 'light' : 'dark')}
+          />
+        </label>
         <label className={styles.toggleRow}>
           <span>
             {t('减少动效', 'Reduce motion')}

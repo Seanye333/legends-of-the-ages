@@ -60,7 +60,7 @@
 .tabActive {
   border-color: var(--doctrine, var(--gold-deep));
   color: var(--parchment);
-  background: linear-gradient(180deg, rgba(58, 47, 29, 0.9), rgba(30, 24, 14, 0.9));
+  background: linear-gradient(180deg, var(--veil-brass-48), var(--veil-ash-119));
   box-shadow: 0 0 10px color-mix(in srgb, var(--doctrine, #d4a84a) 45%, transparent);
 }
 
@@ -75,7 +75,7 @@
   padding: 7px 12px;
   border-radius: 6px;
   border: 1px solid rgba(122, 100, 58, 0.55);
-  background: rgba(20, 16, 10, 0.8);
+  background: var(--veil-ash-76);
   color: var(--parchment);
   font-size: 14px;
 }
@@ -90,7 +90,7 @@
   padding: 6px 12px;
   border-radius: 6px;
   border: 1px solid rgba(122, 100, 58, 0.55);
-  background: rgba(20, 16, 10, 0.72);
+  background: var(--veil-ash-74);
   color: var(--parchment-faint);
   cursor: pointer;
 }
@@ -170,7 +170,7 @@
   line-height: 1.4;
   letter-spacing: 0.08em;
   color: rgba(212, 220, 230, 0.72);
-  background: rgba(26, 30, 36, 0.8);
+  background: var(--veil-ash-123);
   border: 1px solid rgba(148, 160, 176, 0.42);
   border-radius: 3px;
   transform: rotate(-2deg);
@@ -224,7 +224,7 @@
   padding: 5px 10px;
   border-radius: 8px;
   border: 1px solid rgba(212, 168, 74, 0.4);
-  background: rgba(20, 15, 9, 0.9);
+  background: var(--veil-ash-82);
   color: var(--ink-bright, var(--brass-104));
   font-size: 12px;
   font-family: inherit;
@@ -280,7 +280,7 @@
         transparent 70%
       )
       0 0 / 220% 100%,
-    rgba(30, 24, 14, 0.65);
+    var(--veil-ash-112);
   animation: skelSweep 1.4s linear infinite;
 }
 
@@ -337,7 +337,7 @@
   width: min(96vw, 1080px);
   border-radius: 8px;
   border: 1px solid rgba(122, 100, 58, 0.3);
-  background: rgba(12, 10, 7, 0.5);
+  background: var(--veil-ash-38);
   padding: 6px 10px;
 }
 

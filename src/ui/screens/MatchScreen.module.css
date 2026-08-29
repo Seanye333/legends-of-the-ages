@@ -5,13 +5,13 @@
   flex-direction: column;
   overflow: hidden;
   background:
-    radial-gradient(ellipse 130% 80% at 50% 42%, transparent 30%, rgba(8, 6, 3, 0.72) 100%),
+    radial-gradient(ellipse 130% 80% at 50% 42%, transparent 30%, var(--veil-ash-13) 100%),
     linear-gradient(
       180deg,
-      rgba(40, 29, 13, 0.93) 0%,
-      rgba(48, 36, 17, 0.86) 30%,
-      rgba(48, 36, 17, 0.85) 62%,
-      rgba(30, 21, 9, 0.94) 100%
+      var(--veil-brass-22) 0%,
+      var(--veil-brass-38) 30%,
+      var(--veil-brass-37) 62%,
+      var(--veil-brass-17) 100%
     ),
     url('/art/battlefield-bg.webp') center 40% / cover no-repeat,
     var(--ash-07);
@@ -129,7 +129,7 @@
   bottom: 2px;
   height: 24px;
   border-radius: 50%;
-  background: radial-gradient(ellipse 50% 100% at 50% 50%, rgba(0, 0, 0, 0.58), transparent 72%);
+  background: radial-gradient(ellipse 50% 100% at 50% 50%, var(--veil-ash-02), transparent 72%);
   pointer-events: none;
 }
 
@@ -148,9 +148,9 @@
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(212, 168, 74, 0.48) 14%,
-    rgba(232, 200, 120, 0.62) 50%,
-    rgba(212, 168, 74, 0.48) 86%,
+    var(--veil-brass-73) 14%,
+    var(--veil-brass-80) 50%,
+    var(--veil-brass-73) 86%,
     transparent
   );
   -webkit-mask: linear-gradient(180deg, transparent 46%, #000 46% 54%, transparent 54%);
@@ -238,7 +238,7 @@
   font-weight: 700;
   border: 1px solid var(--brass-34);
   background:
-    linear-gradient(180deg, rgba(255, 244, 210, 0.42), rgba(255, 244, 210, 0) 46%),
+    linear-gradient(180deg, var(--veil-brass-101), rgba(255, 244, 210, 0) 46%),
     linear-gradient(180deg, var(--brass-98), var(--brass-63) 55%, var(--brass-58));
   color: var(--brass-34);
   border-radius: 9px;
@@ -263,7 +263,7 @@
   inset: -9px;
   z-index: -1;
   border-radius: 16px;
-  background: radial-gradient(closest-side, rgba(240, 200, 100, 0.55), transparent 75%);
+  background: radial-gradient(closest-side, var(--veil-brass-79), transparent 75%);
   animation: sealGlow 2.2s ease-in-out infinite;
 }
 
@@ -326,7 +326,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  background: linear-gradient(180deg, rgba(30, 24, 14, 0.96), rgba(14, 11, 6, 0.96));
+  background: linear-gradient(180deg, var(--veil-ash-121), var(--veil-ash-47));
   border: 1px solid rgba(212, 168, 74, 0.75);
   border-radius: 10px;
   padding: 7px 15px;
@@ -359,8 +359,8 @@
       180deg,
       rgba(8, 6, 4, 0.28) 0%,
       rgba(8, 6, 4, 0.28) 38%,
-      rgba(4, 3, 2, 0.78) 46%,
-      rgba(4, 3, 2, 0.78) 54%,
+      var(--veil-ash-05) 46%,
+      var(--veil-ash-05) 54%,
       rgba(8, 6, 4, 0.28) 62%,
       rgba(8, 6, 4, 0.28) 100%
     );
@@ -381,7 +381,7 @@
   left: 50%;
   transform: translateX(-50%);
   z-index: 60;
-  background: linear-gradient(180deg, rgba(108, 30, 20, 0.97), rgba(70, 18, 12, 0.97));
+  background: linear-gradient(180deg, var(--veil-cinnabar-20), var(--veil-cinnabar-15));
   border: 1px solid #d0655a;
   box-shadow:
     inset 0 1px 0 rgba(255, 200, 190, 0.2),
@@ -416,7 +416,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: linear-gradient(180deg, rgba(46, 36, 16, 0.96), rgba(28, 21, 9, 0.96));
+  background: linear-gradient(180deg, var(--veil-brass-36), var(--veil-brass-12));
   border: 1px solid var(--gold-deep, #9a7b3a);
   color: var(--gold-bright, var(--brass-82));
   border-radius: 9px;
@@ -566,7 +566,7 @@
   inset: 0;
   z-index: 60;
   pointer-events: none;
-  background: radial-gradient(circle, rgba(255, 246, 220, 0.96), rgba(247, 225, 168, 0.75) 45%, rgba(212, 168, 74, 0.25));
+  background: radial-gradient(circle, var(--veil-brass-98), var(--veil-brass-89) 45%, rgba(212, 168, 74, 0.25));
   animation: lethalFade 0.42s ease-out both;
 }
 
@@ -663,7 +663,7 @@
   z-index: 26;
   padding: 10px 34px;
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(48, 38, 20, 0.92), rgba(24, 18, 9, 0.92));
+  background: linear-gradient(180deg, var(--veil-brass-39), var(--veil-ash-95));
   box-shadow:
     inset 0 0 0 1px rgba(212, 168, 74, 0.6),
     0 10px 30px rgba(0, 0, 0, 0.6);
@@ -738,7 +738,7 @@
   z-index: 44;
   display: grid;
   place-items: center;
-  background: rgba(6, 4, 2, 0.72);
+  background: var(--veil-ash-12);
   animation: modeIn 0.16s ease;
 }
 
@@ -755,7 +755,7 @@
   padding: 20px 22px;
   border-radius: 14px;
   border: 1.5px solid rgba(212, 168, 74, 0.5);
-  background: linear-gradient(180deg, rgba(26, 20, 12, 0.98), rgba(14, 10, 6, 0.98));
+  background: linear-gradient(180deg, var(--veil-ash-109), var(--veil-ash-49));
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
 }
 
@@ -806,7 +806,7 @@
   padding: 6px 8px;
   border-radius: 10px;
   border: 1px solid rgba(212, 168, 74, 0.32);
-  background: rgba(14, 11, 6, 0.82);
+  background: var(--veil-ash-42);
   backdrop-filter: blur(4px);
 }
 .puzzleBtn {
@@ -816,7 +816,7 @@
   padding: 5px 14px;
   border-radius: 6px;
   border: 1px solid rgba(122, 100, 58, 0.6);
-  background: rgba(24, 18, 10, 0.7);
+  background: var(--veil-ash-91);
   color: var(--parchment-dim, var(--brass-79));
   cursor: pointer;
   transition: filter 0.15s ease, border-color 0.15s ease;
@@ -838,7 +838,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(6, 4, 2, 0.62);
+  background: var(--veil-ash-10);
   animation: fadeIn 0.25s ease;
 }
 .panelCard {
@@ -846,7 +846,7 @@
   padding: 22px 24px 18px;
   border-radius: 14px;
   border: 1px solid rgba(212, 168, 74, 0.4);
-  background: linear-gradient(180deg, rgba(30, 22, 12, 0.98), rgba(16, 11, 6, 0.98));
+  background: linear-gradient(180deg, var(--veil-brass-19), var(--veil-ash-66));
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
 }
 .panelTitle {
@@ -885,7 +885,7 @@
   padding: 8px 20px;
   border-radius: 6px;
   border: 1px solid rgba(212, 168, 74, 0.55);
-  background: rgba(40, 30, 14, 0.8);
+  background: var(--veil-brass-21);
   color: var(--gold-bright, var(--brass-85));
   cursor: pointer;
 }
@@ -912,7 +912,7 @@
   gap: 1px;
   padding: 5px 10px;
   border-radius: 8px;
-  background: rgba(12, 18, 20, 0.9);
+  background: var(--veil-ash-83);
   border: 1px solid rgba(111, 216, 208, 0.45);
   pointer-events: none;
   z-index: 22;
@@ -931,7 +931,7 @@
   gap: 6px;
   padding: 4px 10px;
   border-radius: 8px;
-  background: rgba(12, 12, 16, 0.86);
+  background: var(--veil-ash-57);
   border: 1px solid color-mix(in srgb, var(--sky) 55%, transparent);
   box-shadow: 0 0 14px -4px var(--sky);
   pointer-events: none;
@@ -979,7 +979,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(6, 5, 3, 0.985);
+  background: var(--veil-ash-27);
 }
 
 .curtainInner {
@@ -1034,7 +1034,7 @@
   padding: 9px 18px;
   border-radius: 8px;
   border: 1px solid rgba(197, 59, 44, 0.55);
-  background: linear-gradient(180deg, rgba(46, 22, 18, 0.96), rgba(28, 14, 11, 0.96));
+  background: linear-gradient(180deg, var(--veil-cinnabar-11), var(--veil-ash-101));
   color: var(--parchment);
   font-size: clamp(12px, 3vw, 14px);
   letter-spacing: 0.04em;
@@ -1139,8 +1139,8 @@
     radial-gradient(
       ellipse 92% 76% at 50% 50%,
       transparent 38%,
-      rgba(6, 4, 2, 0.52) 80%,
-      rgba(4, 3, 1, 0.8) 100%
+      var(--veil-ash-09) 80%,
+      var(--veil-ash-06) 100%
     );
 }
 
@@ -1159,7 +1159,7 @@
     100deg,
     transparent 38%,
     rgba(240, 214, 138, 0.14) 47%,
-    rgba(255, 240, 200, 0.3) 50%,
+    var(--veil-brass-93) 50%,
     rgba(240, 214, 138, 0.14) 53%,
     transparent 62%
   );
@@ -1197,7 +1197,7 @@
    但满场立绘之外仍然有东西在争注意力。有人会更想要一张干净的桌子。 */
 .screen[data-table='wood'] {
   background:
-    radial-gradient(ellipse 130% 80% at 50% 42%, transparent 26%, rgba(8, 5, 2, 0.82) 100%),
+    radial-gradient(ellipse 130% 80% at 50% 42%, transparent 26%, var(--veil-ash-15) 100%),
     repeating-linear-gradient(
       92deg,
       rgba(255, 226, 170, 0.018) 0 3px,
@@ -1210,7 +1210,7 @@
 
 .screen[data-table='silk'] {
   background:
-    radial-gradient(ellipse 130% 80% at 50% 42%, transparent 30%, rgba(10, 8, 4, 0.78) 100%),
+    radial-gradient(ellipse 130% 80% at 50% 42%, transparent 30%, var(--veil-ash-33) 100%),
     repeating-linear-gradient(
       0deg,
       rgba(232, 216, 176, 0.03) 0 1px,
@@ -1263,7 +1263,7 @@
   inset: 0;
   z-index: 24;
   pointer-events: none;
-  background: radial-gradient(ellipse at 50% 50%, rgba(2, 1, 0, 0.12) 30%, rgba(2, 1, 0, 0.42) 100%);
+  background: radial-gradient(ellipse at 50% 50%, rgba(2, 1, 0, 0.12) 30%, var(--veil-ash-134) 100%);
   animation: ebbDip 0.55s ease-in-out both;
 }
 
@@ -1288,7 +1288,7 @@
   margin: -7px 0 0 -7px;
   border-radius: 50%;
   pointer-events: none;
-  background: radial-gradient(circle at 40% 35%, var(--brass-96), var(--gold) 45%, rgba(30, 20, 6, 0.9) 78%);
+  background: radial-gradient(circle at 40% 35%, var(--brass-96), var(--gold) 45%, var(--veil-brass-10) 78%);
   box-shadow:
     0 0 10px 2px rgba(240, 208, 128, 0.85),
     0 0 26px 8px rgba(212, 168, 74, 0.35);
@@ -1356,7 +1356,7 @@
   margin: -5px 0 0 -5px;
   border-radius: 50%;
   pointer-events: none;
-  background: radial-gradient(circle, var(--brass-112), rgba(255, 222, 130, 0.9) 40%, transparent 75%);
+  background: radial-gradient(circle, var(--brass-112), var(--veil-brass-88) 40%, transparent 75%);
   animation: sparkCore 0.38s ease-out both;
 }
 
@@ -1373,9 +1373,9 @@
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 226, 150, 0.95) 30%,
+    var(--veil-brass-90) 30%,
     var(--brass-97) 50%,
-    rgba(255, 226, 150, 0.95) 70%,
+    var(--veil-brass-90) 70%,
     transparent
   );
   animation: sparkLine 0.38s ease-out both;
@@ -1421,7 +1421,7 @@
   height: 26px;
   pointer-events: none;
   border-radius: 50%;
-  background: radial-gradient(ellipse at 50% 35%, rgba(205, 225, 255, 0.75), transparent 72%);
+  background: radial-gradient(ellipse at 50% 35%, var(--veil-azure-86), transparent 72%);
   filter: blur(1px);
   animation: soulRise 0.9s ease-out both;
 }
@@ -1452,8 +1452,8 @@
   pointer-events: none;
   background: repeating-linear-gradient(
     90deg,
-    rgba(205, 214, 232, 0.85) 0 9px,
-    rgba(74, 82, 100, 0.9) 9px 11px
+    var(--veil-azure-83) 0 9px,
+    var(--veil-azure-32) 9px 11px
   );
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.7);
   animation: wallCrumble 0.55s cubic-bezier(0.5, 0, 0.8, 0.4) both;
@@ -1521,8 +1521,8 @@
   background: radial-gradient(
     ellipse 100% 90% at 50% 50%,
     transparent 42%,
-    rgba(110, 22, 12, 0.34) 82%,
-    rgba(140, 26, 14, 0.5) 100%
+    var(--veil-cinnabar-18) 82%,
+    var(--veil-cinnabar-23) 100%
   );
   transition: opacity 1.2s ease;
 }
@@ -1582,7 +1582,7 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: rgba(225, 238, 252, 0.75);
+  background: var(--veil-azure-92);
   filter: blur(0.5px);
   animation: snowFall 9s linear infinite;
 }

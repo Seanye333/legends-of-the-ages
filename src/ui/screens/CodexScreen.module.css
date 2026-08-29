@@ -32,7 +32,7 @@
   padding: 6px 12px;
   border-radius: 8px;
   border: 1px solid rgba(212, 168, 74, 0.4);
-  background: rgba(20, 15, 9, 0.9);
+  background: var(--veil-ash-82);
   color: var(--parchment-dim);
   font-size: 13px;
   font-family: inherit;
@@ -61,7 +61,7 @@
 .entry {
   border-radius: 10px;
   border: 1px solid rgba(212, 168, 74, 0.18);
-  background: rgba(16, 12, 7, 0.6);
+  background: var(--veil-ash-52);
   overflow: hidden;
   /* hover 的提亮走 background/border 过渡,不用 filter ——
      纪律是不给可能有 fixed 后代的容器加 filter,条目虽小也照规矩来 */
@@ -71,13 +71,13 @@
 }
 
 .entry:hover {
-  background: rgba(26, 20, 11, 0.72);
+  background: var(--veil-ash-104);
   border-color: rgba(212, 168, 74, 0.3);
 }
 
 .entryOpen {
   border-color: rgba(212, 168, 74, 0.45);
-  background: rgba(24, 18, 10, 0.78);
+  background: var(--veil-ash-92);
 }
 
 .entryHead {

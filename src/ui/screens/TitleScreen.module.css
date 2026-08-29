@@ -37,13 +37,13 @@
   inset: 0;
   z-index: -1;
   background:
-    radial-gradient(ellipse 120% 90% at 50% 30%, transparent 40%, rgba(8, 6, 3, 0.82) 100%),
+    radial-gradient(ellipse 120% 90% at 50% 30%, transparent 40%, var(--veil-ash-14) 100%),
     linear-gradient(
       180deg,
-      rgba(10, 8, 4, 0.68) 0%,
+      var(--veil-ash-30) 0%,
       rgba(10, 8, 4, 0.28) 22%,
-      rgba(10, 8, 4, 0.34) 55%,
-      rgba(8, 6, 3, 0.88) 100%
+      var(--veil-ash-136) 55%,
+      var(--veil-ash-19) 100%
     );
 }
 
@@ -132,8 +132,8 @@
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(212, 168, 74, 0.65) 18%,
-    rgba(212, 168, 74, 0.65) 82%,
+    var(--veil-brass-68) 18%,
+    var(--veil-brass-68) 82%,
     transparent
   );
   -webkit-mask: linear-gradient(180deg, transparent 44%, #000 44% 56%, transparent 56%);
@@ -184,7 +184,7 @@
   padding: 10px 23px 11px;
   color: var(--parchment-dim);
   border: none;
-  background: linear-gradient(180deg, rgba(178, 146, 84, 0.75), rgba(96, 74, 36, 0.75));
+  background: linear-gradient(180deg, var(--veil-brass-58), var(--veil-brass-51));
   cursor: pointer;
   clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0 50%);
   transition:
@@ -200,7 +200,7 @@
   inset: 1.5px;
   z-index: -1;
   clip-path: polygon(9px 0, calc(100% - 9px) 0, 100% 50%, calc(100% - 9px) 100%, 9px 100%, 0 50%);
-  background: linear-gradient(180deg, rgba(38, 31, 20, 0.97), rgba(20, 16, 10, 0.97));
+  background: linear-gradient(180deg, var(--veil-brass-24), var(--veil-ash-88));
 }
 
 .deckBtn:hover {
@@ -294,11 +294,11 @@
 .galleryHeadLine {
   flex: 1;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(212, 168, 74, 0.55));
+  background: linear-gradient(90deg, transparent, var(--veil-brass-67));
 }
 
 .galleryHeadLine:last-child {
-  background: linear-gradient(90deg, rgba(212, 168, 74, 0.55), transparent);
+  background: linear-gradient(90deg, var(--veil-brass-67), transparent);
 }
 
 .galleryHeadText {
@@ -439,7 +439,7 @@
   height: 24px;
   border-radius: 50%;
   background:
-    radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0) 40%),
+    radial-gradient(circle at 32% 24%, var(--veil-ash-128), rgba(255, 255, 255, 0) 40%),
     radial-gradient(circle at 50% 65%, var(--azure-56) 0%, var(--azure-32) 52%, var(--azure-17) 100%);
   border: 1px solid #9cc0f2;
   box-shadow:
@@ -493,7 +493,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  background: linear-gradient(180deg, rgba(46, 36, 20, 0.55), rgba(14, 10, 5, 0));
+  background: linear-gradient(180deg, var(--veil-brass-31), rgba(14, 10, 5, 0));
 }
 
 .statsRow {
@@ -523,7 +523,7 @@
 
 .attack {
   background:
-    radial-gradient(circle at 32% 24%, rgba(255, 250, 225, 0.9), rgba(255, 255, 255, 0) 42%),
+    radial-gradient(circle at 32% 24%, var(--veil-brass-100), rgba(255, 255, 255, 0) 42%),
     radial-gradient(circle at 50% 65%, var(--brass-76) 0%, var(--brass-54) 55%, var(--brass-30) 100%);
   border: 1px solid var(--brass-84);
   text-shadow: 0 1px 2px rgba(70, 45, 0, 0.9);
@@ -531,7 +531,7 @@
 
 .health {
   background:
-    radial-gradient(circle at 32% 24%, rgba(255, 235, 225, 0.85), rgba(255, 255, 255, 0) 42%),
+    radial-gradient(circle at 32% 24%, var(--veil-cinnabar-93), rgba(255, 255, 255, 0) 42%),
     radial-gradient(circle at 50% 65%, var(--cinnabar-50) 0%, var(--cinnabar-31) 55%, var(--cinnabar-16) 100%);
   border: 1px solid var(--cinnabar-64);
   text-shadow: 0 1px 2px rgba(60, 8, 0, 0.9);
@@ -584,7 +584,7 @@
   padding: 8px 20px;
   border-radius: 6px;
   border: 1px solid rgba(184, 134, 59, 0.65);
-  background: linear-gradient(180deg, rgba(42, 34, 20, 0.92), rgba(24, 19, 11, 0.92));
+  background: linear-gradient(180deg, var(--veil-brass-33), var(--veil-ash-108));
   color: var(--parchment-dim);
   cursor: pointer;
   transition: color 0.15s ease, transform 0.15s ease;
@@ -610,7 +610,7 @@
   gap: 2px;
   align-items: center;
   border-color: rgba(184, 134, 59, 0.22);
-  background: linear-gradient(180deg, rgba(28, 24, 16, 0.7), rgba(18, 15, 10, 0.7));
+  background: linear-gradient(180deg, var(--veil-ash-110), var(--veil-ash-73));
   color: var(--parchment-faint);
   cursor: default;
   padding: 6px 16px;
@@ -701,7 +701,7 @@
   max-width: 92vw;
   border-radius: 10px;
   border: 1px dashed rgba(212, 168, 74, 0.6);
-  background: rgba(30, 23, 11, 0.72);
+  background: var(--veil-brass-14);
   animation: inviteGlow 2.4s ease-in-out infinite;
 }
 
@@ -771,13 +771,13 @@
 
 .difficultyBtn {
   border: 1px solid rgba(122, 100, 58, 0.4);
-  background: rgba(16, 13, 8, 0.55);
+  background: var(--veil-ash-50);
   color: var(--parchment-faint);
 }
 
 .difficultyActive {
   border: 1px solid var(--gold-deep);
-  background: rgba(58, 42, 16, 0.8);
+  background: var(--veil-brass-43);
   color: var(--gold-bright);
 }
 
@@ -843,7 +843,7 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(212, 168, 74, 0.4), transparent);
+  background: linear-gradient(90deg, transparent, var(--veil-brass-72), transparent);
 }
 
 /* 连日到营的提示条:比军衔轻,4 秒后自己消失 */
@@ -857,7 +857,7 @@
      在一屏落日暖调里非常跳 —— 而它想说的是「你今天来了,赏你功勋」,
      那是**奖赏**的语气,奖赏在这个游戏里的颜色一直是金。 */
   color: var(--gold);
-  background: rgba(46, 35, 16, 0.72);
+  background: var(--veil-brass-32);
   border: 1px solid rgba(212, 168, 74, 0.4);
   /* 此前无进出场:setTimeout 一到直接从 DOM 消失。进场浮现;
      退场没法给(元素是条件渲染的),但至少出现的那一下是软的。 */
@@ -1007,7 +1007,7 @@
   padding: 10px 12px;
   border: 1px solid rgba(180, 150, 90, 0.28);
   border-radius: 10px;
-  background: rgba(40, 30, 14, 0.32);
+  background: var(--veil-brass-54);
 }
 
 .onboardHead {

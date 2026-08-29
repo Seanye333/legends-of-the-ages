@@ -10,7 +10,7 @@
   padding: 24px;
   background:
     radial-gradient(circle at 50% 42%, rgba(212, 168, 74, 0.12), transparent 55%),
-    rgba(6, 5, 3, 0.94); /* 刻意比 --scrim(0.72)黑:开包是仪式,后面的标题页要完全退场 */
+    var(--veil-ash-25); /* 刻意比 --scrim(0.72)黑:开包是仪式,后面的标题页要完全退场 */
   backdrop-filter: var(--scrim-blur);
   -webkit-backdrop-filter: var(--scrim-blur);
   animation: overlayIn 0.18s ease both;
@@ -221,7 +221,7 @@
 .slotEpic.shown::after {
   background: radial-gradient(
     circle,
-    rgba(206, 140, 255, 0.5),
+    var(--veil-amethyst-67),
     rgba(164, 90, 208, 0.16) 46%,
     transparent 72%
   );
@@ -230,7 +230,7 @@
 .slotLegendary.shown::after {
   background: radial-gradient(
     circle,
-    rgba(255, 222, 130, 0.62),
+    var(--veil-brass-86),
     rgba(240, 168, 80, 0.22) 46%,
     transparent 72%
   );

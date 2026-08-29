@@ -68,7 +68,7 @@
   align-items: center;
   padding: 11px 13px;
   border-radius: 11px;
-  background: rgba(0, 0, 0, 0.32);
+  background: var(--veil-ash-131);
   border: 1px solid rgba(212, 168, 74, 0.14);
 }
 
@@ -115,7 +115,7 @@
   margin-top: 7px;
   height: 4px;
   border-radius: 2px;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--veil-ash-01);
   overflow: hidden;
 }
 
@@ -183,7 +183,7 @@
   transform: translateX(-50%);
   padding: 8px 18px;
   border-radius: 999px;
-  background: rgba(20, 15, 8, 0.96);
+  background: var(--veil-ash-87);
   border: 1px solid rgba(212, 168, 74, 0.55);
   color: var(--gold-bright);
   font-family: var(--font-display);

@@ -103,7 +103,7 @@
   padding: 8px 12px;
   border-radius: 8px;
   border: 1px solid rgba(122, 100, 58, 0.4);
-  background: rgba(20, 16, 10, 0.7);
+  background: var(--veil-ash-70);
 }
 
 .savedName {
@@ -141,7 +141,7 @@
   border-radius: 999px;
   border: 1.5px solid var(--doctrine);
   color: var(--parchment);
-  background: rgba(20, 16, 10, 0.8);
+  background: var(--veil-ash-76);
 }
 
 .deckCount {
@@ -170,7 +170,7 @@
   overflow-y: auto;
   border-radius: 10px;
   border: 1px solid rgba(122, 100, 58, 0.35);
-  background: rgba(12, 10, 7, 0.5);
+  background: var(--veil-ash-38);
   padding: 10px;
 }
 
@@ -198,7 +198,7 @@
   padding: 1px 5px;
   border-radius: 4px;
   color: var(--parchment);
-  background: rgba(12, 10, 7, 0.85);
+  background: var(--veil-ash-44);
   border: 1px solid rgba(122, 100, 58, 0.5);
 }
 
@@ -216,7 +216,7 @@
   padding: 8px 12px;
   border-radius: 6px;
   border: 1px solid rgba(122, 100, 58, 0.55);
-  background: rgba(20, 16, 10, 0.8);
+  background: var(--veil-ash-76);
   color: var(--parchment);
   font-size: 14px;
   font-family: var(--font-display);
@@ -237,7 +237,7 @@
   padding: 14px 6px 0;
   border-radius: 8px;
   border: 1px solid rgba(122, 100, 58, 0.3);
-  background: rgba(12, 10, 7, 0.5);
+  background: var(--veil-ash-38);
 }
 
 .curveCol {
@@ -296,7 +296,7 @@
   padding: 5px 8px;
   border-radius: 6px;
   border: 1px solid color-mix(in srgb, var(--doctrine) 45%, transparent);
-  background: linear-gradient(90deg, rgba(29, 25, 19, 0.95), rgba(18, 15, 10, 0.95));
+  background: linear-gradient(90deg, var(--veil-ash-120), var(--veil-ash-86));
   color: var(--parchment);
   cursor: pointer;
   text-align: left;
@@ -379,7 +379,7 @@
   padding: 5px 8px;
   border-radius: 8px;
   border: 1px solid rgba(122, 100, 58, 0.3);
-  background: rgba(12, 10, 7, 0.5);
+  background: var(--veil-ash-38);
   font-size: 11px;
   color: var(--parchment-faint);
 }
@@ -412,7 +412,7 @@
   padding: 6px 8px;
   border-radius: 8px;
   border: 1px solid rgba(122, 100, 58, 0.3);
-  background: rgba(12, 10, 7, 0.5);
+  background: var(--veil-ash-38);
 }
 
 .bondsHead {
@@ -526,7 +526,7 @@
   padding: 7px 11px;
   border-radius: 9px;
   border: 1px solid rgba(212, 168, 74, 0.3);
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--veil-ash-132);
   color: var(--parchment);
   font-size: 13px;
 }
@@ -621,7 +621,7 @@
   padding: 7px 10px;
   border-radius: 8px;
   border: 1px solid rgba(212, 168, 74, 0.3);
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--veil-ash-132);
   color: var(--parchment);
   font-size: 12px;
 }
@@ -659,7 +659,7 @@
   padding: 6px 8px;
   border-radius: 8px;
   border: 1px solid rgba(212, 168, 74, 0.35);
-  background: rgba(20, 16, 10, 0.7);
+  background: var(--veil-ash-70);
 }
 
 .seedSummary {

@@ -29,8 +29,8 @@
 /* 胜:金辉战场 */
 .bgWin {
   background:
-    radial-gradient(ellipse 120% 90% at 50% 40%, transparent 25%, rgba(8, 6, 2, 0.9) 100%),
-    linear-gradient(180deg, rgba(14, 10, 4, 0.72), rgba(20, 14, 5, 0.5) 45%, rgba(8, 6, 2, 0.86)),
+    radial-gradient(ellipse 120% 90% at 50% 40%, transparent 25%, var(--veil-ash-22) 100%),
+    linear-gradient(180deg, var(--veil-ash-40), var(--veil-ash-67) 45%, var(--veil-ash-18)),
     url('/art/result-victory.webp') center 35% / cover no-repeat,
     var(--ash-05);
 }
@@ -38,16 +38,16 @@
 /* 败:灰烬战场 */
 .bgLose {
   background:
-    radial-gradient(ellipse 120% 90% at 50% 40%, transparent 25%, rgba(4, 3, 3, 0.94) 100%),
-    linear-gradient(180deg, rgba(8, 6, 6, 0.8), rgba(10, 8, 8, 0.62) 45%, rgba(4, 3, 3, 0.92)),
+    radial-gradient(ellipse 120% 90% at 50% 40%, transparent 25%, var(--veil-ash-08) 100%),
+    linear-gradient(180deg, var(--veil-ash-34), var(--veil-ash-29) 45%, var(--veil-ash-07)),
     url('/art/result-defeat.webp') center 35% / cover no-repeat,
     var(--ash-04);
 }
 
 .bgDraw {
   background:
-    radial-gradient(ellipse 120% 90% at 50% 40%, transparent 25%, rgba(6, 5, 3, 0.94) 100%),
-    linear-gradient(180deg, rgba(10, 8, 5, 0.82), rgba(10, 8, 5, 0.7)),
+    radial-gradient(ellipse 120% 90% at 50% 40%, transparent 25%, var(--veil-ash-25) 100%),
+    linear-gradient(180deg, var(--veil-ash-36), var(--veil-ash-31)),
     url('/art/battlefield-bg.webp') center 40% / cover no-repeat,
     var(--ash-05);
 }
@@ -165,7 +165,7 @@
 
 .secondary {
   border: 1px solid rgba(122, 100, 58, 0.7);
-  background: rgba(16, 13, 8, 0.72);
+  background: var(--veil-ash-53);
   color: var(--parchment-faint);
 }
 
@@ -208,7 +208,7 @@
   padding: 10px 14px;
   border-radius: 12px;
   border: 1px solid rgba(212, 168, 74, 0.25);
-  background: rgba(10, 8, 4, 0.55);
+  background: var(--veil-ash-28);
 }
 
 .statRow {
@@ -244,7 +244,7 @@
   border-radius: 3px;
   border: 1px solid var(--gold-deep, #b8863b);
   background:
-    radial-gradient(circle at 50% 42%, rgba(197, 59, 44, 0.85) 0 7px, transparent 7px),
+    radial-gradient(circle at 50% 42%, var(--veil-cinnabar-38) 0 7px, transparent 7px),
     linear-gradient(160deg, var(--brass-19), var(--brass-09));
   box-shadow:
     inset 0 0 0 1px rgba(0, 0, 0, 0.6),
@@ -331,9 +331,9 @@
     ),
     linear-gradient(
       180deg,
-      rgba(28, 21, 10, 0.94),
-      rgba(20, 15, 7, 0.9) 40%,
-      rgba(24, 18, 9, 0.94)
+      var(--veil-brass-11),
+      var(--veil-ash-81) 40%,
+      var(--veil-ash-96)
     );
   box-shadow:
     inset 0 0 0 1px rgba(212, 168, 74, 0.28),
