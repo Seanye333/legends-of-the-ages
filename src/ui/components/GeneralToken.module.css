@@ -213,7 +213,7 @@
   font-family: var(--font-display);
   font-weight: 800;
   font-size: clamp(10px, 2vh, 14px);
-  color: var(--ash-99);
+  color: var(--card-ink);
   z-index: 3;
   box-shadow:
     0 2px 4px rgba(0, 0, 0, 0.7),

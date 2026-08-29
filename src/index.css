@@ -55,6 +55,11 @@ body {
   --parchment-dim: #c9bfa8;
   --parchment-faint: #9a8a6a;
 
+  /* 牌桌上**物件**的印色 —— 从色阶里拆出来的两个,理由见下面亮色块的注释。
+     它们不随主题翻转:一张牌不会因为桌子换了颜色就改印色。 */
+  --card-ink: #fff;      /* 卡面/令牌/主帅牌上的数字(费用、攻血、军需) */
+  --card-legend: #ffe9a8; /* 传奇框的浅金 */
+
   /* —— 色阶:重复出现的颜色,按「色系 · 明度」命名 —— */
   /*
      【为什么是色阶名而不是语义名】
@@ -412,6 +417,286 @@ body {
   --shadow-1: 0 2px 8px rgba(0, 0, 0, 0.45);
   --shadow-2: 0 4px 16px rgba(0, 0, 0, 0.55);
   --shadow-3: 0 10px 34px rgba(0, 0, 0, 0.65);
+}
+
+
+/* ==================== 亮色主题 ==================== */
+/*
+   【它为什么现在才可能】
+   全站 1,889 处颜色里有 507 处是**挡路**的不透明 color/background 字面量
+   (见 ROADMAP 30)。字面量是没法被覆盖的 —— 只翻这十几个语义变量,
+   得到的是「深色底的字压在浅色底上」,一个字都读不清而且不报任何错。
+   那 507 处现在是 0:每一个颜色都进了色阶,于是亮色真的只差这一组覆盖。
+
+   【怎么算出来的:翻明度,不动色相与饱和度】
+   底变浅、字变深,而「它是什么颜色」不变 —— 朱砂还是朱砂,玉色还是玉色。
+   HSL 里就是 L → 1−L。这不是审美选择,是一条**可复算**的规则:
+   下面每一行都能用同一个函数从上面 :root 的值再算一遍。
+
+   【哪些不翻:19 个身份色】
+   卡面稀有度(rare/epic/legendary/common)与费用宝石。
+   它们是**印在物件上的东西** —— 一张牌不会因为桌子换了颜色就改印色,
+   传奇金翻成深褐、史诗紫翻成暗紫,卡框的视觉语言当场散架。
+   这 19 个在这里**没有覆盖行**,于是它们保持 :root 的值。
+
+   有两个色阶同时干着两件事,按证据拆了(这正是当初不起语义名的理由 ——
+   那时没有证据,现在有了):
+     --ash-99  (#fff)     卡面数字 8 处 + 界面白字 4 处 → 拆出 --card-ink
+     --brass-90(#ffe9a8) 传奇框 3 处 + 结算面板 1 处   → 拆出 --card-legend
+
+   ⚠️ **这一版是按规则算出来的,不是逐处调过的。** 规则保证了「底浅字深」,
+   保证不了每一处的观感。要改哪一处,改这里的那一行,别回去改字面量。
+*/
+:root[data-theme='light'] {
+  --ash-03: #faf7f4;
+  --ash-04: #f7f5f5;
+  --ash-05: #f8f6f3;
+  --ash-06: #f9f4ed;
+  --ash-07: #f3f1ed;
+  --ash-08: #f5f1eb;
+  --ash-09: #f7f3ed;
+  --ash-10: #f7f2e8;
+  --ash-11: #f3ede4;
+  --ash-12: #efe9e2;
+  --ash-13: #ebe5db;
+  --ash-14: #e4e0d9;
+  --ash-15: #f8f4ed;
+  --ash-16: #f9f1e8;
+  --ash-17: #f9f2ea;
+  --ash-18: #f5f0e8;
+  --ash-19: #f9f3e8;
+  --ash-20: #f5f0e9;
+  --ash-21: #f6f0e5;
+  --ash-22: #f2ede5;
+  --ash-23: #efe9e3;
+  --ash-24: #eee9e2;
+  --ash-25: #e6ece2;
+  --ash-26: #ede7dd;
+  --ash-27: #eee8dd;
+  --ash-28: #dae3d3;
+  --ash-29: #ced7cc;
+  --ash-78: #2f2f37;
+  --ash-92: #090d17;
+  --ash-99: #000000;
+  --brass-07: #f9f1e5;
+  --brass-08: #f7efe5;
+  --brass-09: #f8eedf;
+  --brass-10: #f8f2e6;
+  --brass-11: #efe7db;
+  --brass-12: #ede6db;
+  --brass-13: #f7e9d5;
+  --brass-14: #f7e8d1;
+  --brass-15: #efe5d5;
+  --brass-16: #efe5d3;
+  --brass-17: #f7efe3;
+  --brass-18: #ebddc5;
+  --brass-19: #eddfc5;
+  --brass-20: #f0dbb9;
+  --brass-21: #f6eddd;
+  --brass-22: #f7eddb;
+  --brass-23: #e7d7b5;
+  --brass-24: #dfd0b3;
+  --brass-25: #f3e9db;
+  --brass-26: #f3e7d5;
+  --brass-27: #ede7db;
+  --brass-28: #f0e3d3;
+  --brass-29: #ebe2d4;
+  --brass-30: #f1cd91;
+  --brass-31: #e1c495;
+  --brass-32: #ece2d1;
+  --brass-33: #eae2d3;
+  --brass-34: #f3e4cc;
+  --brass-35: #e6dfd0;
+  --brass-36: #dfbf85;
+  --brass-37: #f1e3c5;
+  --brass-38: #efdfc5;
+  --brass-39: #f1e1c5;
+  --brass-40: #eadac5;
+  --brass-41: #e2d7c5;
+  --brass-42: #d9bb75;
+  --brass-43: #d5b575;
+  --brass-44: #dbd3c2;
+  --brass-45: #e3d4ba;
+  --brass-46: #efd7af;
+  --brass-47: #dbc195;
+  --brass-48: #dfc391;
+  --brass-49: #dfc895;
+  --brass-50: #ebbb75;
+  --brass-51: #b9ad95;
+  --brass-52: #e1b675;
+  --brass-53: #b5a585;
+  --brass-54: #d5a347;
+  --brass-55: #d5af69;
+  --brass-57: #d9ae65;
+  --brass-58: #d5aa5e;
+  --brass-59: #af9e72;
+  --brass-60: #bb8937;
+  --brass-61: #ca9a45;
+  --brass-62: #a56f3f;
+  --brass-63: #c19337;
+  --brass-64: #b68730;
+  --brass-66: #957436;
+  --brass-67: #a55d17;
+  --brass-68: #8f7737;
+  --brass-69: #b57d1f;
+  --brass-70: #9f6f1f;
+  --brass-71: #917737;
+  --brass-72: #9f771f;
+  --brass-73: #675938;
+  --brass-75: #9f7717;
+  --brass-76: #af810f;
+  --brass-77: #7d853f;
+  --brass-78: #836727;
+  --brass-79: #4f4327;
+  --brass-80: #8b691f;
+  --brass-81: #b76e00;
+  --brass-82: #6f4f0f;
+  --brass-83: #755b0f;
+  --brass-84: #75570a;
+  --brass-85: #654c0f;
+  --brass-86: #9f6f0f;
+  --brass-87: #957517;
+  --brass-88: #876919;
+  --brass-89: #30260f;
+  --brass-90: #574100;
+  --brass-91: #2d230f;
+  --brass-92: #755913;
+  --brass-93: #3f3202;
+  --brass-94: #2f2502;
+  --brass-95: #1d0d00;
+  --brass-96: #2f2300;
+  --brass-97: #231a00;
+  --brass-98: #81600f;
+  --brass-99: #855500;
+  --brass-100: #5f470f;
+  --brass-101: #69500d;
+  --brass-102: #69510b;
+  --brass-103: #371f0f;
+  --brass-104: #3f3317;
+  --brass-105: #392d13;
+  --brass-106: #5f500a;
+  --brass-107: #372b0d;
+  --brass-108: #573e00;
+  --brass-109: #271b07;
+  --brass-110: #271100;
+  --brass-111: #170800;
+  --brass-112: #1f1800;
+  --cinnabar-11: #ebd7d5;
+  --cinnabar-12: #f3cbc5;
+  --cinnabar-13: #f9bbb5;
+  --cinnabar-15: #efb9b1;
+  --cinnabar-16: #f3a8a1;
+  --cinnabar-21: #eb9d92;
+  --cinnabar-22: #e39991;
+  --cinnabar-23: #e79185;
+  --cinnabar-24: #e79d95;
+  --cinnabar-25: #ed9083;
+  --cinnabar-26: #eb8175;
+  --cinnabar-27: #ef7d71;
+  --cinnabar-28: #e87163;
+  --cinnabar-29: #e59585;
+  --cinnabar-30: #e07d6c;
+  --cinnabar-31: #df6557;
+  --cinnabar-32: #db7061;
+  --cinnabar-34: #df644f;
+  --cinnabar-39: #d15d47;
+  --cinnabar-40: #c55a4f;
+  --cinnabar-41: #d0533f;
+  --cinnabar-42: #d52717;
+  --cinnabar-43: #d13e27;
+  --cinnabar-44: #d1442b;
+  --cinnabar-45: #c4523a;
+  --cinnabar-50: #b7311f;
+  --cinnabar-51: #b7371f;
+  --cinnabar-52: #a54636;
+  --cinnabar-53: #d75b1f;
+  --cinnabar-54: #a5382b;
+  --cinnabar-55: #a34436;
+  --cinnabar-56: #bb1600;
+  --cinnabar-57: #c32e00;
+  --cinnabar-58: #97311f;
+  --cinnabar-59: #aa1500;
+  --cinnabar-61: #773333;
+  --cinnabar-64: #852717;
+  --cinnabar-65: #753327;
+  --cinnabar-66: #8d1800;
+  --cinnabar-67: #952000;
+  --cinnabar-68: #753d27;
+  --cinnabar-70: #6b2317;
+  --cinnabar-71: #752d17;
+  --cinnabar-72: #852000;
+  --cinnabar-76: #53170f;
+  --cinnabar-77: #5b1c0d;
+  --cinnabar-78: #5f280f;
+  --cinnabar-83: #3c110b;
+  --cinnabar-86: #370800;
+  --cinnabar-88: #2f0800;
+  --cinnabar-93: #200a00;
+  --cinnabar-94: #170600;
+  --jade-14: #d9e7d5;
+  --jade-22: #c8d5bf;
+  --jade-25: #e3efb5;
+  --jade-48: #b5c575;
+  --jade-65: #4c7547;
+  --jade-66: #678547;
+  --jade-70: #1f903a;
+  --jade-72: #178517;
+  --jade-74: #2f604b;
+  --jade-75: #1f701f;
+  --jade-76: #39512f;
+  --jade-77: #356527;
+  --jade-81: #3d4b26;
+  --jade-83: #15570d;
+  --jade-86: #2f3b1b;
+  --jade-90: #0f2715;
+  --jade-95: #081904;
+  --cyan-16: #c0ddeb;
+  --cyan-43: #72d3cc;
+  --cyan-71: #279088;
+  --cyan-77: #1f4757;
+  --azure-08: #dfedf5;
+  --azure-19: #b7c4da;
+  --azure-20: #bdc3d1;
+  --azure-30: #9fa8ba;
+  --azure-33: #9ba3b5;
+  --azure-35: #979fb3;
+  --azure-36: #839ec0;
+  --azure-38: #8b93a5;
+  --azure-39: #8791a5;
+  --azure-43: #778199;
+  --azure-63: #475165;
+  --azure-65: #3f4d65;
+  --azure-66: #274d75;
+  --azure-68: #174677;
+  --azure-69: #324360;
+  --azure-74: #0f2757;
+  --azure-75: #2f3b47;
+  --azure-76: #293347;
+  --azure-80: #003057;
+  --azure-82: #1b2333;
+  --azure-84: #0a1732;
+  --azure-86: #002740;
+  --azure-88: #0f1622;
+  --amethyst-37: #a273b4;
+  --amethyst-64: #551f75;
+  --amethyst-66: #462965;
+
+  /* —— 既有的语义色 —— */
+  --gold-bright: #4a3608;
+  --gold: #5c4410;
+  --gold-mid: #6e5214;
+  --gold-deep: #8a6a2c;
+  --gold-dark: #b39a63;
+  --cinnabar: #a8291b;
+  --cinnabar-deep: #c04a3a;
+  --jade: #4a6030;
+  --ink-0: #f8f6f3;
+  --ink-1: #f3f0eb;
+  --ink-2: #ece8e2;
+  --ink-3: #e5dfd6;
+  --parchment: #2b2416;
+  --parchment-dim: #4a4234;
+  --parchment-faint: #6b6151;
 }
 
 /* 毛笔字体:子集化到 28 个仪式字(scripts 见提交说明)。

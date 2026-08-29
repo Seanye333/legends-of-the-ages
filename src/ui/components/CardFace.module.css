@@ -155,7 +155,7 @@
   box-shadow:
     0 2px 4px rgba(0, 0, 0, 0.7),
     inset 0 -2px 3px rgba(8, 18, 52, 0.85);
-  color: var(--ash-99);
+  color: var(--card-ink);
   font-weight: 800;
   font-size: clamp(11px, 14cqw, 15px);
   font-family: var(--font-display);
@@ -183,7 +183,7 @@
   box-shadow:
     0 2px 4px rgba(0, 0, 0, 0.7),
     inset 0 -2px 3px rgba(20, 30, 8, 0.8);
-  color: var(--ash-99);
+  color: var(--card-ink);
   font-weight: 800;
   font-size: clamp(10px, 12cqw, 13px);
   font-family: var(--font-display);
@@ -264,7 +264,7 @@
   font-weight: 800;
   font-size: clamp(10px, 13cqw, 14px);
   font-family: var(--font-display);
-  color: var(--ash-99);
+  color: var(--card-ink);
   z-index: 6;
   box-shadow:
     0 2px 4px rgba(0, 0, 0, 0.7),
@@ -358,7 +358,7 @@
 }
 
 .legendary {
-  background: linear-gradient(135deg, var(--brass-90), var(--brass-56));
+  background: linear-gradient(135deg, var(--card-legend), var(--brass-56));
   border: 1px solid rgba(255, 235, 180, 0.7);
   box-shadow: 0 0 6px rgba(232, 178, 58, 1);
 }
@@ -430,7 +430,7 @@
 
 :root[data-colorblind='true'] .legendary::after {
   content: '····';
-  color: var(--brass-90);
+  color: var(--card-legend);
 }
 
 

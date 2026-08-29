@@ -46,6 +46,9 @@ interface SettingsState {
   campaignMode: CampaignMode
   // 减少动效:跟随系统 prefers-reduced-motion,但允许手动覆盖 ——
   // 战斗特效是全站动效最猛的地方,晕动敏感的人需要一个明确的开关。
+  // 亮色主题。默认暗色 —— 这游戏的美术底子是暗金牌桌,亮色是备选不是对等的一半。
+  // 落成 <html data-theme='light'>,由 index.css 的那一组覆盖接管(见那边的注释)。
+  theme: 'dark' | 'light'
   reducedMotion: boolean
   // 卡背:唯一一样**对手也看得见**的成就展示(见 content/cardBacks.ts)
   cardBack: string
@@ -92,6 +95,7 @@ interface SettingsState {
   setMusicVolume: (v: number) => void
   setDifficulty: (d: Difficulty) => void
   setCampaignMode: (m: CampaignMode) => void
+  setTheme: (theme: 'dark' | 'light') => void
   setReducedMotion: (on: boolean) => void
   setCardBack: (id: string) => void
   setColorBlind: (on: boolean) => void
@@ -112,6 +116,7 @@ export const useSettings = create<SettingsState>()(
       musicVolume: 0.6,
       difficulty: 'veteran',
       campaignMode: 'standard',
+      theme: 'dark',
       reducedMotion: false,
       cardBack: 'back-default',
       colorBlind: false,
@@ -127,6 +132,7 @@ export const useSettings = create<SettingsState>()(
       setMusicVolume: (musicVolume) => set({ musicVolume: Math.max(0, Math.min(1, musicVolume)) }),
       setDifficulty: (difficulty) => set({ difficulty }),
       setCampaignMode: (campaignMode) => set({ campaignMode }),
+      setTheme: (theme) => set({ theme }),
       setReducedMotion: (reducedMotion) => set({ reducedMotion }),
       setCardBack: (cardBack) => set({ cardBack }),
       setColorBlind: (colorBlind) => set({ colorBlind }),

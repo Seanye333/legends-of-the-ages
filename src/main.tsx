@@ -29,6 +29,7 @@ function applySettings(s: {
   musicEnabled: boolean
   musicVolume: number
   colorBlind: boolean
+  theme: string
   uiScale: number
   language: string
 }): void {
@@ -40,6 +41,10 @@ function applySettings(s: {
     typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
   document.documentElement.dataset.reducedMotion = String(s.reducedMotion || prefersLess)
   document.documentElement.dataset.colorblind = String(s.colorBlind)
+  // 亮色主题:只写属性,值全在 index.css 的 :root[data-theme='light'] 里。
+  // 暗色是默认,所以不写 data-theme —— 少一个要在两处保持一致的地方。
+  if (s.theme === 'light') document.documentElement.dataset.theme = 'light'
+  else delete document.documentElement.dataset.theme
 
   // 【lang 必须跟着语言走】
   // index.html 里写死 `<html lang="zh">`,切英文时从不更新。三个后果:

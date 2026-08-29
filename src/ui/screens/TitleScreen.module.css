@@ -563,7 +563,7 @@
 }
 
 .legendary {
-  background: linear-gradient(135deg, var(--brass-90), var(--brass-56));
+  background: linear-gradient(135deg, var(--card-legend), var(--brass-56));
   border: 1px solid rgba(255, 235, 180, 0.7);
   box-shadow: 0 0 6px rgba(232, 178, 58, 1);
 }
@@ -1059,4 +1059,18 @@
 .onboardHint {
   font-size: 11px;
   color: var(--parchment-faint);
+}
+
+/* —— 亮色下的三处收尾 ——
+   这三条在暗色里是「中等金字压深底」,翻转之后成了「中等金字压浅底」,
+   对比度 3.5~4.4,低于 4.5。改这三条自己的取色,**不动色阶** ——
+   动色阶会把别处拿它当底的地方一起弄暗(实测 236 → 467)。
+   判据见 e2e/theme-contrast.spec.ts。 */
+:global(:root[data-theme='light']) .subtitle,
+:global(:root[data-theme='light']) .galleryHeadText {
+  color: var(--parchment-dim);
+}
+
+:global(:root[data-theme='light']) .deckActive {
+  color: var(--parchment);
 }

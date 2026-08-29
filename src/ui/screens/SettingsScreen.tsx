@@ -231,6 +231,24 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
             </button>
           ))}
         </div>
+        {/* 亮色主题。默认暗色 —— 这游戏的美术底子是暗金牌桌。
+            亮色的值全在 index.css 的 :root[data-theme='light'] 里,是按
+            「明度翻转、色相不动」算出来的一组覆盖;卡面稀有度与费用宝石**不翻**
+            (印在物件上的东西不随桌子变色)。详见那边的注释。 */}
+        <label className={styles.toggleRow}>
+          <span>
+            {t('亮色主题', 'Light theme')}
+            <small className={styles.hint}>
+              {t('浅底深字;卡面印色不变', 'Light surfaces, dark ink; card printing unchanged')}
+            </small>
+          </span>
+          <input
+            type="checkbox"
+            checked={s.theme === 'light'}
+            onChange={(e) => s.setTheme(e.target.checked ? 'light' : 'dark')}
+          />
+        </label>
+
         <label className={styles.toggleRow}>
           <span>
             {t('减少动效', 'Reduce motion')}
