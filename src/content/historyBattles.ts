@@ -88,8 +88,8 @@ export const HISTORY_BATTLES: HistoryBattle[] = [
       en: 'Twenty years he tasted gall for the shame of Kuaiji. Now the armies face off across the Lize — three thousand Yue blades, and a debt long overdue.',
     },
     situation: {
-      zh: '会稽雪耻:敌方主公开局披 2 甲(卧薪之积);你披 3 甲、多抽一张。',
-      en: 'The debt repaid: the enemy hero opens with 2 Armor; you take 3 Armor and draw a card.',
+      zh: '会稽雪耻:敌方开局有一座 0/4 守护的江东水寨、主公披 2 甲(卧薪之积);你披 3 甲、多抽一张。',
+      en: 'The debt repaid: the enemy opens with a 0/4 Jiangdong Stockade with Guard and 2 Armor; you take 3 Armor and draw a card.',
     },
     heroId: 'hist-goujian',
     doctrine: 'separatist',
@@ -110,7 +110,15 @@ export const HISTORY_BATTLES: HistoryBattle[] = [
     // tier 是唯一有分量的一根,而它只有七个离散取值,取到哪档就是哪档的胜率,
     // 档与档之间没有可以微调的东西。63~64% 就是 0.60 那副牌的落点,它在带内。
     // 真要再往下压,得动主公技或换一档 doctrine —— 那是重做这一关,不是调参。
-    enemyModifiers: { startArmor: 2 },
+    // 【2026-08-09 补:开局给越军一座水寨】
+    // 第三十二卡包往全池加了六张卡,而 battleDeck 是从**全池现建**的 ——
+    // 于是每一场的敌方牌组都被重洗了一遍,这一关从 64% 弹到 **72%**(超出 68 的带上沿)。
+    // 又跑了一遍 tune-history 的整张网格(7 档 tier × 3 档 hp):**没有一格落进带里**,
+    // 最好的一格是 hp=52 / tier=0.60 的 71%。数值旋钮救不了它。
+    // 所以照 黃天蕩 那次验证过的办法办:**给敌方一个每回合都在的身材**。
+    // 那次的结论一字不改地适用 —— 敌方护甲 2→16(八倍)只值 0pp,
+    // 因为一次性缓冲扛不住二十五回合;而一座 0/4 守护是**每回合都在**的。
+    enemyModifiers: { startArmor: 2, startTokens: ['token-shui-zhai'] },
     playerModifiers: { startArmor: 3, bonusHandSize: 1 },
     rewardMerit: 160,
     rewardPacks: 1,
