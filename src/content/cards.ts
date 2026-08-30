@@ -51,6 +51,7 @@ import { PACK29_CARDS } from './overrides/pack29'
 import { PACK30_CARDS } from './overrides/pack30'
 import { PACK31_CARDS } from './overrides/pack31'
 import { PACK32_CARDS } from './overrides/pack32'
+import { PACK33_CARDS } from './overrides/pack33'
 import { CAMPAIGN_TOKENS } from './overrides/campaign-tokens'
 import { HISTORY_TOKENS } from './history-tokens'
 
@@ -327,6 +328,7 @@ const MERGED_CARDS: CardDef[] = [
   ...PACK30_CARDS,
   ...PACK31_CARDS,
   ...PACK32_CARDS,
+  ...PACK33_CARDS,
   ...CAMPAIGN_TOKENS,
   ...HISTORY_TOKENS,
 ].map(applyPack24).map(applyTuning).map(applyDefector).map(applyBattleFixes).map(withKeywordText)
