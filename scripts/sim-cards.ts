@@ -40,6 +40,7 @@
 //   CONTROL=1 GAMES=600 npm run sim-cards   # 对照组:量这把尺子的零点
 import { PRECON_DECKS } from '../src/content/decks'
 import { CARDS_BY_ID, COLLECTIBLE_CARDS } from '../src/content/cards'
+import { applyKit, swapInto } from './deckSwap'
 import { HEROES_BY_ID } from '../src/content/overrides/heroes'
 import { parallelMap, defaultConcurrency, progress } from './parallel'
 import { fileURLToPath } from 'node:url'
@@ -86,29 +87,38 @@ const baseIdxFor = (card: CardDef): number =>
 //
 // 实践上:**深负的 Δ 要先看它换掉了什么再下结论**;
 // 判一张卡强不强,看对照组的**中位**那条线(六套一致),别看跨度(逐套差三倍)。
+// 【KIT:给「需要牌库配合」的条件用的第二把量法】
+// 有一整类条件此前**结构性量不了**:`ifChain`(本回合结算过几张锦囊)、
+// `ifSupply`(屯粮)、`ifHandCount`(手牌数)、`ifKeywordCount`(带某关键词的友方数)。
+// 它们的前置条件不会自己发生,得**牌库里配着别的卡**;而这个脚本是单张换入,
+// 于是量到的是「前置条件没出现」,不是「这张卡强不强」。第三十三卡包为此停过一次手。
+//
+// `KIT=<id,id>` 把配合卡**同时换进基准和待测两副牌**:
+//   基准 = 预组 ⊕ KIT        待测 = 预组 ⊕ KIT ⊕ 待测卡
+// 于是 Δ 隔离出来的是「**在有配合的前提下**这张卡值多少」—— 那才是这四个条件
+// 唯一有意义的问法。KIT 里的卡进去之后**受保护**,待测卡不许把它们挤掉。
+//
+// ⚠️ KIT 下的 Δ **不能**和无 KIT 的历史数字直接比:基准换了一副牌。
+// 换牌逻辑本身在 scripts/deckSwap.ts,那边有 12 条测试(它决定整把尺子量的是什么)。
+const KIT = (process.env.KIT ?? '').split(',').map((s) => s.trim()).filter(Boolean)
+const unknownKit = KIT.filter((id) => !CARDS_BY_ID[id])
+if (unknownKit.length) {
+  console.error(`KIT 里有不认识的卡:${unknownKit.join(' · ')}`)
+  process.exit(1)
+}
+const costOf = (id: string) => CARDS_BY_ID[id]?.cost ?? 99
+
+/** 预组 ⊕ KIT。KIT 为空时就是预组本身。 */
+function baseDeckOf(baseIdx: number): { deck: string[]; protect: Set<string> } | null {
+  const raw = PRECON_DECKS[baseIdx].cardIds as string[]
+  if (KIT.length === 0) return { deck: [...raw], protect: new Set() }
+  return applyKit(raw, KIT, { copies: COPIES, costOf })
+}
+
 function swapIn(card: CardDef, baseIdx: number): string[] | null {
-  const deck = [...PRECON_DECKS[baseIdx].cardIds]
-  const counts = new Map<string, number>()
-  for (const id of deck) counts.set(id, (counts.get(id) ?? 0) + 1)
-  // 候选被换者:与待测卡同费差最小、且不是待测卡本身
-  const victims = [...counts.keys()]
-    .filter((id) => id !== card.id)
-    .sort(
-      (a, b) =>
-        Math.abs((CARDS_BY_ID[a]?.cost ?? 99) - card.cost) -
-          Math.abs((CARDS_BY_ID[b]?.cost ?? 99) - card.cost) || a.localeCompare(b),
-    )
-  let need = COPIES
-  for (const victim of victims) {
-    while (need > 0) {
-      const i = deck.indexOf(victim)
-      if (i < 0) break
-      deck[i] = card.id
-      need--
-    }
-    if (need === 0) break
-  }
-  return need === 0 ? deck : null
+  const base = baseDeckOf(baseIdx)
+  if (!base) return null
+  return swapInto(base.deck, card.id, { copies: COPIES, costOf, protect: base.protect })
 }
 
 // 全池都能测了 —— 只要它的主义有对应的预组(六个主义各有一套,所以实际是全部)
@@ -160,6 +170,8 @@ console.log(
   `sim-cards: 每张换入 ${COPIES} 份,${GAMES} 局/张,共 ${targets.length} 张` +
     `(基准按主义选,中立卡固定用「${PRECON_DECKS[0].name.zh}」)\n`,
 )
+if (KIT.length) console.log(`  ⚠ KIT=${KIT.join(' · ')} —— 基准与待测**都**带这套配合卡,Δ 不可与无 KIT 的历史数字直接比
+`)
 const t0 = performance.now()
 
 // 对局本体在 workers/cards.worker.ts。任务粒度就是「一副牌」——
@@ -184,7 +196,8 @@ for (const card of targets) {
 // 用到哪几套基准就只算哪几套的基准胜率 —— 只测王道卡时不必把六套都跑一遍
 const usedBases = [...new Set(buildable.map((b) => b.baseIdx))].sort((a, b) => a - b)
 const jobs: CardTask[] = [
-  ...usedBases.map((i) => ({ deck: [...PRECON_DECKS[i].cardIds] as string[], baseIdx: i, games: GAMES })),
+  // 基准也吃同一份 KIT —— 否则 Δ 量的是「配合卡本身值多少」,不是待测卡。
+  ...usedBases.map((i) => ({ deck: baseDeckOf(i)!.deck, baseIdx: i, games: GAMES })),
   ...buildable.map((b) => ({ deck: b.deck, baseIdx: b.baseIdx, games: GAMES })),
 ]
 const out = await parallelMap<CardTask, { wins: number; played: number }>(
